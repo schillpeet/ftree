@@ -6,9 +6,9 @@ ftree is intended to become a web service where family members can create and ma
 
 ## Current State
 
-The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus an initial members list and create form. The UI calls a generated client, but BFF routes and data persistence are not implemented. There is no family-member data model, account system, or sharing workflow.
+The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus an initial members list and create form. The UI calls a generated client. The BFF implements member listing and creation against PostgreSQL. Authentication, family relationships, and a broader family-tree model are not implemented.
 
-The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF). The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js. The BFF is a Kotlin/Spring Boot scaffold with JPA and PostgreSQL connection configuration, but it has no family-tree model or HTTP endpoints yet. pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
+The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF). The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js. The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records. pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
 ## Code Map
 
@@ -21,6 +21,8 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `ui/app/globals.css` contains the global page styles.
 - `ui/` contains the Next.js app, package manifest, pnpm lockfile/workspace settings, TypeScript, ESLint, and Next.js configuration.
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
+- `bff/src/main/kotlin/com/github/bff/member/` contains the member JPA entity, repository, service, and controller implementing the generated API.
+- `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF.
 - `api/openapi.yaml` defines `GET /members` and `POST /members` as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`.
@@ -29,7 +31,7 @@ The procedural scene is presentation code. It is not a family-tree domain model 
 
 ## Initial Architecture Direction
 
-Keep the UI and Kotlin BFF as separate applications in this repository. The BFF is planned to expose the UI-facing API and own access to PostgreSQL; no separate backend service is currently planned. The Spring Boot scaffold exists, and the initial members contract is in `api/openapi.yaml`; the remaining API surface, schema, and deployment shape are still open. Introduce clear boundaries between family-tree concepts, persistence, access control, and presentation as those features are designed.
+Keep the UI and Kotlin BFF as separate applications in this repository. The BFF exposes the UI-facing API and owns access to PostgreSQL; no separate backend service is currently planned. `api/openapi.yaml` is the shared contract; Orval generates the UI client, and OpenAPI Generator creates Java API interfaces and DTOs implemented by Kotlin. Hibernate currently manages the local schema with `ddl-auto=update`; add versioned migrations before production. Authentication and authorization must be designed before family data is shared.
 
 Family relationships and identifying information are sensitive. Any shared-data implementation must define who can view and change a tree, how membership and invitations work, and how users can recover or remove access. Do not assume that a tree is public by default.
 
@@ -38,7 +40,7 @@ Family relationships and identifying information are sensitive. Any shared-data 
 These decisions have not been implemented:
 
 - The person, relationship, and family-tree data model, including how uncertain or conflicting information is represented.
-- PostgreSQL schema, migrations, backups, and data export/deletion behavior.
+- Family-tree relationships and schema beyond the initial members table, plus migrations, backups, and data export/deletion behavior.
 - Remaining BFF API operations, error format, and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.
 - How concurrent edits are handled and whether an audit/history model is needed.

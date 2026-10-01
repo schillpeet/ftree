@@ -1,6 +1,6 @@
 # Family Tree
 
-ftree is intended to become a shared family-tree web service where family members can build and maintain their family tree. The UI currently renders a procedural tree and meadow with an initial members interface; member data is not yet persisted and the BFF routes are not implemented.
+ftree is intended to become a shared family-tree web service where family members can build and maintain their family tree. The UI currently renders a procedural tree and meadow with an initial members interface. The BFF can list and create members in the local PostgreSQL database; authentication and family relationships are not implemented yet.
 
 See [the project overview](docs/project-overview.md) for the current structure, architectural direction, and open decisions.
 
@@ -12,7 +12,7 @@ pnpm --dir ui api:generate
 
 Set `NEXT_PUBLIC_BFF_URL` when generating the client for a non-local BFF. The default URL is `http://localhost:8080`.
 
-The repository keeps the Next.js UI in `ui/` and the Kotlin/Spring Boot Backend for Frontend in `bff/`. The BFF is intended to provide the UI-facing API and access PostgreSQL; its member operations are specified but not implemented, and there is no family-tree model yet. CI/CD is not configured here yet.
+The repository keeps the Next.js UI in `ui/` and the Kotlin/Spring Boot Backend for Frontend in `bff/`. The BFF implements `GET /members` and `POST /members` against PostgreSQL. CI/CD is not configured here yet.
 
 ## Getting Started
 
@@ -30,11 +30,11 @@ pnpm --dir ui dev
 
 Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-To build the BFF, start the local database and run Gradle (see [bff/README.md](bff/README.md)):
+To run the BFF, start the local database and start Spring Boot (see [bff/README.md](bff/README.md)):
 
 ```bash
-docker compose up -d db
-cd bff && ./gradlew build
+docker compose up -d --wait db
+cd bff && ./gradlew bootRun
 ```
 
 ## Checks

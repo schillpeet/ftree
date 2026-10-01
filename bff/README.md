@@ -1,5 +1,7 @@
 # BFF
 
-Kotlin/Spring Boot scaffold for the Backend for Frontend. It currently has JPA and PostgreSQL connection configuration, but no family-tree model or HTTP endpoints yet. The BFF is intended to own PostgreSQL access and provide the UI-facing API.
+Kotlin/Spring Boot Backend for Frontend. It implements `GET /members` and `POST /members` from the generated `MembersApi` interface and persists member records in PostgreSQL through Spring Data JPA.
 
-Start the local database from the repository root with `docker compose up -d db`, then run `./gradlew build` from this directory. The default local connection is `jdbc:postgresql://localhost:5433/appdb`; `DB_URL`, `DB_USER`, and `DB_PASSWORD` can override it.
+Run `./gradlew openApiGenerate` from this directory to generate Java sources under `build/generated/openapi/`. `./gradlew build` runs generation automatically before compilation. Kotlin code can implement `com.github.bff.generated.api.MembersApi` and use the generated models in `com.github.bff.generated.model`.
+
+For local development, start PostgreSQL from the repository root with `docker compose up -d --wait db`, then run `./gradlew bootRun` from this directory. The default connection is `jdbc:postgresql://localhost:5433/appdb`; `DB_URL`, `DB_USER`, and `DB_PASSWORD` can override it. Hibernate creates or updates the local `members` table automatically; production migrations are not configured yet.

@@ -90,7 +90,6 @@ components:
         photoUrl:
           type: string
           format: uri
-          maxLength: 2048
           nullable: true
     CreateMemberRequest:
       type: object
@@ -129,5 +128,4 @@ components:
         photoUrl:
           type: string
           format: uri
-          maxLength: 2048
           nullable: true

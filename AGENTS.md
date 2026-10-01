@@ -11,8 +11,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 ## Project Guidance
 
 - Read `docs/project-overview.md` before work that changes product behavior, data, or architecture.
-- This project aims to become a shared family-tree web service. The Next.js UI is in `ui/`; `bff/` contains a Kotlin/Spring Boot scaffold for the Backend for Frontend.
-- The UI is a procedural 3D scene with an initial members interface. `api/openapi.yaml` defines the member contract and `ui/` contains the generated client, but the BFF routes and persistence are not implemented yet.
+- This project aims to become a shared family-tree web service. The Next.js UI is in `ui/`; `bff/` contains the Kotlin/Spring Boot Backend for Frontend.
+- `api/openapi.yaml` defines the member contract; `ui/` and `bff/` generate clients/interfaces from it. Do not edit generated files; update the spec and regenerate instead.
+- The BFF implements `GET /members` and `POST /members` with PostgreSQL persistence. Authentication, family relationships, and production migrations are not implemented yet.
 - For Next.js work, resolve the installed Next.js documentation from `ui/` (for example, `ui/node_modules/next/dist/docs/`).
 - Treat family relationships and identifying information as sensitive. Do not assume public access; define authorization and sharing rules before implementing shared data.
 - Keep the UI and BFF in this repository. Avoid adding more services until there is a concrete need for them.

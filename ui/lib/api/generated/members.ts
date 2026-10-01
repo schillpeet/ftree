@@ -36,10 +36,7 @@ export interface Member {
      * @nullable
      */
   note?: string | null;
-  /**
-     * @maxLength 2048
-     * @nullable
-     */
+  /** @nullable */
   photoUrl?: string | null;
 }
 
@@ -73,10 +70,7 @@ export interface CreateMemberRequest {
      * @nullable
      */
   note?: string | null;
-  /**
-     * @maxLength 2048
-     * @nullable
-     */
+  /** @nullable */
   photoUrl?: string | null;
 }
 
