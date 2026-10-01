@@ -1,0 +1,133 @@
+openapi: 3.0.3
+info:
+  title: ftree BFF API
+  version: 0.1.0
+  description: API contract for the ftree UI and Backend for Frontend.
+servers:
+  - url: http://localhost:8080
+    description: Local BFF
+tags:
+  - name: Members
+    description: People in the family tree
+paths:
+  /members:
+    get:
+      operationId: getMembers
+      tags:
+        - Members
+      summary: List members
+      description: Returns all members. Returns an empty array when no members exist.
+      responses:
+        "200":
+          description: Member list, possibly empty.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+    post:
+      operationId: createMember
+      tags:
+        - Members
+      summary: Create a member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "201":
+          description: Member created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "400":
+          description: The request is invalid.
+components:
+  schemas:
+    Member:
+      type: object
+      required:
+        - id
+        - firstName
+        - lastName
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+        birthPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        deathDate:
+          type: string
+          format: date
+          nullable: true
+        deathPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        note:
+          type: string
+          maxLength: 5000
+          nullable: true
+        photoUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true
+    CreateMemberRequest:
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+        birthPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        deathDate:
+          type: string
+          format: date
+          nullable: true
+        deathPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        note:
+          type: string
+          maxLength: 5000
+          nullable: true
+        photoUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true

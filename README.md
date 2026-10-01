@@ -1,10 +1,18 @@
 # Family Tree
 
-ftree is intended to become a shared family-tree web service where family members can build and maintain their family tree. The current application is an early visual prototype: it renders a procedural tree and meadow, but does not yet store family data or support accounts and collaboration.
+ftree is intended to become a shared family-tree web service where family members can build and maintain their family tree. The UI currently renders a procedural tree and meadow with an initial members interface; member data is not yet persisted and the BFF routes are not implemented.
 
 See [the project overview](docs/project-overview.md) for the current structure, architectural direction, and open decisions.
 
-The repository keeps the Next.js UI in `ui/` and the Kotlin/Spring Boot Backend for Frontend in `bff/`. The BFF is intended to provide the UI-facing API and access PostgreSQL; it is currently a scaffold without endpoints or a family-tree model. CI/CD is not configured here yet.
+The shared member API contract is in `api/openapi.yaml`. Generate the typed UI client with:
+
+```bash
+pnpm --dir ui api:generate
+```
+
+Set `NEXT_PUBLIC_BFF_URL` when generating the client for a non-local BFF. The default URL is `http://localhost:8080`.
+
+The repository keeps the Next.js UI in `ui/` and the Kotlin/Spring Boot Backend for Frontend in `bff/`. The BFF is intended to provide the UI-facing API and access PostgreSQL; its member operations are specified but not implemented, and there is no family-tree model yet. CI/CD is not configured here yet.
 
 ## Getting Started
 
