@@ -24,6 +24,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `bff/src/main/kotlin/com/github/bff/member/` contains the member JPA entity, repository, service, and controller implementing the generated API.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF.
+- `dev.sh` starts the database, BFF, and UI for local development.
 - `api/openapi.yaml` defines `GET /members`, `POST /members`, and `DELETE /members/{id}` as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`.
 

@@ -1,6 +1,6 @@
 # BFF
 
-Kotlin/Spring Boot Backend for Frontend. It implements `GET /members` and `POST /members` from the generated `MembersApi` interface and persists member records in PostgreSQL through Spring Data JPA.
+Kotlin/Spring Boot Backend for Frontend. It implements `GET /members`, `POST /members`, and `DELETE /members/{id}` from the generated `MembersApi` interface and persists member records in PostgreSQL through Spring Data JPA.
 
 Run `./gradlew openApiGenerate` from this directory to generate Java sources under `build/generated/openapi/`. `./gradlew build` runs generation automatically before compilation. Kotlin code can implement `com.github.bff.generated.api.MembersApi` and use the generated models in `com.github.bff.generated.model`.
 

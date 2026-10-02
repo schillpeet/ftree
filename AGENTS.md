@@ -18,4 +18,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Treat family relationships and identifying information as sensitive. Do not assume public access; define authorization and sharing rules before implementing shared data.
 - Keep the UI and BFF in this repository. Avoid adding more services until there is a concrete need for them.
 - Keep the overview accurate as behavior and decisions change, and distinguish implemented features from planned work.
-- Commit messages use `<type>(<scope>): <message>`, all lowercase, in English (types: feat, fix, chore, docs, refactor, test, build, ci; scopes: ui, bff, db, repo).
+- Commit messages use `<type>(<scope>): <message>`, all lowercase, in English and in the imperative mood, for example `feat(ui): add person detail panel` (types: feat, fix, chore, docs, refactor, test, build, ci; scopes: ui, bff, db, repo).
+- Before committing, show the user the staged diff and the proposed commit message and wait for explicit approval. Never commit without it.
