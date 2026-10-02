@@ -6,7 +6,7 @@ ftree is intended to become a web service where family members can create and ma
 
 ## Current State
 
-The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus a members list with delete action and a create form. Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note. Each member can be assigned any number of parents and children from the members list. Scrolls are placed automatically in rows on an arc in front of the tree: one row per generation, every member below all of their parents, and members without known parents directly above their children. Selecting a member in the list moves the camera to their scroll. The UI calls a generated client. The BFF implements member listing, creation, deletion, and parent/child links against PostgreSQL; it rejects links that would make someone their own ancestor. Authentication, partnerships, and a broader family-tree model are not implemented.
+The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus a members list with delete action and a create form. Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note. Each member can be assigned any number of parents and children from the members list. Scrolls are placed automatically in rows on an arc in front of the tree: one row per generation, every member below all of their parents, and members without known parents directly above their children. Selecting a member in the list moves the camera to their scroll. A zoom scale in the bottom-right corner zooms in and out alongside mouse wheel and trackpad pinch. The UI calls a generated client. The BFF implements member listing, creation, deletion, and parent/child links against PostgreSQL; it rejects links that would make someone their own ancestor. Authentication, partnerships, and a broader family-tree model are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF). The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js. The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records. pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
@@ -14,7 +14,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 
 - `ui/app/page.tsx` renders the home scene.
 - `ui/app/FamilyTree.tsx` holds the loaded members and the camera focus shared by the scene and the members overlay.
-- `ui/app/Scene.tsx` configures the canvas, sunset lighting, meadow, tree, camera controls, member scrolls, and the camera flight to a selected scroll.
+- `ui/app/Scene.tsx` configures the canvas, sunset lighting, meadow, tree, camera controls with the zoom scale, member scrolls, and the camera flight to a selected scroll.
 - `ui/app/familyLayout.ts` computes generations and scroll positions; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/Scroll.tsx` renders a member's papyrus scroll as camera-facing HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/MembersControls.tsx` contains the members list, delete action, and create form; `ui/app/RelativesDialog.tsx` assigns parents and children.

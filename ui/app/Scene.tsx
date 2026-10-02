@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, Sky } from '@react-three/drei';
 import { Vector3 } from 'three';
@@ -20,8 +20,50 @@ const TREE_BASE = height(0, 0);
 const CAMERA_START: [number, number, number] = [40, TREE_BASE + 15, 50];
 const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 9, 0];
 const FOCUS_DISTANCE = 12;
+const MIN_DISTANCE = 8;
+const MAX_DISTANCE = 150;
+// camera-controls divides trackpad deltas by 10, so the default speed needs a lot of pinching.
+const DOLLY_SPEED = 5;
+const ZOOM_STEP = 0.1;
 
 export type Focus = { id: string } | null;
+
+// The scale is logarithmic in distance, so each step feels the same near and far.
+const toZoom = (distance: number) => Math.log(MAX_DISTANCE / distance) / Math.log(MAX_DISTANCE / MIN_DISTANCE);
+const toDistance = (zoom: number) => MAX_DISTANCE * (MIN_DISTANCE / MAX_DISTANCE) ** zoom;
+
+// Lives outside the canvas and owns its own state, so syncing it on every camera frame
+// doesn't re-render the scene.
+function ZoomScale({ controls }: { controls: CameraControls | null }) {
+  const [zoom, setZoom] = useState(0);
+
+  useEffect(() => {
+    if (!controls) return;
+    const sync = () => setZoom(toZoom(controls.distance));
+    sync();
+    controls.addEventListener('update', sync);
+    return () => controls.removeEventListener('update', sync);
+  }, [controls]);
+
+  const zoomTo = (value: number, smooth: boolean) =>
+    void controls?.dollyTo(toDistance(Math.min(1, Math.max(0, value))), smooth);
+
+  return (
+    <div className="zoom-scale" role="group" aria-label="Zoom">
+      <button type="button" aria-label="Hineinzoomen" onClick={() => zoomTo(zoom + ZOOM_STEP, true)}>+</button>
+      <input
+        type="range"
+        aria-label="Zoomstufe"
+        min={0}
+        max={1}
+        step={0.01}
+        value={zoom}
+        onChange={(event) => zoomTo(Number(event.target.value), false)}
+      />
+      <button type="button" aria-label="Herauszoomen" onClick={() => zoomTo(zoom - ZOOM_STEP, true)}>−</button>
+    </div>
+  );
+}
 
 function SunsetSky() {
   return (
@@ -90,31 +132,37 @@ export default function Scene({
   focus: Focus;
 }) {
   const controlsRef = useRef<CameraControls>(null);
+  const [controls, setControls] = useState<CameraControls | null>(null);
   // Stable callback, so the start view is only applied once when the controls mount.
   const initControls = useCallback((controls: CameraControls | null) => {
     controlsRef.current = controls;
+    setControls(controls);
     void controls?.setLookAt(...CAMERA_START, ...CAMERA_TARGET, false);
   }, []);
 
   return (
-    <Canvas
-      shadows="percentage"
-      // Lower exposure keeps the bright sky shader from washing out to white; lights compensate.
-      gl={{ toneMappingExposure: 0.6 }}
-      camera={{ position: CAMERA_START, fov: 50, far: 10000 }}
-      style={{ position: 'fixed', inset: 0 }}
-    >
-      <SunsetSky />
-      <Meadow />
-      <Tree position={[0, TREE_BASE, 0]} />
-      <Scrolls members={members} focus={focus} controlsRef={controlsRef} />
-      <CameraControls
-        ref={initControls}
-        makeDefault
-        maxPolarAngle={Math.PI / 2.1}
-        minDistance={8}
-        maxDistance={150}
-      />
-    </Canvas>
+    <>
+      <Canvas
+        shadows="percentage"
+        // Lower exposure keeps the bright sky shader from washing out to white; lights compensate.
+        gl={{ toneMappingExposure: 0.6 }}
+        camera={{ position: CAMERA_START, fov: 50, far: 10000 }}
+        style={{ position: 'fixed', inset: 0 }}
+      >
+        <SunsetSky />
+        <Meadow />
+        <Tree position={[0, TREE_BASE, 0]} />
+        <Scrolls members={members} focus={focus} controlsRef={controlsRef} />
+        <CameraControls
+          ref={initControls}
+          makeDefault
+          maxPolarAngle={Math.PI / 2.1}
+          minDistance={MIN_DISTANCE}
+          maxDistance={MAX_DISTANCE}
+          dollySpeed={DOLLY_SPEED}
+        />
+      </Canvas>
+      <ZoomScale controls={controls} />
+    </>
   );
 }
