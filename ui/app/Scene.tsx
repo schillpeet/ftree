@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { CameraControls, Sky } from '@react-three/drei';
+import { CameraControls, Line, Sky } from '@react-three/drei';
 import { Vector3 } from 'three';
 import type { Member } from '../lib/api/generated/members';
-import { layoutScrolls } from './familyLayout';
+import { layoutScrolls, relationLines } from './familyLayout';
 import Meadow, { height } from './Meadow';
 import Scroll from './Scroll';
 import Tree from './Tree';
@@ -20,6 +20,8 @@ const TREE_BASE = height(0, 0);
 const CAMERA_START: [number, number, number] = [40, TREE_BASE + 15, 50];
 const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 9, 0];
 const FOCUS_DISTANCE = 12;
+// Relation lines run through the canopy; like the scrolls they are drawn over the leaves.
+const ON_TOP = { depthTest: false, renderOrder: 1 };
 const MIN_DISTANCE = 8;
 const MAX_DISTANCE = 150;
 // camera-controls divides trackpad deltas by 10, so the default speed needs a lot of pinching.
@@ -106,6 +108,8 @@ function Scrolls({
     return layout;
   }, [members]);
 
+  const links = useMemo(() => relationLines(members, positions), [members, positions]);
+
   useEffect(() => {
     const target = focus && positions.get(focus.id);
     const controls = controlsRef.current;
@@ -121,7 +125,13 @@ function Scrolls({
   // drei's Html loses its content if its target changes after mount, so wait until the
   // canvas has connected its event source (the element Html attaches to).
   if (!events.connected) return null;
-  return members.map((member) => <Scroll key={member.id} member={member} position={positions.get(member.id)!} />);
+  return (
+    <>
+      {members.map((member) => <Scroll key={member.id} member={member} position={positions.get(member.id)!} />)}
+      {links.parents.length > 0 && <Line points={links.parents} segments color="#f5e6c4" lineWidth={3} {...ON_TOP} />}
+      {links.partners.length > 0 && <Line points={links.partners} segments color="#e8b54a" lineWidth={4} {...ON_TOP} />}
+    </>
+  );
 }
 
 export default function Scene({

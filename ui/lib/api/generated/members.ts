@@ -40,11 +40,14 @@ export interface Member {
   photoUrl?: string | null;
   /** Ids of this member's parents. Children are the members listing this id. */
   parentIds: string[];
+  /** Ids of this member's partners, current or former. Always mutual. */
+  partnerIds: string[];
 }
 
 export interface Relatives {
   parentIds: string[];
   childIds: string[];
+  partnerIds: string[];
 }
 
 export interface CreateMemberRequest {
@@ -343,8 +346,8 @@ export const getUpdateMemberRelativesUrl = (id: string,) => {
 }
 
 /**
- * Replaces both sets. Rejects unknown members, the member itself, a member that is both parent and child, and links that would make someone their own ancestor.
- * @summary Replace a member's parents and children
+ * Replaces all three sets. Partnerships are mutual, so the partners list this member too. Rejects unknown members, the member itself, a member in more than one set, and links that would make someone their own ancestor.
+ * @summary Replace a member's parents, children, and partners
  */
 export const updateMemberRelatives = async (id: string,
     relatives: Relatives, options?: RequestInit): Promise<updateMemberRelativesResponse> => {
