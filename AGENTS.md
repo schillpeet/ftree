@@ -20,6 +20,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Keep the overview accurate as behavior and decisions change, and distinguish implemented features from planned work.
 - Commit messages use `<type>(<scope>): <message>`, all lowercase, in English and in the imperative mood, for example `feat(ui): add person detail panel` (types: feat, fix, chore, docs, refactor, test, build, ci; scopes: ui, bff, db, repo).
 - Start every new task by creating a branch from `main` before changing any files. Name it after the planned commit as `<type>/<scope>-<message-in-kebab-case>`, for example `feat(ui): add person detail panel` → `feat/ui-add-person-detail-panel`.
+- Pull requests are squash-merged, so the PR title becomes the commit on `main` and must follow the commit convention.
 - Do not set versions by hand or create release tags; release-please derives them from commit types (see the overview's versioning section). Mark breaking changes with `!`, for example `feat(bff)!: rename member fields`.
 - Before committing, show the user the staged diff and the proposed commit message and wait for explicit approval. Never commit without it.
 - Before pushing or opening a PR: run `git fetch origin && git rebase origin/main`, resolve any conflicts, and re-run typecheck/tests.
