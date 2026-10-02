@@ -37,4 +37,12 @@ class MemberEntity(
         inverseJoinColumns = [JoinColumn(name = "parent_id")],
     )
     var parents: MutableSet<MemberEntity> = mutableSetOf(),
+    // Kept symmetric by MemberService: if A lists B, B lists A.
+    @ManyToMany
+    @JoinTable(
+        name = "member_partners",
+        joinColumns = [JoinColumn(name = "member_id")],
+        inverseJoinColumns = [JoinColumn(name = "partner_id")],
+    )
+    var partners: MutableSet<MemberEntity> = mutableSetOf(),
 )

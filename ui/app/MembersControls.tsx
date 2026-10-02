@@ -59,6 +59,7 @@ function MemberDetails({
   const names = (list: Member[]) => list.map((m) => `${m.firstName} ${m.lastName}`).join(', ');
   const parents = names(members.filter((m) => member.parentIds.includes(m.id)));
   const children = names(members.filter((m) => m.parentIds.includes(member.id)));
+  const partners = names(members.filter((m) => member.partnerIds.includes(m.id)));
 
   return (
     <li className="member-row">
@@ -76,6 +77,7 @@ function MemberDetails({
       {death && <p>Verstorben: {death}</p>}
       {parents && <p>Eltern: {parents}</p>}
       {children && <p>Kinder: {children}</p>}
+      {partners && <p>Partner: {partners}</p>}
       {member.note && <p>{member.note}</p>}
       {member.photoUrl && (
         <p>
@@ -86,7 +88,7 @@ function MemberDetails({
         Bearbeiten
       </button>
       <button type="button" className="member-relatives-button" onClick={onEditRelatives}>
-        Eltern &amp; Kinder zuweisen
+        Beziehungen zuweisen
       </button>
     </li>
   );

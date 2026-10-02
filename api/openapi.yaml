@@ -99,10 +99,11 @@ paths:
       operationId: updateMemberRelatives
       tags:
         - Members
-      summary: Replace a member's parents and children
+      summary: Replace a member's parents, children, and partners
       description: >-
-        Replaces both sets. Rejects unknown members, the member itself, a member that is
-        both parent and child, and links that would make someone their own ancestor.
+        Replaces all three sets. Partnerships are mutual, so the partners list this member too.
+        Rejects unknown members, the member itself, a member in more than one set, and links
+        that would make someone their own ancestor.
       parameters:
         - name: id
           in: path
@@ -132,6 +133,7 @@ components:
         - firstName
         - lastName
         - parentIds
+        - partnerIds
       properties:
         id:
           type: string
@@ -175,11 +177,18 @@ components:
           items:
             type: string
             format: uuid
+        partnerIds:
+          description: Ids of this member's partners, current or former. Always mutual.
+          type: array
+          items:
+            type: string
+            format: uuid
     Relatives:
       type: object
       required:
         - parentIds
         - childIds
+        - partnerIds
       properties:
         parentIds:
           type: array
@@ -187,6 +196,11 @@ components:
             type: string
             format: uuid
         childIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        partnerIds:
           type: array
           items:
             type: string

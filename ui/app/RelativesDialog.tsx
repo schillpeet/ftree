@@ -9,7 +9,7 @@ function toggle(ids: string[], id: string) {
   return ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
 }
 
-// Assigns any number of parents and children to one member.
+// Assigns any number of parents, children, and partners to one member.
 export default function RelativesDialog({
   member,
   members,
@@ -24,6 +24,7 @@ export default function RelativesDialog({
   const others = members.filter((m) => m.id !== member.id);
   const [parentIds, setParentIds] = useState(member.parentIds);
   const [childIds, setChildIds] = useState(others.filter((m) => m.parentIds.includes(member.id)).map((m) => m.id));
+  const [partnerIds, setPartnerIds] = useState(member.partnerIds);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +33,7 @@ export default function RelativesDialog({
     setIsSaving(true);
     setError(null);
     try {
-      const response = await updateMemberRelatives(member.id, { parentIds, childIds });
+      const response = await updateMemberRelatives(member.id, { parentIds, childIds, partnerIds });
       if (response.status === 400) {
         setError('Diese Zuordnung ist nicht möglich: Niemand kann sein eigener Vorfahre sein.');
         return;
@@ -76,8 +77,9 @@ export default function RelativesDialog({
           </button>
         </header>
         <form className="member-form" onSubmit={save}>
-          {list('Eltern', parentIds, childIds, (id) => setParentIds((ids) => toggle(ids, id)))}
-          {list('Kinder', childIds, parentIds, (id) => setChildIds((ids) => toggle(ids, id)))}
+          {list('Eltern', parentIds, [...childIds, ...partnerIds], (id) => setParentIds((ids) => toggle(ids, id)))}
+          {list('Kinder', childIds, [...parentIds, ...partnerIds], (id) => setChildIds((ids) => toggle(ids, id)))}
+          {list('Partner', partnerIds, [...parentIds, ...childIds], (id) => setPartnerIds((ids) => toggle(ids, id)))}
           {error && <p className="member-form-error" role="alert">{error}</p>}
           <div className="member-form-actions">
             <button type="button" disabled={isSaving} onClick={onClose}>

@@ -6,7 +6,7 @@ ftree is intended to become a web service where family members can create and ma
 
 ## Current State
 
-The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus a members list with edit and delete actions and a form for creating and editing members. Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note. Each member can be assigned any number of parents and children from the members list. Scrolls are placed automatically in rows on an arc in front of the tree: one row per generation, every member below all of their parents, and members without known parents directly above their children. Selecting a member in the list moves the camera to their scroll. A zoom scale in the bottom-right corner zooms in and out alongside mouse wheel and trackpad pinch. The UI calls a generated client. The BFF implements member listing, creation, editing, deletion, and parent/child links against PostgreSQL; it rejects links that would make someone their own ancestor. Authentication, partnerships, and a broader family-tree model are not implemented.
+The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus a members list with edit and delete actions and a form for creating and editing members. Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note. Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list. Scrolls are placed automatically in rows on an arc in front of the tree: one row per generation, every member below all of their parents, partners in the same row side by side, and members without known parents directly above their children. Lines drawn over the foliage connect parents with children (light) and partners with each other (gold). Selecting a member in the list moves the camera to their scroll. A zoom scale in the bottom-right corner zooms in and out alongside mouse wheel and trackpad pinch. The UI calls a generated client. The BFF implements member listing, creation, editing, deletion, and parent/child and partner links against PostgreSQL; it rejects links that would make someone their own ancestor. Authentication and a broader family-tree model (relationship types such as adoption, dates of partnerships, uncertain links) are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF). The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js. The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records. pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
@@ -14,10 +14,10 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 
 - `ui/app/page.tsx` renders the home scene.
 - `ui/app/FamilyTree.tsx` holds the loaded members and the camera focus shared by the scene and the members overlay.
-- `ui/app/Scene.tsx` configures the canvas, sunset lighting, meadow, tree, camera controls with the zoom scale, member scrolls, and the camera flight to a selected scroll.
+- `ui/app/Scene.tsx` configures the canvas, sunset lighting, meadow, tree, camera controls with the zoom scale, member scrolls with relation lines, and the camera flight to a selected scroll.
 - `ui/app/familyLayout.ts` computes generations and scroll positions; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/Scroll.tsx` renders a member's papyrus scroll as camera-facing HTML in the scene; its look is defined in `globals.css`.
-- `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents and children.
+- `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, and partners.
 - `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally.
 - `ui/app/Meadow.tsx` builds the terrain and instanced grass; it exports terrain height used by the tree and scene.
 - `ui/app/random.ts` contains seeded random and smooth-noise helpers used by the procedural scene.
@@ -46,7 +46,7 @@ Family relationships and identifying information are sensitive. Any shared-data 
 These decisions have not been implemented:
 
 - The person, relationship, and family-tree data model, including how uncertain or conflicting information is represented.
-- Relationship types beyond parent/child (partners, adoption, uncertain links) and schema beyond the members and `member_parents` tables, plus backups and data export/deletion behavior.
+- Relationship types beyond parent/child and partners (adoption, partnership dates, uncertain links) and schema beyond the `members`, `member_parents`, and `member_partners` tables, plus backups and data export/deletion behavior.
 - Remaining BFF API operations, error format, and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.
 - How concurrent edits are handled and whether an audit/history model is needed.

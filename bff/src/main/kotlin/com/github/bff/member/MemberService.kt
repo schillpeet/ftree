@@ -53,7 +53,11 @@ class MemberService(private val memberRepository: MemberRepository) {
         val member = all[id] ?: return RelativesResult.NOT_FOUND
         val parentIds = relatives.parentIds.toSet()
         val childIds = relatives.childIds.toSet()
-        if (id in parentIds || id in childIds || parentIds.any { it in childIds } || !all.keys.containsAll(parentIds + childIds)) {
+        val partnerIds = relatives.partnerIds.toSet()
+        val sets = listOf(parentIds, childIds, partnerIds)
+        val everyone = sets.flatten()
+        // Each relative may appear in only one set, never the member itself, and must exist.
+        if (id in everyone || everyone.size != everyone.toSet().size || !all.keys.containsAll(everyone)) {
             return RelativesResult.INVALID
         }
 
@@ -70,7 +74,9 @@ class MemberService(private val memberRepository: MemberRepository) {
         member.parents = parentIds.map(all::getValue).toMutableSet()
         all.values.forEach { other ->
             if (other.id in childIds) other.parents.add(member) else other.parents.remove(member)
+            if (other.id in partnerIds) other.partners.add(member) else other.partners.remove(member)
         }
+        member.partners = partnerIds.map(all::getValue).toMutableSet()
         return RelativesResult.UPDATED
     }
 
@@ -78,6 +84,7 @@ class MemberService(private val memberRepository: MemberRepository) {
     fun delete(id: UUID): Boolean {
         val member = memberRepository.findById(id).orElse(null) ?: return false
         memberRepository.findAllByParentsId(id).forEach { it.parents.remove(member) }
+        memberRepository.findAllByPartnersId(id).forEach { it.partners.remove(member) }
         memberRepository.delete(member)
         return true
     }
@@ -93,6 +100,7 @@ class MemberService(private val memberRepository: MemberRepository) {
         note = this@toResponse.note
         photoUrl = this@toResponse.photoUrl?.let(URI::create)
         parentIds = this@toResponse.parents.map { it.id }
+        partnerIds = this@toResponse.partners.map { it.id }
     }
 }
 
