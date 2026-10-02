@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, type Ref } from 'react';
+import { useMemo } from 'react';
 import {
   BufferGeometry,
   CatmullRomCurve3,
@@ -10,7 +10,6 @@ import {
   Float32BufferAttribute,
   InstancedMesh,
   Matrix4,
-  Mesh,
   MeshStandardMaterial,
   Quaternion,
   Shape,
@@ -277,11 +276,11 @@ function buildTree(seed: number) {
   return { bark, leafMesh };
 }
 
-export default function Tree({ position, barkRef }: { position: [number, number, number]; barkRef?: Ref<Mesh> }) {
+export default function Tree({ position }: { position: [number, number, number] }) {
   const { bark, leafMesh } = useMemo(() => buildTree(7), []);
   return (
     <group position={position}>
-      <mesh ref={barkRef} geometry={bark} castShadow receiveShadow>
+      <mesh geometry={bark} castShadow receiveShadow>
         <meshStandardMaterial vertexColors roughness={0.9} />
       </mesh>
       <primitive object={leafMesh} />

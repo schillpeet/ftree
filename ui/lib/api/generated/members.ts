@@ -5,15 +5,6 @@
  * API contract for the ftree UI and Backend for Frontend.
  * OpenAPI spec version: 0.1.0
  */
-/**
- * Scene coordinates of a pinned scroll.
- */
-export interface Position {
-  x: number;
-  y: number;
-  z: number;
-}
-
 export interface Member {
   readonly id: string;
   /**
@@ -47,8 +38,13 @@ export interface Member {
   note?: string | null;
   /** @nullable */
   photoUrl?: string | null;
-  /** Where the member's scroll is pinned in the tree scene; null until pinned. */
-  position?: Position | null;
+  /** Ids of this member's parents. Children are the members listing this id. */
+  parentIds: string[];
+}
+
+export interface Relatives {
+  parentIds: string[];
+  childIds: string[];
 }
 
 export interface CreateMemberRequest {
@@ -243,43 +239,44 @@ export const deleteMember = async (id: string, options?: RequestInit): Promise<d
 
 
 
-export type updateMemberPositionResponse200 = {
-  data: Member
-  status: 200
+export type updateMemberRelativesResponse204 = {
+  data: void
+  status: 204
 }
 
-export type updateMemberPositionResponse400 = {
+export type updateMemberRelativesResponse400 = {
   data: void
   status: 400
 }
 
-export type updateMemberPositionResponse404 = {
+export type updateMemberRelativesResponse404 = {
   data: void
   status: 404
 }
 
-export type updateMemberPositionResponseSuccess = (updateMemberPositionResponse200) & {
+export type updateMemberRelativesResponseSuccess = (updateMemberRelativesResponse204) & {
   headers: Headers;
 };
-export type updateMemberPositionResponseError = (updateMemberPositionResponse400 | updateMemberPositionResponse404) & {
+export type updateMemberRelativesResponseError = (updateMemberRelativesResponse400 | updateMemberRelativesResponse404) & {
   headers: Headers;
 };
 
-export type updateMemberPositionResponse = (updateMemberPositionResponseSuccess | updateMemberPositionResponseError)
+export type updateMemberRelativesResponse = (updateMemberRelativesResponseSuccess | updateMemberRelativesResponseError)
 
-export const getUpdateMemberPositionUrl = (id: string,) => {
-
-
+export const getUpdateMemberRelativesUrl = (id: string,) => {
 
 
-  return `http://localhost:8080/members/${id}/position`
+
+
+  return `http://localhost:8080/members/${id}/relatives`
 }
 
 /**
- * @summary Pin a member's scroll to a position in the tree scene
+ * Replaces both sets. Rejects unknown members, the member itself, a member that is both parent and child, and links that would make someone their own ancestor.
+ * @summary Replace a member's parents and children
  */
-export const updateMemberPosition = async (id: string,
-    position: Position, options?: RequestInit): Promise<updateMemberPositionResponse> => {
+export const updateMemberRelatives = async (id: string,
+    relatives: Relatives, options?: RequestInit): Promise<updateMemberRelativesResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -295,18 +292,18 @@ export const updateMemberPosition = async (id: string,
     }
     return headers;
   };
-const res = await fetch(getUpdateMemberPositionUrl(id),
+const res = await fetch(getUpdateMemberRelativesUrl(id),
   {
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(position)
+    body: JSON.stringify(relatives)
   }
 )
 
 
   const body = [204, 205, 304].includes(res.status) ? null : await res.text();
 
-  const data: updateMemberPositionResponse['data'] = body ? JSON.parse(body) : {}
-  return { data, status: res.status, headers: res.headers } as updateMemberPositionResponse
+  const data: updateMemberRelativesResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as updateMemberRelativesResponse
 }

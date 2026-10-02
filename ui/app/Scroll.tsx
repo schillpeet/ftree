@@ -1,7 +1,6 @@
 'use client';
 
 import { Html } from '@react-three/drei';
-import type { PointerEvent } from 'react';
 import type { Member } from '../lib/api/generated/members';
 import { formatDate } from './MembersControls';
 
@@ -9,24 +8,16 @@ import { formatDate } from './MembersControls';
 export default function Scroll({
   member,
   position,
-  dragging,
-  onGrab,
 }: {
   member: Member;
   position: [number, number, number];
-  dragging: boolean;
-  onGrab: (event: PointerEvent) => void;
 }) {
   const birth = formatDate(member.birthDate);
   const death = formatDate(member.deathDate);
 
   return (
     <Html position={position} transform sprite distanceFactor={8} zIndexRange={[4, 0]}>
-      <article
-        className={`scroll${dragging ? ' scroll-dragging' : ''}`}
-        onPointerDown={onGrab}
-        aria-label={`${member.firstName} ${member.lastName}`}
-      >
+      <article className="scroll" aria-label={`${member.firstName} ${member.lastName}`}>
         <div className="scroll-rod" />
         <div className="scroll-sheet">
           {member.photoUrl && (

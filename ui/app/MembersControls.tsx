@@ -8,6 +8,7 @@ import {
   type CreateMemberRequest,
   type Member,
 } from '../lib/api/generated/members';
+import RelativesDialog from './RelativesDialog';
 
 type MemberForm = {
   firstName: string;
@@ -37,9 +38,24 @@ export function formatDate(value?: string | null) {
   return `${day}.${month}.${year}`;
 }
 
-function MemberDetails({ member, onSelect, onDelete }: { member: Member; onSelect: () => void; onDelete: () => void }) {
+function MemberDetails({
+  member,
+  members,
+  onSelect,
+  onEditRelatives,
+  onDelete,
+}: {
+  member: Member;
+  members: Member[];
+  onSelect: () => void;
+  onEditRelatives: () => void;
+  onDelete: () => void;
+}) {
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
+  const names = (list: Member[]) => list.map((m) => `${m.firstName} ${m.lastName}`).join(', ');
+  const parents = names(members.filter((m) => member.parentIds.includes(m.id)));
+  const children = names(members.filter((m) => m.parentIds.includes(member.id)));
 
   return (
     <li className="member-row">
@@ -55,12 +71,17 @@ function MemberDetails({ member, onSelect, onDelete }: { member: Member; onSelec
       </div>
       {birth && <p>Geboren: {birth}</p>}
       {death && <p>Verstorben: {death}</p>}
+      {parents && <p>Eltern: {parents}</p>}
+      {children && <p>Kinder: {children}</p>}
       {member.note && <p>{member.note}</p>}
       {member.photoUrl && (
         <p>
           <a href={member.photoUrl} target="_blank" rel="noreferrer">Foto ansehen</a>
         </p>
       )}
+      <button type="button" className="member-relatives-button" onClick={onEditRelatives}>
+        Eltern &amp; Kinder zuweisen
+      </button>
     </li>
   );
 }
@@ -81,6 +102,7 @@ export default function MembersControls({
   const [requestError, setRequestError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
+  const [relativesOf, setRelativesOf] = useState<Member | null>(null);
 
   function reloadMembers() {
     setIsLoading(true);
@@ -211,6 +233,8 @@ export default function MembersControls({
                   <MemberDetails
                     key={member.id}
                     member={member}
+                    members={members}
+                    onEditRelatives={() => setRelativesOf(member)}
                     onSelect={() => {
                       setIsListOpen(false);
                       onSelect(member.id);
@@ -296,6 +320,18 @@ export default function MembersControls({
             </form>
           </section>
         </div>
+      )}
+
+      {relativesOf && members && (
+        <RelativesDialog
+          member={relativesOf}
+          members={members}
+          onClose={() => setRelativesOf(null)}
+          onSaved={() => {
+            setRelativesOf(null);
+            void loadMembers();
+          }}
+        />
       )}
     </div>
   );
