@@ -7,7 +7,7 @@
 
 **A shared family tree that families build and maintain together.**
 
-> **Early prototype.** Today, ftree shows a procedurally generated 3D tree in a meadow and lets you create, list, and delete family members. Accounts, sharing, and family relationships are still to come.
+> **Early prototype.** Today, ftree shows a procedurally generated 3D tree in a meadow and lets you create, edit, list, and delete family members. Accounts, sharing, and family relationships are still to come.
 
 ## Quick Start
 

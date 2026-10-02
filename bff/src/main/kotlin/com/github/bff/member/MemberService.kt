@@ -31,6 +31,21 @@ class MemberService(private val memberRepository: MemberRepository) {
         return memberRepository.save(entity).toResponse()
     }
 
+    /** Replaces the member's fields but keeps its parent/child links; null when the member does not exist. */
+    @Transactional
+    fun update(id: UUID, request: CreateMemberRequest): Member? {
+        val entity = memberRepository.findById(id).orElse(null) ?: return null
+        entity.firstName = request.firstName
+        entity.lastName = request.lastName
+        entity.birthDate = request.birthDate
+        entity.birthPlace = request.birthPlace
+        entity.deathDate = request.deathDate
+        entity.deathPlace = request.deathPlace
+        entity.note = request.note
+        entity.photoUrl = request.photoUrl?.toString()
+        return entity.toResponse()
+    }
+
     @Transactional
     fun updateRelatives(id: UUID, relatives: Relatives): RelativesResult {
         // ponytail: loads every member to check for cycles; fine for one family, query the graph if trees grow large.

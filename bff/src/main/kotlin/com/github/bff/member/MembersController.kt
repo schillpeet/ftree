@@ -17,6 +17,9 @@ class MembersController(private val memberService: MemberService) : MembersApi {
     override fun createMember(createMemberRequest: CreateMemberRequest): ResponseEntity<Member> =
         ResponseEntity.status(HttpStatus.CREATED).body(memberService.create(createMemberRequest))
 
+    override fun updateMember(id: UUID, createMemberRequest: CreateMemberRequest): ResponseEntity<Member> =
+        memberService.update(id, createMemberRequest)?.let { ResponseEntity.ok(it) } ?: ResponseEntity.notFound().build()
+
     override fun updateMemberRelatives(id: UUID, relatives: Relatives): ResponseEntity<Void> =
         when (memberService.updateRelatives(id, relatives)) {
             RelativesResult.UPDATED -> ResponseEntity.noContent().build()
