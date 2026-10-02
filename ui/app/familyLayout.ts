@@ -37,8 +37,8 @@ export function generations(people: Person[]) {
   return gen;
 }
 
-// Positions relative to the tree base. Within a row, partners sit side by side and couples
-// sit near the average slot of their parents, so families stay roughly stacked.
+// Positions relative to the tree base. Within a row, partners sit side by side and siblings sit
+// centred under their parents, so families stay stacked.
 export function layoutScrolls(people: Person[]) {
   const gen = generations(people);
   const rows: Person[][] = [];
@@ -72,14 +72,40 @@ export function layoutScrolls(people: Person[]) {
       }
       groups.push(group.sort((a, b) => mean(parentSlots(a)) - mean(parentSlots(b))));
     }
-    const ordered = groups.sort((a, b) => mean(a.flatMap(parentSlots)) - mean(b.flatMap(parentSlots))).flat();
+    const anchor = (group: Person[]) => {
+      const slots = group.flatMap(parentSlots);
+      return slots.length ? mean(slots) : null;
+    };
+    groups.sort((a, b) => (anchor(a) ?? 0) - (anchor(b) ?? 0));
 
-    ordered.forEach((p, i) => {
-      const s = i - (ordered.length - 1) / 2;
+    // Siblings hanging from the same parents form one block centred under them. A block that
+    // would run into the previous one moves outward instead of mixing with it.
+    const blocks: { anchor: number | null; people: Person[] }[] = [];
+    for (const group of groups) {
+      const last = blocks.at(-1);
+      const a = anchor(group);
+      if (last && a !== null && last.anchor === a) last.people.push(...group);
+      else blocks.push({ anchor: a, people: [...group] });
+    }
+
+    const place = (p: Person, s: number) => {
       slot.set(p.id, s);
       const a = FRONT + s * SLOT_ANGLE;
       positions.set(p.id, [Math.cos(a) * RADIUS, TOP - g * gap, Math.sin(a) * RADIUS]);
-    });
+    };
+    const ordered = blocks.flatMap((b) => b.people);
+    if (blocks.every((b) => b.anchor === null)) {
+      ordered.forEach((p, i) => place(p, i - (ordered.length - 1) / 2));
+      return;
+    }
+    let next = -Infinity;
+    for (const { anchor: a, people: block } of blocks) {
+      const half = (block.length - 1) / 2;
+      const centre = a ?? (Number.isFinite(next) ? next + half : 0);
+      const start = Math.max(centre - half, next);
+      block.forEach((p, i) => place(p, start + i));
+      next = start + block.length;
+    }
   });
   return positions;
 }
@@ -112,17 +138,32 @@ export function relationLines(people: Person[], positions: Map<string, Point>) {
     }
   }
 
-  for (const { parentIds, childIds } of families.values()) {
+  // Child bars of different families in one row get their own heights wherever they overlap,
+  // so two families never look like one.
+  const angle = ([x, , z]: Point) => Math.atan2(z, x);
+  const plans = [...families.values()].map(({ parentIds, childIds }) => {
     const parentY = Math.min(...parentIds.map((id) => at(id)[1]));
     const drop = parentY - Math.max(...childIds.map((id) => at(id)[1]));
-    const parentBar = parentY - drop / 2;
-    const childBar = parentY - drop * 0.75;
-
-    const drops = parentIds.map((id) => level(at(id), parentBar)).sort((a, b) => a[0] - b[0]);
-    for (const id of parentIds) parents.push(at(id), level(at(id), parentBar));
-    for (let i = 1; i < drops.length; i++) parents.push(drops[i - 1], drops[i]);
-
+    const drops = parentIds.map((id) => level(at(id), parentY - drop / 2)).sort((a, b) => a[0] - b[0]);
     const middle = [0, 1, 2].map((k) => drops.reduce((sum, d) => sum + d[k], 0) / drops.length) as Point;
+    const spans = [middle, ...childIds.map(at)].map(angle);
+    return { parentIds, childIds, parentY, drop, drops, middle, from: Math.min(...spans), to: Math.max(...spans), lane: 0 };
+  });
+  const lanesByRow = new Map<number, number[]>();
+  for (const plan of [...plans].sort((a, b) => a.from - b.from)) {
+    const ends = lanesByRow.get(plan.parentY) ?? [];
+    lanesByRow.set(plan.parentY, ends);
+    plan.lane = ends.findIndex((end) => end < plan.from - 1e-6);
+    if (plan.lane < 0) plan.lane = ends.length;
+    ends[plan.lane] = plan.to;
+  }
+
+  for (const { parentIds, childIds, parentY, drop, drops, middle, lane } of plans) {
+    const lanes = lanesByRow.get(parentY)!.length;
+    // Lanes share the space between 60 % and 85 % of the way down to the children.
+    const childBar = parentY - drop * (lanes > 1 ? 0.6 + (0.25 * lane) / (lanes - 1) : 0.75);
+    for (const id of parentIds) parents.push(at(id), level(at(id), parentY - drop / 2));
+    for (let i = 1; i < drops.length; i++) parents.push(drops[i - 1], drops[i]);
     parents.push(middle, level(middle, childBar));
     for (const id of childIds) {
       parents.push(level(middle, childBar), level(at(id), childBar), level(at(id), childBar), at(id));
