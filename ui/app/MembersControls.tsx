@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
   createMember,
   deleteMember,
@@ -10,6 +10,7 @@ import {
   type Member,
 } from '../lib/api/generated/members';
 import RelativesDialog from './RelativesDialog';
+import type { Focus } from './Scene';
 
 type MemberForm = {
   firstName: string;
@@ -32,6 +33,19 @@ const EMPTY_FORM: MemberForm = {
   note: '',
   photoUrl: '',
 };
+
+export const DISCARD_PROMPT = 'Ungespeicherte Änderungen verwerfen?';
+
+const toForm = (member: Member): MemberForm => ({
+  firstName: member.firstName,
+  lastName: member.lastName,
+  birthDate: member.birthDate ?? '',
+  birthPlace: member.birthPlace ?? '',
+  deathDate: member.deathDate ?? '',
+  deathPlace: member.deathPlace ?? '',
+  note: member.note ?? '',
+  photoUrl: member.photoUrl ?? '',
+});
 
 export function formatDate(value?: string | null) {
   if (!value) return null;
@@ -97,10 +111,13 @@ function MemberDetails({
 export default function MembersControls({
   members,
   setMembers,
+  profile,
   onSelect,
 }: {
   members: Member[] | null;
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
+  // Member whose profile (the edit form) was requested from their scroll in the scene.
+  profile: Focus;
   onSelect: (id: string) => void;
 }) {
   const [isListOpen, setIsListOpen] = useState(false);
@@ -112,6 +129,8 @@ export default function MembersControls({
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
   const [editing, setEditing] = useState<Member | null>(null);
   const [relativesOf, setRelativesOf] = useState<Member | null>(null);
+  const listButtonRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLElement>(null);
 
   function reloadMembers() {
     setIsLoading(true);
@@ -139,6 +158,32 @@ export default function MembersControls({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const member = profile && members?.find((m) => m.id === profile.id);
+    if (member) openForm(member);
+    // Only a new profile request should open the form, not later member changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile]);
+
+  // The list is not modal: a press anywhere else or Escape closes it. While the relatives
+  // dialog is open on top of it, that dialog handles both.
+  useEffect(() => {
+    if (!isListOpen || relativesOf) return;
+    function closeOnOutsidePress(event: PointerEvent) {
+      const target = event.target as Node;
+      if (!listRef.current?.contains(target) && !listButtonRef.current?.contains(target)) setIsListOpen(false);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setIsListOpen(false);
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [isListOpen, relativesOf]);
+
   async function removeMember(member: Member) {
     if (!window.confirm(`${member.firstName} ${member.lastName} wirklich löschen?`)) return;
     setRequestError(null);
@@ -160,16 +205,7 @@ export default function MembersControls({
   function openForm(member: Member | null = null) {
     // Keep an unsaved create draft, but never carry an edited member's values into a new person.
     if (member) {
-      setForm({
-        firstName: member.firstName,
-        lastName: member.lastName,
-        birthDate: member.birthDate ?? '',
-        birthPlace: member.birthPlace ?? '',
-        deathDate: member.deathDate ?? '',
-        deathPlace: member.deathPlace ?? '',
-        note: member.note ?? '',
-        photoUrl: member.photoUrl ?? '',
-      });
+      setForm(toForm(member));
     } else if (editing) {
       setForm({ ...EMPTY_FORM });
     }
@@ -177,6 +213,15 @@ export default function MembersControls({
     setIsListOpen(false);
     setFormError(null);
     setIsFormOpen(true);
+  }
+
+  // Outside click or Escape: the create draft is kept anyway, edits are only discarded on confirmation.
+  function dismissForm() {
+    if (isSaving) return;
+    const initial = editing && toForm(editing);
+    const changed = initial && (Object.keys(initial) as (keyof MemberForm)[]).some((key) => form[key] !== initial[key]);
+    if (changed && !window.confirm(DISCARD_PROMPT)) return;
+    setIsFormOpen(false);
   }
 
   function updateForm(field: keyof MemberForm, value: string) {
@@ -240,6 +285,7 @@ export default function MembersControls({
           type="button"
           aria-expanded={isListOpen}
           aria-controls="members-panel"
+          ref={listButtonRef}
           onClick={toggleMembers}
         >
           Personen
@@ -250,7 +296,7 @@ export default function MembersControls({
       </div>
 
       {isListOpen && (
-        <section className="members-panel" id="members-panel" aria-label="Personenliste">
+        <section className="members-panel" id="members-panel" aria-label="Personenliste" ref={listRef}>
           <header className="members-panel-header">
             <h2>Personen</h2>
             <button type="button" aria-label="Liste schließen" onClick={() => setIsListOpen(false)}>
@@ -291,8 +337,13 @@ export default function MembersControls({
       )}
 
       {isFormOpen && (
-        <div className="member-dialog-backdrop">
-          <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="member-form-title">
+        <div
+          className="member-dialog-backdrop"
+          onPointerDown={(event) => event.target === event.currentTarget && dismissForm()}
+          onKeyDown={(event) => event.key === 'Escape' && dismissForm()}
+        >
+          {/* tabIndex keeps focus (and so Escape) inside when clicking non-focusable parts. */}
+          <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="member-form-title" tabIndex={-1}>
             <header className="member-dialog-header">
               <h2 id="member-form-title">{editing ? 'Person bearbeiten' : 'Person hinzufügen'}</h2>
               <button

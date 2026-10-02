@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 import { updateMemberRelatives, type Member } from '../lib/api/generated/members';
+import { DISCARD_PROMPT } from './MembersControls';
 
 const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
 
@@ -22,9 +23,14 @@ export default function RelativesDialog({
   onSaved: () => void;
 }) {
   const others = members.filter((m) => m.id !== member.id);
-  const [parentIds, setParentIds] = useState(member.parentIds);
-  const [childIds, setChildIds] = useState(others.filter((m) => m.parentIds.includes(member.id)).map((m) => m.id));
-  const [partnerIds, setPartnerIds] = useState(member.partnerIds);
+  const [initial] = useState(() => ({
+    parentIds: member.parentIds,
+    childIds: others.filter((m) => m.parentIds.includes(member.id)).map((m) => m.id),
+    partnerIds: member.partnerIds,
+  }));
+  const [parentIds, setParentIds] = useState(initial.parentIds);
+  const [childIds, setChildIds] = useState(initial.childIds);
+  const [partnerIds, setPartnerIds] = useState(initial.partnerIds);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -45,6 +51,16 @@ export default function RelativesDialog({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  // Outside click or Escape: unsaved changes are only discarded on confirmation.
+  function dismiss() {
+    if (isSaving) return;
+    const differs = (ids: string[], before: string[]) => ids.length !== before.length || ids.some((id) => !before.includes(id));
+    const changed =
+      differs(parentIds, initial.parentIds) || differs(childIds, initial.childIds) || differs(partnerIds, initial.partnerIds);
+    if (changed && !window.confirm(DISCARD_PROMPT)) return;
+    onClose();
   }
 
   function list(legend: string, selected: string[], blocked: string[], onToggle: (id: string) => void) {
@@ -68,11 +84,17 @@ export default function RelativesDialog({
   }
 
   return (
-    <div className="member-dialog-backdrop">
-      <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="relatives-title">
+    <div
+      className="member-dialog-backdrop"
+      onPointerDown={(event) => event.target === event.currentTarget && dismiss()}
+      onKeyDown={(event) => event.key === 'Escape' && dismiss()}
+    >
+      {/* tabIndex keeps focus (and so Escape) inside when clicking non-focusable parts. */}
+      <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="relatives-title" tabIndex={-1}>
         <header className="member-dialog-header">
           <h2 id="relatives-title">Beziehungen von {fullName(member)}</h2>
-          <button className="member-dialog-close" type="button" aria-label="Dialog schließen" onClick={onClose}>
+          {/* Focused on open, so Escape reaches the backdrop's handler. */}
+          <button className="member-dialog-close" type="button" aria-label="Dialog schließen" autoFocus onClick={onClose}>
             ×
           </button>
         </header>
