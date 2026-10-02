@@ -1,5 +1,9 @@
 # Family Tree
 
+[![CI](https://github.com/schillpeet/ftree/actions/workflows/ci.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/ci.yml)
+[![Version](https://img.shields.io/github/v/tag/schillpeet/ftree?sort=semver&label=version)](https://github.com/schillpeet/ftree/tags)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 ftree is intended to become a shared family-tree web service where family members can build and maintain their family tree. The UI currently renders a procedural tree and meadow with an initial members interface. The BFF can list, create, and delete members in the local PostgreSQL database; authentication and family relationships are not implemented yet.
 
 See [the project overview](docs/project-overview.md) for the current structure, architectural direction, and open decisions.
