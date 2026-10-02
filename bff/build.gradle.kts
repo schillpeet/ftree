@@ -8,7 +8,13 @@ plugins {
 }
 
 group = "com.github"
-version = "0.0.1-SNAPSHOT"
+// Derived from the latest v* tag, e.g. 0.1.0 on the tag, 0.1.0-3-gabc1234 after it.
+version = runCatching {
+	providers.exec {
+		commandLine("git", "describe", "--tags", "--match", "v*", "--dirty")
+		isIgnoreExitValue = true
+	}.standardOutput.asText.get().trim().removePrefix("v")
+}.getOrNull()?.ifEmpty { null } ?: "0.0.0-dev"
 
 java {
 	toolchain {

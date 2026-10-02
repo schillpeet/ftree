@@ -52,6 +52,14 @@ pnpm --dir ui typecheck
 pnpm --dir ui build
 ```
 
+## Versioning
+
+The repository is versioned as a whole with [Semantic Versioning](https://semver.org) tags (`vX.Y.Z`) on `main`. No file holds the version: the BFF build derives it with `git describe --tags`, so a build on a tag is `0.1.0` and a build three commits later is `0.1.0-3-g<sha>`. Builds without Git history fall back to `0.0.0-dev`.
+
+Releases are automated with [release-please](https://github.com/googleapis/release-please). After each merge to `main`, it opens or updates a release PR that collects the changes since the last release and proposes the next version from the commit types: `fix` bumps the patch version, `feat` the minor version, and breaking changes (`!`) also bump the minor version while in `0.x`. Other types do not trigger a release. Merging the release PR updates `CHANGELOG.md` and creates the tag and the GitHub release.
+
+The `info.version` in `api/openapi.yaml` is the API contract version and only changes when the contract changes.
+
 ## Commit Messages
 
 Commit conventions are defined in [AGENTS.md](AGENTS.md).
