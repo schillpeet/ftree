@@ -30,7 +30,8 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF.
 - `dev.sh` starts the database, BFF, and UI for local development.
 - `api/openapi.yaml` defines `GET /members`, `POST /members`, `DELETE /members/{id}`, and `PUT /members/{id}/relatives` as the shared API contract.
-- `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`.
+- `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`; `NEXT_PUBLIC_BFF_URL` sets the BFF base URL at generation time (default `http://localhost:8080`).
+- `.github/workflows/ui.yml` lints, type-checks, and builds the UI and checks that the generated API client matches the spec; `.github/workflows/bff.yml` builds and tests the BFF against PostgreSQL. Each runs only when its app directory, `api/openapi.yaml`, or its own workflow file changes, ignoring Markdown.
 
 The procedural scene is presentation code. It is not a family-tree domain model or a persistence layer.
 
@@ -56,6 +57,14 @@ Resolve these based on product needs before committing to a backend or collabora
 ## Repository Structure
 
 The repository separates `ui/` and `bff/` while keeping them under one Git root. pnpm manages only the UI, so its lockfile and workspace settings live in `ui/`; the Kotlin BFF uses its own Gradle build. Keep this structure rather than nesting a second Git repository. GitHub Actions runs CI for both applications, and release-please creates version tags and GitHub releases for the repository as a whole; deployment is not configured yet. Revisit further package or repository splits only when separate ownership, access control, or release lifecycles make them useful.
+
+## Versioning and Releases
+
+The repository is versioned as a whole with Semantic Versioning tags (`vX.Y.Z`) on `main`. No file holds the version: `bff/build.gradle.kts` derives it with `git describe --tags` (for example `0.1.0` on a tag, `0.1.0-3-g<sha>` after it, `0.0.0-dev` without Git history), and `ui/package.json` has no version field. CI checks out the full history for the BFF so tags are available.
+
+release-please (`.github/workflows/release-please.yml`, `release-please-config.json`, `.release-please-manifest.json`) opens or updates a release PR after each merge to `main`. Commit types decide the next version: `fix` bumps the patch version, `feat` the minor version, and breaking changes also bump the minor version while in `0.x`; other types do not trigger a release. Merging the release PR updates `CHANGELOG.md` and creates the tag and GitHub release. Release PRs are created with `GITHUB_TOKEN`, so CI does not run on them. Pull requests are merged with merge commits; if that changes to squash merges, PR titles must follow the commit convention.
+
+`info.version` in `api/openapi.yaml` is the API contract version and changes only when the contract changes.
 
 ## Keeping This Overview Useful
 

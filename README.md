@@ -1,68 +1,67 @@
-# Family Tree
+# 🌳 ftree
 
-[![CI](https://github.com/schillpeet/ftree/actions/workflows/ci.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/ci.yml)
+[![UI](https://github.com/schillpeet/ftree/actions/workflows/ui.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/ui.yml)
+[![BFF](https://github.com/schillpeet/ftree/actions/workflows/bff.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/bff.yml)
 [![Version](https://img.shields.io/github/v/tag/schillpeet/ftree?sort=semver&label=version)](https://github.com/schillpeet/ftree/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-ftree is intended to become a shared family-tree web service where family members can build and maintain their family tree. The UI currently renders a procedural tree and meadow with an initial members interface. The BFF can list, create, and delete members in the local PostgreSQL database; authentication and family relationships are not implemented yet.
+**A shared family tree that families build and maintain together.**
 
-See [the project overview](docs/project-overview.md) for the current structure, architectural direction, and open decisions.
+> **Early prototype.** Today, ftree shows a procedurally generated 3D tree in a meadow and lets you create, list, and delete family members. Accounts, sharing, and family relationships are still to come.
 
-The shared member API contract is in `api/openapi.yaml`. Generate the typed UI client with:
+## Quick Start
+
+You need [Node.js 22](https://nodejs.org) with [pnpm](https://pnpm.io) (`corepack enable` installs the pinned version), [Java 21](https://adoptium.net), and [Docker](https://www.docker.com).
+
+```bash
+git clone https://github.com/schillpeet/ftree.git
+cd ftree
+pnpm --dir ui install
+./dev.sh
+```
+
+`dev.sh` starts PostgreSQL, the backend, and the UI. Then open:
+
+- **App:** [http://localhost:3000](http://localhost:3000)
+- **Backend API:** [http://localhost:8080](http://localhost:8080)
+
+<kbd>Ctrl</kbd>+<kbd>C</kbd> stops the app and backend. The database keeps running until you call `docker compose down`.
+
+## What's Inside
+
+| Path | What it is |
+| --- | --- |
+| [`ui/`](ui) | Next.js web app with a React Three Fiber scene |
+| [`bff/`](bff) | Kotlin/Spring Boot backend for the UI, backed by PostgreSQL |
+| [`api/openapi.yaml`](api/openapi.yaml) | API contract that both sides generate their code from |
+| [`docs/`](docs/project-overview.md) | Architecture, current state, and open decisions |
+
+## Development
+
+Start the parts individually:
+
+```bash
+docker compose up -d --wait db      # PostgreSQL
+(cd bff && ./gradlew bootRun)       # backend
+pnpm --dir ui dev                   # UI
+```
+
+After changing `api/openapi.yaml`, regenerate the UI client (the backend regenerates on build):
 
 ```bash
 pnpm --dir ui api:generate
 ```
 
-Set `NEXT_PUBLIC_BFF_URL` when generating the client for a non-local BFF. The default URL is `http://localhost:8080`.
-
-The repository keeps the Next.js UI in `ui/` and the Kotlin/Spring Boot Backend for Frontend in `bff/`. The BFF implements `GET /members`, `POST /members`, and `DELETE /members/{id}` against PostgreSQL. GitHub Actions (`.github/workflows/ci.yml`) lints, type-checks, and builds the UI, checks that the generated API client matches the spec, and builds and tests the BFF against PostgreSQL on every pull request.
-
-## Getting Started
-
-Install dependencies:
+Run the same checks as CI before opening a pull request:
 
 ```bash
-pnpm --dir ui install
+pnpm --dir ui lint && pnpm --dir ui typecheck && pnpm --dir ui build
+(cd bff && ./gradlew build)         # needs the database running
 ```
 
-Start the database, BFF, and UI together:
+## Contributing
 
-```bash
-./dev.sh
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the app; the BFF listens on [http://localhost:8080](http://localhost:8080). Ctrl+C stops the BFF and UI. The database keeps running; stop it with `docker compose down`.
-
-To start the services individually (see [bff/README.md](bff/README.md) for the BFF):
-
-```bash
-docker compose up -d --wait db
-cd bff && ./gradlew bootRun
-pnpm --dir ui dev
-```
-
-## Checks
-
-Run the available project checks:
-
-```bash
-pnpm --dir ui lint
-pnpm --dir ui typecheck
-pnpm --dir ui build
-```
-
-## Versioning
-
-The repository is versioned as a whole with [Semantic Versioning](https://semver.org) tags (`vX.Y.Z`) on `main`. No file holds the version: the BFF build derives it with `git describe --tags`, so a build on a tag is `0.1.0` and a build three commits later is `0.1.0-3-g<sha>`. Builds without Git history fall back to `0.0.0-dev`.
-
-Releases are automated with [release-please](https://github.com/googleapis/release-please). After each merge to `main`, it opens or updates a release PR that collects the changes since the last release and proposes the next version from the commit types: `fix` bumps the patch version, `feat` the minor version, and breaking changes (`!`) also bump the minor version while in `0.x`. Other types do not trigger a release. Merging the release PR updates `CHANGELOG.md` and creates the tag and the GitHub release.
-
-The `info.version` in `api/openapi.yaml` is the API contract version and only changes when the contract changes.
-
-## Commit Messages
-
-Commit conventions are defined in [AGENTS.md](AGENTS.md).
+Branches, commit messages, and project conventions are described in [AGENTS.md](AGENTS.md). Commits follow [Conventional Commits](https://www.conventionalcommits.org), which drive automated releases.
 
 ## License
 
