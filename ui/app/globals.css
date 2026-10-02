@@ -418,6 +418,10 @@ textarea {
   font-size: 13px;
 }
 
+.member-relatives-button + .member-relatives-button {
+  margin-left: 6px;
+}
+
 .relatives-list {
   display: grid;
   align-content: start;

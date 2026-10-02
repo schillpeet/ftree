@@ -47,6 +47,36 @@ paths:
         "400":
           description: The request is invalid.
   /members/{id}:
+    put:
+      operationId: updateMember
+      tags:
+        - Members
+      summary: Update a member
+      description: Replaces the member's fields. Parents and children stay unchanged.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "200":
+          description: Member updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "400":
+          description: The request is invalid.
+        "404":
+          description: Member not found.
     delete:
       operationId: deleteMember
       tags:

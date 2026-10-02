@@ -189,6 +189,77 @@ const res = await fetch(getCreateMemberUrl(),
 
 
 
+export type updateMemberResponse200 = {
+  data: Member
+  status: 200
+}
+
+export type updateMemberResponse400 = {
+  data: void
+  status: 400
+}
+
+export type updateMemberResponse404 = {
+  data: void
+  status: 404
+}
+
+export type updateMemberResponseSuccess = (updateMemberResponse200) & {
+  headers: Headers;
+};
+export type updateMemberResponseError = (updateMemberResponse400 | updateMemberResponse404) & {
+  headers: Headers;
+};
+
+export type updateMemberResponse = (updateMemberResponseSuccess | updateMemberResponseError)
+
+export const getUpdateMemberUrl = (id: string,) => {
+
+
+
+
+  return `http://localhost:8080/members/${id}`
+}
+
+/**
+ * Replaces the member's fields. Parents and children stay unchanged.
+ * @summary Update a member
+ */
+export const updateMember = async (id: string,
+    createMemberRequest: CreateMemberRequest, options?: RequestInit): Promise<updateMemberResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateMemberUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createMemberRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateMemberResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateMemberResponse
+}
+
+
+
 export type deleteMemberResponse204 = {
   data: void
   status: 204

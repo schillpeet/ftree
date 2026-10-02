@@ -5,6 +5,7 @@ import {
   createMember,
   deleteMember,
   getMembers,
+  updateMember,
   type CreateMemberRequest,
   type Member,
 } from '../lib/api/generated/members';
@@ -42,12 +43,14 @@ function MemberDetails({
   member,
   members,
   onSelect,
+  onEdit,
   onEditRelatives,
   onDelete,
 }: {
   member: Member;
   members: Member[];
   onSelect: () => void;
+  onEdit: () => void;
   onEditRelatives: () => void;
   onDelete: () => void;
 }) {
@@ -79,6 +82,9 @@ function MemberDetails({
           <a href={member.photoUrl} target="_blank" rel="noreferrer">Foto ansehen</a>
         </p>
       )}
+      <button type="button" className="member-relatives-button" onClick={onEdit}>
+        Bearbeiten
+      </button>
       <button type="button" className="member-relatives-button" onClick={onEditRelatives}>
         Eltern &amp; Kinder zuweisen
       </button>
@@ -102,6 +108,7 @@ export default function MembersControls({
   const [requestError, setRequestError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
+  const [editing, setEditing] = useState<Member | null>(null);
   const [relativesOf, setRelativesOf] = useState<Member | null>(null);
 
   function reloadMembers() {
@@ -148,7 +155,23 @@ export default function MembersControls({
     setIsFormOpen(false);
   }
 
-  function openForm() {
+  function openForm(member: Member | null = null) {
+    // Keep an unsaved create draft, but never carry an edited member's values into a new person.
+    if (member) {
+      setForm({
+        firstName: member.firstName,
+        lastName: member.lastName,
+        birthDate: member.birthDate ?? '',
+        birthPlace: member.birthPlace ?? '',
+        deathDate: member.deathDate ?? '',
+        deathPlace: member.deathPlace ?? '',
+        note: member.note ?? '',
+        photoUrl: member.photoUrl ?? '',
+      });
+    } else if (editing) {
+      setForm({ ...EMPTY_FORM });
+    }
+    setEditing(member);
     setIsListOpen(false);
     setFormError(null);
     setIsFormOpen(true);
@@ -175,6 +198,22 @@ export default function MembersControls({
     };
 
     try {
+      if (editing) {
+        const response = await updateMember(editing.id, request);
+        if (response.status !== 200) {
+          setFormError(
+            response.status === 404
+              ? 'Die Person existiert nicht mehr.'
+              : 'Die Person konnte nicht gespeichert werden. Bitte prüfe die Eingaben.',
+          );
+          return;
+        }
+        const updated = response.data;
+        setMembers((current) => current?.map((m) => (m.id === updated.id ? updated : m)) ?? null);
+        setIsFormOpen(false);
+        onSelect(updated.id);
+        return;
+      }
       const response = await createMember(request);
       if (response.status !== 201) {
         setFormError('Die Person konnte nicht angelegt werden. Bitte prüfe die Eingaben.');
@@ -203,7 +242,7 @@ export default function MembersControls({
         >
           Personen
         </button>
-        <button className="members-button" type="button" onClick={openForm}>
+        <button className="members-button" type="button" onClick={() => openForm()}>
           Person hinzufügen
         </button>
       </div>
@@ -234,6 +273,7 @@ export default function MembersControls({
                     key={member.id}
                     member={member}
                     members={members}
+                    onEdit={() => openForm(member)}
                     onEditRelatives={() => setRelativesOf(member)}
                     onSelect={() => {
                       setIsListOpen(false);
@@ -252,7 +292,7 @@ export default function MembersControls({
         <div className="member-dialog-backdrop">
           <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="member-form-title">
             <header className="member-dialog-header">
-              <h2 id="member-form-title">Person hinzufügen</h2>
+              <h2 id="member-form-title">{editing ? 'Person bearbeiten' : 'Person hinzufügen'}</h2>
               <button
                 className="member-dialog-close"
                 type="button"
