@@ -47,7 +47,8 @@ textarea {
 .members-panel button:focus-visible,
 .member-dialog button:focus-visible,
 .member-dialog input:focus-visible,
-.member-dialog textarea:focus-visible {
+.member-dialog textarea:focus-visible,
+.scroll:focus-visible {
   outline: 3px solid #e89155;
   outline-offset: 2px;
 }
@@ -338,6 +339,7 @@ textarea {
   font-family: Georgia, 'Times New Roman', serif;
   text-align: center;
   filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45));
+  cursor: pointer;
 }
 
 .scroll-rod {

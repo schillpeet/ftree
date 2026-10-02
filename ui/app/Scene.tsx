@@ -96,10 +96,12 @@ function Scrolls({
   members,
   focus,
   controlsRef,
+  onOpen,
 }: {
   members: Member[];
   focus: Focus;
   controlsRef: RefObject<CameraControls | null>;
+  onOpen: (id: string) => void;
 }) {
   const { camera, events } = useThree();
   const positions = useMemo(() => {
@@ -127,7 +129,9 @@ function Scrolls({
   if (!events.connected) return null;
   return (
     <>
-      {members.map((member) => <Scroll key={member.id} member={member} position={positions.get(member.id)!} />)}
+      {members.map((member) => (
+        <Scroll key={member.id} member={member} position={positions.get(member.id)!} onOpen={() => onOpen(member.id)} />
+      ))}
       {links.parents.length > 0 && <Line points={links.parents} segments color="#f5e6c4" lineWidth={3} {...ON_TOP} />}
       {links.partners.length > 0 && <Line points={links.partners} segments color="#e8b54a" lineWidth={4} {...ON_TOP} />}
     </>
@@ -137,9 +141,11 @@ function Scrolls({
 export default function Scene({
   members,
   focus,
+  onOpen,
 }: {
   members: Member[];
   focus: Focus;
+  onOpen: (id: string) => void;
 }) {
   const controlsRef = useRef<CameraControls>(null);
   const [controls, setControls] = useState<CameraControls | null>(null);
@@ -162,7 +168,7 @@ export default function Scene({
         <SunsetSky />
         <Meadow />
         <Tree position={[0, TREE_BASE, 0]} />
-        <Scrolls members={members} focus={focus} controlsRef={controlsRef} />
+        <Scrolls members={members} focus={focus} controlsRef={controlsRef} onOpen={onOpen} />
         <CameraControls
           ref={initControls}
           makeDefault

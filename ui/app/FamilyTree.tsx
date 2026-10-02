@@ -9,11 +9,18 @@ import Scene, { type Focus } from './Scene';
 export default function FamilyTree() {
   const [members, setMembers] = useState<Member[] | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
+  // A new object per click, so clicking the same scroll again reopens the profile.
+  const [profile, setProfile] = useState<Focus>(null);
 
   return (
     <>
-      <Scene members={members ?? []} focus={focus} />
-      <MembersControls members={members} setMembers={setMembers} onSelect={(id) => setFocus({ id })} />
+      <Scene members={members ?? []} focus={focus} onOpen={(id) => setProfile({ id })} />
+      <MembersControls
+        members={members}
+        setMembers={setMembers}
+        profile={profile}
+        onSelect={(id) => setFocus({ id })}
+      />
     </>
   );
 }
