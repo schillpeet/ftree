@@ -1,10 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, Sky } from '@react-three/drei';
-import { Vector2, Vector3, type Mesh } from 'three';
-import type { Member, Position } from '../lib/api/generated/members';
+import { Vector3 } from 'three';
+import type { Member } from '../lib/api/generated/members';
+import { layoutScrolls } from './familyLayout';
 import Meadow, { height } from './Meadow';
 import Scroll from './Scroll';
 import Tree from './Tree';
@@ -18,8 +19,6 @@ const HAZE = '#b98a86';
 const TREE_BASE = height(0, 0);
 const CAMERA_START: [number, number, number] = [40, TREE_BASE + 15, 50];
 const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 9, 0];
-// Pinned scrolls float this far off the bark so they don't sink into it.
-const BARK_OFFSET = 0.6;
 const FOCUS_DISTANCE = 12;
 
 export type Focus = { id: string } | null;
@@ -49,38 +48,27 @@ function SunsetSky() {
   );
 }
 
-// Unpinned scrolls wait in a row on the meadow in front of the tree.
-function scrollPosition(member: Member, unpinnedIndex: number): [number, number, number] {
-  if (member.position) return [member.position.x, member.position.y, member.position.z];
-  const x = 6 + unpinnedIndex * 4;
-  const z = 12;
-  return [x, height(x, z) + 3, z];
-}
-
 function Scrolls({
   members,
   focus,
-  barkRef,
   controlsRef,
-  onMove,
 }: {
   members: Member[];
   focus: Focus;
-  barkRef: RefObject<Mesh | null>;
   controlsRef: RefObject<CameraControls | null>;
-  onMove: (member: Member, position: Position) => void;
 }) {
-  const { camera, gl, raycaster, events } = useThree();
-  const [drag, setDrag] = useState<{ id: string; at: [number, number, number] | null } | null>(null);
-
-  let unpinned = 0;
-  const positions = new Map(members.map((m) => [m.id, scrollPosition(m, m.position ? 0 : unpinned++)]));
+  const { camera, events } = useThree();
+  const positions = useMemo(() => {
+    const layout = layoutScrolls(members);
+    layout.forEach((p) => (p[1] += TREE_BASE));
+    return layout;
+  }, [members]);
 
   useEffect(() => {
-    const member = focus && members.find((m) => m.id === focus.id);
+    const target = focus && positions.get(focus.id);
     const controls = controlsRef.current;
-    if (!member || !controls) return;
-    const [x, y, z] = positions.get(member.id)!;
+    if (!target || !controls) return;
+    const [x, y, z] = target;
     // Keep the current viewing direction, just move close to the scroll.
     const eye = camera.position.clone().sub(controls.getTarget(new Vector3())).setLength(FOCUS_DISTANCE).add(new Vector3(x, y, z));
     void controls.setLookAt(eye.x, eye.y, eye.z, x, y, z, true);
@@ -88,68 +76,19 @@ function Scrolls({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);
 
-  // Listeners go on synchronously at grab time, so even a fast drag can't finish before they exist.
-  function grab(member: Member) {
-    const pointer = new Vector2();
-    let at: [number, number, number] | null = null;
-    setDrag({ id: member.id, at });
-
-    // ponytail: raycasts the full merged bark on every move; add a BVH if dragging gets sluggish.
-    function move(event: PointerEvent) {
-      const bark = barkRef.current;
-      if (!bark) return;
-      const rect = gl.domElement.getBoundingClientRect();
-      pointer.set(((event.clientX - rect.left) / rect.width) * 2 - 1, -((event.clientY - rect.top) / rect.height) * 2 + 1);
-      raycaster.setFromCamera(pointer, camera);
-      const hit = raycaster.intersectObject(bark)[0];
-      if (hit?.face) {
-        const p = hit.face.normal.clone().transformDirection(bark.matrixWorld).multiplyScalar(BARK_OFFSET).add(hit.point);
-        at = [p.x, p.y, p.z];
-      } else {
-        at = null;
-      }
-      setDrag({ id: member.id, at });
-    }
-
-    function release() {
-      window.removeEventListener('pointermove', move);
-      if (at) onMove(member, { x: at[0], y: at[1], z: at[2] });
-      setDrag(null);
-    }
-
-    window.addEventListener('pointermove', move);
-    window.addEventListener('pointerup', release, { once: true });
-  }
-
   // drei's Html loses its content if its target changes after mount, so wait until the
   // canvas has connected its event source (the element Html attaches to).
   if (!events.connected) return null;
-  return members.map((member) => (
-    <Scroll
-      key={member.id}
-      member={member}
-      position={(drag?.id === member.id && drag.at) || positions.get(member.id)!}
-      dragging={drag?.id === member.id}
-      onGrab={(event) => {
-        event.preventDefault();
-        // The camera controls listen on the same container; don't let them orbit while dragging.
-        event.stopPropagation();
-        grab(member);
-      }}
-    />
-  ));
+  return members.map((member) => <Scroll key={member.id} member={member} position={positions.get(member.id)!} />);
 }
 
 export default function Scene({
   members,
   focus,
-  onMove,
 }: {
   members: Member[];
   focus: Focus;
-  onMove: (member: Member, position: Position) => void;
 }) {
-  const barkRef = useRef<Mesh>(null);
   const controlsRef = useRef<CameraControls>(null);
   // Stable callback, so the start view is only applied once when the controls mount.
   const initControls = useCallback((controls: CameraControls | null) => {
@@ -167,8 +106,8 @@ export default function Scene({
     >
       <SunsetSky />
       <Meadow />
-      <Tree position={[0, TREE_BASE, 0]} barkRef={barkRef} />
-      <Scrolls members={members} focus={focus} barkRef={barkRef} controlsRef={controlsRef} onMove={onMove} />
+      <Tree position={[0, TREE_BASE, 0]} />
+      <Scrolls members={members} focus={focus} controlsRef={controlsRef} />
       <CameraControls
         ref={initControls}
         makeDefault

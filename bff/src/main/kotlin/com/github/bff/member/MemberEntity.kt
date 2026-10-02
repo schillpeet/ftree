@@ -3,6 +3,9 @@ package com.github.bff.member
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.JoinTable
+import jakarta.persistence.ManyToMany
 import jakarta.persistence.Table
 import java.time.LocalDate
 import java.util.UUID
@@ -27,7 +30,11 @@ class MemberEntity(
     var note: String? = null,
     @Column(length = 2048)
     var photoUrl: String? = null,
-    var positionX: Double? = null,
-    var positionY: Double? = null,
-    var positionZ: Double? = null,
+    @ManyToMany
+    @JoinTable(
+        name = "member_parents",
+        joinColumns = [JoinColumn(name = "child_id")],
+        inverseJoinColumns = [JoinColumn(name = "parent_id")],
+    )
+    var parents: MutableSet<MemberEntity> = mutableSetOf(),
 )

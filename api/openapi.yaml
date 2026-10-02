@@ -64,12 +64,15 @@ paths:
           description: Member deleted.
         "404":
           description: Member not found.
-  /members/{id}/position:
+  /members/{id}/relatives:
     put:
-      operationId: updateMemberPosition
+      operationId: updateMemberRelatives
       tags:
         - Members
-      summary: Pin a member's scroll to a position in the tree scene
+      summary: Replace a member's parents and children
+      description: >-
+        Replaces both sets. Rejects unknown members, the member itself, a member that is
+        both parent and child, and links that would make someone their own ancestor.
       parameters:
         - name: id
           in: path
@@ -82,16 +85,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Position"
+              $ref: "#/components/schemas/Relatives"
       responses:
-        "200":
-          description: Position updated.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Member"
+        "204":
+          description: Relatives updated.
         "400":
-          description: The request is invalid.
+          description: The relatives are invalid.
         "404":
           description: Member not found.
 components:
@@ -102,6 +101,7 @@ components:
         - id
         - firstName
         - lastName
+        - parentIds
       properties:
         id:
           type: string
@@ -139,28 +139,28 @@ components:
           type: string
           format: uri
           nullable: true
-        position:
-          description: Where the member's scroll is pinned in the tree scene; null until pinned.
-          allOf:
-            - $ref: "#/components/schemas/Position"
-          nullable: true
-    Position:
+        parentIds:
+          description: Ids of this member's parents. Children are the members listing this id.
+          type: array
+          items:
+            type: string
+            format: uuid
+    Relatives:
       type: object
-      description: Scene coordinates of a pinned scroll.
       required:
-        - x
-        - y
-        - z
+        - parentIds
+        - childIds
       properties:
-        x:
-          type: number
-          format: double
-        y:
-          type: number
-          format: double
-        z:
-          type: number
-          format: double
+        parentIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        childIds:
+          type: array
+          items:
+            type: string
+            format: uuid
     CreateMemberRequest:
       type: object
       required:
