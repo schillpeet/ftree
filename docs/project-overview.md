@@ -6,14 +6,17 @@ ftree is intended to become a web service where family members can create and ma
 
 ## Current State
 
-The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus an initial members list with delete action and a create form. The UI calls a generated client. The BFF implements member listing, creation, and deletion against PostgreSQL. Authentication, family relationships, and a broader family-tree model are not implemented.
+The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus a members list with delete action and a create form. Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note. New scrolls wait on the meadow in front of the tree; dragging a scroll onto the bark pins it there, and the pinned position is stored with the member. Selecting a member in the list moves the camera to their scroll. The UI calls a generated client. The BFF implements member listing, creation, deletion, and scroll positioning against PostgreSQL. Authentication, family relationships, and a broader family-tree model are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF). The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js. The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records. pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
 ## Code Map
 
 - `ui/app/page.tsx` renders the home scene.
-- `ui/app/Scene.tsx` configures the canvas, sunset lighting, meadow, tree, and orbit controls.
+- `ui/app/FamilyTree.tsx` holds the loaded members and the camera focus shared by the scene and the members overlay, and saves pinned scroll positions.
+- `ui/app/Scene.tsx` configures the canvas, sunset lighting, meadow, tree, camera controls, scroll dragging onto the bark, and the camera flight to a selected scroll.
+- `ui/app/Scroll.tsx` renders a member's papyrus scroll as camera-facing HTML in the scene; its look is defined in `globals.css`.
+- `ui/app/MembersControls.tsx` contains the members list, delete action, and create form.
 - `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally.
 - `ui/app/Meadow.tsx` builds the terrain and instanced grass; it exports terrain height used by the tree and scene.
 - `ui/app/random.ts` contains seeded random and smooth-noise helpers used by the procedural scene.
@@ -25,7 +28,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF.
 - `dev.sh` starts the database, BFF, and UI for local development.
-- `api/openapi.yaml` defines `GET /members`, `POST /members`, and `DELETE /members/{id}` as the shared API contract.
+- `api/openapi.yaml` defines `GET /members`, `POST /members`, `DELETE /members/{id}`, and `PUT /members/{id}/position` as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`.
 
 The procedural scene is presentation code. It is not a family-tree domain model or a persistence layer.

@@ -2,6 +2,7 @@ package com.github.bff.member
 
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
+import com.github.bff.generated.model.Position
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -31,6 +32,15 @@ class MemberService(private val memberRepository: MemberRepository) {
     }
 
     @Transactional
+    fun updatePosition(id: UUID, position: Position): Member? {
+        val entity = memberRepository.findById(id).orElse(null) ?: return null
+        entity.positionX = position.x
+        entity.positionY = position.y
+        entity.positionZ = position.z
+        return memberRepository.save(entity).toResponse()
+    }
+
+    @Transactional
     fun delete(id: UUID): Boolean {
         if (!memberRepository.existsById(id)) return false
         memberRepository.deleteById(id)
@@ -47,5 +57,9 @@ class MemberService(private val memberRepository: MemberRepository) {
         deathPlace = this@toResponse.deathPlace
         note = this@toResponse.note
         photoUrl = this@toResponse.photoUrl?.let(URI::create)
+        val x = positionX
+        val y = positionY
+        val z = positionZ
+        if (x != null && y != null && z != null) position = Position(x, y, z)
     }
 }

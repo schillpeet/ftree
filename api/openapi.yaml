@@ -64,6 +64,36 @@ paths:
           description: Member deleted.
         "404":
           description: Member not found.
+  /members/{id}/position:
+    put:
+      operationId: updateMemberPosition
+      tags:
+        - Members
+      summary: Pin a member's scroll to a position in the tree scene
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Position"
+      responses:
+        "200":
+          description: Position updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "400":
+          description: The request is invalid.
+        "404":
+          description: Member not found.
 components:
   schemas:
     Member:
@@ -109,6 +139,28 @@ components:
           type: string
           format: uri
           nullable: true
+        position:
+          description: Where the member's scroll is pinned in the tree scene; null until pinned.
+          allOf:
+            - $ref: "#/components/schemas/Position"
+          nullable: true
+    Position:
+      type: object
+      description: Scene coordinates of a pinned scroll.
+      required:
+        - x
+        - y
+        - z
+      properties:
+        x:
+          type: number
+          format: double
+        y:
+          type: number
+          format: double
+        z:
+          type: number
+          format: double
     CreateMemberRequest:
       type: object
       required:

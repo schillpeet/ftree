@@ -27,4 +27,7 @@ class MemberEntity(
     var note: String? = null,
     @Column(length = 2048)
     var photoUrl: String? = null,
+    var positionX: Double? = null,
+    var positionY: Double? = null,
+    var positionZ: Double? = null,
 )

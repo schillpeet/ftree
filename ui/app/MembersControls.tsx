@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
   createMember,
   deleteMember,
@@ -31,20 +31,24 @@ const EMPTY_FORM: MemberForm = {
   photoUrl: '',
 };
 
-function formatDate(value?: string | null) {
+export function formatDate(value?: string | null) {
   if (!value) return null;
   const [year, month, day] = value.split('-');
   return `${day}.${month}.${year}`;
 }
 
-function MemberDetails({ member, onDelete }: { member: Member; onDelete: () => void }) {
+function MemberDetails({ member, onSelect, onDelete }: { member: Member; onSelect: () => void; onDelete: () => void }) {
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
 
   return (
     <li className="member-row">
       <div className="member-row-header">
-        <h3>{member.firstName} {member.lastName}</h3>
+        <h3>
+          <button type="button" className="member-name" title="Im Baum anzeigen" onClick={onSelect}>
+            {member.firstName} {member.lastName}
+          </button>
+        </h3>
         <button type="button" aria-label={`${member.firstName} ${member.lastName} löschen`} onClick={onDelete}>
           ×
         </button>
@@ -61,19 +65,30 @@ function MemberDetails({ member, onDelete }: { member: Member; onDelete: () => v
   );
 }
 
-export default function MembersControls() {
-  const [members, setMembers] = useState<Member[] | null>(null);
+export default function MembersControls({
+  members,
+  setMembers,
+  onSelect,
+}: {
+  members: Member[] | null;
+  setMembers: Dispatch<SetStateAction<Member[] | null>>;
+  onSelect: (id: string) => void;
+}) {
   const [isListOpen, setIsListOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
 
-  async function loadMembers() {
+  function reloadMembers() {
     setIsLoading(true);
     setRequestError(null);
+    void loadMembers();
+  }
+
+  async function loadMembers() {
     try {
       const response = await getMembers();
       if (response.status !== 200 || !Array.isArray(response.data)) {
@@ -86,6 +101,12 @@ export default function MembersControls() {
       setIsLoading(false);
     }
   }
+
+  // The scene needs the members right away to show their scrolls.
+  useEffect(() => {
+    void loadMembers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function removeMember(member: Member) {
     if (!window.confirm(`${member.firstName} ${member.lastName} wirklich löschen?`)) return;
@@ -103,7 +124,6 @@ export default function MembersControls() {
     const willOpen = !isListOpen;
     setIsListOpen(willOpen);
     setIsFormOpen(false);
-    if (willOpen && members === null) void loadMembers();
   }
 
   function openForm() {
@@ -140,7 +160,7 @@ export default function MembersControls() {
       }
       setMembers((current) => [response.data, ...(current ?? [])]);
       setIsFormOpen(false);
-      setIsListOpen(true);
+      onSelect(response.data.id);
       setForm({ ...EMPTY_FORM });
     } catch {
       setFormError('Das BFF ist noch nicht erreichbar oder der Endpunkt noch nicht implementiert.');
@@ -179,7 +199,7 @@ export default function MembersControls() {
             {requestError && (
               <div className="members-error" role="alert">
                 <p>{requestError}</p>
-                <button type="button" onClick={() => void loadMembers()}>Erneut versuchen</button>
+                <button type="button" onClick={reloadMembers}>Erneut versuchen</button>
               </div>
             )}
             {!isLoading && !requestError && members?.length === 0 && (
@@ -188,7 +208,15 @@ export default function MembersControls() {
             {!isLoading && !requestError && members && members.length > 0 && (
               <ul className="member-list">
                 {members.map((member) => (
-                  <MemberDetails key={member.id} member={member} onDelete={() => void removeMember(member)} />
+                  <MemberDetails
+                    key={member.id}
+                    member={member}
+                    onSelect={() => {
+                      setIsListOpen(false);
+                      onSelect(member.id);
+                    }}
+                    onDelete={() => void removeMember(member)}
+                  />
                 ))}
               </ul>
             )}

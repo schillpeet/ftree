@@ -314,3 +314,129 @@ textarea {
     grid-column: auto;
   }
 }
+
+.member-name {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.member-name:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.scene-error {
+  position: fixed;
+  z-index: 6;
+  bottom: 16px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 8px 8px 14px;
+  transform: translateX(-50%);
+  border-radius: 6px;
+  background: #fbeee8;
+  color: #8b321d;
+  box-shadow: 0 6px 20px rgba(18, 38, 28, 0.25);
+  font: 14px/1.4 Arial, sans-serif;
+}
+
+.scene-error button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: 20px/1 Arial, sans-serif;
+}
+
+/* Papyrus scroll: wooden rod on top, frayed parchment sheet, rolled-up bottom edge. */
+.scroll {
+  position: relative;
+  width: 180px;
+  color: #4a3218;
+  cursor: grab;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-align: center;
+  user-select: none;
+  touch-action: none;
+  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45));
+}
+
+.scroll-dragging {
+  cursor: grabbing;
+  opacity: 0.85;
+}
+
+.scroll-rod {
+  position: relative;
+  z-index: 1;
+  height: 14px;
+  margin: 0 -14px -4px;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 35%, #a2683a, #5a3214 70%) left / 14px 100% no-repeat,
+    radial-gradient(circle at 50% 35%, #a2683a, #5a3214 70%) right / 14px 100% no-repeat,
+    linear-gradient(#d4a46c, #b07a45 45%, #7a4a22);
+}
+
+.scroll-sheet {
+  padding: 18px 16px 20px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 240, 205, 0.9), transparent 70%),
+    linear-gradient(90deg, #c9975a, #e7c48e 12%, #ecd09e 50%, #e2bb82 88%, #c08a4c);
+  /* Uneven, slightly torn side edges like the reference scrolls. */
+  clip-path: polygon(
+    3% 0, 97% 0, 98% 8%, 96% 14%, 99% 22%, 97% 34%, 100% 46%, 96% 52%, 98% 63%, 97% 74%, 100% 86%, 97% 100%,
+    3% 100%, 0 90%, 3% 80%, 1% 68%, 4% 60%, 1% 48%, 3% 38%, 0 28%, 3% 18%, 1% 8%
+  );
+}
+
+.scroll-photo {
+  display: block;
+  width: 92px;
+  height: 112px;
+  margin: 0 auto 10px;
+  object-fit: cover;
+  border: 3px solid #b8894f;
+  border-radius: 50%;
+  background: #d9b67f;
+}
+
+.scroll h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.scroll p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+
+.scroll-note {
+  display: -webkit-box;
+  margin-top: 8px !important;
+  padding-top: 8px;
+  overflow: hidden;
+  border-top: 1px solid rgba(90, 50, 20, 0.3);
+  font-style: italic;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.scroll-curl {
+  height: 16px;
+  margin: -6px -6px 0;
+  border-radius: 8px;
+  background: linear-gradient(#f0d6a6, #d2a468 50%, #9c6a36);
+}
