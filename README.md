@@ -12,7 +12,7 @@ pnpm --dir ui api:generate
 
 Set `NEXT_PUBLIC_BFF_URL` when generating the client for a non-local BFF. The default URL is `http://localhost:8080`.
 
-The repository keeps the Next.js UI in `ui/` and the Kotlin/Spring Boot Backend for Frontend in `bff/`. The BFF implements `GET /members`, `POST /members`, and `DELETE /members/{id}` against PostgreSQL. CI/CD is not configured here yet.
+The repository keeps the Next.js UI in `ui/` and the Kotlin/Spring Boot Backend for Frontend in `bff/`. The BFF implements `GET /members`, `POST /members`, and `DELETE /members/{id}` against PostgreSQL. GitHub Actions (`.github/workflows/ci.yml`) lints, type-checks, and builds the UI, checks that the generated API client matches the spec, and builds and tests the BFF against PostgreSQL on every pull request.
 
 ## Getting Started
 
