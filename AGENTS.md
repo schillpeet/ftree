@@ -19,4 +19,5 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Keep the UI and BFF in this repository. Avoid adding more services until there is a concrete need for them.
 - Keep the overview accurate as behavior and decisions change, and distinguish implemented features from planned work.
 - Commit messages use `<type>(<scope>): <message>`, all lowercase, in English and in the imperative mood, for example `feat(ui): add person detail panel` (types: feat, fix, chore, docs, refactor, test, build, ci; scopes: ui, bff, db, repo).
+- Start every new task by creating a branch from `main` before changing any files. Name it after the planned commit as `<type>/<scope>-<message-in-kebab-case>`, for example `feat(ui): add person detail panel` → `feat/ui-add-person-detail-panel`.
 - Before committing, show the user the staged diff and the proposed commit message and wait for explicit approval. Never commit without it.
