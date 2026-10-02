@@ -27,7 +27,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `dev.sh` starts the database, BFF, and UI for local development.
 - `api/openapi.yaml` defines `GET /members`, `POST /members`, and `DELETE /members/{id}` as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`; `NEXT_PUBLIC_BFF_URL` sets the BFF base URL at generation time (default `http://localhost:8080`).
-- `.github/workflows/ci.yml` lints, type-checks, and builds the UI, checks that the generated API client matches the spec, and builds and tests the BFF against PostgreSQL.
+- `.github/workflows/ui.yml` lints, type-checks, and builds the UI and checks that the generated API client matches the spec; `.github/workflows/bff.yml` builds and tests the BFF against PostgreSQL. Each runs only when its app directory, `api/openapi.yaml`, or its own workflow file changes, ignoring Markdown.
 
 The procedural scene is presentation code. It is not a family-tree domain model or a persistence layer.
 
