@@ -1,43 +1,30 @@
-name: CI
+name: BFF
 
+# Runs only when files that affect the BFF change; Markdown-only changes are skipped.
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - bff/**
+      - api/openapi.yaml
+      - .github/workflows/bff.yml
+      - "!**.md"
   push:
     branches: [main]
+    paths:
+      - bff/**
+      - api/openapi.yaml
+      - .github/workflows/bff.yml
+      - "!**.md"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: bff-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  ui:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ui
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-        with:
-          package_json_file: ui/package.json
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: ui/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - name: Check generated API client is up to date
-        run: |
-          pnpm api:generate
-          git diff --exit-code lib/api/generated
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm build
-
   bff:
     runs-on: ubuntu-latest
     defaults:
