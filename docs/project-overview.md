@@ -37,7 +37,7 @@ The procedural scene is presentation code. It is not a family-tree domain model 
 
 ## Initial Architecture Direction
 
-Keep the UI and Kotlin BFF as separate applications in this repository. The BFF exposes the UI-facing API and owns access to PostgreSQL; no separate backend service is currently planned. `api/openapi.yaml` is the shared contract; Orval generates the UI client, and OpenAPI Generator creates Java API interfaces and DTOs implemented by Kotlin. Hibernate currently manages the local schema with `ddl-auto=update`; add versioned migrations before production. Authentication and authorization must be designed before family data is shared.
+Keep the UI and Kotlin BFF as separate applications in this repository. The BFF exposes the UI-facing API and owns access to PostgreSQL; no separate backend service is currently planned. `api/openapi.yaml` is the shared contract; Orval generates the UI client, and OpenAPI Generator creates Java API interfaces and DTOs implemented by Kotlin. Flyway manages the schema with versioned SQL migrations in `bff/src/main/resources/db/migration/`, and Hibernate only validates the entities against it (`ddl-auto=validate`). Databases created earlier by Hibernate are baselined at V1 (`baseline-on-migrate`), so V1 is not run on them. Authentication and authorization must be designed before family data is shared.
 
 Family relationships and identifying information are sensitive. Any shared-data implementation must define who can view and change a tree, how membership and invitations work, and how users can recover or remove access. Do not assume that a tree is public by default.
 
@@ -46,7 +46,7 @@ Family relationships and identifying information are sensitive. Any shared-data 
 These decisions have not been implemented:
 
 - The person, relationship, and family-tree data model, including how uncertain or conflicting information is represented.
-- Relationship types beyond parent/child (partners, adoption, uncertain links) and schema beyond the members and `member_parents` tables, plus migrations, backups, and data export/deletion behavior.
+- Relationship types beyond parent/child (partners, adoption, uncertain links) and schema beyond the members and `member_parents` tables, plus backups and data export/deletion behavior.
 - Remaining BFF API operations, error format, and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.
 - How concurrent edits are handled and whether an audit/history model is needed.
