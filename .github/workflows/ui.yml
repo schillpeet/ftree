@@ -47,4 +47,5 @@ jobs:
           git diff --exit-code lib/api/generated
       - run: pnpm lint
       - run: pnpm typecheck
+      - run: node app/familyLayout.check.mjs
       - run: pnpm build
