@@ -58,6 +58,7 @@ openApiGenerate {
 			"skipDefaultInterface" to "true",
 			"sourceFolder" to "src/main/java",
 			"useBeanValidation" to "true",
+			"useJspecify" to "true",
 			"useResponseEntity" to "true",
 			"useSpringBoot4" to "true",
 			"useTags" to "true",
@@ -79,12 +80,18 @@ sourceSets {
 	}
 }
 
+// Compiler warnings fail the build so CI catches them, e.g. deprecated APIs in generated code.
+tasks.withType<JavaCompile>().configureEach {
+	options.compilerArgs.addAll(listOf("-Xlint:deprecation", "-Werror"))
+}
+
 tasks.named("compileKotlin") {
 	dependsOn(tasks.named("openApiGenerate"))
 }
 
 kotlin {
 	compilerOptions {
+		allWarningsAsErrors = true
 		freeCompilerArgs.addAll("-Xjsr305=strict", "-Xannotation-default-target=param-property")
 	}
 }
