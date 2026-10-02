@@ -52,6 +52,18 @@ pnpm --dir ui typecheck
 pnpm --dir ui build
 ```
 
+## Versioning
+
+The repository is versioned as a whole with [Semantic Versioning](https://semver.org) tags (`vX.Y.Z`) on `main`. While in `0.x`, minor versions add features or breaking changes and patch versions contain fixes.
+
+To release, set the new version in `ui/package.json` and `bff/build.gradle.kts`, merge to `main`, then tag the merge commit:
+
+```bash
+git fetch origin && git tag -a vX.Y.Z -m "vX.Y.Z" origin/main && git push origin vX.Y.Z
+```
+
+The `info.version` in `api/openapi.yaml` is the API contract version and only changes when the contract changes.
+
 ## Commit Messages
 
 Commit conventions are defined in [AGENTS.md](AGENTS.md).
