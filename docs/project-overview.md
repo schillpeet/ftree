@@ -6,7 +6,7 @@ ftree is intended to become a web service where family members can create and ma
 
 ## Current State
 
-The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus an initial members list and create form. The UI calls a generated client. The BFF implements member listing and creation against PostgreSQL. Authentication, family relationships, and a broader family-tree model are not implemented.
+The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow, plus an initial members list with delete action and a create form. The UI calls a generated client. The BFF implements member listing, creation, and deletion against PostgreSQL. Authentication, family relationships, and a broader family-tree model are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF). The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js. The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records. pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
@@ -24,7 +24,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `bff/src/main/kotlin/com/github/bff/member/` contains the member JPA entity, repository, service, and controller implementing the generated API.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF.
-- `api/openapi.yaml` defines `GET /members` and `POST /members` as the shared API contract.
+- `api/openapi.yaml` defines `GET /members`, `POST /members`, and `DELETE /members/{id}` as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`.
 
 The procedural scene is presentation code. It is not a family-tree domain model or a persistence layer.

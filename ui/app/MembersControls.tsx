@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from 'react';
 import {
   createMember,
+  deleteMember,
   getMembers,
   type CreateMemberRequest,
   type Member,
@@ -36,13 +37,18 @@ function formatDate(value?: string | null) {
   return `${day}.${month}.${year}`;
 }
 
-function MemberDetails({ member }: { member: Member }) {
+function MemberDetails({ member, onDelete }: { member: Member; onDelete: () => void }) {
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
 
   return (
     <li className="member-row">
-      <h3>{member.firstName} {member.lastName}</h3>
+      <div className="member-row-header">
+        <h3>{member.firstName} {member.lastName}</h3>
+        <button type="button" aria-label={`${member.firstName} ${member.lastName} löschen`} onClick={onDelete}>
+          ×
+        </button>
+      </div>
       {birth && <p>Geboren: {birth}</p>}
       {death && <p>Verstorben: {death}</p>}
       {member.note && <p>{member.note}</p>}
@@ -78,6 +84,18 @@ export default function MembersControls() {
       setRequestError('Die Mitglieder konnten nicht geladen werden. Ist das BFF erreichbar?');
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function removeMember(member: Member) {
+    if (!window.confirm(`${member.firstName} ${member.lastName} wirklich löschen?`)) return;
+    setRequestError(null);
+    try {
+      const response = await deleteMember(member.id);
+      if (response.status !== 204 && response.status !== 404) throw new Error('Unexpected delete response');
+      setMembers((current) => current?.filter((m) => m.id !== member.id) ?? null);
+    } catch {
+      setRequestError('Die Person konnte nicht gelöscht werden. Ist das BFF erreichbar?');
     }
   }
 
@@ -169,7 +187,9 @@ export default function MembersControls() {
             )}
             {!isLoading && !requestError && members && members.length > 0 && (
               <ul className="member-list">
-                {members.map((member) => <MemberDetails key={member.id} member={member} />)}
+                {members.map((member) => (
+                  <MemberDetails key={member.id} member={member} onDelete={() => void removeMember(member)} />
+                ))}
               </ul>
             )}
           </div>

@@ -46,6 +46,24 @@ paths:
                 $ref: "#/components/schemas/Member"
         "400":
           description: The request is invalid.
+  /members/{id}:
+    delete:
+      operationId: deleteMember
+      tags:
+        - Members
+      summary: Delete a member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Member deleted.
+        "404":
+          description: Member not found.
 components:
   schemas:
     Member:

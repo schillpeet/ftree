@@ -6,6 +6,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
+import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
@@ -27,6 +28,13 @@ class MemberService(private val memberRepository: MemberRepository) {
             photoUrl = request.photoUrl?.toString(),
         )
         return memberRepository.save(entity).toResponse()
+    }
+
+    @Transactional
+    fun delete(id: UUID): Boolean {
+        if (!memberRepository.existsById(id)) return false
+        memberRepository.deleteById(id)
+        return true
     }
 
     private fun MemberEntity.toResponse() = Member().apply {

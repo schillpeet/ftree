@@ -90,6 +90,7 @@ textarea {
 }
 
 .members-panel-header button,
+.member-row-header button,
 .member-dialog-close {
   display: grid;
   width: 36px;
@@ -151,6 +152,20 @@ textarea {
 .member-row:last-child {
   padding-bottom: 2px;
   border-bottom: 0;
+}
+
+.member-row-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.member-row-header button {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  font-size: 20px;
 }
 
 .member-row h3 {

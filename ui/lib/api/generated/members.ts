@@ -179,3 +179,53 @@ const res = await fetch(getCreateMemberUrl(),
   const data: createMemberResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as createMemberResponse
 }
+
+
+
+export type deleteMemberResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteMemberResponse404 = {
+  data: void
+  status: 404
+}
+
+export type deleteMemberResponseSuccess = (deleteMemberResponse204) & {
+  headers: Headers;
+};
+export type deleteMemberResponseError = (deleteMemberResponse404) & {
+  headers: Headers;
+};
+
+export type deleteMemberResponse = (deleteMemberResponseSuccess | deleteMemberResponseError)
+
+export const getDeleteMemberUrl = (id: string,) => {
+
+
+
+
+  return `http://localhost:8080/members/${id}`
+}
+
+/**
+ * @summary Delete a member
+ */
+export const deleteMember = async (id: string, options?: RequestInit): Promise<deleteMemberResponse> => {
+
+  const res = await fetch(getDeleteMemberUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteMemberResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteMemberResponse
+}
