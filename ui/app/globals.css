@@ -453,3 +453,46 @@ textarea {
   margin: 0;
   color: #42564a;
 }
+
+.zoom-scale {
+  position: fixed;
+  z-index: 5;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(23, 58, 43, 0.18);
+  border-radius: 6px;
+  background: rgba(250, 248, 238, 0.96);
+  box-shadow: 0 3px 14px rgba(18, 38, 28, 0.18);
+}
+
+.zoom-scale button {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 4px;
+  background: #173a2b;
+  color: #fffaf0;
+  cursor: pointer;
+  font: 600 18px/1 Arial, sans-serif;
+}
+
+.zoom-scale input {
+  /* Vertical slider with "zoomed out" at the bottom. */
+  writing-mode: vertical-lr;
+  direction: rtl;
+  height: 160px;
+  margin: 0;
+  accent-color: #173a2b;
+  cursor: pointer;
+}
+
+.zoom-scale button:focus-visible,
+.zoom-scale input:focus-visible {
+  outline: 3px solid #e89155;
+  outline-offset: 2px;
+}
