@@ -14,7 +14,7 @@ class WebConfiguration(
         val origins = allowedOrigins.split(',').map(String::trim).filter(String::isNotEmpty)
         registry.addMapping("/**")
             .allowedOrigins(*origins.toTypedArray())
-            .allowedMethods("GET", "POST", "DELETE", "OPTIONS")
+            .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("Content-Type")
     }
 }

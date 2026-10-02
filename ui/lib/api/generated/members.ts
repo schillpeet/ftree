@@ -5,6 +5,15 @@
  * API contract for the ftree UI and Backend for Frontend.
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Scene coordinates of a pinned scroll.
+ */
+export interface Position {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface Member {
   readonly id: string;
   /**
@@ -38,6 +47,8 @@ export interface Member {
   note?: string | null;
   /** @nullable */
   photoUrl?: string | null;
+  /** Where the member's scroll is pinned in the tree scene; null until pinned. */
+  position?: Position | null;
 }
 
 export interface CreateMemberRequest {
@@ -228,4 +239,74 @@ export const deleteMember = async (id: string, options?: RequestInit): Promise<d
 
   const data: deleteMemberResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteMemberResponse
+}
+
+
+
+export type updateMemberPositionResponse200 = {
+  data: Member
+  status: 200
+}
+
+export type updateMemberPositionResponse400 = {
+  data: void
+  status: 400
+}
+
+export type updateMemberPositionResponse404 = {
+  data: void
+  status: 404
+}
+
+export type updateMemberPositionResponseSuccess = (updateMemberPositionResponse200) & {
+  headers: Headers;
+};
+export type updateMemberPositionResponseError = (updateMemberPositionResponse400 | updateMemberPositionResponse404) & {
+  headers: Headers;
+};
+
+export type updateMemberPositionResponse = (updateMemberPositionResponseSuccess | updateMemberPositionResponseError)
+
+export const getUpdateMemberPositionUrl = (id: string,) => {
+
+
+
+
+  return `http://localhost:8080/members/${id}/position`
+}
+
+/**
+ * @summary Pin a member's scroll to a position in the tree scene
+ */
+export const updateMemberPosition = async (id: string,
+    position: Position, options?: RequestInit): Promise<updateMemberPositionResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateMemberPositionUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(position)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateMemberPositionResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateMemberPositionResponse
 }

@@ -1,11 +1,5 @@
-import Scene from './Scene';
-import MembersControls from './MembersControls';
+import FamilyTree from './FamilyTree';
 
 export default function Home() {
-  return (
-    <>
-      <Scene />
-      <MembersControls />
-    </>
-  );
+  return <FamilyTree />;
 }
