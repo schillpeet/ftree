@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.0](https://github.com/schillpeet/ftree/compare/v0.3.0...v0.4.0) (2026-10-02)
+
+
+### Features
+
+* **ui:** add member editing ([#25](https://github.com/schillpeet/ftree/issues/25)) ([2d60c68](https://github.com/schillpeet/ftree/commit/2d60c68316fb8cf51002a5f5c9428c4146441c55))
+* **ui:** add member partners with relation lines ([#27](https://github.com/schillpeet/ftree/issues/27)) ([4239cd7](https://github.com/schillpeet/ftree/commit/4239cd728a80050e0c63ecf87b8d58624e145717))
+* **ui:** open member profile from scroll ([#29](https://github.com/schillpeet/ftree/issues/29)) ([eeb5fb0](https://github.com/schillpeet/ftree/commit/eeb5fb08c830ae1f78e6519ab7b05acf7a5ffff1))
+
+
+### Bug Fixes
+
+* **bff:** use jspecify nullable annotations and fail on compiler warnings ([#30](https://github.com/schillpeet/ftree/issues/30)) ([e32e704](https://github.com/schillpeet/ftree/commit/e32e704466aff25fca4052c8b89a65d40c651173))
+* **ui:** keep family connector bars apart ([#28](https://github.com/schillpeet/ftree/issues/28)) ([5b70c42](https://github.com/schillpeet/ftree/commit/5b70c4276da504eb9d3b4a69c9c0793f1544acb3))
+
 ## [0.3.0](https://github.com/schillpeet/ftree/compare/v0.2.0...v0.3.0) (2026-10-02)
 
 
