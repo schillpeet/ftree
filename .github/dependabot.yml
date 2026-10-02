@@ -8,6 +8,13 @@ updates:
     directory: /bff
     schedule:
       interval: weekly
+    groups:
+      # The Kotlin plugins share one compiler and must be on the same version.
+      kotlin:
+        patterns:
+          - jvm
+          - plugin.spring
+          - plugin.jpa
   - package-ecosystem: github-actions
     directory: /
     schedule:
