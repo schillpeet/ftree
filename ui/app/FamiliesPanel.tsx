@@ -13,6 +13,7 @@ export default function FamiliesPanel({
   onToggle,
   onRetry,
   onSelect,
+  onToggleVisibility,
 }: {
   families: FamilySummary[] | null;
   setFamilies: Dispatch<SetStateAction<FamilySummary[] | null>>;
@@ -23,6 +24,7 @@ export default function FamiliesPanel({
   onToggle: () => void;
   onRetry: () => void;
   onSelect: (familyId: string | null) => void;
+  onToggleVisibility: (familyId: string) => void;
 }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
@@ -60,7 +62,11 @@ export default function FamiliesPanel({
       if (response.status !== 204) throw new Error(`HTTP ${response.status}`);
       const remaining = (families ?? []).filter((item) => item.id !== family.id);
       setFamilies(remaining);
-      if (family.id === activeFamilyId) onSelect(remaining[0]?.id ?? null);
+      if (family.id === activeFamilyId) {
+        onSelect(
+          remaining.find((item) => item.name.toLocaleLowerCase() === 'default')?.id ?? remaining[0]?.id ?? null,
+        );
+      }
     } catch {
       setDeleteError(`„${family.name}“ konnte nicht gelöscht werden. Ist das BFF erreichbar?`);
     } finally {
@@ -128,17 +134,35 @@ export default function FamiliesPanel({
                         </span>
                       )}
                     </button>
-                    {family.name.toLocaleLowerCase() !== 'default' && (
-                      <button
-                        className="family-set-delete"
-                        type="button"
-                        aria-label={`${family.name} samt Personen löschen`}
-                        disabled={deletingId !== null}
-                        onClick={() => void removeFamily(family)}
-                      >
-                        {deletingId === family.id ? '…' : '×'}
-                      </button>
-                    )}
+                    <button
+                      className="family-set-visibility"
+                      type="button"
+                      aria-label={`${family.name} ${family.id === activeFamilyId ? 'ausblenden' : 'anzeigen'}`}
+                      aria-pressed={family.id === activeFamilyId}
+                      disabled={deletingId !== null}
+                      onClick={() => onToggleVisibility(family.id)}
+                    >
+                      {family.id === activeFamilyId ? (
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                      ) : (
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M3 3l18 18M10.6 5.2A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7c1.4 0 2.7-.4 3.8-1" />
+                          <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" />
+                        </svg>
+                      )}
+                    </button>
+                    <button
+                      className="family-set-delete"
+                      type="button"
+                      aria-label={`${family.name} samt Personen löschen`}
+                      disabled={deletingId !== null}
+                      onClick={() => void removeFamily(family)}
+                    >
+                      {deletingId === family.id ? '…' : '×'}
+                    </button>
                   </li>
                 ))}
               </ul>

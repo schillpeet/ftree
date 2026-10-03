@@ -7,6 +7,9 @@ import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
 import TestUsersPanel from './TestUsersPanel';
 
+const firstFamilyId = (items: FamilySummary[]) =>
+  items.find((family) => family.name.toLocaleLowerCase() === 'default')?.id ?? items[0]?.id ?? null;
+
 // Shares the members between the scene's scrolls and the list/form overlay.
 export default function FamilyTree() {
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -28,9 +31,10 @@ export default function FamilyTree() {
         throw new Error('Unexpected families response');
       }
       setFamilies(response.data);
-      setActiveFamilyId((current) =>
-        current && response.data.some((family) => family.id === current) ? current : response.data[0]?.id ?? null,
-      );
+      setActiveFamilyId((current) => {
+        if (current === null) return null;
+        return response.data.some((family) => family.id === current) ? current : firstFamilyId(response.data);
+      });
     } catch {
       setFamiliesError('Die Familien konnten nicht geladen werden. Ist das BFF erreichbar?');
     } finally {
@@ -47,11 +51,16 @@ export default function FamilyTree() {
         if (response.status !== 200 || !Array.isArray(response.data)) {
           throw new Error('Unexpected families response');
         }
-        setFamilies(response.data);
+        const orderedFamilies = [...response.data].sort((left, right) => {
+          const leftIsDefault = left.name.toLocaleLowerCase() === 'default';
+          const rightIsDefault = right.name.toLocaleLowerCase() === 'default';
+          return Number(rightIsDefault) - Number(leftIsDefault);
+        });
+        setFamilies(orderedFamilies);
         setActiveFamilyId((selected) =>
-          selected && response.data.some((family) => family.id === selected)
+          selected && orderedFamilies.some((family) => family.id === selected)
             ? selected
-            : response.data[0]?.id ?? null,
+            : firstFamilyId(orderedFamilies),
         );
       } catch {
         if (current) setFamiliesError('Die Familien konnten nicht geladen werden. Ist das BFF erreichbar?');
@@ -66,14 +75,25 @@ export default function FamilyTree() {
   }, []);
 
   function selectFamily(familyId: string | null) {
+    if (familyId === activeFamilyId) return;
     setMembers(null);
     setFocus(null);
     setProfile(null);
     setActiveFamilyId(familyId);
   }
 
+  function toggleFamilyVisibility(familyId: string) {
+    selectFamily(activeFamilyId === familyId ? null : familyId);
+  }
+
   function addFamily(family: FamilySummary) {
-    setFamilies((current) => [...(current ?? []).filter((item) => item.id !== family.id), family]);
+    setFamilies((current) =>
+      [...(current ?? []).filter((item) => item.id !== family.id), family].sort((left, right) => {
+        const leftIsDefault = left.name.toLocaleLowerCase() === 'default';
+        const rightIsDefault = right.name.toLocaleLowerCase() === 'default';
+        return Number(rightIsDefault) - Number(leftIsDefault);
+      }),
+    );
     selectFamily(family.id);
   }
 
@@ -90,6 +110,7 @@ export default function FamilyTree() {
         onToggle={() => setOpenBoard((open) => open === 'families' ? null : 'families')}
         onRetry={() => void loadFamilies()}
         onSelect={selectFamily}
+        onToggleVisibility={toggleFamilyVisibility}
       />
       <MembersControls
         key={activeFamilyId ?? 'no-family'}

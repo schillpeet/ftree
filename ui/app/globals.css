@@ -222,14 +222,42 @@ textarea {
   font: 22px/1 Arial, sans-serif;
 }
 
+.family-set-visibility {
+  display: grid;
+  width: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 1px solid rgba(23, 58, 43, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+  cursor: pointer;
+}
+
+.family-set-visibility[aria-pressed='true'] {
+  background: #edf1e8;
+}
+
+.family-set-visibility svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
 .family-set-delete:disabled,
-.family-set-select:disabled {
+.family-set-select:disabled,
+.family-set-visibility:disabled {
   cursor: wait;
   opacity: 0.65;
 }
 
 .family-set-select:focus-visible,
 .family-set-delete:focus-visible,
+.family-set-visibility:focus-visible,
 .families-panel button:focus-visible,
 .test-users-panel button:focus-visible {
   outline: 3px solid #e89155;
@@ -451,7 +479,7 @@ textarea {
   opacity: 0.65;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 700px) {
   .members-controls {
     top: 10px;
     left: 10px;

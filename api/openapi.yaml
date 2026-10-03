@@ -167,8 +167,7 @@ paths:
       operationId: deleteFamily
       tags:
         - Families
-      summary: Delete a non-default family and all of its members
-      description: The default family is permanent and cannot be deleted.
+      summary: Delete a family and all of its members
       responses:
         "204":
           description: Family and its members deleted.

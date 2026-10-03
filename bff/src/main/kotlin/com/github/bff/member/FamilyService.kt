@@ -15,7 +15,9 @@ class FamilyService(
     private val memberRepository: MemberRepository,
 ) {
     fun findAll(): List<FamilySummary> =
-        familyRepository.findAllByOrderByCreatedAtAsc().map { family ->
+        familyRepository.findAllByOrderByCreatedAtAsc()
+            .sortedByDescending { it.name.equals(DEFAULT_FAMILY_NAME, ignoreCase = true) }
+            .map { family ->
             family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id))
         }
 
@@ -67,7 +69,6 @@ class FamilyService(
     @Transactional
     fun delete(id: UUID): Boolean {
         val family = familyRepository.findById(id).orElse(null) ?: return false
-        if (family.name.equals(DEFAULT_FAMILY_NAME, ignoreCase = true)) return false
         val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         members.forEach { member ->
             member.parents.clear()

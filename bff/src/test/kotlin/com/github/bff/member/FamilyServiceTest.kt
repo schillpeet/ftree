@@ -33,6 +33,19 @@ class FamilyServiceTest {
         val families = familyRepository.findAllByOrderByCreatedAtAsc()
         assertTrue(families.any { it.name.equals(DEFAULT_FAMILY_NAME, ignoreCase = true) })
         assertTrue(memberRepository.findAll().all { member -> families.any { it.id == member.family.id } })
+        assertEquals(DEFAULT_FAMILY_NAME, familyService.findAll().first().name)
+    }
+
+    @Test
+    fun `deletes the default family and all of its members`() {
+        val family = familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
+        assertNotNull(family)
+        assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isNotEmpty())
+
+        assertTrue(familyService.delete(family.id))
+
+        assertFalse(familyRepository.existsById(family.id))
+        assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isEmpty())
     }
 
     @Test
