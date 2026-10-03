@@ -40,6 +40,7 @@ class FamilyServiceTest {
     fun `deletes the default family and all of its members`() {
         val family = familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
         assertNotNull(family)
+        assertNotNull(memberService.createDefaultFamilyMember(CreateMemberRequest("Test", "Member")))
         assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isNotEmpty())
 
         assertTrue(familyService.delete(family.id))

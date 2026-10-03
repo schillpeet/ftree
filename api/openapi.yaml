@@ -168,6 +168,7 @@ paths:
       tags:
         - Families
       summary: Delete a family and all of its members
+      description: Any family, including the default family, can be deleted.
       responses:
         "204":
           description: Family and its members deleted.

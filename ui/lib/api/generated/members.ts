@@ -591,8 +591,8 @@ export const getDeleteFamilyUrl = (familyId: string,) => {
 }
 
 /**
- * The default family is permanent and cannot be deleted.
- * @summary Delete a non-default family and all of its members
+ * Any family, including the default family, can be deleted.
+ * @summary Delete a family and all of its members
  */
 export const deleteFamily = async (familyId: string, options?: RequestInit): Promise<deleteFamilyResponse> => {
 
