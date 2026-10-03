@@ -32,6 +32,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `api/openapi.yaml` defines `GET /members`, `POST /members`, `PUT /members/{id}`, `DELETE /members/{id}`, and `PUT /members/{id}/relatives` as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`; `NEXT_PUBLIC_BFF_URL` sets the BFF base URL at generation time (default `http://localhost:8080`).
 - `.github/workflows/ui.yml` lints, type-checks, and builds the UI and checks that the generated API client matches the spec; `.github/workflows/bff.yml` builds and tests the BFF against PostgreSQL. Each runs only when its app directory, `api/openapi.yaml`, or its own workflow file changes, ignoring Markdown.
+- `.github/workflows/pinact.yml` runs `actionlint` on all GitHub Actions workflows and uses Pinact to open a pull request when workflow actions need SHA pins. It runs when workflow files change.
 
 The procedural scene is presentation code. It is not a family-tree domain model or a persistence layer.
 
