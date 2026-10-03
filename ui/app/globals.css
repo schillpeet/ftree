@@ -75,6 +75,69 @@ textarea {
   backdrop-filter: blur(12px);
 }
 
+.test-users-control {
+  position: fixed;
+  z-index: 5;
+  top: 16px;
+  right: 16px;
+  width: min(360px, calc(100vw - 32px));
+  color: #173a2b;
+  font-family: Georgia, 'Times New Roman', serif;
+}
+
+.test-users-control > .members-button {
+  display: block;
+  margin-left: auto;
+}
+
+.test-users-panel {
+  max-height: calc(100dvh - 88px);
+  margin-top: 10px;
+  overflow-y: auto;
+  border: 1px solid rgba(23, 58, 43, 0.16);
+  border-radius: 8px;
+  background: rgba(250, 248, 238, 0.97);
+  box-shadow: 0 12px 38px rgba(18, 38, 28, 0.24);
+  backdrop-filter: blur(12px);
+}
+
+.test-users-form {
+  display: grid;
+  gap: 14px;
+  padding: 14px 18px 18px;
+  font-family: Arial, sans-serif;
+}
+
+.test-users-form .member-field input {
+  width: 100%;
+}
+
+.test-users-child-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.test-users-hint,
+.test-users-success {
+  margin: 0;
+  color: #42564a;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.test-users-success {
+  color: #24523d;
+}
+
+.test-users-form .member-form-actions {
+  padding-top: 0;
+}
+
+.test-users-form .member-form-actions button[type='submit'] {
+  margin-left: auto;
+}
+
 .members-panel-header {
   display: flex;
   align-items: center;
@@ -297,8 +360,18 @@ textarea {
     width: calc(100vw - 20px);
   }
 
+  .test-users-control {
+    top: 64px;
+    right: 10px;
+    width: calc(100vw - 20px);
+  }
+
   .members-panel {
     max-height: calc(100dvh - 76px);
+  }
+
+  .test-users-panel {
+    max-height: calc(100dvh - 130px);
   }
 
   .member-dialog {

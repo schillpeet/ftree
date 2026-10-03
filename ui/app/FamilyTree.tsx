@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { Member } from '../lib/api/generated/members';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
+import TestUsersPanel from './TestUsersPanel';
 
 // Shares the members between the scene's scrolls and the list/form overlay.
 export default function FamilyTree() {
@@ -21,6 +22,7 @@ export default function FamilyTree() {
         profile={profile}
         onSelect={(id) => setFocus({ id })}
       />
+      <TestUsersPanel setMembers={setMembers} />
     </>
   );
 }
