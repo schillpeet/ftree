@@ -3,7 +3,6 @@ package com.github.bff.member
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
 import com.github.bff.generated.model.Relatives
-import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
@@ -11,30 +10,64 @@ import java.util.UUID
 
 @Service
 @Transactional(readOnly = true)
-class MemberService(private val memberRepository: MemberRepository) {
-    fun findAll(): List<Member> = memberRepository
-        .findAll(Sort.by("lastName", "firstName"))
-        .map { it.toResponse() }
+class MemberService(
+    private val familyRepository: FamilyRepository,
+    private val memberRepository: MemberRepository,
+) {
+    fun findDefaultFamilyMembers(): List<Member> =
+        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
+            ?.let { memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(it.id).map { member -> member.toResponse() } }
+            .orEmpty()
 
     @Transactional
-    fun create(request: CreateMemberRequest): Member {
-        val entity = MemberEntity(
-            firstName = request.firstName,
-            lastName = request.lastName,
-            birthDate = request.birthDate,
-            birthPlace = request.birthPlace,
-            deathDate = request.deathDate,
-            deathPlace = request.deathPlace,
-            note = request.note,
-            photoUrl = request.photoUrl?.toString(),
-        )
-        return memberRepository.save(entity).toResponse()
+    fun createDefaultFamilyMember(request: CreateMemberRequest): Member? =
+        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
+            ?.let { create(it.id, request) }
+
+    @Transactional
+    fun updateDefaultFamilyMember(id: UUID, request: CreateMemberRequest): Member? =
+        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
+            ?.let { update(it.id, id, request) }
+
+    @Transactional
+    fun updateDefaultFamilyMemberRelatives(id: UUID, relatives: Relatives): RelativesResult =
+        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
+            ?.let { updateRelatives(it.id, id, relatives) }
+            ?: RelativesResult.NOT_FOUND
+
+    @Transactional
+    fun deleteDefaultFamilyMember(id: UUID): Boolean =
+        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
+            ?.let { delete(it.id, id) }
+            ?: false
+
+    fun findAll(familyId: UUID): List<Member>? {
+        if (!familyRepository.existsById(familyId)) return null
+        return memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId).map { it.toResponse() }
     }
 
-    /** Replaces the member's fields but keeps its parent/child links; null when the member does not exist. */
     @Transactional
-    fun update(id: UUID, request: CreateMemberRequest): Member? {
-        val entity = memberRepository.findById(id).orElse(null) ?: return null
+    fun create(familyId: UUID, request: CreateMemberRequest): Member? {
+        val family = familyRepository.findById(familyId).orElse(null) ?: return null
+        return memberRepository.save(
+            MemberEntity(
+                firstName = request.firstName,
+                lastName = request.lastName,
+                family = family,
+                birthDate = request.birthDate,
+                birthPlace = request.birthPlace,
+                deathDate = request.deathDate,
+                deathPlace = request.deathPlace,
+                note = request.note,
+                photoUrl = request.photoUrl?.toString(),
+            ),
+        ).toResponse()
+    }
+
+    /** Replaces the member's fields but keeps its parent/child links; null when it is not in the family. */
+    @Transactional
+    fun update(familyId: UUID, id: UUID, request: CreateMemberRequest): Member? {
+        val entity = memberRepository.findByIdAndFamilyId(id, familyId) ?: return null
         entity.firstName = request.firstName
         entity.lastName = request.lastName
         entity.birthDate = request.birthDate
@@ -47,21 +80,17 @@ class MemberService(private val memberRepository: MemberRepository) {
     }
 
     @Transactional
-    fun updateRelatives(id: UUID, relatives: Relatives): RelativesResult {
-        // ponytail: loads every member to check for cycles; fine for one family, query the graph if trees grow large.
-        val all = memberRepository.findAll().associateBy { it.id }
+    fun updateRelatives(familyId: UUID, id: UUID, relatives: Relatives): RelativesResult {
+        val all = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId).associateBy { it.id }
         val member = all[id] ?: return RelativesResult.NOT_FOUND
         val parentIds = relatives.parentIds.toSet()
         val childIds = relatives.childIds.toSet()
         val partnerIds = relatives.partnerIds.toSet()
-        val sets = listOf(parentIds, childIds, partnerIds)
-        val everyone = sets.flatten()
-        // Each relative may appear in only one set, never the member itself, and must exist.
-        if (id in everyone || everyone.size != everyone.toSet().size || !all.keys.containsAll(everyone)) {
+        val everyone = parentIds + childIds + partnerIds
+        if (id in everyone || everyone.size != parentIds.size + childIds.size + partnerIds.size || !all.keys.containsAll(everyone)) {
             return RelativesResult.INVALID
         }
 
-        // Check the links as they would be after the update before changing any entity.
         val parentsOf = all.mapValues { (otherId, other) ->
             when {
                 otherId == id -> parentIds
@@ -81,10 +110,12 @@ class MemberService(private val memberRepository: MemberRepository) {
     }
 
     @Transactional
-    fun delete(id: UUID): Boolean {
-        val member = memberRepository.findById(id).orElse(null) ?: return false
-        memberRepository.findAllByParentsId(id).forEach { it.parents.remove(member) }
-        memberRepository.findAllByPartnersId(id).forEach { it.partners.remove(member) }
+    fun delete(familyId: UUID, id: UUID): Boolean {
+        val member = memberRepository.findByIdAndFamilyId(id, familyId) ?: return false
+        memberRepository.findAllByFamilyIdAndParentsId(familyId, id).forEach { it.parents.remove(member) }
+        memberRepository.findAllByFamilyIdAndPartnersId(familyId, id).forEach { it.partners.remove(member) }
+        member.parents.clear()
+        member.partners.clear()
         memberRepository.delete(member)
         return true
     }

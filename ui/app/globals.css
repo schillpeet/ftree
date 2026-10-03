@@ -80,25 +80,46 @@ textarea {
   z-index: 5;
   top: 16px;
   right: 16px;
-  width: min(360px, calc(100vw - 32px));
   color: #173a2b;
   font-family: Georgia, 'Times New Roman', serif;
 }
 
-.test-users-control > .members-button {
-  display: block;
-  margin-left: auto;
+.families-control {
+  position: fixed;
+  z-index: 5;
+  top: 16px;
+  right: 132px;
+  color: #173a2b;
+  font-family: Georgia, 'Times New Roman', serif;
 }
 
+.families-control > .members-button {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.families-panel,
 .test-users-panel {
+  position: absolute;
+  top: 54px;
+  right: 0;
   max-height: calc(100dvh - 88px);
-  margin-top: 10px;
   overflow-y: auto;
   border: 1px solid rgba(23, 58, 43, 0.16);
   border-radius: 8px;
   background: rgba(250, 248, 238, 0.97);
   box-shadow: 0 12px 38px rgba(18, 38, 28, 0.24);
   backdrop-filter: blur(12px);
+}
+
+.families-panel {
+  width: min(400px, calc(100vw - 32px));
+}
+
+.test-users-panel {
+  width: min(360px, calc(100vw - 32px));
 }
 
 .test-users-form {
@@ -136,6 +157,83 @@ textarea {
 
 .test-users-form .member-form-actions button[type='submit'] {
   margin-left: auto;
+}
+
+.families-panel-body {
+  padding: 12px 16px 16px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.family-set-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-set-item {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.family-set-select {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(23, 58, 43, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+  cursor: pointer;
+  text-align: left;
+}
+
+.family-set-select[aria-pressed='true'] {
+  border-color: #173a2b;
+  background: #edf1e8;
+  box-shadow: inset 3px 0 #173a2b;
+}
+
+.family-set-select strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.family-set-select span {
+  color: #42564a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.family-set-delete {
+  width: 40px;
+  flex: 0 0 40px;
+  border: 1px solid rgba(139, 50, 29, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #8b321d;
+  cursor: pointer;
+  font: 22px/1 Arial, sans-serif;
+}
+
+.family-set-delete:disabled,
+.family-set-select:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.family-set-select:focus-visible,
+.family-set-delete:focus-visible,
+.families-panel button:focus-visible,
+.test-users-panel button:focus-visible {
+  outline: 3px solid #e89155;
+  outline-offset: 2px;
 }
 
 .members-panel-header {
@@ -363,15 +461,38 @@ textarea {
   .test-users-control {
     top: 64px;
     right: 10px;
-    width: calc(100vw - 20px);
+  }
+
+  .families-control {
+    top: 64px;
+    right: 10px;
+  }
+
+  .test-users-control {
+    top: 118px;
+    right: 10px;
   }
 
   .members-panel {
     max-height: calc(100dvh - 76px);
   }
 
+  .families-panel,
   .test-users-panel {
+    position: fixed;
+    right: 10px;
+    width: calc(100vw - 20px);
+    box-sizing: border-box;
     max-height: calc(100dvh - 130px);
+  }
+
+  .families-panel {
+    top: 112px;
+  }
+
+  .test-users-panel {
+    top: 166px;
+    max-height: calc(100dvh - 232px);
   }
 
   .member-dialog {

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import { updateMemberRelatives, type Member } from '../lib/api/generated/members';
+import { updateFamilyMemberRelatives, type Member } from '../lib/api/generated/members';
 import { DISCARD_PROMPT } from './MembersControls';
 
 const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
@@ -13,11 +13,13 @@ function toggle(ids: string[], id: string) {
 // Assigns any number of parents, children, and partners to one member.
 export default function RelativesDialog({
   member,
+  familyId,
   members,
   onClose,
   onSaved,
 }: {
   member: Member;
+  familyId: string;
   members: Member[];
   onClose: () => void;
   onSaved: () => void;
@@ -39,7 +41,7 @@ export default function RelativesDialog({
     setIsSaving(true);
     setError(null);
     try {
-      const response = await updateMemberRelatives(member.id, { parentIds, childIds, partnerIds });
+      const response = await updateFamilyMemberRelatives(familyId, member.id, { parentIds, childIds, partnerIds });
       if (response.status === 400) {
         setError('Diese Zuordnung ist nicht möglich: Niemand kann sein eigener Vorfahre sein.');
         return;

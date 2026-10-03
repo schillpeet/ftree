@@ -1,24 +1,32 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
-import {
-  createMember,
-  getMembers,
-  updateMemberRelatives,
-  type Member,
-} from '../lib/api/generated/members';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { createFamily, type FamilySummary } from '../lib/api/generated/members';
 import { planTestFamily } from './testFamilyPlan';
 
 const MAX_TEST_USERS = 250;
 const MAX_GENERATIONS = 10;
 const MAX_CHILDREN = 3;
 
+function suggestedFamilyName(families: FamilySummary[] | null) {
+  const existing = new Set(families?.map((family) => family.name.toLocaleLowerCase()) ?? []);
+  let number = 1;
+  while (existing.has(`test-familie ${number}`)) number++;
+  return `Test-Familie ${number}`;
+}
+
 export default function TestUsersPanel({
-  setMembers,
+  families,
+  isOpen,
+  onToggle,
+  onCreated,
 }: {
-  setMembers: Dispatch<SetStateAction<Member[] | null>>;
+  families: FamilySummary[] | null;
+  isOpen: boolean;
+  onToggle: () => void;
+  onCreated: (family: FamilySummary) => void;
 }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [name, setName] = useState<string | null>(null);
   const [totalUsers, setTotalUsers] = useState(12);
   const [generationCount, setGenerationCount] = useState(3);
   const [minChildren, setMinChildren] = useState(0);
@@ -33,15 +41,16 @@ export default function TestUsersPanel({
     () => planTestFamily(totalUsers, generationCount, minChildren, maxChildren),
     [totalUsers, generationCount, minChildren, maxChildren],
   );
+  const familyName = name ?? suggestedFamilyName(families);
 
   useEffect(() => {
     if (!isOpen || isGenerating) return;
     function closeOnOutsidePress(event: PointerEvent) {
       const target = event.target as Node;
-      if (!panelRef.current?.contains(target) && !buttonRef.current?.contains(target)) setIsOpen(false);
+      if (!panelRef.current?.contains(target) && !buttonRef.current?.contains(target)) onToggle();
     }
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setIsOpen(false);
+      if (event.key === 'Escape') onToggle();
     }
     document.addEventListener('pointerdown', closeOnOutsidePress);
     document.addEventListener('keydown', closeOnEscape);
@@ -49,7 +58,7 @@ export default function TestUsersPanel({
       document.removeEventListener('pointerdown', closeOnOutsidePress);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [isOpen, isGenerating]);
+  }, [isOpen, isGenerating, onToggle]);
 
   async function generateUsers(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -58,69 +67,29 @@ export default function TestUsersPanel({
     setIsGenerating(true);
     setError(null);
     setSuccess(null);
-    const created: Member[] = [];
-    let phase = 'Testuser anlegen';
-
     try {
-      for (const [index, person] of plan.entries()) {
-        const response = await createMember({
-          firstName: `Testuser ${String(index + 1).padStart(3, '0')}`,
-          lastName: `Generation ${person.generation + 1}`,
-          note: 'Automatisch generierter Testuser.',
-        });
-        if (response.status !== 201) throw new Error(`HTTP ${response.status}`);
-        created.push(response.data);
+      const response = await createFamily({
+        name: familyName.trim(),
+        totalUsers,
+        generationCount,
+        minChildren,
+        maxChildren,
+      });
+      if (response.status === 409) {
+        setError('Eine Familie mit diesem Namen existiert bereits.');
+        return;
       }
-
-      phase = 'Generationen verknüpfen';
-      for (let index = 0; index < created.length; index++) {
-        const children = plan.flatMap((person, childIndex) =>
-          person.parentIndex === index ? [created[childIndex].id] : [],
-        );
-        if (children.length === 0) continue;
-
-        const response = await updateMemberRelatives(created[index].id, {
-          parentIds: [],
-          childIds: children,
-          partnerIds: [],
-        });
-        if (response.status !== 204) throw new Error(`HTTP ${response.status}`);
+      if (response.status !== 201) {
+        setError('Diese Familien-Einstellungen konnten nicht gespeichert werden.');
+        return;
       }
-
-      phase = 'Baum aktualisieren';
-      const response = await getMembers();
-      if (response.status !== 200 || !Array.isArray(response.data)) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      setMembers(response.data);
-      setSuccess(`${created.length} Testuser in ${generationCount} Generationen wurden angelegt.`);
-    } catch (cause) {
-      const reason = cause instanceof Error ? cause.message : 'Unbekannter Fehler';
-      setError(`${phase} fehlgeschlagen (${reason}). ${created.length} von ${plan.length} Testusern wurden angelegt.`);
-
-      if (created.length > 0) {
-        try {
-          const response = await getMembers();
-          if (response.status !== 200 || !Array.isArray(response.data)) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          setMembers(response.data);
-        } catch (refreshCause) {
-          const refreshReason = refreshCause instanceof Error ? refreshCause.message : 'Unbekannter Fehler';
-          setError((message) => `${message} Der Baum konnte danach nicht neu geladen werden (${refreshReason}).`);
-          const partial = created.map((member, index) => {
-            const parentIndex = plan[index].parentIndex;
-            return {
-              ...member,
-              parentIds: parentIndex === null ? [] : [created[parentIndex].id],
-            };
-          });
-          setMembers((current) => {
-            const existingIds = new Set(current?.map((member) => member.id) ?? []);
-            return [...(current ?? []), ...partial.filter((member) => !existingIds.has(member.id))];
-          });
-        }
-      }
+      onCreated(response.data);
+      setSuccess(
+        `${response.data.name}: ${response.data.memberCount} Personen in ${response.data.generationCount} Generationen angelegt.`,
+      );
+      setName(null);
+    } catch {
+      setError('Die Familie konnte nicht gespeichert werden. Ist das BFF erreichbar?');
     } finally {
       setIsGenerating(false);
     }
@@ -135,7 +104,7 @@ export default function TestUsersPanel({
         aria-expanded={isOpen}
         aria-controls="test-users-panel"
         ref={buttonRef}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={onToggle}
       >
         Testuser
       </button>
@@ -143,17 +112,28 @@ export default function TestUsersPanel({
       {isOpen && (
         <section className="test-users-panel" id="test-users-panel" aria-label="Testuser anlegen" ref={panelRef}>
           <header className="members-panel-header">
-            <h2>Testuser anlegen</h2>
+            <h2>Testuser-Familie anlegen</h2>
             <button
               type="button"
               aria-label="Testuser-Board schließen"
               disabled={isGenerating}
-              onClick={() => setIsOpen(false)}
+              onClick={onToggle}
             >
               ×
             </button>
           </header>
           <form className="test-users-form" onSubmit={generateUsers}>
+            <label className="member-field">
+              Familienname
+              <input
+                autoComplete="off"
+                maxLength={100}
+                required
+                disabled={isGenerating}
+                value={familyName}
+                onChange={(event) => setName(event.target.value)}
+              />
+            </label>
             <label className="member-field">
               Anzahl Testuser
               <input
@@ -205,8 +185,8 @@ export default function TestUsersPanel({
               </label>
             </div>
             <p className="test-users-hint">
-              Erstellt neue Testpersonen samt Eltern-Kind-Beziehungen. Maximal {MAX_TEST_USERS} Personen, {MAX_GENERATIONS}{' '}
-              Generationen und {MAX_CHILDREN} Kinder pro Elternteil.
+              Erstellt eine neue Familie samt Personen und Beziehungen. Maximal {MAX_TEST_USERS} Personen,{' '}
+              {MAX_GENERATIONS} Generationen und {MAX_CHILDREN} Kinder pro Elternteil.
             </p>
             {plan === null && (
               <p className="member-form-error" role="alert">
@@ -216,8 +196,8 @@ export default function TestUsersPanel({
             {error && <p className="member-form-error" role="alert">{error}</p>}
             {success && <p className="test-users-success" role="status">{success}</p>}
             <div className="member-form-actions">
-              <button type="submit" disabled={!plan || isGenerating}>
-                {isGenerating ? 'Testuser werden angelegt …' : 'Testuser anlegen'}
+              <button type="submit" disabled={!plan || isGenerating || !familyName.trim()}>
+                {isGenerating ? 'Familie wird angelegt …' : 'Familie speichern und anzeigen'}
               </button>
             </div>
           </form>

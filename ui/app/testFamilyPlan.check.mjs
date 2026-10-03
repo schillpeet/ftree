@@ -43,6 +43,7 @@ function isFeasible(total, generations, minChildren, maxChildren) {
 }
 
 checkPlan(12, 3, 0, 3);
+checkPlan(4, 2, 0, 2);
 checkPlan(24, 4, 1, 3);
 checkPlan(6, 3, 1, 1);
 checkPlan(3, 1, 0, 0);

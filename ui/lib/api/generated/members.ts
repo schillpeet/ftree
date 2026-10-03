@@ -5,6 +5,73 @@
  * API contract for the ftree UI and Backend for Frontend.
  * OpenAPI spec version: 0.1.0
  */
+export interface TestFamilySettings {
+  /**
+     * @minimum 1
+     * @maximum 250
+     */
+  totalUsers: number;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  generationCount: number;
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  minChildren: number;
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  maxChildren: number;
+}
+
+export interface FamilySummary {
+  readonly id: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /** @minimum 0 */
+  memberCount: number;
+  /** @minimum 0 */
+  childCount: number;
+  /** @minimum 0 */
+  generationCount: number;
+  testSettings: TestFamilySettings | null;
+}
+
+export interface CreateFamilyRequest {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 250
+     */
+  totalUsers: number;
+  /**
+     * @minimum 1
+     * @maximum 10
+     */
+  generationCount: number;
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  minChildren: number;
+  /**
+     * @minimum 0
+     * @maximum 3
+     */
+  maxChildren: number;
+}
+
 export interface Member {
   readonly id: string;
   /**
@@ -105,8 +172,8 @@ export const getGetMembersUrl = () => {
 }
 
 /**
- * Returns all members. Returns an empty array when no members exist.
- * @summary List members
+ * Returns members from the default family for backwards compatibility.
+ * @summary List members in the default family
  */
 export const getMembers = async ( options?: RequestInit): Promise<getMembersResponse> => {
 
@@ -156,7 +223,7 @@ export const getCreateMemberUrl = () => {
 }
 
 /**
- * @summary Create a member
+ * @summary Create a member in the default family
  */
 export const createMember = async (createMemberRequest: CreateMemberRequest, options?: RequestInit): Promise<createMemberResponse> => {
 
@@ -226,7 +293,7 @@ export const getUpdateMemberUrl = (id: string,) => {
 
 /**
  * Replaces the member's fields. Parents and children stay unchanged.
- * @summary Update a member
+ * @summary Update a member in the default family
  */
 export const updateMember = async (id: string,
     createMemberRequest: CreateMemberRequest, options?: RequestInit): Promise<updateMemberResponse> => {
@@ -291,7 +358,7 @@ export const getDeleteMemberUrl = (id: string,) => {
 }
 
 /**
- * @summary Delete a member
+ * @summary Delete a member in the default family
  */
 export const deleteMember = async (id: string, options?: RequestInit): Promise<deleteMemberResponse> => {
 
@@ -346,8 +413,8 @@ export const getUpdateMemberRelativesUrl = (id: string,) => {
 }
 
 /**
- * Replaces all three sets. Partnerships are mutual, so the partners list this member too. Rejects unknown members, the member itself, a member in more than one set, and links that would make someone their own ancestor.
- * @summary Replace a member's parents, children, and partners
+ * Replaces all three sets. Partnerships are mutual. Rejects unknown members, the member itself, a member in more than one set, and links that would make someone their own ancestor.
+ * @summary Replace relatives of a member in the default family
  */
 export const updateMemberRelatives = async (id: string,
     relatives: Relatives, options?: RequestInit): Promise<updateMemberRelativesResponse> => {
@@ -380,4 +447,485 @@ const res = await fetch(getUpdateMemberRelativesUrl(id),
 
   const data: updateMemberRelativesResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as updateMemberRelativesResponse
+}
+
+
+
+export type getFamiliesResponse200 = {
+  data: FamilySummary[]
+  status: 200
+}
+
+export type getFamiliesResponseSuccess = (getFamiliesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type getFamiliesResponse = (getFamiliesResponseSuccess)
+
+export const getGetFamiliesUrl = () => {
+
+
+
+
+  return `http://localhost:8080/families`
+}
+
+/**
+ * @summary List family sets
+ */
+export const getFamilies = async ( options?: RequestInit): Promise<getFamiliesResponse> => {
+
+  const res = await fetch(getGetFamiliesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getFamiliesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getFamiliesResponse
+}
+
+
+
+export type createFamilyResponse201 = {
+  data: FamilySummary
+  status: 201
+}
+
+export type createFamilyResponse400 = {
+  data: void
+  status: 400
+}
+
+export type createFamilyResponse409 = {
+  data: void
+  status: 409
+}
+
+export type createFamilyResponseSuccess = (createFamilyResponse201) & {
+  headers: Headers;
+};
+export type createFamilyResponseError = (createFamilyResponse400 | createFamilyResponse409) & {
+  headers: Headers;
+};
+
+export type createFamilyResponse = (createFamilyResponseSuccess | createFamilyResponseError)
+
+export const getCreateFamilyUrl = () => {
+
+
+
+
+  return `http://localhost:8080/families`
+}
+
+/**
+ * @summary Create a generated family set
+ */
+export const createFamily = async (createFamilyRequest: CreateFamilyRequest, options?: RequestInit): Promise<createFamilyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateFamilyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createFamilyRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createFamilyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createFamilyResponse
+}
+
+
+
+export type deleteFamilyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteFamilyResponse404 = {
+  data: void
+  status: 404
+}
+
+export type deleteFamilyResponseSuccess = (deleteFamilyResponse204) & {
+  headers: Headers;
+};
+export type deleteFamilyResponseError = (deleteFamilyResponse404) & {
+  headers: Headers;
+};
+
+export type deleteFamilyResponse = (deleteFamilyResponseSuccess | deleteFamilyResponseError)
+
+export const getDeleteFamilyUrl = (familyId: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}`
+}
+
+/**
+ * The default family is permanent and cannot be deleted.
+ * @summary Delete a non-default family and all of its members
+ */
+export const deleteFamily = async (familyId: string, options?: RequestInit): Promise<deleteFamilyResponse> => {
+
+  const res = await fetch(getDeleteFamilyUrl(familyId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteFamilyResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteFamilyResponse
+}
+
+
+
+export type getFamilyMembersResponse200 = {
+  data: Member[]
+  status: 200
+}
+
+export type getFamilyMembersResponse404 = {
+  data: void
+  status: 404
+}
+
+export type getFamilyMembersResponseSuccess = (getFamilyMembersResponse200) & {
+  headers: Headers;
+};
+export type getFamilyMembersResponseError = (getFamilyMembersResponse404) & {
+  headers: Headers;
+};
+
+export type getFamilyMembersResponse = (getFamilyMembersResponseSuccess | getFamilyMembersResponseError)
+
+export const getGetFamilyMembersUrl = (familyId: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members`
+}
+
+/**
+ * @summary List members in a family
+ */
+export const getFamilyMembers = async (familyId: string, options?: RequestInit): Promise<getFamilyMembersResponse> => {
+
+  const res = await fetch(getGetFamilyMembersUrl(familyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getFamilyMembersResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getFamilyMembersResponse
+}
+
+
+
+export type createFamilyMemberResponse201 = {
+  data: Member
+  status: 201
+}
+
+export type createFamilyMemberResponse400 = {
+  data: void
+  status: 400
+}
+
+export type createFamilyMemberResponse404 = {
+  data: void
+  status: 404
+}
+
+export type createFamilyMemberResponseSuccess = (createFamilyMemberResponse201) & {
+  headers: Headers;
+};
+export type createFamilyMemberResponseError = (createFamilyMemberResponse400 | createFamilyMemberResponse404) & {
+  headers: Headers;
+};
+
+export type createFamilyMemberResponse = (createFamilyMemberResponseSuccess | createFamilyMemberResponseError)
+
+export const getCreateFamilyMemberUrl = (familyId: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members`
+}
+
+/**
+ * @summary Create a member in a family
+ */
+export const createFamilyMember = async (familyId: string,
+    createMemberRequest: CreateMemberRequest, options?: RequestInit): Promise<createFamilyMemberResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateFamilyMemberUrl(familyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createMemberRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createFamilyMemberResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createFamilyMemberResponse
+}
+
+
+
+export type updateFamilyMemberResponse200 = {
+  data: Member
+  status: 200
+}
+
+export type updateFamilyMemberResponse400 = {
+  data: void
+  status: 400
+}
+
+export type updateFamilyMemberResponse404 = {
+  data: void
+  status: 404
+}
+
+export type updateFamilyMemberResponseSuccess = (updateFamilyMemberResponse200) & {
+  headers: Headers;
+};
+export type updateFamilyMemberResponseError = (updateFamilyMemberResponse400 | updateFamilyMemberResponse404) & {
+  headers: Headers;
+};
+
+export type updateFamilyMemberResponse = (updateFamilyMemberResponseSuccess | updateFamilyMemberResponseError)
+
+export const getUpdateFamilyMemberUrl = (familyId: string,
+    id: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members/${id}`
+}
+
+/**
+ * Replaces the member's fields. Parents and children stay unchanged.
+ * @summary Update a member in a family
+ */
+export const updateFamilyMember = async (familyId: string,
+    id: string,
+    createMemberRequest: CreateMemberRequest, options?: RequestInit): Promise<updateFamilyMemberResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateFamilyMemberUrl(familyId,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createMemberRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateFamilyMemberResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateFamilyMemberResponse
+}
+
+
+
+export type deleteFamilyMemberResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteFamilyMemberResponse404 = {
+  data: void
+  status: 404
+}
+
+export type deleteFamilyMemberResponseSuccess = (deleteFamilyMemberResponse204) & {
+  headers: Headers;
+};
+export type deleteFamilyMemberResponseError = (deleteFamilyMemberResponse404) & {
+  headers: Headers;
+};
+
+export type deleteFamilyMemberResponse = (deleteFamilyMemberResponseSuccess | deleteFamilyMemberResponseError)
+
+export const getDeleteFamilyMemberUrl = (familyId: string,
+    id: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members/${id}`
+}
+
+/**
+ * @summary Delete a member in a family
+ */
+export const deleteFamilyMember = async (familyId: string,
+    id: string, options?: RequestInit): Promise<deleteFamilyMemberResponse> => {
+
+  const res = await fetch(getDeleteFamilyMemberUrl(familyId,id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteFamilyMemberResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteFamilyMemberResponse
+}
+
+
+
+export type updateFamilyMemberRelativesResponse204 = {
+  data: void
+  status: 204
+}
+
+export type updateFamilyMemberRelativesResponse400 = {
+  data: void
+  status: 400
+}
+
+export type updateFamilyMemberRelativesResponse404 = {
+  data: void
+  status: 404
+}
+
+export type updateFamilyMemberRelativesResponseSuccess = (updateFamilyMemberRelativesResponse204) & {
+  headers: Headers;
+};
+export type updateFamilyMemberRelativesResponseError = (updateFamilyMemberRelativesResponse400 | updateFamilyMemberRelativesResponse404) & {
+  headers: Headers;
+};
+
+export type updateFamilyMemberRelativesResponse = (updateFamilyMemberRelativesResponseSuccess | updateFamilyMemberRelativesResponseError)
+
+export const getUpdateFamilyMemberRelativesUrl = (familyId: string,
+    id: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members/${id}/relatives`
+}
+
+/**
+ * Replaces all three sets. Partnerships are mutual, so the partners list this member too. Rejects unknown members, the member itself, a member in more than one set, and links that would make someone their own ancestor.
+ * @summary Replace a family member's parents, children, and partners
+ */
+export const updateFamilyMemberRelatives = async (familyId: string,
+    id: string,
+    relatives: Relatives, options?: RequestInit): Promise<updateFamilyMemberRelativesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateFamilyMemberRelativesUrl(familyId,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(relatives)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateFamilyMemberRelativesResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as updateFamilyMemberRelativesResponse
 }
