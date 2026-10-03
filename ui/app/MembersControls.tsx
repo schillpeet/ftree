@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
-  createMember,
-  deleteMember,
-  getMembers,
-  updateMember,
+  createFamilyMember,
+  deleteFamilyMember,
+  getFamilyMembers,
+  updateFamilyMember,
   type CreateMemberRequest,
   type Member,
 } from '../lib/api/generated/members';
@@ -109,16 +109,20 @@ function MemberDetails({
 }
 
 export default function MembersControls({
+  familyId,
   members,
   setMembers,
   profile,
   onSelect,
+  onFamiliesChanged,
 }: {
+  familyId: string | null;
   members: Member[] | null;
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
   // Member whose profile (the edit form) was requested from their scroll in the scene.
   profile: Focus;
   onSelect: (id: string) => void;
+  onFamiliesChanged: () => void;
 }) {
   const [isListOpen, setIsListOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -132,15 +136,12 @@ export default function MembersControls({
   const listButtonRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLElement>(null);
 
-  function reloadMembers() {
+  async function reloadMembers() {
+    if (!familyId) return;
     setIsLoading(true);
     setRequestError(null);
-    void loadMembers();
-  }
-
-  async function loadMembers() {
     try {
-      const response = await getMembers();
+      const response = await getFamilyMembers(familyId);
       if (response.status !== 200 || !Array.isArray(response.data)) {
         throw new Error('Unexpected members response');
       }
@@ -152,11 +153,32 @@ export default function MembersControls({
     }
   }
 
-  // The scene needs the members right away to show their scrolls.
+  // A family switch clears the previous tree before loading the selected family's members.
   useEffect(() => {
-    void loadMembers();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!familyId) return;
+    const currentFamilyId = familyId;
+    let current = true;
+    async function loadFamilyMembers() {
+      try {
+        const response = await getFamilyMembers(currentFamilyId);
+        if (!current) return;
+        if (response.status !== 200 || !Array.isArray(response.data)) {
+          throw new Error('Unexpected members response');
+        }
+        setMembers(response.data);
+      } catch {
+        if (current) {
+          setRequestError('Die Mitglieder dieser Familie konnten nicht geladen werden. Ist das BFF erreichbar?');
+        }
+      } finally {
+        if (current) setIsLoading(false);
+      }
+    }
+    void loadFamilyMembers();
+    return () => {
+      current = false;
+    };
+  }, [familyId, setMembers]);
 
   useEffect(() => {
     const member = profile && members?.find((m) => m.id === profile.id);
@@ -185,12 +207,14 @@ export default function MembersControls({
   }, [isListOpen, relativesOf]);
 
   async function removeMember(member: Member) {
+    if (!familyId) return;
     if (!window.confirm(`${member.firstName} ${member.lastName} wirklich löschen?`)) return;
     setRequestError(null);
     try {
-      const response = await deleteMember(member.id);
+      const response = await deleteFamilyMember(familyId, member.id);
       if (response.status !== 204 && response.status !== 404) throw new Error('Unexpected delete response');
       setMembers((current) => current?.filter((m) => m.id !== member.id) ?? null);
+      onFamiliesChanged();
     } catch {
       setRequestError('Die Person konnte nicht gelöscht werden. Ist das BFF erreichbar?');
     }
@@ -203,6 +227,7 @@ export default function MembersControls({
   }
 
   function openForm(member: Member | null = null) {
+    if (!familyId) return;
     // Keep an unsaved create draft, but never carry an edited member's values into a new person.
     if (member) {
       setForm(toForm(member));
@@ -230,6 +255,7 @@ export default function MembersControls({
 
   async function submitMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!familyId) return;
     setIsSaving(true);
     setFormError(null);
 
@@ -246,7 +272,7 @@ export default function MembersControls({
 
     try {
       if (editing) {
-        const response = await updateMember(editing.id, request);
+        const response = await updateFamilyMember(familyId, editing.id, request);
         if (response.status !== 200) {
           setFormError(
             response.status === 404
@@ -257,16 +283,18 @@ export default function MembersControls({
         }
         const updated = response.data;
         setMembers((current) => current?.map((m) => (m.id === updated.id ? updated : m)) ?? null);
+        onFamiliesChanged();
         setIsFormOpen(false);
         onSelect(updated.id);
         return;
       }
-      const response = await createMember(request);
+      const response = await createFamilyMember(familyId, request);
       if (response.status !== 201) {
         setFormError('Die Person konnte nicht angelegt werden. Bitte prüfe die Eingaben.');
         return;
       }
       setMembers((current) => [response.data, ...(current ?? [])]);
+      onFamiliesChanged();
       setIsFormOpen(false);
       onSelect(response.data.id);
       setForm({ ...EMPTY_FORM });
@@ -290,7 +318,7 @@ export default function MembersControls({
         >
           Personen
         </button>
-        <button className="members-button" type="button" onClick={() => openForm()}>
+        <button className="members-button" type="button" disabled={!familyId} onClick={() => openForm()}>
           Person hinzufügen
         </button>
       </div>
@@ -304,15 +332,18 @@ export default function MembersControls({
             </button>
           </header>
           <div className="members-panel-body" aria-live="polite">
-            {isLoading && <p className="members-loading">Mitglieder werden geladen …</p>}
-            {requestError && (
+            {familyId && isLoading && <p className="members-loading">Mitglieder werden geladen …</p>}
+            {requestError && !isLoading && (
               <div className="members-error" role="alert">
                 <p>{requestError}</p>
-                <button type="button" onClick={reloadMembers}>Erneut versuchen</button>
+                <button type="button" onClick={() => void reloadMembers()}>Erneut versuchen</button>
               </div>
             )}
-            {!isLoading && !requestError && members?.length === 0 && (
-              <p className="members-empty">Noch keine Personen angelegt.</p>
+            {!familyId && (
+              <p className="members-empty">Wähle eine Familie aus oder lege eine Testuser-Familie an.</p>
+            )}
+            {!isLoading && !requestError && familyId && members?.length === 0 && (
+              <p className="members-empty">Noch keine Personen in dieser Familie angelegt.</p>
             )}
             {!isLoading && !requestError && members && members.length > 0 && (
               <ul className="member-list">
@@ -415,14 +446,16 @@ export default function MembersControls({
         </div>
       )}
 
-      {relativesOf && members && (
+      {relativesOf && members && familyId && (
         <RelativesDialog
           member={relativesOf}
+          familyId={familyId}
           members={members}
           onClose={() => setRelativesOf(null)}
           onSaved={() => {
             setRelativesOf(null);
-            void loadMembers();
+            void reloadMembers();
+            onFamiliesChanged();
           }}
         />
       )}

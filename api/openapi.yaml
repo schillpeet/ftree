@@ -7,6 +7,8 @@ servers:
   - url: http://localhost:8080
     description: Local BFF
 tags:
+  - name: Families
+    description: Isolated family trees and test sets
   - name: Members
     description: People in the family tree
 paths:
@@ -15,11 +17,11 @@ paths:
       operationId: getMembers
       tags:
         - Members
-      summary: List members
-      description: Returns all members. Returns an empty array when no members exist.
+      summary: List members in the default family
+      description: Returns members from the default family for backwards compatibility.
       responses:
         "200":
-          description: Member list, possibly empty.
+          description: Members in the default family, possibly empty.
           content:
             application/json:
               schema:
@@ -30,7 +32,7 @@ paths:
       operationId: createMember
       tags:
         - Members
-      summary: Create a member
+      summary: Create a member in the default family
       requestBody:
         required: true
         content:
@@ -47,19 +49,19 @@ paths:
         "400":
           description: The request is invalid.
   /members/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
     put:
       operationId: updateMember
       tags:
         - Members
-      summary: Update a member
+      summary: Update a member in the default family
       description: Replaces the member's fields. Parents and children stay unchanged.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -81,36 +83,213 @@ paths:
       operationId: deleteMember
       tags:
         - Members
-      summary: Delete a member
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
+      summary: Delete a member in the default family
       responses:
         "204":
           description: Member deleted.
         "404":
           description: Member not found.
   /members/{id}/relatives:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
     put:
       operationId: updateMemberRelatives
       tags:
         - Members
-      summary: Replace a member's parents, children, and partners
+      summary: Replace relatives of a member in the default family
+      description: >-
+        Replaces all three sets. Partnerships are mutual. Rejects unknown members, the member
+        itself, a member in more than one set, and links that would make someone their own ancestor.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Relatives"
+      responses:
+        "204":
+          description: Relatives updated.
+        "400":
+          description: The relatives are invalid.
+        "404":
+          description: Member not found.
+  /families:
+    get:
+      operationId: getFamilies
+      tags:
+        - Families
+      summary: List family sets
+      responses:
+        "200":
+          description: Family sets ordered by creation time.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FamilySummary"
+    post:
+      operationId: createFamily
+      tags:
+        - Families
+      summary: Create a generated family set
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFamilyRequest"
+      responses:
+        "201":
+          description: Family and generated members created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The name or generation settings are invalid or infeasible.
+        "409":
+          description: A family with this name already exists.
+  /families/{familyId}:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: deleteFamily
+      tags:
+        - Families
+      summary: Delete a family and all of its members
+      description: Any family, including the default family, can be deleted.
+      responses:
+        "204":
+          description: Family and its members deleted.
+        "404":
+          description: Family not found.
+  /families/{familyId}/members:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getFamilyMembers
+      tags:
+        - Members
+      summary: List members in a family
+      responses:
+        "200":
+          description: Members in this family, possibly empty.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+        "404":
+          description: Family not found.
+    post:
+      operationId: createFamilyMember
+      tags:
+        - Members
+      summary: Create a member in a family
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "201":
+          description: Member created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "400":
+          description: The request is invalid.
+        "404":
+          description: Family not found.
+  /families/{familyId}/members/{id}:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateFamilyMember
+      tags:
+        - Members
+      summary: Update a member in a family
+      description: Replaces the member's fields. Parents and children stay unchanged.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMemberRequest"
+      responses:
+        "200":
+          description: Member updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "400":
+          description: The request is invalid.
+        "404":
+          description: Member not found.
+    delete:
+      operationId: deleteFamilyMember
+      tags:
+        - Members
+      summary: Delete a member in a family
+      responses:
+        "204":
+          description: Member deleted.
+        "404":
+          description: Member not found.
+  /families/{familyId}/members/{id}/relatives:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateFamilyMemberRelatives
+      tags:
+        - Members
+      summary: Replace a family member's parents, children, and partners
       description: >-
         Replaces all three sets. Partnerships are mutual, so the partners list this member too.
         Rejects unknown members, the member itself, a member in more than one set, and links
         that would make someone their own ancestor.
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -126,6 +305,90 @@ paths:
           description: Member not found.
 components:
   schemas:
+    FamilySummary:
+      type: object
+      required:
+        - id
+        - name
+        - memberCount
+        - childCount
+        - generationCount
+        - testSettings
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        memberCount:
+          type: integer
+          minimum: 0
+        childCount:
+          type: integer
+          minimum: 0
+        generationCount:
+          type: integer
+          minimum: 0
+        testSettings:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/TestFamilySettings"
+    TestFamilySettings:
+      type: object
+      required:
+        - totalUsers
+        - generationCount
+        - minChildren
+        - maxChildren
+      properties:
+        totalUsers:
+          type: integer
+          minimum: 1
+          maximum: 250
+        generationCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+        minChildren:
+          type: integer
+          minimum: 0
+          maximum: 3
+        maxChildren:
+          type: integer
+          minimum: 0
+          maximum: 3
+    CreateFamilyRequest:
+      type: object
+      required:
+        - name
+        - totalUsers
+        - generationCount
+        - minChildren
+        - maxChildren
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        totalUsers:
+          type: integer
+          minimum: 1
+          maximum: 250
+        generationCount:
+          type: integer
+          minimum: 1
+          maximum: 10
+        minChildren:
+          type: integer
+          minimum: 0
+          maximum: 3
+        maxChildren:
+          type: integer
+          minimum: 0
+          maximum: 3
     Member:
       type: object
       required:

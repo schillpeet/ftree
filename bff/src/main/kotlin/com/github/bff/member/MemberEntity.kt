@@ -6,7 +6,9 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.JoinTable
 import jakarta.persistence.ManyToMany
+import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.FetchType
 import java.time.LocalDate
 import java.util.UUID
 
@@ -20,6 +22,9 @@ class MemberEntity(
     var firstName: String,
     @Column(nullable = false, length = 100)
     var lastName: String,
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "family_id", nullable = false)
+    var family: FamilyEntity,
     var birthDate: LocalDate? = null,
     @Column(length = 200)
     var birthPlace: String? = null,
