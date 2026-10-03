@@ -37,6 +37,8 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 
 The procedural scene is presentation code. It is not a family-tree domain model or a persistence layer.
 
+- A convenience mock Swagger server is available under `bff/mock-swagger/mock-server`. Start it locally to view the OpenAPI documentation and download the spec at `http://localhost:4010/openapi.yaml`. The Swagger UI is served at `http://localhost:4010/docs`. This mock server is intended for local development and does not replace the real BFF.
+
 ## Initial Architecture Direction
 
 Keep the UI and Kotlin BFF as separate applications in this repository. The BFF exposes the UI-facing API and owns access to PostgreSQL; no separate backend service is currently planned. `api/openapi.yaml` is the shared contract; Orval generates the UI client, and OpenAPI Generator creates Java API interfaces and DTOs implemented by Kotlin. Flyway manages the schema with versioned SQL migrations in `bff/src/main/resources/db/migration/`, and Hibernate only validates the entities against it (`ddl-auto=validate`). Databases created earlier by Hibernate are baselined at V1 (`baseline-on-migrate`), so V1 is not run on them; the family-set migration associates those existing members with `default`. Authentication and authorization must be designed before family data is shared.
