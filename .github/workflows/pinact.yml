@@ -7,33 +7,11 @@ on:
       - main
     paths:
       - .github/workflows/**
-      - "**/*.gradle.kts"
-      - "**/*.gradle"
-      - "**/gradle.properties"
-      - "**/gradle-wrapper.properties"
-      - "**/gradle-wrapper.jar"
-      - "**/gradlew"
-      - "**/gradlew.bat"
-      - ui/package.json
-      - ui/pnpm-lock.yaml
-      - ui/pnpm-workspace.yaml
-      - api/openapi.yaml
   push:
     branches:
       - main
     paths:
       - .github/workflows/**
-      - "**/*.gradle.kts"
-      - "**/*.gradle"
-      - "**/gradle.properties"
-      - "**/gradle-wrapper.properties"
-      - "**/gradle-wrapper.jar"
-      - "**/gradlew"
-      - "**/gradlew.bat"
-      - ui/package.json
-      - ui/pnpm-lock.yaml
-      - ui/pnpm-workspace.yaml
-      - api/openapi.yaml
 
 permissions:
   contents: read
