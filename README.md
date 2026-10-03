@@ -17,15 +17,16 @@ You need [Node.js 22](https://nodejs.org) with [pnpm](https://pnpm.io) (`corepac
 git clone https://github.com/schillpeet/ftree.git
 cd ftree
 pnpm --dir ui install
-./dev.sh
+./start.sh
 ```
 
-`dev.sh` starts PostgreSQL, the backend, and the UI. Then open:
+`start.sh` starts PostgreSQL, the backend, and the UI in the background. Then open:
 
 - **App:** [http://localhost:3000](http://localhost:3000)
 - **Backend API:** [http://localhost:8080](http://localhost:8080)
 
-<kbd>Ctrl</kbd>+<kbd>C</kbd> stops the app and backend. The database keeps running until you call `docker compose down`.
+Run `./stop.sh` to stop all three services. PostgreSQL data is retained. Logs and process state are stored under `.local/dev/`.
+If a required port is already occupied, `start.sh` reports the process and exits without stopping it.
 
 ## What's Inside
 
@@ -45,6 +46,8 @@ docker compose up -d --wait db      # PostgreSQL
 (cd bff && ./gradlew bootRun)       # backend
 pnpm --dir ui dev                   # UI
 ```
+
+For the managed start/stop lifecycle, use `./start.sh` and `./stop.sh`.
 
 After changing `api/openapi.yaml`, regenerate the UI client (the backend regenerates on build):
 
