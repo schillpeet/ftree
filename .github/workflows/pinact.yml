@@ -1,0 +1,71 @@
+name: Pin GitHub Actions
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/**
+      - "**/*.gradle.kts"
+      - "**/*.gradle"
+      - "**/gradle.properties"
+      - "**/gradle-wrapper.properties"
+      - "**/gradle-wrapper.jar"
+      - "**/gradlew"
+      - "**/gradlew.bat"
+      - ui/package.json
+      - ui/pnpm-lock.yaml
+      - ui/pnpm-workspace.yaml
+      - api/openapi.yaml
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/**
+      - "**/*.gradle.kts"
+      - "**/*.gradle"
+      - "**/gradle.properties"
+      - "**/gradle-wrapper.properties"
+      - "**/gradle-wrapper.jar"
+      - "**/gradlew"
+      - "**/gradlew.bat"
+      - ui/package.json
+      - ui/pnpm-lock.yaml
+      - ui/pnpm-workspace.yaml
+      - api/openapi.yaml
+
+permissions:
+  contents: read
+
+jobs:
+  pinact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - name: Set up Go
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6.5.0
+        with:
+          go-version: stable
+
+      - name: Install pinact
+        run: go install github.com/suzuki-shunsuke/pinact/v5/cmd/pinact@v5.0.0
+
+      - name: Pin GitHub Actions
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: pinact run
+
+      - name: Create pull request
+        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.PINACT_PUSH_TOKEN }}
+          add-paths: .github/workflows/
+          branch: pinact/update-action-shas
+          base: main
+          commit-message: "chore(deps): pin GitHub Actions commit SHAs"
+          title: "chore(deps): pin GitHub Actions commit SHAs"
+          delete-branch: true
