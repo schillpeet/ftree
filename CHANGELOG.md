@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/schillpeet/ftree/compare/v0.4.0...v0.4.1) (2026-10-03)
+
+
+### Bug Fixes
+
+* **repo:** manage local services ([#39](https://github.com/schillpeet/ftree/issues/39)) ([3d7e6eb](https://github.com/schillpeet/ftree/commit/3d7e6ebe46163168c2daeb206e8bb8a483fb728c))
+
 ## [0.4.0](https://github.com/schillpeet/ftree/compare/v0.3.0...v0.4.0) (2026-10-02)
 
 
