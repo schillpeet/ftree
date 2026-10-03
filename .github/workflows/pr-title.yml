@@ -1,0 +1,25 @@
+name: Pull request title
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions: {}
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate conventional lowercase title
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if [[ "$PR_TITLE" =~ [[:upper:]] ]]; then
+            echo "Pull request titles must be entirely lowercase."
+            exit 1
+          fi
+
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|build|ci)\((ui|bff|db|repo)\)!?:\ [a-z0-9] ]]; then
+            echo "Use <type>(<scope>): <lowercase message>, for example: feat(ui): add family visibility toggle."
+            exit 1
+          fi
