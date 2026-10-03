@@ -9,6 +9,8 @@ import { layoutScrolls, relationLines } from './familyLayout';
 import Meadow, { height } from './Meadow';
 import Scroll from './Scroll';
 import Tree from './Tree';
+import useTreeGrowth from './useTreeGrowth';
+import { DEFAULT_RADIUS } from './familyLayout';
 
 // Low sun in view, left behind the tree: warm side light and long shadows across the meadow.
 const SUN: [number, number, number] = [-120, 16, -50];
@@ -104,11 +106,13 @@ function Scrolls({
   onOpen: (id: string) => void;
 }) {
   const { camera, events } = useThree();
+  const scale = useTreeGrowth(members);
+
   const positions = useMemo(() => {
-    const layout = layoutScrolls(members);
+    const layout = layoutScrolls(members, DEFAULT_RADIUS * scale);
     layout.forEach((p) => (p[1] += TREE_BASE));
     return layout;
-  }, [members]);
+  }, [members, scale]);
 
   const links = useMemo(() => relationLines(members, positions), [members, positions]);
 

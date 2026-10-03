@@ -4,8 +4,9 @@ type Person = { id: string; parentIds: string[]; partnerIds: string[] };
 const TOP = 21;
 const BOTTOM = 3;
 const MAX_ROW_GAP = 7;
-const RADIUS = 12;
-const SLOT_ANGLE = 5 / RADIUS;
+export const DEFAULT_RADIUS = 12;
+// slot angle computed from desired arc length (approx 5 units) and radius
+const slotAngleFor = (radius: number) => 5 / radius;
 const FRONT = Math.atan2(50, 40);
 
 // Generation 0 is the top row. Everyone sits below all of their parents and in the same row
@@ -39,7 +40,7 @@ export function generations(people: Person[]) {
 
 // Positions relative to the tree base. Within a row, partners sit side by side and siblings sit
 // centred under their parents, so families stay stacked.
-export function layoutScrolls(people: Person[]) {
+export function layoutScrolls(people: Person[], radius = DEFAULT_RADIUS) {
   const gen = generations(people);
   const rows: Person[][] = [];
   const top = Math.min(...gen.values());
@@ -88,10 +89,10 @@ export function layoutScrolls(people: Person[]) {
       else blocks.push({ anchor: a, people: [...group] });
     }
 
-    const place = (p: Person, s: number) => {
+    const place = (p: Person, s: number, radius = DEFAULT_RADIUS) => {
       slot.set(p.id, s);
-      const a = FRONT + s * SLOT_ANGLE;
-      positions.set(p.id, [Math.cos(a) * RADIUS, TOP - g * gap, Math.sin(a) * RADIUS]);
+      const a = FRONT + s * slotAngleFor(radius);
+      positions.set(p.id, [Math.cos(a) * radius, TOP - g * gap, Math.sin(a) * radius]);
     };
     const ordered = blocks.flatMap((b) => b.people);
     if (blocks.every((b) => b.anchor === null)) {
