@@ -117,14 +117,14 @@ stop_service ui || stop_status=1
 stop_service bff || stop_status=1
 
 if command -v docker >/dev/null 2>&1; then
-  if docker compose -f "$ROOT/docker-compose.yml" stop db; then
-    echo "Stopped PostgreSQL (database volume retained)."
+  if docker compose -f "$ROOT/docker-compose.yml" stop; then
+    echo "Stopped PostgreSQL and Swagger UI (database volume retained)."
   else
-    echo "Could not stop PostgreSQL." >&2
+    echo "Could not stop local services." >&2
     stop_status=1
   fi
 else
-  echo "Docker is unavailable; could not stop PostgreSQL." >&2
+  echo "Docker is unavailable; could not stop PostgreSQL or Swagger UI." >&2
   stop_status=1
 fi
 

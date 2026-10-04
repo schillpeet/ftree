@@ -28,8 +28,8 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
-- `docker-compose.yml` defines the local PostgreSQL database used by the BFF.
-- `start.sh` and `stop.sh` start and stop PostgreSQL, the BFF, and UI for local development.
+- `docker-compose.yml` defines the local PostgreSQL database used by the BFF and a Swagger UI container that serves `api/openapi.yaml` at `http://localhost:4010`.
+- `start.sh` and `stop.sh` start and stop PostgreSQL, the Swagger UI container, the BFF, and the UI for local development; the custom Node mock server that previously served the spec was removed.
 - `api/openapi.yaml` defines family-set listing, generation, deletion, and family-scoped member operations as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`; `NEXT_PUBLIC_BFF_URL` sets the BFF base URL at generation time (default `http://localhost:8080`).
 - `.github/workflows/ui.yml` lints, type-checks, and builds the UI and checks that the generated API client matches the spec; `.github/workflows/bff.yml` builds and tests the BFF against PostgreSQL. Each runs only when its app directory, `api/openapi.yaml`, or its own workflow file changes, ignoring Markdown.

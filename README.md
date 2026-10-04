@@ -20,29 +20,31 @@ pnpm --dir ui install
 ./start.sh
 ```
 
-`start.sh` starts PostgreSQL, the backend, and the UI in the background. Then open:
+`start.sh` starts PostgreSQL, Swagger UI, the backend, and the UI in the background. Then open:
 
 - **App:** [http://localhost:3000](http://localhost:3000)
 - **Backend API:** [http://localhost:8080](http://localhost:8080)
+- **API docs:** [http://localhost:4010](http://localhost:4010) (Swagger UI)
 
-Run `./stop.sh` to stop all three services. PostgreSQL data is retained. Logs and process state are stored under `.local/dev/`.
+Run `./stop.sh` to stop all services. PostgreSQL data is retained. Logs and process state are stored under `.local/dev/`.
 If a required port is already occupied, `start.sh` reports the process and exits without stopping it.
 
 ## What's Inside
 
-| Path | What it is |
-| --- | --- |
-| [`ui/`](ui) | Next.js web app with a React Three Fiber scene |
-| [`bff/`](bff) | Kotlin/Spring Boot backend for the UI, backed by PostgreSQL |
-| [`api/openapi.yaml`](api/openapi.yaml) | API contract that both sides generate their code from |
-| [`docs/`](docs/project-overview.md) | Architecture, current state, and open decisions |
+| Path                                       | What it is                                                  |
+| ------------------------------------------ | ----------------------------------------------------------- |
+| [`ui/`](ui)                                | Next.js web app with a React Three Fiber scene              |
+| [`bff/`](bff)                              | Kotlin/Spring Boot backend for the UI, backed by PostgreSQL |
+| [`api/openapi.yaml`](api/openapi.yaml)     | API contract that both sides generate their code from       |
+| [`docker-compose.yml`](docker-compose.yml) | Local PostgreSQL and Swagger UI used during development     |
+| [`docs/`](docs/project-overview.md)        | Architecture, current state, and open decisions             |
 
 ## Development
 
 Start the parts individually:
 
 ```bash
-docker compose up -d --wait db      # PostgreSQL
+docker compose up -d --wait         # PostgreSQL and Swagger UI
 (cd bff && ./gradlew bootRun)       # backend
 pnpm --dir ui dev                   # UI
 ```
