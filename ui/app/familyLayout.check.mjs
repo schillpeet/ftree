@@ -1,6 +1,6 @@
 // Run with `node app/familyLayout.check.mjs`: parents hang above their children, partners side by side.
 import assert from 'node:assert/strict';
-import { generations, layoutScrolls, relationLines } from './familyLayout.ts';
+import { DEFAULT_SPACE, generations, layoutScrolls, layoutScrollsInSpace, relationLines } from './familyLayout.ts';
 
 const person = (id, parentIds = [], partnerIds = []) => ({ id, parentIds, partnerIds });
 const people = [
@@ -14,6 +14,8 @@ const gen = generations(people);
 assert.deepEqual(Object.fromEntries(gen), { grandma: 0, mum: 1, aunt: 1, dad: 1, kid: 2 });
 
 const layout = layoutScrolls(people);
+// The parameterised layout with the default space must reproduce the legacy fixed arc exactly.
+assert.deepEqual(layoutScrollsInSpace(people, DEFAULT_SPACE), layout);
 const y = (id) => layout.get(id)[1];
 assert.ok(y('grandma') > y('mum') && y('mum') > y('kid') && y('dad') === y('mum'));
 

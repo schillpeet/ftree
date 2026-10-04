@@ -75,7 +75,8 @@ function leafGeometry() {
 function buildTree(seed: number) {
   const rand = seededRandom(seed);
   const range = (a: number, b: number) => a + rand() * (b - a);
-  const tubes: BufferGeometry[] = [];
+  const canopyTubes: BufferGeometry[] = [];
+  const groundTubes: BufferGeometry[] = [];
   const leaves: Matrix4[] = [];
   const leafColors: Color[] = [];
   // Points along the main limbs where aerial roots can hang down to the ground.
@@ -114,7 +115,7 @@ function buildTree(seed: number) {
       points.push(p.clone());
     }
     const rEnd = r * 0.7;
-    tubes.push(tube(points, (t) => r + (rEnd - r) * t, 12, r > 0.2 ? 10 : 6));
+    canopyTubes.push(tube(points, (t) => r + (rEnd - r) * t, 12, r > 0.2 ? 10 : 6));
     if (depth >= BRANCH_DEPTH - 1) rootAnchors.push(points[2], points[4]);
 
     if (depth === 0) {
@@ -146,14 +147,14 @@ function buildTree(seed: number) {
       const rr = radiusAt(t);
       points.push(new Vector3(Math.cos(a) * rr, t * top - 0.3, Math.sin(a) * rr));
     }
-    tubes.push(tube(points, thickness, 32, 10));
+    canopyTubes.push(tube(points, thickness, 32, 10));
     const end = points[n];
     return { end, tangent: end.clone().sub(points[n - 1]).normalize() };
   }
 
   // Solid core so the trunk is closed: nothing to see through between the strands.
   const coreRadius = (t: number) => 1.1 * (1 + 0.9 * (1 - t) ** 3) * (1 - 0.5 * t ** 3);
-  tubes.push(
+  canopyTubes.push(
     tube(
       [0, 0.25, 0.5, 0.75, 1].map((t) => new Vector3(0.15 * Math.sin(t * 5), t * (TRUNK_HEIGHT + 0.5) - 0.5, 0.15 * Math.cos(t * 4))),
       coreRadius,
@@ -214,7 +215,7 @@ function buildTree(seed: number) {
       new Vector3(top.x, top.y + (bottom - top.y) * t, top.z).addScaledVector(sway, Math.sin(t * Math.PI)),
     );
     const thin = range(0.05, 0.12);
-    tubes.push(tube(points, (t) => thin * (1 + 1.5 * t ** 4), 16, 6));
+    groundTubes.push(tube(points, (t) => thin * (1 + 1.5 * t ** 4), 16, 6));
   }
 
   // Roots creep far over the hill, half buried, winding and forking: the tree's footing.
@@ -233,7 +234,7 @@ function buildTree(seed: number) {
         root(p, heading + range(0.5, 0.9) * (rand() < 0.5 ? -1 : 1), len * (1 - k / steps) * 0.7, thick * (1 - k / steps) * 0.6, 0);
       }
     }
-    tubes.push(tube(points, (t) => thick * (1 - 0.85 * t), steps * 4, thick > 0.3 ? 10 : 6));
+    groundTubes.push(tube(points, (t) => thick * (1 - 0.85 * t), steps * 4, thick > 0.3 ? 10 : 6));
   }
   for (let i = 0; i < ROOTS; i++) {
     const a = (i / ROOTS) * Math.PI * 2 + range(-0.15, 0.15);
@@ -243,23 +244,32 @@ function buildTree(seed: number) {
     root(start, a, 4 + thick * range(12, 20), thick, thick > 0.3 ? 2 : 0);
   }
 
-  const bark = mergeGeometries(tubes);
-  tubes.forEach((g) => g.dispose());
+  const canopyBark = mergeGeometries(canopyTubes);
+  const groundBark = mergeGeometries(groundTubes);
+  canopyTubes.forEach((g) => g.dispose());
+  groundTubes.forEach((g) => g.dispose());
+
+  // Mottled bark with occasional darker spots, applied to canopy and grounded root network.
+  // Vertex positions are identical to before the split, so the colors stay the same.
   const mottle = makeNoise(4, 4);
   const spots = makeNoise(5, 3);
-  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-  const pos = bark.attributes.position;
-  const colors = new Float32Array(pos.count * 3);
-  const c = new Color();
-  for (let i = 0; i < pos.count; i++) {
-    const x = pos.getX(i);
-    const y = pos.getY(i);
-    const z = pos.getZ(i);
-    c.lerpColors(BARK_DARK, BARK_LIGHT, clamp01(0.6 + 0.45 * mottle(x * 1.5 + y * 0.9, z * 1.5 - y * 1.2)));
-    // Scattered darker spots: only the peaks of a finer noise.
-    c.lerp(BARK_SPOT, clamp01((spots(x * 4 + y * 3, z * 4 - y * 2.5) - 0.45) * 3)).toArray(colors, i * 3);
-  }
-  bark.setAttribute('color', new Float32BufferAttribute(colors, 3));
+  const bakeBarkColors = (geometry: BufferGeometry) => {
+    const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+    const pos = geometry.attributes.position;
+    const colors = new Float32Array(pos.count * 3);
+    const c = new Color();
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i);
+      const y = pos.getY(i);
+      const z = pos.getZ(i);
+      c.lerpColors(BARK_DARK, BARK_LIGHT, clamp01(0.6 + 0.45 * mottle(x * 1.5 + y * 0.9, z * 1.5 - y * 1.2)));
+      // Scattered darker spots: only the peaks of a finer noise.
+      c.lerp(BARK_SPOT, clamp01((spots(x * 4 + y * 3, z * 4 - y * 2.5) - 0.45) * 3)).toArray(colors, i * 3);
+    }
+    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
+  };
+  bakeBarkColors(canopyBark);
+  bakeBarkColors(groundBark);
 
   const leafMesh = new InstancedMesh(
     leafGeometry(),
@@ -273,17 +283,23 @@ function buildTree(seed: number) {
   leafMesh.castShadow = true;
   leafMesh.receiveShadow = true;
 
-  return { bark, leafMesh };
+  return { canopyBark, groundBark, leafMesh };
 }
 
-export default function Tree({ position }: { position: [number, number, number] }) {
-  const { bark, leafMesh } = useMemo(() => buildTree(7), []);
+export default function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
+  const { canopyBark, groundBark, leafMesh } = useMemo(() => buildTree(7), []);
   return (
     <group position={position}>
-      <mesh geometry={bark} castShadow receiveShadow>
+      {/* Canopy and leaves scale together; the grounded roots stay terrain-following. */}
+      <group scale={scale}>
+        <mesh geometry={canopyBark} castShadow receiveShadow>
+          <meshStandardMaterial vertexColors roughness={0.9} />
+        </mesh>
+        <primitive object={leafMesh} />
+      </group>
+      <mesh geometry={groundBark} castShadow receiveShadow>
         <meshStandardMaterial vertexColors roughness={0.9} />
       </mesh>
-      <primitive object={leafMesh} />
     </group>
   );
 }
