@@ -5,10 +5,17 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, Line, Sky } from '@react-three/drei';
 import { Vector3 } from 'three';
 import type { Member } from '../lib/api/generated/members';
-import { layoutScrolls, relationLines } from './familyLayout';
+import { layoutScrollsInSpace, relationLines } from './familyLayout';
 import Meadow, { height } from './Meadow';
 import Scroll from './Scroll';
 import Tree from './Tree';
+import {
+  BASE_TREE_BOUNDS,
+  CARD_WORLD_SIZE,
+  SLOT_MARGINS,
+  crownSpaceForScale,
+  type LayoutSpace,
+} from './treeGrowth';
 
 // Low sun in view, left behind the tree: warm side light and long shadows across the meadow.
 const SUN: [number, number, number] = [-120, 16, -50];
@@ -67,6 +74,34 @@ function ZoomScale({ controls }: { controls: CameraControls | null }) {
   );
 }
 
+// Development-only calibration slider: scales the crown and the layout live, while the cards
+// keep their fixed world size.
+function CrownScale({
+  previewScale,
+  onPreviewScale,
+}: {
+  previewScale: number;
+  onPreviewScale: (value: number) => void;
+}) {
+  return (
+    <div className="crown-scale" role="group" aria-label="Krone">
+      <label>
+        <span>Krone</span>
+        <input
+          type="range"
+          aria-label="Kronengröße"
+          min={0.3}
+          max={2}
+          step={0.01}
+          value={previewScale}
+          onChange={(event) => onPreviewScale(Number(event.target.value))}
+        />
+        <span className="crown-scale-value">{previewScale.toFixed(2)}</span>
+      </label>
+    </div>
+  );
+}
+
 function SunsetSky() {
   return (
     <>
@@ -95,20 +130,22 @@ function SunsetSky() {
 function Scrolls({
   members,
   focus,
+  space,
   controlsRef,
   onOpen,
 }: {
   members: Member[];
   focus: Focus;
+  space: LayoutSpace;
   controlsRef: RefObject<CameraControls | null>;
   onOpen: (id: string) => void;
 }) {
   const { camera, events } = useThree();
   const positions = useMemo(() => {
-    const layout = layoutScrolls(members);
+    const layout = layoutScrollsInSpace(members, space);
     layout.forEach((p) => (p[1] += TREE_BASE));
     return layout;
-  }, [members]);
+  }, [members, space]);
 
   const links = useMemo(() => relationLines(members, positions), [members, positions]);
 
@@ -149,6 +186,11 @@ export default function Scene({
 }) {
   const controlsRef = useRef<CameraControls>(null);
   const [controls, setControls] = useState<CameraControls | null>(null);
+  const [previewScale, setPreviewScale] = useState(1);
+  const space = useMemo(
+    () => crownSpaceForScale(previewScale, BASE_TREE_BOUNDS, CARD_WORLD_SIZE, SLOT_MARGINS),
+    [previewScale],
+  );
   // Stable callback, so the start view is only applied once when the controls mount.
   const initControls = useCallback((controls: CameraControls | null) => {
     controlsRef.current = controls;
@@ -167,8 +209,8 @@ export default function Scene({
       >
         <SunsetSky />
         <Meadow />
-        <Tree position={[0, TREE_BASE, 0]} />
-        <Scrolls members={members} focus={focus} controlsRef={controlsRef} onOpen={onOpen} />
+        <Tree position={[0, TREE_BASE, 0]} scale={previewScale} />
+        <Scrolls members={members} focus={focus} space={space} controlsRef={controlsRef} onOpen={onOpen} />
         <CameraControls
           ref={initControls}
           makeDefault
@@ -179,6 +221,9 @@ export default function Scene({
         />
       </Canvas>
       <ZoomScale controls={controls} />
+      {process.env.NODE_ENV !== 'production' && (
+        <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
+      )}
     </>
   );
 }
