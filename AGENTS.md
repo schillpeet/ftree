@@ -25,3 +25,10 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Do not set versions by hand or create release tags; release-please derives them from commit types (see the overview's versioning section). Mark breaking changes with `!`, for example `feat(bff)!: rename member fields`.
 - Before committing, show the user the staged diff and the proposed commit message and wait for explicit approval. Never commit without it.
 - Before pushing or opening a PR: run `git fetch origin && git rebase origin/main`, resolve any conflicts, and re-run typecheck/tests.
+
+## Agent Execution & Tool Efficiency
+
+- **Be Direct & Concise:** Execute actions immediately. Do not write text explaining what tools you are about to use (e.g., avoid "I will now read the file X"). Provide explanations only after completing the actions or when asking a required clarifying question.
+- **Maximize Parallelism:** Whenever you need to read, inspect, or search multiple files (e.g., inspecting both `ui/` and `bff/` code or `api/`), invoke all relevant tools in a single parallel batch rather than sequentially.
+- **Autonomous Read & Analysis:** You are fully trusted to read files, search the repository, run tests, and inspect git states without asking for permission. Only ask for explicit user confirmation when doing non-reversible actions or committing code (as specified in Project Guidance).
+- **Follow Rules Without Prompting:** Keep all guidelines from this file `docs/project-overview.md` active at all times. Do not ask the user if you should follow these rules.
