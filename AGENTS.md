@@ -39,5 +39,9 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 - **Be Direct & Concise:** Execute actions immediately. Do not write text explaining what tools you are about to use (e.g., avoid "I will now read the file X"). Provide explanations only after completing the actions or when asking a required clarifying question.
 - **Maximize Parallelism:** Whenever you need to read, inspect, or search multiple files (e.g., inspecting both `ui/` and `bff/` code or `api/`), invoke all relevant tools in a single parallel batch rather than sequentially.
-- **Autonomous Read & Analysis:** You are fully trusted to read files, search the repository, run tests, and inspect git states without asking for permission. Only ask for explicit user confirmation when doing non-reversible actions or committing code (as specified in Project Guidance).
-- **Follow Rules Without Prompting:** Keep all guidelines from this file `docs/project-overview.md` active at all times. Do not ask the user if you should follow these rules.
+- **Autonomous Read & Analysis:** You are fully trusted to read files, search the repository, run tests, inspect configuration, and inspect Git state/history/remotes without asking for permission.
+- **Read-Only Operations:** Never ask for permission before executing read-only operations. This includes reading files, listing directories, searching code, inspecting configuration, running tests, and Git commands such as `git status`, `git diff`, `git log`, `git remote -v`, and `git branch`.
+- **Approved Task Changes:** You may modify files autonomously when the changes are part of the approved task.
+- **Destructive or External Operations:** Require explicit user confirmation for destructive operations and externally visible actions such as pushing, opening or merging pull requests, or deleting data.
+- **Commits:** Before committing, always show the user the staged diff and proposed commit message and wait for explicit approval.
+- **Follow Rules Without Prompting:** Keep all guidelines from this file and `docs/project-overview.md` active at all times. Do not ask the user whether you should follow these rules.
