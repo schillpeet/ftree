@@ -41,7 +41,7 @@ for service in bff ui; do
 done
 
 port_in_use=0
-for port in 3000 8080; do
+for port in 3000 8080 4010; do
   if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "Port $port is already in use; refusing to start services:" >&2
     lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
@@ -53,7 +53,7 @@ if [[ "$port_in_use" == 1 ]]; then
   exit 1
 fi
 
-docker compose -f "$ROOT/docker-compose.yml" up -d --wait db
+docker compose -f "$ROOT/docker-compose.yml" up -d --wait
 
 start_service() {
   local name="$1"
@@ -82,4 +82,5 @@ start_service bff
 start_service ui
 
 echo "Local services started: UI http://localhost:3000, BFF http://localhost:8080"
-echo "Run ./stop.sh to stop the UI, BFF, and PostgreSQL."
+echo "API docs (Swagger UI): http://localhost:4010"
+echo "Run ./stop.sh to stop the UI, BFF, Swagger UI, and PostgreSQL."
