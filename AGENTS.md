@@ -18,7 +18,16 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Treat family relationships and identifying information as sensitive. Do not assume public access; define authorization and sharing rules before implementing shared data.
 - Keep the UI and BFF in this repository. Avoid adding more services until there is a concrete need for them.
 - Keep the overview accurate as behavior and decisions change, and distinguish implemented features from planned work.
-- Commit messages and pull request titles use `<type>(<scope>): <message>`, entirely lowercase, in English and in the imperative mood, for example `feat(ui): add person detail panel` (types: feat, fix, chore, docs, refactor, test, build, ci; scopes: ui, bff, db, repo). Never capitalize the type, scope, or message.
+- Commit messages and pull request titles use `<type>(<scope>): <message>`, entirely lowercase, in English and in the imperative mood, for example `feat(ui): add person detail panel`. Never capitalize the type, scope, or message. Choose the type by semantic meaning, not merely because the change concerns Docker, scripts, or repository configuration:
+  - `feat`: new user-facing or developer-facing functionality
+  - `fix`: bug fixes
+  - `docs`: documentation-only changes
+  - `refactor`: code restructuring without behavior changes
+  - `chore`: maintenance that does not add functionality
+  - `test`: adding or changing tests
+  - `build`: build system or external dependency changes
+  - `ci`: CI configuration changes
+    If a change introduces new functionality, always use `feat`. Scopes remain `ui`, `bff`, `db`, and `repo`.
 - Start every new task by creating a branch from `main` before changing any files. Name it after the planned commit as `<type>/<scope>-<message-in-kebab-case>`, for example `feat(ui): add person detail panel` → `feat/ui-add-person-detail-panel`.
 - Pull requests are squash-merged, so the PR title becomes the commit on `main` and is what release-please parses. Commits inside a PR do not produce separate release notes after squash-merge. Give every independently releasable feature or fix its own PR with a title that accurately describes it (`feat(...)` for a feature, `fix(...)` for a bug fix); do not bundle independent features into one PR or rely on their branch commits to appear in the changelog. Push the branch and open the PR, then verify its exact title follows the lowercase convention and that the PR-title check passes before merging. Configure the PR-title check as a required GitHub status check so invalid titles cannot be merged.
 - Do not commit or push directly to `main`. Before merging, make sure every user-visible feature is represented by its own correctly titled PR so release-please can create the expected version bump and changelog entry.
