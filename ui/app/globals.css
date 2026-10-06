@@ -562,6 +562,8 @@ textarea {
   text-align: center;
   filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45));
   cursor: pointer;
+  /* drei's Html centres its content on the position; move the card down so its top edge sits there. */
+  transform: translateY(50%);
 }
 
 .scroll-rod {
@@ -764,4 +766,34 @@ textarea {
 .crown-scale input:focus-visible {
   outline: 3px solid #e89155;
   outline-offset: 2px;
+}
+
+.pin-toggle {
+  position: fixed;
+  z-index: 5;
+  left: 72px;
+  bottom: 76px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border: 1px solid rgba(23, 58, 43, 0.18);
+  border-radius: 6px;
+  background: rgba(250, 248, 238, 0.96);
+  box-shadow: 0 3px 14px rgba(18, 38, 28, 0.18);
+  color: #173a2b;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.pin-toggle input {
+  margin: 0;
+  accent-color: #d42020;
+  cursor: pointer;
+}
+
+.scroll-draggable {
+  cursor: grab;
+  touch-action: none;
 }

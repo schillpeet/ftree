@@ -1,23 +1,26 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, type PointerEvent } from 'react';
 import { Html } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
 import { formatDate } from './MembersControls';
 
-// Pointer travel (px) up to which a press on a scroll still counts as a click, not an orbit drag.
-const CLICK_TOLERANCE = 5;
+// Pointer travel (px) up to which a press on a scroll still counts as a click, not a drag.
+export const CLICK_TOLERANCE = 5;
 
 // Papyrus scroll in the scene: a DOM card that always faces the camera. Clicking it opens the
-// member's profile; a drag that starts on it still orbits the camera.
+// member's profile. A drag that starts on it orbits the camera, or moves the card when `onDrag`
+// is set (while the pins are shown).
 export default function Scroll({
   member,
   position,
   onOpen,
+  onDrag,
 }: {
   member: Member;
   position: [number, number, number];
   onOpen: () => void;
+  onDrag?: (event: PointerEvent<HTMLDivElement>) => void;
 }) {
   const birth = formatDate(member.birthDate);
   const death = formatDate(member.deathDate);
@@ -26,12 +29,18 @@ export default function Scroll({
   return (
     <Html position={position} transform sprite distanceFactor={8} zIndexRange={[4, 0]}>
       <div
-        className="scroll"
         role="button"
         tabIndex={0}
         aria-label={`Profil von ${member.firstName} ${member.lastName} öffnen`}
-        // No stopPropagation: the camera controls on the canvas container must still see the press.
-        onPointerDown={(event) => (pressedAt.current = { x: event.clientX, y: event.clientY })}
+        className={onDrag ? 'scroll scroll-draggable' : 'scroll'}
+        onPointerDown={(event) => {
+          pressedAt.current = { x: event.clientX, y: event.clientY };
+          if (!onDrag) return; // the camera controls on the canvas container must still see the press
+          // Keep the press from the camera controls and from selecting text.
+          event.stopPropagation();
+          event.preventDefault();
+          onDrag(event);
+        }}
         onClick={(event) => {
           const start = pressedAt.current;
           pressedAt.current = null;

@@ -35,6 +35,14 @@ class MemberEntity(
     var note: String? = null,
     @Column(length = 2048)
     var photoUrl: String? = null,
+    // Either pinned (pinId) or placed freely (posX/posY/posZ); both null when not placed yet.
+    var pinId: Int? = null,
+    @Column(name = "pos_x")
+    var posX: Double? = null,
+    @Column(name = "pos_y")
+    var posY: Double? = null,
+    @Column(name = "pos_z")
+    var posZ: Double? = null,
     @ManyToMany
     @JoinTable(
         name = "member_parents",

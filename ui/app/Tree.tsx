@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import {
   BufferGeometry,
   CatmullRomCurve3,
@@ -19,6 +18,7 @@ import {
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { height } from './Meadow';
+import type { Point } from './pins';
 import { makeNoise, seededRandom } from './random';
 
 const TRUNK_HEIGHT = 7;
@@ -72,7 +72,7 @@ function leafGeometry() {
   return g;
 }
 
-function buildTree(seed: number) {
+export function buildTree(seed: number) {
   const rand = seededRandom(seed);
   const range = (a: number, b: number) => a + rand() * (b - a);
   const canopyTubes: BufferGeometry[] = [];
@@ -81,6 +81,8 @@ function buildTree(seed: number) {
   const leafColors: Color[] = [];
   // Points along the main limbs where aerial roots can hang down to the ground.
   const rootAnchors: Vector3[] = [];
+  // Points along the outer branches where member cards can be pinned (see pins.ts).
+  const pinCandidates: Point[] = [];
 
   const randomDir = () => new Vector3(range(-1, 1), range(-1, 1), range(-1, 1)).normalize();
   const turn = (d: Vector3, angle: number) => d.clone().applyAxisAngle(randomDir().cross(d).normalize(), angle);
@@ -117,6 +119,7 @@ function buildTree(seed: number) {
     const rEnd = r * 0.7;
     canopyTubes.push(tube(points, (t) => r + (rEnd - r) * t, 12, r > 0.2 ? 10 : 6));
     if (depth >= BRANCH_DEPTH - 1) rootAnchors.push(points[2], points[4]);
+    if (depth <= 3) pinCandidates.push(points[2].toArray(), points[4].toArray());
 
     if (depth === 0) {
       leafCluster(p, d);
@@ -283,11 +286,19 @@ function buildTree(seed: number) {
   leafMesh.castShadow = true;
   leafMesh.receiveShadow = true;
 
-  return { canopyBark, groundBark, leafMesh };
+  return { canopyBark, groundBark, leafMesh, pinCandidates };
 }
 
-export default function Tree({ position, scale = 1 }: { position: [number, number, number]; scale?: number }) {
-  const { canopyBark, groundBark, leafMesh } = useMemo(() => buildTree(7), []);
+// The scene builds the tree once (`buildTree(7)`) because it also needs the pin candidates.
+export default function Tree({
+  tree: { canopyBark, groundBark, leafMesh },
+  position,
+  scale = 1,
+}: {
+  tree: ReturnType<typeof buildTree>;
+  position: [number, number, number];
+  scale?: number;
+}) {
   return (
     <group position={position}>
       {/* Canopy and leaves scale together; the grounded roots stay terrain-following. */}
