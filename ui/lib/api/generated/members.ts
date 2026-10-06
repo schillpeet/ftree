@@ -3,7 +3,7 @@
  * Do not edit manually.
  * ftree BFF API
  * API contract for the ftree UI and Backend for Frontend.
- * OpenAPI spec version: 0.1.0
+ * OpenAPI spec version: 0.2.0
  */
 export interface TestFamilySettings {
   /**
@@ -72,6 +72,12 @@ export interface CreateFamilyRequest {
   maxChildren: number;
 }
 
+export interface Position {
+  x: number;
+  y: number;
+  z: number;
+}
+
 export interface Member {
   readonly id: string;
   /**
@@ -109,6 +115,23 @@ export interface Member {
   parentIds: string[];
   /** Ids of this member's partners, current or former. Always mutual. */
   partnerIds: string[];
+  /**
+     * Branch point the card hangs from; null when placed freely or not yet placed.
+     * @minimum 0
+     * @nullable
+     */
+  pinId?: number | null;
+  /** Free card position relative to the tree base; null when pinned or not yet placed. */
+  position?: Position | null;
+}
+
+export interface Placement {
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  pinId?: number | null;
+  position?: Position | null;
 }
 
 export interface Relatives {
@@ -928,4 +951,82 @@ const res = await fetch(getUpdateFamilyMemberRelativesUrl(familyId,id),
 
   const data: updateFamilyMemberRelativesResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as updateFamilyMemberRelativesResponse
+}
+
+
+
+export type updateFamilyMemberPlacementResponse204 = {
+  data: void
+  status: 204
+}
+
+export type updateFamilyMemberPlacementResponse400 = {
+  data: void
+  status: 400
+}
+
+export type updateFamilyMemberPlacementResponse404 = {
+  data: void
+  status: 404
+}
+
+export type updateFamilyMemberPlacementResponse409 = {
+  data: void
+  status: 409
+}
+
+export type updateFamilyMemberPlacementResponseSuccess = (updateFamilyMemberPlacementResponse204) & {
+  headers: Headers;
+};
+export type updateFamilyMemberPlacementResponseError = (updateFamilyMemberPlacementResponse400 | updateFamilyMemberPlacementResponse404 | updateFamilyMemberPlacementResponse409) & {
+  headers: Headers;
+};
+
+export type updateFamilyMemberPlacementResponse = (updateFamilyMemberPlacementResponseSuccess | updateFamilyMemberPlacementResponseError)
+
+export const getUpdateFamilyMemberPlacementUrl = (familyId: string,
+    id: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members/${id}/placement`
+}
+
+/**
+ * Exactly one of pinId and position must be set. Setting one clears the other, so a previous pin becomes free. A pin holds at most one card.
+ * @summary Pin a member's card to a branch point or place it freely
+ */
+export const updateFamilyMemberPlacement = async (familyId: string,
+    id: string,
+    placement: Placement, options?: RequestInit): Promise<updateFamilyMemberPlacementResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateFamilyMemberPlacementUrl(familyId,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(placement)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateFamilyMemberPlacementResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as updateFamilyMemberPlacementResponse
 }

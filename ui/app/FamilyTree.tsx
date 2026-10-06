@@ -1,7 +1,13 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { getFamilies, type FamilySummary, type Member } from '../lib/api/generated/members';
+import {
+  getFamilies,
+  updateFamilyMemberPlacement,
+  type FamilySummary,
+  type Member,
+  type Placement,
+} from '../lib/api/generated/members';
 import FamiliesPanel from './FamiliesPanel';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
@@ -86,6 +92,20 @@ export default function FamilyTree() {
     selectFamily(activeFamilyId === familyId ? null : familyId);
   }
 
+  // Optimistic: the card stays where it was dropped and goes back if the BFF refuses (e.g. the
+  // pin was taken meanwhile).
+  async function placeMember(id: string, placement: Placement) {
+    const before = members?.find((m) => m.id === id);
+    if (!activeFamilyId || !before) return;
+    const replace = (member: Member) => setMembers((current) => current?.map((m) => (m.id === id ? member : m)) ?? null);
+    replace({ ...before, ...placement });
+    try {
+      if ((await updateFamilyMemberPlacement(activeFamilyId, id, placement)).status !== 204) replace(before);
+    } catch {
+      replace(before);
+    }
+  }
+
   function addFamily(family: FamilySummary) {
     setFamilies((current) =>
       [...(current ?? []).filter((item) => item.id !== family.id), family].sort((left, right) => {
@@ -99,7 +119,12 @@ export default function FamilyTree() {
 
   return (
     <>
-      <Scene members={members ?? []} focus={focus} onOpen={(id) => setProfile({ id })} />
+      <Scene
+        members={members ?? []}
+        focus={focus}
+        onOpen={(id) => setProfile({ id })}
+        onPlace={(id, placement) => void placeMember(id, placement)}
+      />
       <FamiliesPanel
         families={families}
         setFamilies={setFamilies}
