@@ -3,6 +3,7 @@ package com.github.bff.member
 import com.github.bff.generated.api.MembersApi
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
+import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Relatives
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -54,6 +55,18 @@ class MembersController(private val memberService: MemberService) : MembersApi {
         relatives: Relatives,
     ): ResponseEntity<Void> =
         relativesResponse(memberService.updateRelatives(familyId, id, relatives))
+
+    override fun updateFamilyMemberPlacement(
+        familyId: UUID,
+        id: UUID,
+        placement: Placement,
+    ): ResponseEntity<Void> =
+        when (memberService.updatePlacement(familyId, id, placement)) {
+            PlacementResult.UPDATED -> ResponseEntity.noContent().build()
+            PlacementResult.INVALID -> ResponseEntity.badRequest().build()
+            PlacementResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            PlacementResult.PIN_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
 
     override fun deleteFamilyMember(familyId: UUID, id: UUID): ResponseEntity<Void> =
         if (memberService.delete(familyId, id)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()

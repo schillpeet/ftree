@@ -2,6 +2,8 @@ package com.github.bff.member
 
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
+import com.github.bff.generated.model.Placement
+import com.github.bff.generated.model.Position
 import com.github.bff.generated.model.Relatives
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -109,6 +111,23 @@ class MemberService(
         return RelativesResult.UPDATED
     }
 
+    /** Pins the member's card or places it freely; exactly one of pinId and position must be set. */
+    @Transactional
+    fun updatePlacement(familyId: UUID, id: UUID, placement: Placement): PlacementResult {
+        val pinId = placement.pinId
+        val position = placement.position
+        if ((pinId == null) == (position == null) || (pinId != null && pinId < 0)) return PlacementResult.INVALID
+        val member = memberRepository.findByIdAndFamilyId(id, familyId) ?: return PlacementResult.NOT_FOUND
+        if (pinId != null && memberRepository.existsByFamilyIdAndPinIdAndIdNot(familyId, pinId, id)) {
+            return PlacementResult.PIN_TAKEN
+        }
+        member.pinId = pinId
+        member.posX = position?.x
+        member.posY = position?.y
+        member.posZ = position?.z
+        return PlacementResult.UPDATED
+    }
+
     @Transactional
     fun delete(familyId: UUID, id: UUID): Boolean {
         val member = memberRepository.findByIdAndFamilyId(id, familyId) ?: return false
@@ -132,10 +151,14 @@ class MemberService(
         photoUrl = this@toResponse.photoUrl?.let(URI::create)
         parentIds = this@toResponse.parents.map { it.id }
         partnerIds = this@toResponse.partners.map { it.id }
+        pinId = this@toResponse.pinId
+        position = posX?.let { Position(it, posY, posZ) }
     }
 }
 
 enum class RelativesResult { UPDATED, INVALID, NOT_FOUND }
+
+enum class PlacementResult { UPDATED, INVALID, NOT_FOUND, PIN_TAKEN }
 
 /** True if following parent links from some member leads back to that member. */
 internal fun hasCycle(parentsOf: Map<UUID, Set<UUID>>): Boolean {

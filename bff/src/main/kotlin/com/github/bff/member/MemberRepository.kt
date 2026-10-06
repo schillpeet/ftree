@@ -11,4 +11,6 @@ interface MemberRepository : JpaRepository<MemberEntity, UUID> {
     fun findAllByFamilyIdAndParentsId(familyId: UUID, parentId: UUID): List<MemberEntity>
 
     fun findAllByFamilyIdAndPartnersId(familyId: UUID, partnerId: UUID): List<MemberEntity>
+
+    fun existsByFamilyIdAndPinIdAndIdNot(familyId: UUID, pinId: Int, id: UUID): Boolean
 }

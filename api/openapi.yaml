@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ftree BFF API
-  version: 0.1.0
+  version: 0.2.0
   description: API contract for the ftree UI and Backend for Frontend.
 servers:
   - url: http://localhost:8080
@@ -303,6 +303,43 @@ paths:
           description: The relatives are invalid.
         "404":
           description: Member not found.
+  /families/{familyId}/members/{id}/placement:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateFamilyMemberPlacement
+      tags:
+        - Members
+      summary: Pin a member's card to a branch point or place it freely
+      description: >-
+        Exactly one of pinId and position must be set. Setting one clears the other, so a
+        previous pin becomes free. A pin holds at most one card.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Placement"
+      responses:
+        "204":
+          description: Placement updated.
+        "400":
+          description: Neither or both of pinId and position are set.
+        "404":
+          description: Member not found.
+        "409":
+          description: Another member's card already hangs on this pin.
 components:
   schemas:
     FamilySummary:
@@ -446,6 +483,43 @@ components:
           items:
             type: string
             format: uuid
+        pinId:
+          description: Branch point the card hangs from; null when placed freely or not yet placed.
+          type: integer
+          minimum: 0
+          nullable: true
+        position:
+          description: Free card position relative to the tree base; null when pinned or not yet placed.
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Position"
+    Position:
+      type: object
+      required:
+        - x
+        - y
+        - z
+      properties:
+        x:
+          type: number
+          format: double
+        y:
+          type: number
+          format: double
+        z:
+          type: number
+          format: double
+    Placement:
+      type: object
+      properties:
+        pinId:
+          type: integer
+          minimum: 0
+          nullable: true
+        position:
+          nullable: true
+          allOf:
+            - $ref: "#/components/schemas/Position"
     Relatives:
       type: object
       required:
