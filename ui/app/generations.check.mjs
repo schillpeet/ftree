@@ -38,6 +38,17 @@ assert.deepEqual(layerPins(people, pins, layered, gap), layered); // valid cards
 const tight = [10, 9.5, 9, 8.5].map((y) => [0, y, 0]);
 const fallback = layerPins(people, tight, new Map([['grand', 0], ['child', 1], ['parent', 2]]), gap);
 assert.deepEqual(Object.fromEntries(fallback), { grand: 0, child: 3, parent: 2 });
+// Parents hanging lowest (e.g. after bundling or a smaller crown) move up, so all four children
+// fit a gap below them.
+const grid = [10, 8, 6, 4, 2].flatMap((y) => [0, 4, 8].map((x) => [x, y, 0]));
+const couple = [person('mum'), person('dad', [], ['mum']), ...['k1', 'k2', 'k3', 'k4'].map((id) => person(id, ['mum', 'dad']))];
+const low = layerPins(couple, grid, new Map([['mum', 12], ['dad', 13], ['k1', 0], ['k2', 1], ['k3', 2], ['k4', 3]]), gap);
+for (const kid of ['k1', 'k2', 'k3', 'k4'])
+  for (const parent of ['mum', 'dad']) assert.ok(grid[low.get(parent)][1] - grid[low.get(kid)][1] >= gap, `${kid} below ${parent}`);
+assert.equal(new Set(low.values()).size, low.size);
+// No free pin at all: parent and child swap pins.
+const two = [[0, 10, 0], [0, 9, 0]];
+assert.deepEqual(Object.fromEntries(layerPins([person('p'), person('c', ['p'])], two, new Map([['c', 0], ['p', 1]]), gap)), { p: 0, c: 1 });
 // Members off the pins (free or waiting) do not bound their children.
 assert.deepEqual(layerPins([person('a'), person('b', ['a'])], pins, new Map([['b', 0]]), gap), new Map([['b', 0]]));
 
