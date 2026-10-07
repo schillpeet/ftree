@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, Line, Sky } from '@react-three/drei';
 import { Plane, Raycaster, SphereGeometry, Vector2, Vector3 } from 'three';
@@ -319,11 +319,13 @@ export default function Scene({
   focus,
   onOpen,
   onPlace,
+  debugTools,
 }: {
   members: Member[];
   focus: Focus;
   onOpen: (id: string) => void;
   onPlace: (id: string, placement: Placement) => void;
+  debugTools?: ReactNode;
 }) {
   const controlsRef = useRef<CameraControls>(null);
   const [controls, setControls] = useState<CameraControls | null>(null);
@@ -381,16 +383,22 @@ export default function Scene({
         />
       </Canvas>
       <ZoomScale controls={controls} />
-      <label className="pin-toggle">
-        <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
-        Anheftpunkte
-      </label>
-      {process.env.NODE_ENV !== 'production' && (
-        <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
-      )}
-      {process.env.NODE_ENV !== 'production' && (
-        <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
-      )}
+      <details className="debug-panel" open>
+        <summary className="members-button">Debug</summary>
+        <div className="debug-panel-body">
+          {debugTools}
+          <label className="pin-toggle">
+            <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
+            Anheftpunkte
+          </label>
+          {process.env.NODE_ENV !== 'production' && (
+            <>
+              <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
+              <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
+            </>
+          )}
+        </div>
+      </details>
     </>
   );
 }

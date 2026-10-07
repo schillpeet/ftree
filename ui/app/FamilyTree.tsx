@@ -124,18 +124,28 @@ export default function FamilyTree() {
         focus={focus}
         onOpen={(id) => setProfile({ id })}
         onPlace={(id, placement) => void placeMember(id, placement)}
-      />
-      <FamiliesPanel
-        families={families}
-        setFamilies={setFamilies}
-        activeFamilyId={activeFamilyId}
-        isLoading={isLoadingFamilies}
-        error={familiesError}
-        isOpen={openBoard === 'families'}
-        onToggle={() => setOpenBoard((open) => open === 'families' ? null : 'families')}
-        onRetry={() => void loadFamilies()}
-        onSelect={selectFamily}
-        onToggleVisibility={toggleFamilyVisibility}
+        debugTools={
+          <>
+            <FamiliesPanel
+              families={families}
+              setFamilies={setFamilies}
+              activeFamilyId={activeFamilyId}
+              isLoading={isLoadingFamilies}
+              error={familiesError}
+              isOpen={openBoard === 'families'}
+              onToggle={() => setOpenBoard((open) => open === 'families' ? null : 'families')}
+              onRetry={() => void loadFamilies()}
+              onSelect={selectFamily}
+              onToggleVisibility={toggleFamilyVisibility}
+            />
+            <TestUsersPanel
+              families={families}
+              isOpen={openBoard === 'test-users'}
+              onToggle={() => setOpenBoard((open) => open === 'test-users' ? null : 'test-users')}
+              onCreated={addFamily}
+            />
+          </>
+        }
       />
       <MembersControls
         key={activeFamilyId ?? 'no-family'}
@@ -145,12 +155,6 @@ export default function FamilyTree() {
         profile={profile}
         onSelect={(id) => setFocus({ id })}
         onFamiliesChanged={() => void loadFamilies()}
-      />
-      <TestUsersPanel
-        families={families}
-        isOpen={openBoard === 'test-users'}
-        onToggle={() => setOpenBoard((open) => open === 'test-users' ? null : 'test-users')}
-        onCreated={addFamily}
       />
     </>
   );
