@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.6.0](https://github.com/schillpeet/ftree/compare/v0.5.0...v0.6.0) (2026-10-07)
+
+
+### Features
+
+* **bff:** add siblings and half-siblings to relatives ([#58](https://github.com/schillpeet/ftree/issues/58)) ([a555eda](https://github.com/schillpeet/ftree/commit/a555eda1043a8ec0c112bd2edfa4873090374228))
+* **repo:** add restart script ([#62](https://github.com/schillpeet/ftree/issues/62)) ([fca52f4](https://github.com/schillpeet/ftree/commit/fca52f44b5b3e6711d9ec9a6fb684005c47472ac))
+* **ui:** add relation spacing slider ([#55](https://github.com/schillpeet/ftree/issues/55)) ([4ad4fbd](https://github.com/schillpeet/ftree/commit/4ad4fbdd59cec888b9c342a283e35fff81f4fb28))
+* **ui:** archive the default family ([#65](https://github.com/schillpeet/ftree/issues/65)) ([f37e7c5](https://github.com/schillpeet/ftree/commit/f37e7c5b6e0a4d06b4d73090e3ed2ad30bf6ce5f))
+* **ui:** auto-place unplaced members on free pins ([#54](https://github.com/schillpeet/ftree/issues/54)) ([69b86af](https://github.com/schillpeet/ftree/commit/69b86af1885a35a1f837c7421a36b445ad175723))
+* **ui:** collect debug tools in a collapsible panel ([#56](https://github.com/schillpeet/ftree/issues/56)) ([58df2e8](https://github.com/schillpeet/ftree/commit/58df2e85c01205a2be43e7a385cd93317c97c80d))
+* **ui:** keep generations ordered top to bottom ([#60](https://github.com/schillpeet/ftree/issues/60)) ([f0e837d](https://github.com/schillpeet/ftree/commit/f0e837d3c70e12f830fc8db43a50ac33eba24a3b))
+* **ui:** restyle debug panel and move zoom into it ([#61](https://github.com/schillpeet/ftree/issues/61)) ([146ae90](https://github.com/schillpeet/ftree/commit/146ae90e89d1e0418a1b9e432d69774006f9cd53))
+
+
+### Bug Fixes
+
+* **README:** deletes broken badges and  adds new ci workflow badge ([1062fea](https://github.com/schillpeet/ftree/commit/1062fea2f5087d7aeb1448938c181bf16e75a658))
+* **ui:** keep generations ordered when bundling or scaling the crown ([#63](https://github.com/schillpeet/ftree/issues/63)) ([fd8718e](https://github.com/schillpeet/ftree/commit/fd8718ef1fa40d473e90873c8d565d6872ce00b4))
+* **ui:** spread relation spacing from tightest to widest pins ([#59](https://github.com/schillpeet/ftree/issues/59)) ([0ed8734](https://github.com/schillpeet/ftree/commit/0ed8734a37c76d04bce07546cf2ec0e90e3bb628))
+
 ## [0.5.0](https://github.com/schillpeet/ftree/compare/v0.4.0...v0.5.0) (2026-10-07)
 
 
