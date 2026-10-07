@@ -29,6 +29,39 @@ export function pickPins(candidates: Point[]) {
   return pins;
 }
 
+type Placeable = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  birthDate?: string | null;
+  pinId?: number | null;
+  position?: unknown;
+};
+
+// Member id → pin the card hangs from. A stored pin stays; members without a stored pin or free
+// position take the free pins top-down, oldest first (like the V6 migration). Members with a free
+// position, and those left over when the pins run out, are not in the map.
+// ponytail: derived pins are not saved until the card is dragged, so they shift when members change.
+export function assignPins(members: Placeable[], pinCount: number) {
+  const result = new Map<string, number>();
+  const valid = (m: Placeable) => m.pinId != null && m.pinId < pinCount;
+  for (const m of members) if (valid(m)) result.set(m.id, m.pinId!);
+  const taken = new Set(result.values());
+  const free = Array.from({ length: pinCount }, (_, i) => i).filter((i) => !taken.has(i));
+  const waiting = members
+    .filter((m) => !valid(m) && !m.position)
+    .sort(
+      (a, b) =>
+        Number(!a.birthDate) - Number(!b.birthDate) ||
+        (a.birthDate ?? '').localeCompare(b.birthDate ?? '') ||
+        a.lastName.localeCompare(b.lastName) ||
+        a.firstName.localeCompare(b.firstName) ||
+        a.id.localeCompare(b.id),
+    );
+  waiting.forEach((m, i) => i < free.length && result.set(m.id, free[i]));
+  return result;
+}
+
 // Cards are anchored at the middle of their top edge (see `.scroll` in globals.css), so whatever
 // their height they hang right below the pin.
 export const cardTop = ([x, y, z]: Point): Point => [x, y - PIN_RADIUS, z];
