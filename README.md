@@ -1,7 +1,6 @@
 # 🌳 ftree
 
-[![UI](https://github.com/schillpeet/ftree/actions/workflows/ui.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/ui.yml)
-[![BFF](https://github.com/schillpeet/ftree/actions/workflows/bff.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/bff.yml)
+[![CI](https://github.com/schillpeet/ftree/actions/workflows/ci.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/ci.yml)
 [![Version](https://img.shields.io/github/v/tag/schillpeet/ftree?sort=semver&label=version)](https://github.com/schillpeet/ftree/tags)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
