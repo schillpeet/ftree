@@ -176,6 +176,39 @@ paths:
           description: Family and its members deleted.
         "404":
           description: Family not found.
+  /families/{familyId}/archive:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: archiveFamily
+      tags:
+        - Families
+      summary: Move all members of a family into a new named family
+      description: The source family stays and is empty afterwards, so the default family can be filled again.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArchiveFamilyRequest"
+      responses:
+        "201":
+          description: Archived family with the moved members, links, and placements.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The name is invalid or the family has no members.
+        "404":
+          description: Family not found.
+        "409":
+          description: A family with this name already exists.
   /families/{familyId}/members:
     parameters:
       - name: familyId
@@ -431,6 +464,15 @@ components:
           type: integer
           minimum: 0
           maximum: 3
+    ArchiveFamilyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
     Member:
       type: object
       required:

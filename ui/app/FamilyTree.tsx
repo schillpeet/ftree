@@ -150,6 +150,7 @@ export default function FamilyTree() {
       <MembersControls
         key={activeFamilyId ?? 'no-family'}
         familyId={activeFamilyId}
+        isDefaultFamily={families?.find((family) => family.id === activeFamilyId)?.name.toLocaleLowerCase() === 'default'}
         members={members}
         setMembers={setMembers}
         profile={profile}

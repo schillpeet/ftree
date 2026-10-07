@@ -72,6 +72,14 @@ export interface CreateFamilyRequest {
   maxChildren: number;
 }
 
+export interface ArchiveFamilyRequest {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+}
+
 export interface Position {
   x: number;
   y: number;
@@ -644,6 +652,82 @@ export const deleteFamily = async (familyId: string, options?: RequestInit): Pro
 
   const data: deleteFamilyResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteFamilyResponse
+}
+
+
+
+export type archiveFamilyResponse201 = {
+  data: FamilySummary
+  status: 201
+}
+
+export type archiveFamilyResponse400 = {
+  data: void
+  status: 400
+}
+
+export type archiveFamilyResponse404 = {
+  data: void
+  status: 404
+}
+
+export type archiveFamilyResponse409 = {
+  data: void
+  status: 409
+}
+
+export type archiveFamilyResponseSuccess = (archiveFamilyResponse201) & {
+  headers: Headers;
+};
+export type archiveFamilyResponseError = (archiveFamilyResponse400 | archiveFamilyResponse404 | archiveFamilyResponse409) & {
+  headers: Headers;
+};
+
+export type archiveFamilyResponse = (archiveFamilyResponseSuccess | archiveFamilyResponseError)
+
+export const getArchiveFamilyUrl = (familyId: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/archive`
+}
+
+/**
+ * The source family stays and is empty afterwards, so the default family can be filled again.
+ * @summary Move all members of a family into a new named family
+ */
+export const archiveFamily = async (familyId: string,
+    archiveFamilyRequest: ArchiveFamilyRequest, options?: RequestInit): Promise<archiveFamilyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getArchiveFamilyUrl(familyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(archiveFamilyRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: archiveFamilyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as archiveFamilyResponse
 }
 
 
