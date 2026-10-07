@@ -64,6 +64,7 @@ jobs:
       - run: pnpm typecheck
       - run: node app/familyLayout.check.mjs
       - run: node app/pins.check.mjs
+      - run: node app/arrange.check.mjs
       - run: pnpm build
 
   bff:

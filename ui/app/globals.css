@@ -768,6 +768,55 @@ textarea {
   outline-offset: 2px;
 }
 
+.relation-spacing {
+  position: fixed;
+  z-index: 5;
+  top: 50%;
+  right: 16px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(23, 58, 43, 0.18);
+  border-radius: 6px;
+  background: rgba(250, 248, 238, 0.96);
+  box-shadow: 0 3px 14px rgba(18, 38, 28, 0.18);
+  color: #173a2b;
+  font-family: Arial, sans-serif;
+  font-size: 12px;
+}
+
+.relation-spacing label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.relation-spacing input {
+  margin: 0;
+  accent-color: #173a2b;
+  cursor: pointer;
+}
+
+.relation-spacing input[type='range'] {
+  /* Vertical slider with "tight" at the bottom. */
+  writing-mode: vertical-lr;
+  direction: rtl;
+  height: 120px;
+}
+
+.relation-spacing-value {
+  font-variant-numeric: tabular-nums;
+}
+
+.relation-spacing input:focus-visible {
+  outline: 3px solid #e89155;
+  outline-offset: 2px;
+}
+
 .pin-toggle {
   position: fixed;
   z-index: 5;
