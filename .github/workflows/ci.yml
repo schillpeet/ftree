@@ -1,0 +1,111 @@
+name: CI
+
+# Always runs so `ci-ok` can be a required status check. The ui and bff jobs run only when
+# files that affect them change (Markdown-only changes are skipped); `ci-ok` waits for them.
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: read # paths-filter lists PR files via the API
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ui: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ui == 'true' }}
+      bff: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.bff == 'true' }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: github.event_name != 'pull_request'
+      - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        id: filter
+        if: github.event_name != 'workflow_dispatch'
+        with:
+          predicate-quantifier: every
+          filters: |
+            ui:
+              - "{ui/**,api/openapi.yaml,.github/workflows/ci.yml}"
+              - "!**/*.md"
+            bff:
+              - "{bff/**,api/openapi.yaml,.github/workflows/ci.yml}"
+              - "!**/*.md"
+
+  ui:
+    needs: changes
+    if: needs.changes.outputs.ui == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ui
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        with:
+          package_json_file: ui/package.json
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: ui/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Check generated API client is up to date
+        run: |
+          pnpm api:generate
+          git diff --exit-code lib/api/generated
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: node app/familyLayout.check.mjs
+      - run: node app/pins.check.mjs
+      - run: pnpm build
+
+  bff:
+    needs: changes
+    if: needs.changes.outputs.bff == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bff
+    services:
+      db:
+        image: postgres:17
+        env:
+          POSTGRES_USER: app
+          POSTGRES_PASSWORD: app
+          POSTGRES_DB: appdb
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U app -d appdb"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DB_URL: jdbc:postgresql://localhost:5432/appdb
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # tags for the git-derived version
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      - run: ./gradlew build
+
+  # Required status check: passes when every job above succeeded or was skipped.
+  ci-ok:
+    needs: [changes, ui, bff]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if a required job failed or was cancelled
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: exit 1
