@@ -13,7 +13,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 ## Code Map
 
 - `ui/app/page.tsx` renders the home scene.
-- `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the family and test-user boards into the scene's debug panel.
+- `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the family and random family boards into the scene's debug panel.
 - `ui/app/Scene.tsx` configures the canvas, sunset lighting, meadow, tree, camera controls, the collapsible debug panel (its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider and pin toggle, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).
