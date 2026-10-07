@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.5.0](https://github.com/schillpeet/ftree/compare/v0.4.0...v0.5.0) (2026-10-07)
+
+
+### Features
+
+* **bff:** add mock swagger server scaffold under bff/mock-swagger ([#42](https://github.com/schillpeet/ftree/issues/42)) ([df3b9b3](https://github.com/schillpeet/ftree/commit/df3b9b3ef75ce46c9e69fb21df0fd28b24b92820))
+* **repo:** serve swagger ui from docker compose ([#45](https://github.com/schillpeet/ftree/issues/45)) ([82b05b7](https://github.com/schillpeet/ftree/commit/82b05b719283734d53b1c44200da14c496ddb044))
+* **ui:** add crown scale slider driving the scroll layout ([#48](https://github.com/schillpeet/ftree/issues/48)) ([adce2a4](https://github.com/schillpeet/ftree/commit/adce2a48e1c3e9b6740aad2ce717661b3551f912))
+* **ui:** pin member cards to branch points ([#49](https://github.com/schillpeet/ftree/issues/49)) ([8c90ecc](https://github.com/schillpeet/ftree/commit/8c90eccda81e9e011081b3eee9b6dceb1695088b))
+
+
+### Bug Fixes
+
+* **repo:** make release prs pass required checks ([#52](https://github.com/schillpeet/ftree/issues/52)) ([42a26f9](https://github.com/schillpeet/ftree/commit/42a26f981927e79196f670175ca33eb0ad8d0f95))
+* **repo:** manage local services ([#39](https://github.com/schillpeet/ftree/issues/39)) ([3d7e6eb](https://github.com/schillpeet/ftree/commit/3d7e6ebe46163168c2daeb206e8bb8a483fb728c))
+
 ## [0.4.0](https://github.com/schillpeet/ftree/compare/v0.3.0...v0.4.0) (2026-10-02)
 
 
