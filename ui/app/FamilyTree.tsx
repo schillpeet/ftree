@@ -11,7 +11,7 @@ import {
 import FamiliesPanel from './FamiliesPanel';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
-import TestUsersPanel from './TestUsersPanel';
+import RandomFamilyPanel from './RandomFamilyPanel';
 
 const firstFamilyId = (items: FamilySummary[]) =>
   items.find((family) => family.name.toLocaleLowerCase() === 'default')?.id ?? items[0]?.id ?? null;
@@ -23,7 +23,7 @@ export default function FamilyTree() {
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [familiesError, setFamiliesError] = useState<string | null>(null);
-  const [openBoard, setOpenBoard] = useState<'families' | 'test-users' | null>(null);
+  const [openBoard, setOpenBoard] = useState<'families' | 'random-family' | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
@@ -138,10 +138,10 @@ export default function FamilyTree() {
               onSelect={selectFamily}
               onToggleVisibility={toggleFamilyVisibility}
             />
-            <TestUsersPanel
+            <RandomFamilyPanel
               families={families}
-              isOpen={openBoard === 'test-users'}
-              onToggle={() => setOpenBoard((open) => open === 'test-users' ? null : 'test-users')}
+              isOpen={openBoard === 'random-family'}
+              onToggle={() => setOpenBoard((open) => open === 'random-family' ? null : 'random-family')}
               onCreated={addFamily}
             />
           </>

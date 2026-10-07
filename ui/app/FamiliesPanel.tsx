@@ -104,7 +104,7 @@ export default function FamiliesPanel({
               </div>
             )}
             {!isLoading && !error && families?.length === 0 && (
-              <p className="members-empty">Noch keine Familien angelegt. Erstelle eine über „Testuser“.</p>
+              <p className="members-empty">Noch keine Familien angelegt. Erstelle eine über „Zufallsfamilie generieren“.</p>
             )}
             {deleteError && <p className="member-form-error" role="alert">{deleteError}</p>}
             {!!families?.length && (
@@ -128,7 +128,7 @@ export default function FamiliesPanel({
                       </span>
                       {family.testSettings && (
                         <span>
-                          Einstellung: {family.testSettings.totalUsers} Testuser in{' '}
+                          Einstellung: {family.testSettings.totalUsers} Personen in{' '}
                           {family.testSettings.generationCount} Generationen,{' '}
                           {family.testSettings.minChildren}–{family.testSettings.maxChildren} Kinder je Elternteil
                         </span>

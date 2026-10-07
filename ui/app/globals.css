@@ -283,7 +283,7 @@ textarea {
 }
 
 .families-panel,
-.test-users-panel {
+.random-family-panel {
   /* Opens to the left of the debug panel, so the panel never clips it. */
   position: absolute;
   top: 0;
@@ -301,44 +301,44 @@ textarea {
   width: min(400px, calc(100vw - 32px));
 }
 
-.test-users-panel {
+.random-family-panel {
   width: min(360px, calc(100vw - 32px));
 }
 
-.test-users-form {
+.random-family-form {
   display: grid;
   gap: 14px;
   padding: 14px 18px 18px;
   font-family: Arial, sans-serif;
 }
 
-.test-users-form .member-field input {
+.random-family-form .member-field input {
   width: 100%;
 }
 
-.test-users-child-range {
+.random-family-child-range {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
-.test-users-hint,
-.test-users-success {
+.random-family-hint,
+.random-family-success {
   margin: 0;
   color: #42564a;
   font-size: 13px;
   line-height: 1.4;
 }
 
-.test-users-success {
+.random-family-success {
   color: #24523d;
 }
 
-.test-users-form .member-form-actions {
+.random-family-form .member-form-actions {
   padding-top: 0;
 }
 
-.test-users-form .member-form-actions button[type='submit'] {
+.random-family-form .member-form-actions button[type='submit'] {
   margin-left: auto;
 }
 
@@ -442,7 +442,7 @@ textarea {
 .family-set-delete:focus-visible,
 .family-set-visibility:focus-visible,
 .families-panel button:focus-visible,
-.test-users-panel button:focus-visible {
+.random-family-panel button:focus-visible {
   outline: 3px solid #e89155;
   outline-offset: 2px;
 }
@@ -687,7 +687,7 @@ textarea {
   }
 
   .families-panel,
-  .test-users-panel {
+  .random-family-panel {
     position: fixed;
     top: 64px;
     right: 10px;

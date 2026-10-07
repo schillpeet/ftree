@@ -4,18 +4,18 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createFamily, type FamilySummary } from '../lib/api/generated/members';
 import { planTestFamily } from './testFamilyPlan';
 
-const MAX_TEST_USERS = 250;
+const MAX_PERSONS = 250;
 const MAX_GENERATIONS = 10;
 const MAX_CHILDREN = 3;
 
 function suggestedFamilyName(families: FamilySummary[] | null) {
   const existing = new Set(families?.map((family) => family.name.toLocaleLowerCase()) ?? []);
   let number = 1;
-  while (existing.has(`test-familie ${number}`)) number++;
-  return `Test-Familie ${number}`;
+  while (existing.has(`zufallsfamilie ${number}`)) number++;
+  return `Zufallsfamilie ${number}`;
 }
 
-export default function TestUsersPanel({
+export default function RandomFamilyPanel({
   families,
   isOpen,
   onToggle,
@@ -60,7 +60,7 @@ export default function TestUsersPanel({
     };
   }, [isOpen, isGenerating, onToggle]);
 
-  async function generateUsers(event: FormEvent<HTMLFormElement>) {
+  async function generateFamily(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!plan || isGenerating) return;
 
@@ -96,33 +96,33 @@ export default function TestUsersPanel({
   }
 
   return (
-    <div className="test-users-control">
+    <div className="random-family-control">
       <button
         className="debug-button"
         type="button"
         disabled={isGenerating}
         aria-expanded={isOpen}
-        aria-controls="test-users-panel"
+        aria-controls="random-family-panel"
         ref={buttonRef}
         onClick={onToggle}
       >
-        Testuser
+        Zufallsfamilie generieren
       </button>
 
       {isOpen && (
-        <section className="test-users-panel" id="test-users-panel" aria-label="Testuser anlegen" ref={panelRef}>
+        <section className="random-family-panel" id="random-family-panel" aria-label="Zufallsfamilie anlegen" ref={panelRef}>
           <header className="members-panel-header">
-            <h2>Testuser-Familie anlegen</h2>
+            <h2>Zufallsfamilie anlegen</h2>
             <button
               type="button"
-              aria-label="Testuser-Board schließen"
+              aria-label="Zufallsfamilie-Board schließen"
               disabled={isGenerating}
               onClick={onToggle}
             >
               ×
             </button>
           </header>
-          <form className="test-users-form" onSubmit={generateUsers}>
+          <form className="random-family-form" onSubmit={generateFamily}>
             <label className="member-field">
               Familienname
               <input
@@ -135,11 +135,11 @@ export default function TestUsersPanel({
               />
             </label>
             <label className="member-field">
-              Anzahl Testuser
+              Anzahl Personen
               <input
                 type="number"
                 min={1}
-                max={MAX_TEST_USERS}
+                max={MAX_PERSONS}
                 required
                 disabled={isGenerating}
                 value={totalUsers}
@@ -158,7 +158,7 @@ export default function TestUsersPanel({
                 onChange={(event) => setGenerationCount(Number(event.target.value))}
               />
             </label>
-            <div className="test-users-child-range">
+            <div className="random-family-child-range">
               <label className="member-field">
                 Kinder mindestens
                 <input
@@ -184,8 +184,8 @@ export default function TestUsersPanel({
                 />
               </label>
             </div>
-            <p className="test-users-hint">
-              Erstellt eine neue Familie samt Personen und Beziehungen. Maximal {MAX_TEST_USERS} Personen,{' '}
+            <p className="random-family-hint">
+              Erstellt eine neue Familie samt Personen und Beziehungen. Maximal {MAX_PERSONS} Personen,{' '}
               {MAX_GENERATIONS} Generationen und {MAX_CHILDREN} Kinder pro Elternteil.
             </p>
             {plan === null && (
@@ -194,7 +194,7 @@ export default function TestUsersPanel({
               </p>
             )}
             {error && <p className="member-form-error" role="alert">{error}</p>}
-            {success && <p className="test-users-success" role="status">{success}</p>}
+            {success && <p className="random-family-success" role="status">{success}</p>}
             <div className="member-form-actions">
               <button type="submit" disabled={!plan || isGenerating || !familyName.trim()}>
                 {isGenerating ? 'Familie wird angelegt …' : 'Familie speichern und anzeigen'}
