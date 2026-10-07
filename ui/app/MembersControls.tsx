@@ -74,6 +74,12 @@ function MemberDetails({
   const parents = names(members.filter((m) => member.parentIds.includes(m.id)));
   const children = names(members.filter((m) => m.parentIds.includes(member.id)));
   const partners = names(members.filter((m) => member.partnerIds.includes(m.id)));
+  // Siblings have exactly the member's parents, half-siblings share only some or have others too.
+  const shared = (m: Member) => m.parentIds.filter((id) => member.parentIds.includes(id)).length;
+  const sameParents = (m: Member) => shared(m) === member.parentIds.length && m.parentIds.length === member.parentIds.length;
+  const sharing = members.filter((m) => m.id !== member.id && shared(m) > 0);
+  const siblings = names(sharing.filter(sameParents));
+  const halfSiblings = names(sharing.filter((m) => !sameParents(m)));
 
   return (
     <li className="member-row">
@@ -92,6 +98,8 @@ function MemberDetails({
       {parents && <p>Eltern: {parents}</p>}
       {children && <p>Kinder: {children}</p>}
       {partners && <p>Partner: {partners}</p>}
+      {siblings && <p>Geschwister: {siblings}</p>}
+      {halfSiblings && <p>Halbgeschwister: {halfSiblings}</p>}
       {member.note && <p>{member.note}</p>}
       {member.photoUrl && (
         <p>
