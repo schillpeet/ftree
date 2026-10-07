@@ -5,7 +5,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, Line, Sky } from '@react-three/drei';
 import { Plane, Raycaster, SphereGeometry, Vector2, Vector3 } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
-import { arrangePins } from './arrange';
+import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
 import Meadow, { height } from './Meadow';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
@@ -112,8 +112,9 @@ function CrownScale({
   );
 }
 
-// Development-only preview: moves related members onto nearby pins, from tight (−10) to spread
-// (+10). Nothing is saved, so cards cannot be dragged while bundling is on.
+// Development-only preview: moves related members onto nearby pins, from as close as cards fit
+// (−10) over twice that (0) to as far apart as the pins allow (+10). Nothing is saved, so cards
+// cannot be dragged while bundling is on.
 function RelationSpacing({
   spacing,
   bundle,
@@ -196,7 +197,7 @@ function Scrolls({
   const [drag, setDrag] = useState<Drag | null>(null);
   const pinOf = useMemo(() => assignPins(members, pins.length), [members, pins.length]);
   const shownPins = useMemo(
-    () => (spacing == null ? pinOf : arrangePins(members, pins, pinOf, (CARD.width + CARD_GAP) * 1.15 ** spacing)),
+    () => (spacing == null ? pinOf : arrangePins(members, pins, pinOf, relationDistance(spacing, pins, CARD.width + CARD_GAP))),
     [members, pins, pinOf, spacing],
   );
   const placed = useMemo(() => {
