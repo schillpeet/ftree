@@ -7,7 +7,7 @@ import { Plane, Raycaster, SphereGeometry, Vector2, Vector3 } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { relationLines } from './familyLayout';
 import Meadow, { height } from './Meadow';
-import { CARD, CARD_GAP, PIN_RADIUS, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
+import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import Tree, { buildTree } from './Tree';
 
@@ -36,8 +36,8 @@ const PIN_GEOMETRY = new SphereGeometry(PIN_RADIUS, 12, 8);
 
 export type Focus = { id: string } | null;
 
-// ponytail: cards without a placement (new members, or more members than pins) are not persisted
-// here until dragged; the rows simply grow upward when there are many.
+// ponytail: cards left over when the free pins run out are not persisted here until dragged; the
+// rows simply grow upward when there are many.
 function waitingPosition(index: number): Point {
   const column = index % WAITING_PER_ROW;
   const row = Math.floor(index / WAITING_PER_ROW);
@@ -157,18 +157,20 @@ function Scrolls({
 }) {
   const { camera, events, gl } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
+  const pinOf = useMemo(() => assignPins(members, pins.length), [members, pins.length]);
   const placed = useMemo(() => {
     const positions = new Map<string, Point>();
     let waiting = 0;
     for (const m of members) {
-      const pin = m.pinId != null ? pins[m.pinId] : undefined;
+      const pinId = pinOf.get(m.id);
+      const pin = pinId != null ? pins[pinId] : undefined;
       positions.set(
         m.id,
         pin ? cardTop(pin) : m.position ? [m.position.x, TREE_BASE + m.position.y, m.position.z] : waitingPosition(waiting++),
       );
     }
     return positions;
-  }, [members, pins]);
+  }, [members, pins, pinOf]);
   const positions = useMemo(
     () => (drag ? new Map(placed).set(drag.id, drag.position) : placed),
     [placed, drag],
@@ -205,7 +207,7 @@ function Scrolls({
       return raycaster.ray.intersectPlane(plane, new Vector3());
     };
     const grab = start.clone().sub(hit(event.clientX, event.clientY) ?? start);
-    const occupied = new Set(members.flatMap((m) => (m.id !== id && m.pinId != null ? [m.pinId] : [])));
+    const occupied = new Set([...pinOf].flatMap(([m, pin]) => (m !== id ? [pin] : [])));
     // Pins behind the camera project to z > 1 and cannot be touched.
     const radius = new Vector3(0, PIN_RADIUS, 0).applyQuaternion(camera.quaternion);
     const screenPins = pins
