@@ -5,6 +5,7 @@ import { Canvas, useThree } from '@react-three/fiber';
 import { CameraControls, Line, Sky } from '@react-three/drei';
 import { Plane, Raycaster, SphereGeometry, Vector2, Vector3 } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
+import { arrangePins } from './arrange';
 import { relationLines } from './familyLayout';
 import Meadow, { height } from './Meadow';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
@@ -111,6 +112,39 @@ function CrownScale({
   );
 }
 
+// Development-only preview: moves related members onto nearby pins, from tight (−10) to spread
+// (+10). Nothing is saved, so cards cannot be dragged while bundling is on.
+function RelationSpacing({
+  spacing,
+  bundle,
+  onSpacing,
+  onBundle,
+}: {
+  spacing: number;
+  bundle: boolean;
+  onSpacing: (value: number) => void;
+  onBundle: (value: boolean) => void;
+}) {
+  return (
+    <div className="relation-spacing" role="group" aria-label="Beziehungsabstand">
+      <label>
+        <input type="checkbox" checked={bundle} onChange={(event) => onBundle(event.target.checked)} />
+        Bündeln
+      </label>
+      <input
+        type="range"
+        aria-label="Beziehungsabstand"
+        min={-10}
+        max={10}
+        step={1}
+        value={spacing}
+        onChange={(event) => onSpacing(Number(event.target.value))}
+      />
+      <span className="relation-spacing-value">{spacing}</span>
+    </div>
+  );
+}
+
 function SunsetSky() {
   return (
     <>
@@ -143,6 +177,7 @@ function Scrolls({
   focus,
   pins,
   showPins,
+  spacing,
   controlsRef,
   onOpen,
   onPlace,
@@ -151,6 +186,8 @@ function Scrolls({
   focus: Focus;
   pins: Point[];
   showPins: boolean;
+  // Relation spacing while bundling, otherwise null.
+  spacing: number | null;
   controlsRef: RefObject<CameraControls | null>;
   onOpen: (id: string) => void;
   onPlace: (id: string, placement: Placement) => void;
@@ -158,19 +195,22 @@ function Scrolls({
   const { camera, events, gl } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
   const pinOf = useMemo(() => assignPins(members, pins.length), [members, pins.length]);
+  const shownPins = useMemo(
+    () => (spacing == null ? pinOf : arrangePins(members, pins, pinOf, (CARD.width + CARD_GAP) * 1.15 ** spacing)),
+    [members, pins, pinOf, spacing],
+  );
   const placed = useMemo(() => {
     const positions = new Map<string, Point>();
     let waiting = 0;
     for (const m of members) {
-      const pinId = pinOf.get(m.id);
-      const pin = pinId != null ? pins[pinId] : undefined;
+      const pin = shownPins.get(m.id);
       positions.set(
         m.id,
-        pin ? cardTop(pin) : m.position ? [m.position.x, TREE_BASE + m.position.y, m.position.z] : waitingPosition(waiting++),
+        pin != null ? cardTop(pins[pin]) : m.position ? [m.position.x, TREE_BASE + m.position.y, m.position.z] : waitingPosition(waiting++),
       );
     }
     return positions;
-  }, [members, pins, pinOf]);
+  }, [members, pins, shownPins]);
   const positions = useMemo(
     () => (drag ? new Map(placed).set(drag.id, drag.position) : placed),
     [placed, drag],
@@ -259,7 +299,7 @@ function Scrolls({
           member={member}
           position={positions.get(member.id)!}
           onOpen={() => onOpen(member.id)}
-          onDrag={showPins ? (event) => startDrag(member.id, event) : undefined}
+          onDrag={showPins && spacing == null ? (event) => startDrag(member.id, event) : undefined}
         />
       ))}
       {showPins &&
@@ -289,6 +329,8 @@ export default function Scene({
   const [controls, setControls] = useState<CameraControls | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
   const [showPins, setShowPins] = useState(false);
+  const [spacing, setSpacing] = useState(0);
+  const [bundle, setBundle] = useState(false);
   const tree = useMemo(() => buildTree(7), []);
   // Pins follow the crown scale; only points with room for a card above the ground qualify.
   const pins = useMemo(
@@ -324,6 +366,7 @@ export default function Scene({
           focus={focus}
           pins={pins}
           showPins={showPins}
+          spacing={bundle ? spacing : null}
           controlsRef={controlsRef}
           onOpen={onOpen}
           onPlace={onPlace}
@@ -344,6 +387,9 @@ export default function Scene({
       </label>
       {process.env.NODE_ENV !== 'production' && (
         <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
+      )}
+      {process.env.NODE_ENV !== 'production' && (
+        <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
       )}
     </>
   );
