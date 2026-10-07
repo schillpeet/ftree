@@ -92,12 +92,26 @@ class MemberService(
         if (id in everyone || everyone.size != parentIds.size + childIds.size + partnerIds.size || !all.keys.containsAll(everyone)) {
             return RelativesResult.INVALID
         }
+        // Siblings are not stored but derived from shared parents, so they must share some of the new parents.
+        val siblings = relatives.siblings?.associate { it.id to it.parentIds.toSet() }
+        val invalidSiblings = siblings != null && (
+            siblings.size != relatives.siblings?.size ||
+                siblings.any { (siblingId, shared) ->
+                    siblingId == id || siblingId in everyone || siblingId !in all || shared.isEmpty() || !parentIds.containsAll(shared)
+                }
+            )
+        if (invalidSiblings) return RelativesResult.INVALID
+        // Listed siblings get exactly their shared parents among the member's; everyone else outside the
+        // member's own relatives loses the member's parents.
+        val takesSiblingParents = { otherId: UUID -> siblings != null && otherId != id && otherId !in everyone }
 
         val parentsOf = all.mapValues { (otherId, other) ->
+            val current = other.parents.map { it.id }.toSet()
             when {
                 otherId == id -> parentIds
-                otherId in childIds -> other.parents.map { it.id }.toSet() + id
-                else -> other.parents.map { it.id }.toSet() - id
+                otherId in childIds -> current + id
+                takesSiblingParents(otherId) -> current - id - parentIds + siblings?.get(otherId).orEmpty()
+                else -> current - id
             }
         }
         if (hasCycle(parentsOf)) return RelativesResult.INVALID
@@ -105,6 +119,10 @@ class MemberService(
         member.parents = parentIds.map(all::getValue).toMutableSet()
         all.values.forEach { other ->
             if (other.id in childIds) other.parents.add(member) else other.parents.remove(member)
+            if (takesSiblingParents(other.id)) {
+                other.parents.removeIf { it.id in parentIds }
+                other.parents.addAll(siblings?.get(other.id).orEmpty().map(all::getValue))
+            }
             if (other.id in partnerIds) other.partners.add(member) else other.partners.remove(member)
         }
         member.partners = partnerIds.map(all::getValue).toMutableSet()

@@ -134,10 +134,21 @@ export interface Placement {
   position?: Position | null;
 }
 
+export interface Sibling {
+  id: string;
+  /** The parents shared with this member: all of them for a sibling, some for a half-sibling. */
+  parentIds: string[];
+}
+
 export interface Relatives {
   parentIds: string[];
   childIds: string[];
   partnerIds: string[];
+  /**
+     * Replaces the members sharing parents with this member; when absent, siblings stay unchanged.
+     * @nullable
+     */
+  siblings?: Sibling[] | null;
 }
 
 export interface CreateMemberRequest {
@@ -436,7 +447,7 @@ export const getUpdateMemberRelativesUrl = (id: string,) => {
 }
 
 /**
- * Replaces all three sets. Partnerships are mutual. Rejects unknown members, the member itself, a member in more than one set, and links that would make someone their own ancestor.
+ * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual. Siblings are not stored but derived from shared parents. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor.
  * @summary Replace relatives of a member in the default family
  */
 export const updateMemberRelatives = async (id: string,
@@ -916,8 +927,8 @@ export const getUpdateFamilyMemberRelativesUrl = (familyId: string,
 }
 
 /**
- * Replaces all three sets. Partnerships are mutual, so the partners list this member too. Rejects unknown members, the member itself, a member in more than one set, and links that would make someone their own ancestor.
- * @summary Replace a family member's parents, children, and partners
+ * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual, so the partners list this member too. Siblings are not stored but derived from shared parents: each listed sibling gets exactly the given parents of this member, and other members outside these sets lose the parents they share with this member. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor.
+ * @summary Replace a family member's parents, children, partners, and siblings
  */
 export const updateFamilyMemberRelatives = async (familyId: string,
     id: string,
