@@ -26,6 +26,7 @@ pnpm --dir ui install
 - **API docs:** [http://localhost:4010](http://localhost:4010) (Swagger UI)
 
 Run `./stop.sh` to stop all services. PostgreSQL data is retained. Logs and process state are stored under `.local/dev/`.
+After pulling changes, run `./restart.sh`: it stops all services, installs UI dependencies, and starts again. The backend is recompiled on start.
 If a required port is already occupied, `start.sh` reports the process and exits without stopping it.
 
 ## What's Inside
@@ -48,7 +49,7 @@ docker compose up -d --wait         # PostgreSQL and Swagger UI
 pnpm --dir ui dev                   # UI
 ```
 
-For the managed start/stop lifecycle, use `./start.sh` and `./stop.sh`.
+For the managed start/stop lifecycle, use `./start.sh`, `./stop.sh`, and `./restart.sh`.
 
 After changing `api/openapi.yaml`, regenerate the UI client (the backend regenerates on build):
 
