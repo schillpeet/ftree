@@ -98,7 +98,7 @@ export default function TestUsersPanel({
   return (
     <div className="test-users-control">
       <button
-        className="members-button members-button-primary"
+        className="debug-button"
         type="button"
         disabled={isGenerating}
         aria-expanded={isOpen}

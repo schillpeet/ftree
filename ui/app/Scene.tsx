@@ -71,8 +71,8 @@ function ZoomScale({ controls }: { controls: CameraControls | null }) {
     void controls?.dollyTo(toDistance(Math.min(1, Math.max(0, value))), smooth);
 
   return (
-    <div className="zoom-scale" role="group" aria-label="Zoom">
-      <button type="button" aria-label="Hineinzoomen" onClick={() => zoomTo(zoom + ZOOM_STEP, true)}>+</button>
+    <div className="debug-row" role="group" aria-label="Zoom">
+      <span>Zoom</span>
       <input
         type="range"
         aria-label="Zoomstufe"
@@ -82,7 +82,10 @@ function ZoomScale({ controls }: { controls: CameraControls | null }) {
         value={zoom}
         onChange={(event) => zoomTo(Number(event.target.value), false)}
       />
-      <button type="button" aria-label="Herauszoomen" onClick={() => zoomTo(zoom - ZOOM_STEP, true)}>−</button>
+      <span className="zoom-steps">
+        <button type="button" aria-label="Herauszoomen" onClick={() => zoomTo(zoom - ZOOM_STEP, true)}>−</button>
+        <button type="button" aria-label="Hineinzoomen" onClick={() => zoomTo(zoom + ZOOM_STEP, true)}>+</button>
+      </span>
     </div>
   );
 }
@@ -97,21 +100,19 @@ function CrownScale({
   onPreviewScale: (value: number) => void;
 }) {
   return (
-    <div className="crown-scale" role="group" aria-label="Krone">
-      <label>
-        <span>Krone</span>
-        <input
-          type="range"
-          aria-label="Kronengröße"
-          min={0.3}
-          max={2}
-          step={0.01}
-          value={previewScale}
-          onChange={(event) => onPreviewScale(Number(event.target.value))}
-        />
-        <span className="crown-scale-value">{previewScale.toFixed(2)}</span>
-      </label>
-    </div>
+    <label className="debug-row">
+      <span>Krone</span>
+      <input
+        type="range"
+        aria-label="Kronengröße"
+        min={0.3}
+        max={2}
+        step={0.01}
+        value={previewScale}
+        onChange={(event) => onPreviewScale(Number(event.target.value))}
+      />
+      <span className="debug-row-value">{previewScale.toFixed(2)}</span>
+    </label>
   );
 }
 
@@ -130,8 +131,8 @@ function RelationSpacing({
   onBundle: (value: boolean) => void;
 }) {
   return (
-    <div className="relation-spacing" role="group" aria-label="Beziehungsabstand">
-      <label>
+    <div className="debug-row" role="group" aria-label="Beziehungsabstand">
+      <label className="debug-check">
         <input type="checkbox" checked={bundle} onChange={(event) => onBundle(event.target.checked)} />
         Bündeln
       </label>
@@ -144,7 +145,7 @@ function RelationSpacing({
         value={spacing}
         onChange={(event) => onSpacing(Number(event.target.value))}
       />
-      <span className="relation-spacing-value">{spacing}</span>
+      <span className="debug-row-value">{spacing}</span>
     </div>
   );
 }
@@ -403,20 +404,27 @@ export default function Scene({
           dollySpeed={DOLLY_SPEED}
         />
       </Canvas>
-      <ZoomScale controls={controls} />
       <details className="debug-panel" open>
-        <summary className="members-button">Debug</summary>
+        <summary>Debug</summary>
         <div className="debug-panel-body">
-          {debugTools}
-          <label className="pin-toggle">
-            <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
-            Anheftpunkte
-          </label>
+          <section>
+            <h2>Daten</h2>
+            {debugTools}
+          </section>
+          <section>
+            <h2>Ansicht</h2>
+            <ZoomScale controls={controls} />
+            <label className="debug-check pin-toggle">
+              <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
+              Anheftpunkte
+            </label>
+          </section>
           {process.env.NODE_ENV !== 'production' && (
-            <>
+            <section>
+              <h2>Vorschau</h2>
               <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
               <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
-            </>
+            </section>
           )}
         </div>
       </details>
