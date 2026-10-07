@@ -77,7 +77,7 @@ export default function FamiliesPanel({
   return (
     <div className="families-control">
       <button
-        className="members-button members-button-primary"
+        className="debug-button"
         type="button"
         aria-expanded={isOpen}
         aria-controls="families-panel"
