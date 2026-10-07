@@ -7,6 +7,7 @@ import { Plane, Raycaster, SphereGeometry, Vector2, Vector3 } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
+import { generationBounds, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
@@ -22,6 +23,8 @@ const TREE_BASE = height(0, 0);
 const CAMERA_START: [number, number, number] = [40, TREE_BASE + 15, 50];
 const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 9, 0];
 const FOCUS_DISTANCE = 12;
+// A child's card hangs fully below its parents' cards.
+const GENERATION_GAP = CARD.height + CARD_GAP;
 // Relation lines run through the canopy; like the scrolls they are drawn over the leaves.
 const ON_TOP = { depthTest: false, renderOrder: 1 };
 const MIN_DISTANCE = 8;
@@ -195,9 +198,17 @@ function Scrolls({
 }) {
   const { camera, events, gl } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
-  const pinOf = useMemo(() => assignPins(members, pins.length), [members, pins.length]);
+  const pinOf = useMemo(() => layerPins(members, pins, assignPins(members, pins.length), GENERATION_GAP), [members, pins]);
   const shownPins = useMemo(
-    () => (spacing == null ? pinOf : arrangePins(members, pins, pinOf, relationDistance(spacing, pins, CARD.width + CARD_GAP))),
+    () =>
+      spacing == null
+        ? pinOf
+        : layerPins(
+            members,
+            pins,
+            arrangePins(members, pins, pinOf, relationDistance(spacing, pins, CARD.width + CARD_GAP)),
+            GENERATION_GAP,
+          ),
     [members, pins, pinOf, spacing],
   );
   const placed = useMemo(() => {
@@ -248,7 +259,15 @@ function Scrolls({
       return raycaster.ray.intersectPlane(plane, new Vector3());
     };
     const grab = start.clone().sub(hit(event.clientX, event.clientY) ?? start);
-    const occupied = new Set([...pinOf].flatMap(([m, pin]) => (m !== id ? [pin] : [])));
+    // Pins that would put the card less than a card below a parent or above a child count as
+    // occupied, and so does such a free spot: the card springs back.
+    const settled = new Map(members.flatMap((m) => (pinOf.has(m.id) || m.position ? [[m.id, placed.get(m.id)!] as const] : [])));
+    const { lowest, highest } = generationBounds(id, members, settled, GENERATION_GAP);
+    const fits = (y: number) => y >= lowest && y <= highest;
+    const occupied = new Set([
+      ...[...pinOf].flatMap(([m, pin]) => (m !== id ? [pin] : [])),
+      ...pins.flatMap((pin, i) => (fits(cardTop(pin)[1]) ? [] : [i])),
+    ]);
     // Pins behind the camera project to z > 1 and cannot be touched.
     const radius = new Vector3(0, PIN_RADIUS, 0).applyQuaternion(camera.quaternion);
     const screenPins = pins
@@ -269,7 +288,8 @@ function Scrolls({
       const position = point.add(grab).toArray();
       const c = toScreen(position);
       const rect = { left: c.x - width / 2, right: c.x + width / 2, top: c.y, bottom: c.y + cardHeight };
-      last = { id, position, target: dropTarget(rect, screenPins, occupied) };
+      const target = dropTarget(rect, screenPins, occupied);
+      last = { id, position, target: target === 'free' && !fits(position[1]) ? 'reject' : target };
       setDrag(last);
     };
     const up = () => {
