@@ -1,6 +1,7 @@
 package com.github.bff.member
 
 import com.github.bff.generated.api.FamiliesApi
+import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import org.springframework.http.HttpStatus
@@ -17,6 +18,14 @@ class FamiliesController(private val familyService: FamilyService) : FamiliesApi
             is FamilyCreationResult.CREATED -> ResponseEntity.status(HttpStatus.CREATED).body(result.summary)
             FamilyCreationResult.INVALID -> ResponseEntity.badRequest().build()
             FamilyCreationResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
+
+    override fun archiveFamily(familyId: UUID, archiveFamilyRequest: ArchiveFamilyRequest): ResponseEntity<FamilySummary> =
+        when (val result = familyService.archive(familyId, archiveFamilyRequest)) {
+            is FamilyArchiveResult.ARCHIVED -> ResponseEntity.status(HttpStatus.CREATED).body(result.summary)
+            FamilyArchiveResult.INVALID -> ResponseEntity.badRequest().build()
+            FamilyArchiveResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            FamilyArchiveResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
 
     override fun deleteFamily(familyId: UUID): ResponseEntity<Void> =

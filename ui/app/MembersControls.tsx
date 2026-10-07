@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
+  archiveFamily,
   createFamilyMember,
   deleteFamilyMember,
   getFamilyMembers,
@@ -118,6 +119,7 @@ function MemberDetails({
 
 export default function MembersControls({
   familyId,
+  isDefaultFamily,
   members,
   setMembers,
   profile,
@@ -125,6 +127,8 @@ export default function MembersControls({
   onFamiliesChanged,
 }: {
   familyId: string | null;
+  // Only the default family is archived: its people move to a new family and it starts empty.
+  isDefaultFamily: boolean;
   members: Member[] | null;
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
   // Member whose profile (the edit form) was requested from their scroll in the scene.
@@ -213,6 +217,28 @@ export default function MembersControls({
       document.removeEventListener('keydown', closeOnEscape);
     };
   }, [isListOpen, relativesOf]);
+
+  async function archive() {
+    if (!familyId) return;
+    const name = window.prompt(
+      'Unter welchem Namen soll die Familie archiviert werden? „default“ ist danach leer.',
+      `Familie vom ${new Date().toLocaleDateString('de-DE')}`,
+    )?.trim();
+    if (!name) return;
+    setRequestError(null);
+    try {
+      const response = await archiveFamily(familyId, { name });
+      if (response.status === 409) {
+        setRequestError(`Eine Familie „${name}“ existiert bereits.`);
+        return;
+      }
+      if (response.status !== 201) throw new Error('Unexpected archive response');
+      setMembers([]);
+      onFamiliesChanged();
+    } catch {
+      setRequestError('Die Familie konnte nicht archiviert werden. Ist das BFF erreichbar?');
+    }
+  }
 
   async function removeMember(member: Member) {
     if (!familyId) return;
@@ -370,6 +396,11 @@ export default function MembersControls({
                   />
                 ))}
               </ul>
+            )}
+            {isDefaultFamily && !isLoading && !!members?.length && (
+              <div className="members-archive">
+                <button type="button" onClick={() => void archive()}>Familie archivieren</button>
+              </div>
             )}
           </div>
         </section>

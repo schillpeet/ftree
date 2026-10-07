@@ -1,5 +1,6 @@
 package com.github.bff.member
 
+import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Relatives
@@ -11,6 +12,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @SpringBootTest
@@ -108,6 +110,43 @@ class FamilyServiceTest {
         assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(second.id).isEmpty())
         assertNotNull(familyRepository.findById(first.id).orElse(null))
         assertEquals(12, memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(first.id).size)
+    }
+
+    @Test
+    fun `archives the default family into a new family and leaves it empty`() {
+        val default = familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
+        assertNotNull(default)
+        val parent = memberService.createDefaultFamilyMember(CreateMemberRequest("Parent", "Archive"))
+        val child = memberService.createDefaultFamilyMember(CreateMemberRequest("Child", "Archive"))
+        assertNotNull(parent)
+        assertNotNull(child)
+        memberService.updateDefaultFamilyMemberRelatives(child.id, Relatives(listOf(parent.id), emptyList(), emptyList()))
+        val before = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(default.id).size
+        val name = "Archiv ${UUID.randomUUID()}"
+
+        val result = familyService.archive(default.id, ArchiveFamilyRequest(name))
+
+        assertTrue(result is FamilyArchiveResult.ARCHIVED)
+        assertEquals(name, result.summary.name)
+        assertEquals(before, result.summary.memberCount)
+        assertNull(result.summary.testSettings)
+        assertTrue(familyRepository.existsById(default.id))
+        assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(default.id).isEmpty())
+        val moved = memberRepository.findByIdAndFamilyId(child.id, result.summary.id)
+        assertNotNull(moved)
+        assertEquals(listOf(parent.id), moved.parents.map { it.id })
+    }
+
+    @Test
+    fun `refuses to archive under a taken name, an empty family, or an unknown family`() {
+        val family = (familyService.create(request()) as FamilyCreationResult.CREATED).summary
+
+        assertEquals(FamilyArchiveResult.NAME_TAKEN, familyService.archive(family.id, ArchiveFamilyRequest(family.name)))
+        assertEquals(FamilyArchiveResult.INVALID, familyService.archive(family.id, ArchiveFamilyRequest(" ")))
+        assertEquals(FamilyArchiveResult.NOT_FOUND, familyService.archive(UUID.randomUUID(), ArchiveFamilyRequest("Neu")))
+        val archived = familyService.archive(family.id, ArchiveFamilyRequest("Archiv ${UUID.randomUUID()}"))
+        assertTrue(archived is FamilyArchiveResult.ARCHIVED)
+        assertEquals(FamilyArchiveResult.INVALID, familyService.archive(family.id, ArchiveFamilyRequest("Archiv ${UUID.randomUUID()}")))
     }
 
     private fun request() = CreateFamilyRequest(

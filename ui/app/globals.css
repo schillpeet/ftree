@@ -495,7 +495,12 @@ textarea {
   color: #8b321d;
 }
 
-.members-error button {
+.members-archive {
+  margin-top: 4px;
+}
+
+.members-error button,
+.members-archive button {
   margin-top: 10px;
   padding: 8px 12px;
   border: 1px solid rgba(23, 58, 43, 0.25);

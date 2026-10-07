@@ -1,5 +1,6 @@
 package com.github.bff.member
 
+import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.TestFamilySettings
@@ -66,6 +67,20 @@ class FamilyService(
         return FamilyCreationResult.CREATED(family.toSummary(saved))
     }
 
+    // Moves every member, with links and placements, into a new family; the source stays empty.
+    @Transactional
+    fun archive(id: UUID, request: ArchiveFamilyRequest): FamilyArchiveResult {
+        if (!familyRepository.existsById(id)) return FamilyArchiveResult.NOT_FOUND
+        val name = request.name?.trim().orEmpty()
+        val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
+        if (name.isEmpty() || name.length > 100 || members.isEmpty()) return FamilyArchiveResult.INVALID
+        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyArchiveResult.NAME_TAKEN
+        val archived = familyRepository.saveAndFlush(FamilyEntity(name = name))
+        members.forEach { it.family = archived }
+        memberRepository.flush()
+        return FamilyArchiveResult.ARCHIVED(archived.toSummary(members))
+    }
+
     @Transactional
     fun delete(id: UUID): Boolean {
         val family = familyRepository.findById(id).orElse(null) ?: return false
@@ -117,6 +132,13 @@ sealed interface FamilyCreationResult {
     data class CREATED(val summary: FamilySummary) : FamilyCreationResult
     data object INVALID : FamilyCreationResult
     data object NAME_TAKEN : FamilyCreationResult
+}
+
+sealed interface FamilyArchiveResult {
+    data class ARCHIVED(val summary: FamilySummary) : FamilyArchiveResult
+    data object INVALID : FamilyArchiveResult
+    data object NOT_FOUND : FamilyArchiveResult
+    data object NAME_TAKEN : FamilyArchiveResult
 }
 
 internal data class PlannedPerson(val generation: Int, val parentIndex: Int? = null)
