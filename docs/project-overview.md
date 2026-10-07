@@ -21,7 +21,7 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `ui/app/pins.ts` holds the card footprint, the pin spacing rule and selection, and the drop rule (dock, spring back, or place freely); `ui/app/pins.check.mjs` is its self-check (`node app/pins.check.mjs` in `ui/`).
 - `ui/app/Scroll.tsx` renders a member's papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, partners, and (half-)siblings.
-- `ui/app/TestUsersPanel.tsx` creates named generated family sets from its board in the debug panel; `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
+- `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the debug panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
 - `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally and collects the branch points that pins are picked from.
 - `ui/app/Meadow.tsx` builds the terrain and instanced grass; it exports terrain height used by the tree and scene.
 - `ui/app/random.ts` contains seeded random and smooth-noise helpers used by the procedural scene.

@@ -348,7 +348,7 @@ export default function MembersControls({
               </div>
             )}
             {!familyId && (
-              <p className="members-empty">Wähle eine Familie aus oder lege eine Testuser-Familie an.</p>
+              <p className="members-empty">Wähle eine Familie aus oder generiere eine Zufallsfamilie.</p>
             )}
             {!isLoading && !requestError && familyId && members?.length === 0 && (
               <p className="members-empty">Noch keine Personen in dieser Familie angelegt.</p>
