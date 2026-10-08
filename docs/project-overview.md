@@ -24,7 +24,11 @@ With "Uhr" checked, a 24-hour dial (midnight at the top) appears whose hand can 
 ### Tree and roots
 
 The aerial roots stay on their limbs and are rebuilt to reach the ground below wherever the scaled limb now is.
-The grounded roots deliberately do not scale with the crown yet, so at large crown scales the trunk base can look wider than the root spread.
+Growing the crown also fills two more rings around the tree: from crown scale 1 to 1.5 new aerial roots hang down from the middle band of the outer branches (halfway to the ground at 1.25), and from 1.5 to 2 from the outermost band.
+At the same pace new roots creep outward half-buried in each ring, diving under the hill for a metre or three and surfacing again, sometimes forking.
+Among them are four giant roots about fifteen times as thick that swell out of the trunk base and wind over the hill in long, half-sunk ridges.
+Every new root starts at half its final thickness and thickens as it grows.
+The original aerial and grounded roots always stay; nothing grows below scale 1.
 
 ### Debug panel
 
@@ -97,7 +101,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/Scroll.tsx` renders a member's papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, partners, and (half-)siblings.
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the debug panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
-- `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally and collects the branch points that pins are picked from.
+- `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally, collects the branch points that pins are picked from, and rebuilds the aerial roots and outer-ring roots for the crown scale.
+- `ui/app/growth.ts` says how far each ring around the tree has grown at a crown scale; `ui/app/growth.check.mjs` is its self-check (`node app/growth.check.mjs` in `ui/`).
 - `ui/app/Meadow.tsx` builds the terrain and instanced grass; it exports terrain height used by the tree and scene.
 - `ui/app/random.ts` contains seeded random and smooth-noise helpers used by the procedural scene.
 - `ui/app/layout.tsx` defines the root document, metadata, and global stylesheet import.
