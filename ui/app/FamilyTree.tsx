@@ -125,38 +125,38 @@ export default function FamilyTree() {
         onOpen={(id) => setProfile({ id })}
         onPlace={(id, placement) => void placeMember(id, placement)}
         debugTools={
-          <>
-            <FamiliesPanel
-              families={families}
-              setFamilies={setFamilies}
-              activeFamilyId={activeFamilyId}
-              isLoading={isLoadingFamilies}
-              error={familiesError}
-              isOpen={openBoard === 'families'}
-              onToggle={() => setOpenBoard((open) => open === 'families' ? null : 'families')}
-              onRetry={() => void loadFamilies()}
-              onSelect={selectFamily}
-              onToggleVisibility={toggleFamilyVisibility}
-            />
-            <RandomFamilyPanel
-              families={families}
-              isOpen={openBoard === 'random-family'}
-              onToggle={() => setOpenBoard((open) => open === 'random-family' ? null : 'random-family')}
-              onCreated={addFamily}
-            />
-          </>
+          <RandomFamilyPanel
+            families={families}
+            isOpen={openBoard === 'random-family'}
+            onToggle={() => setOpenBoard((open) => open === 'random-family' ? null : 'random-family')}
+            onCreated={addFamily}
+          />
         }
       />
-      <MembersControls
-        key={activeFamilyId ?? 'no-family'}
-        familyId={activeFamilyId}
-        isDefaultFamily={families?.find((family) => family.id === activeFamilyId)?.name.toLocaleLowerCase() === 'default'}
-        members={members}
-        setMembers={setMembers}
-        profile={profile}
-        onSelect={(id) => setFocus({ id })}
-        onFamiliesChanged={() => void loadFamilies()}
-      />
+      <div className="overlay-controls">
+        <MembersControls
+          key={activeFamilyId ?? 'no-family'}
+          familyId={activeFamilyId}
+          isDefaultFamily={families?.find((family) => family.id === activeFamilyId)?.name.toLocaleLowerCase() === 'default'}
+          members={members}
+          setMembers={setMembers}
+          profile={profile}
+          onSelect={(id) => setFocus({ id })}
+          onFamiliesChanged={() => void loadFamilies()}
+        />
+        <FamiliesPanel
+          families={families}
+          setFamilies={setFamilies}
+          activeFamilyId={activeFamilyId}
+          isLoading={isLoadingFamilies}
+          error={familiesError}
+          isOpen={openBoard === 'families'}
+          onToggle={() => setOpenBoard((open) => open === 'families' ? null : 'families')}
+          onRetry={() => void loadFamilies()}
+          onSelect={selectFamily}
+          onToggleVisibility={toggleFamilyVisibility}
+        />
+      </div>
     </>
   );
 }

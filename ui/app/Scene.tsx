@@ -537,7 +537,7 @@ export default function Scene({
           dollySpeed={DOLLY_SPEED}
         />
       </Canvas>
-      <details className="debug-panel" open>
+      <details className="debug-panel">
         <summary>Debug</summary>
         <div className="debug-panel-body">
           <section>
