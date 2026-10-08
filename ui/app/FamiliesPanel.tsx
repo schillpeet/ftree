@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { deleteFamily, type FamilySummary } from '../lib/api/generated/members';
+import { deleteFamily, getExportFamilyUrl, importFamily, type FamilySummary } from '../lib/api/generated/members';
 
 export default function FamiliesPanel({
   families,
@@ -14,6 +14,7 @@ export default function FamiliesPanel({
   onRetry,
   onSelect,
   onToggleVisibility,
+  onImported,
 }: {
   families: FamilySummary[] | null;
   setFamilies: Dispatch<SetStateAction<FamilySummary[] | null>>;
@@ -25,15 +26,19 @@ export default function FamiliesPanel({
   onRetry: () => void;
   onSelect: (familyId: string | null) => void;
   onToggleVisibility: (familyId: string) => void;
+  onImported: (family: FamilySummary) => void;
 }) {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
 
   useEffect(() => {
-    if (!isOpen || deletingId) return;
+    if (!isOpen || deletingId || isImporting) return;
     function closeOnOutsidePress(event: PointerEvent) {
       const target = event.target as Node;
       if (!panelRef.current?.contains(target) && !buttonRef.current?.contains(target)) onToggle();
@@ -47,7 +52,38 @@ export default function FamiliesPanel({
       document.removeEventListener('pointerdown', closeOnOutsidePress);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [isOpen, deletingId, onToggle]);
+  }, [isOpen, deletingId, isImporting, onToggle]);
+
+  // Always creates a new family; the BFF reads the file and refuses taken names.
+  async function importGedcom(file: File) {
+    const name = window.prompt(
+      'Unter welchem Namen soll die GEDCOM-Datei als neue Familie angelegt werden?',
+      file.name.replace(/\.ged$/i, ''),
+    )?.trim();
+    if (!name) return;
+    setIsImporting(true);
+    setImportError(null);
+    try {
+      const response = await importFamily({ name, gedcom: await file.text() });
+      if (response.status === 409) {
+        setImportError(`Eine Familie „${name}“ existiert bereits.`);
+        return;
+      }
+      if (response.status === 400) {
+        setImportError(
+          'Die Datei konnte nicht importiert werden: kein lesbares GEDCOM, mehr als 2000 Personen, ' +
+            'jemand wäre sein eigener Vorfahre oder der Name ist länger als 100 Zeichen.',
+        );
+        return;
+      }
+      if (response.status !== 201) throw new Error('Unexpected import response');
+      onImported(response.data);
+    } catch {
+      setImportError('Die GEDCOM-Datei konnte nicht importiert werden. Ist das BFF erreichbar?');
+    } finally {
+      setIsImporting(false);
+    }
+  }
 
   async function removeFamily(family: FamilySummary) {
     const confirmed = window.confirm(
@@ -104,9 +140,10 @@ export default function FamiliesPanel({
               </div>
             )}
             {!isLoading && !error && families?.length === 0 && (
-              <p className="members-empty">Noch keine Familien angelegt. Erstelle eine über „Zufallsfamilie generieren“.</p>
+              <p className="members-empty">Noch keine Familien angelegt. Erstelle eine über „Zufallsfamilie generieren“ oder importiere eine GEDCOM-Datei.</p>
             )}
             {deleteError && <p className="member-form-error" role="alert">{deleteError}</p>}
+            {importError && <p className="member-form-error" role="alert">{importError}</p>}
             {!!families?.length && (
               <ul className="family-set-list">
                 {families.map((family) => (
@@ -154,6 +191,17 @@ export default function FamiliesPanel({
                         </svg>
                       )}
                     </button>
+                    <a
+                      className="family-set-export"
+                      href={getExportFamilyUrl(family.id)}
+                      download
+                      aria-label={`${family.name} als GEDCOM herunterladen`}
+                      title="Als GEDCOM herunterladen"
+                    >
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+                      </svg>
+                    </a>
                     <button
                       className="family-set-delete"
                       type="button"
@@ -167,6 +215,22 @@ export default function FamiliesPanel({
                 ))}
               </ul>
             )}
+            <div className="family-set-import">
+              <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
+                {isImporting ? 'GEDCOM wird importiert …' : 'GEDCOM importieren'}
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept=".ged"
+                hidden
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  event.target.value = '';
+                  if (file) void importGedcom(file);
+                }}
+              />
+            </div>
           </div>
         </section>
       )}

@@ -3,6 +3,7 @@ package com.github.bff.member
 import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.CreateMemberRequest
+import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.Relatives
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -147,6 +148,67 @@ class FamilyServiceTest {
         val archived = familyService.archive(family.id, ArchiveFamilyRequest("Archiv ${UUID.randomUUID()}"))
         assertTrue(archived is FamilyArchiveResult.ARCHIVED)
         assertEquals(FamilyArchiveResult.INVALID, familyService.archive(family.id, ArchiveFamilyRequest("Archiv ${UUID.randomUUID()}")))
+    }
+
+    @Test
+    fun `imports a gedcom file as a new family with its links`() {
+        val name = "Import ${UUID.randomUUID()}"
+        val gedcom = """
+            0 HEAD
+            0 @I1@ INDI
+            1 NAME Hans /Import/
+            0 @I2@ INDI
+            1 NAME Erika /Import/
+            0 @I3@ INDI
+            1 NAME Kind /Import/
+            1 BIRT
+            2 DATE 1 JAN 2000
+            0 @F1@ FAM
+            1 HUSB @I1@
+            1 WIFE @I2@
+            1 CHIL @I3@
+            0 TRLR
+        """.trimIndent()
+
+        val result = familyService.import(ImportFamilyRequest(name, gedcom))
+
+        assertTrue(result is FamilyImportResult.IMPORTED)
+        assertEquals(name, result.summary.name)
+        assertEquals(3, result.summary.memberCount)
+        assertEquals(1, result.summary.childCount)
+        assertEquals(2, result.summary.generationCount)
+        val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(result.summary.id).associateBy { it.firstName }
+        val child = members.getValue("Kind")
+        assertEquals(setOf("Hans", "Erika"), child.parents.map { it.firstName }.toSet())
+        assertEquals(listOf("Erika"), members.getValue("Hans").partners.map { it.firstName })
+        assertEquals(listOf("Hans"), members.getValue("Erika").partners.map { it.firstName })
+        assertNull(child.pinId)
+        val export = familyService.export(result.summary.id)
+        assertNotNull(export)
+        assertEquals(name, export.name)
+        assertTrue("1 NAME Kind /Import/" in export.gedcom)
+    }
+
+    @Test
+    fun `refuses to import a parent cycle, unreadable text, or a taken name`() {
+        val cycle = """
+            0 HEAD
+            0 @I1@ INDI
+            0 @I2@ INDI
+            0 @F1@ FAM
+            1 HUSB @I1@
+            1 CHIL @I2@
+            0 @F2@ FAM
+            1 HUSB @I2@
+            1 CHIL @I1@
+            0 TRLR
+        """.trimIndent()
+        val family = (familyService.create(request()) as FamilyCreationResult.CREATED).summary
+
+        assertEquals(FamilyImportResult.INVALID, familyService.import(ImportFamilyRequest("Zyklus ${UUID.randomUUID()}", cycle)))
+        assertEquals(FamilyImportResult.INVALID, familyService.import(ImportFamilyRequest("Text ${UUID.randomUUID()}", "kein GEDCOM")))
+        assertEquals(FamilyImportResult.NAME_TAKEN, familyService.import(ImportFamilyRequest(family.name, "0 HEAD\n0 @I1@ INDI")))
+        assertNull(familyService.export(UUID.randomUUID()))
     }
 
     private fun request() = CreateFamilyRequest(

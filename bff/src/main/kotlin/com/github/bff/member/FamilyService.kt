@@ -3,6 +3,7 @@ package com.github.bff.member
 import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
+import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.TestFamilySettings
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -81,6 +82,64 @@ class FamilyService(
         return FamilyArchiveResult.ARCHIVED(archived.toSummary(members))
     }
 
+    // Creates a new family from a GEDCOM file; members get no placement, so the UI pins them.
+    @Transactional
+    fun import(request: ImportFamilyRequest): FamilyImportResult {
+        val name = request.name?.trim().orEmpty()
+        if (name.isEmpty() || name.length > 100) return FamilyImportResult.INVALID
+        val people = parseGedcom(request.gedcom.orEmpty()) ?: return FamilyImportResult.INVALID
+        if (people.isEmpty() || people.size > MAX_IMPORTED_PEOPLE) return FamilyImportResult.INVALID
+        val ids = people.associate { it.id to UUID.randomUUID() }
+        if (hasCycle(people.associate { person -> ids.getValue(person.id) to person.parentIds.map(ids::getValue).toSet() })) {
+            return FamilyImportResult.INVALID
+        }
+        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyImportResult.NAME_TAKEN
+
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = name))
+        val saved = memberRepository.saveAll(
+            people.map { person ->
+                MemberEntity(
+                    id = ids.getValue(person.id),
+                    firstName = person.firstName,
+                    lastName = person.lastName,
+                    family = family,
+                    birthDate = person.birthDate,
+                    birthPlace = person.birthPlace,
+                    deathDate = person.deathDate,
+                    deathPlace = person.deathPlace,
+                    note = person.note,
+                )
+            },
+        ).associateBy { it.id }
+        // Links are set on the saved entities; the parser already made partnerships mutual.
+        people.forEach { person ->
+            val member = saved.getValue(ids.getValue(person.id))
+            person.parentIds.mapTo(member.parents) { saved.getValue(ids.getValue(it)) }
+            person.partnerIds.mapTo(member.partners) { saved.getValue(ids.getValue(it)) }
+        }
+        memberRepository.flush()
+        return FamilyImportResult.IMPORTED(family.toSummary(saved.values.toList()))
+    }
+
+    fun export(id: UUID): FamilyExport? {
+        val family = familyRepository.findById(id).orElse(null) ?: return null
+        val people = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id).map { member ->
+            GedcomPerson(
+                id = member.id.toString(),
+                firstName = member.firstName,
+                lastName = member.lastName,
+                birthDate = member.birthDate,
+                birthPlace = member.birthPlace,
+                deathDate = member.deathDate,
+                deathPlace = member.deathPlace,
+                note = member.note,
+                parentIds = member.parents.map { it.id.toString() }.toSet(),
+                partnerIds = member.partners.map { it.id.toString() }.toSet(),
+            )
+        }
+        return FamilyExport(family.name, writeGedcom(people))
+    }
+
     @Transactional
     fun delete(id: UUID): Boolean {
         val family = familyRepository.findById(id).orElse(null) ?: return false
@@ -127,6 +186,7 @@ class FamilyService(
 }
 
 internal const val DEFAULT_FAMILY_NAME = "default"
+private const val MAX_IMPORTED_PEOPLE = 2000
 
 sealed interface FamilyCreationResult {
     data class CREATED(val summary: FamilySummary) : FamilyCreationResult
@@ -140,6 +200,14 @@ sealed interface FamilyArchiveResult {
     data object NOT_FOUND : FamilyArchiveResult
     data object NAME_TAKEN : FamilyArchiveResult
 }
+
+sealed interface FamilyImportResult {
+    data class IMPORTED(val summary: FamilySummary) : FamilyImportResult
+    data object INVALID : FamilyImportResult
+    data object NAME_TAKEN : FamilyImportResult
+}
+
+data class FamilyExport(val name: String, val gedcom: String)
 
 internal data class PlannedPerson(val generation: Int, val parentIndex: Int? = null)
 
