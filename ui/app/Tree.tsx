@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useMemo } from 'react';
 import {
   BufferGeometry,
   CatmullRomCurve3,
@@ -70,6 +71,46 @@ function leafGeometry() {
   g.translate(0, 0.15, 0); // short gap as petiole
   g.scale(0.26, 0.26, 0.26);
   return g;
+}
+
+// Mottled bark with occasional darker spots, baked from the vertex positions.
+const mottle = makeNoise(4, 4);
+const spots = makeNoise(5, 3);
+function bakeBarkColors(geometry: BufferGeometry) {
+  const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
+  const pos = geometry.attributes.position;
+  const colors = new Float32Array(pos.count * 3);
+  const c = new Color();
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const z = pos.getZ(i);
+    c.lerpColors(BARK_DARK, BARK_LIGHT, clamp01(0.6 + 0.45 * mottle(x * 1.5 + y * 0.9, z * 1.5 - y * 1.2)));
+    // Scattered darker spots: only the peaks of a finer noise.
+    c.lerp(BARK_SPOT, clamp01((spots(x * 4 + y * 3, z * 4 - y * 2.5) - 0.45) * 3)).toArray(colors, i * 3);
+  }
+  geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
+}
+
+// An aerial root hangs from `anchor` on a limb of the unscaled crown.
+type Liana = { anchor: Vector3; sway: Vector3; thin: number };
+
+// The aerial roots for a crown scaled by `scale`: each stays on its limb and reaches the ground
+// below wherever the limb now is.
+// ponytail: rebuilt on every crown scale change (a few dozen tubes); move into a shader if it stutters.
+function lianaGeometry(lianas: Liana[], scale: number) {
+  const tubes = lianas.map(({ anchor, sway, thin }) => {
+    const top = anchor.clone().multiplyScalar(scale);
+    const bottom = ground(top.x, top.z) - 0.4;
+    const points = [0, 0.33, 0.66, 1].map((t) =>
+      new Vector3(top.x, top.y + (bottom - top.y) * t, top.z).addScaledVector(sway, Math.sin(t * Math.PI)),
+    );
+    return tube(points, (t) => thin * (1 + 1.5 * t ** 4), 16, 6);
+  });
+  const geometry = mergeGeometries(tubes);
+  tubes.forEach((g) => g.dispose());
+  bakeBarkColors(geometry);
+  return geometry;
 }
 
 export function buildTree(seed: number) {
@@ -208,17 +249,14 @@ export function buildTree(seed: number) {
     }
   }
 
-  // Aerial roots: thin, nearly vertical strands hanging from the main limbs into the ground.
+  // Aerial roots: thin, nearly vertical strands hanging from the main limbs into the ground. Only
+  // their anchors are kept here; the strands follow the crown scale (see lianaGeometry).
+  const lianas: Liana[] = [];
   const anchors = rootAnchors.filter((p) => Math.hypot(p.x, p.z) > 3 && p.y - ground(p.x, p.z) > 3);
   for (let i = 0; i < AERIAL_ROOTS && anchors.length; i++) {
-    const top = anchors[Math.floor(rand() * anchors.length)];
-    const bottom = ground(top.x, top.z) - 0.4;
+    const anchor = anchors[Math.floor(rand() * anchors.length)];
     const sway = randomDir().setY(0).multiplyScalar(0.3);
-    const points = [0, 0.33, 0.66, 1].map((t) =>
-      new Vector3(top.x, top.y + (bottom - top.y) * t, top.z).addScaledVector(sway, Math.sin(t * Math.PI)),
-    );
-    const thin = range(0.05, 0.12);
-    groundTubes.push(tube(points, (t) => thin * (1 + 1.5 * t ** 4), 16, 6));
+    lianas.push({ anchor, sway, thin: range(0.05, 0.12) });
   }
 
   // Roots creep far over the hill, half buried, winding and forking: the tree's footing.
@@ -252,25 +290,6 @@ export function buildTree(seed: number) {
   canopyTubes.forEach((g) => g.dispose());
   groundTubes.forEach((g) => g.dispose());
 
-  // Mottled bark with occasional darker spots, applied to canopy and grounded root network.
-  // Vertex positions are identical to before the split, so the colors stay the same.
-  const mottle = makeNoise(4, 4);
-  const spots = makeNoise(5, 3);
-  const bakeBarkColors = (geometry: BufferGeometry) => {
-    const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
-    const pos = geometry.attributes.position;
-    const colors = new Float32Array(pos.count * 3);
-    const c = new Color();
-    for (let i = 0; i < pos.count; i++) {
-      const x = pos.getX(i);
-      const y = pos.getY(i);
-      const z = pos.getZ(i);
-      c.lerpColors(BARK_DARK, BARK_LIGHT, clamp01(0.6 + 0.45 * mottle(x * 1.5 + y * 0.9, z * 1.5 - y * 1.2)));
-      // Scattered darker spots: only the peaks of a finer noise.
-      c.lerp(BARK_SPOT, clamp01((spots(x * 4 + y * 3, z * 4 - y * 2.5) - 0.45) * 3)).toArray(colors, i * 3);
-    }
-    geometry.setAttribute('color', new Float32BufferAttribute(colors, 3));
-  };
   bakeBarkColors(canopyBark);
   bakeBarkColors(groundBark);
 
@@ -286,12 +305,12 @@ export function buildTree(seed: number) {
   leafMesh.castShadow = true;
   leafMesh.receiveShadow = true;
 
-  return { canopyBark, groundBark, leafMesh, pinCandidates };
+  return { canopyBark, groundBark, leafMesh, pinCandidates, lianas };
 }
 
 // The scene builds the tree once (`buildTree(7)`) because it also needs the pin candidates.
 export default function Tree({
-  tree: { canopyBark, groundBark, leafMesh },
+  tree: { canopyBark, groundBark, leafMesh, lianas },
   position,
   scale = 1,
 }: {
@@ -299,9 +318,12 @@ export default function Tree({
   position: [number, number, number];
   scale?: number;
 }) {
+  const lianaBark = useMemo(() => lianaGeometry(lianas, scale), [lianas, scale]);
+  useEffect(() => () => lianaBark.dispose(), [lianaBark]);
   return (
     <group position={position}>
-      {/* Canopy and leaves scale together; the grounded roots stay terrain-following. */}
+      {/* Canopy and leaves scale together; the grounded roots stay terrain-following and the
+          aerial roots hang from the scaled limbs to the ground. */}
       <group scale={scale}>
         <mesh geometry={canopyBark} castShadow receiveShadow>
           <meshStandardMaterial vertexColors roughness={0.9} />
@@ -309,6 +331,9 @@ export default function Tree({
         <primitive object={leafMesh} />
       </group>
       <mesh geometry={groundBark} castShadow receiveShadow>
+        <meshStandardMaterial vertexColors roughness={0.9} />
+      </mesh>
+      <mesh geometry={lianaBark} castShadow receiveShadow>
         <meshStandardMaterial vertexColors roughness={0.9} />
       </mesh>
     </group>
