@@ -10,7 +10,9 @@ import {
   type CreateMemberRequest,
   type Member,
 } from '../lib/api/generated/members';
+import ProfileDialog from './ProfileDialog';
 import RelativesDialog from './RelativesDialog';
+import { relativesOf as findRelatives } from './relatives';
 import type { Focus } from './Scene';
 
 type MemberForm = {
@@ -72,21 +74,18 @@ function MemberDetails({
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
   const names = (list: Member[]) => list.map((m) => `${m.firstName} ${m.lastName}`).join(', ');
-  const parents = names(members.filter((m) => member.parentIds.includes(m.id)));
-  const children = names(members.filter((m) => m.parentIds.includes(member.id)));
-  const partners = names(members.filter((m) => member.partnerIds.includes(m.id)));
-  // Siblings have exactly the member's parents, half-siblings share only some or have others too.
-  const shared = (m: Member) => m.parentIds.filter((id) => member.parentIds.includes(id)).length;
-  const sameParents = (m: Member) => shared(m) === member.parentIds.length && m.parentIds.length === member.parentIds.length;
-  const sharing = members.filter((m) => m.id !== member.id && shared(m) > 0);
-  const siblings = names(sharing.filter(sameParents));
-  const halfSiblings = names(sharing.filter((m) => !sameParents(m)));
+  const relatives = findRelatives(member, members);
+  const parents = names(relatives.parents);
+  const children = names(relatives.children);
+  const partners = names(relatives.partners);
+  const siblings = names(relatives.siblings);
+  const halfSiblings = names(relatives.halfSiblings);
 
   return (
     <li className="member-row">
       <div className="member-row-header">
         <h3>
-          <button type="button" className="member-name" title="Im Baum anzeigen" onClick={onSelect}>
+          <button type="button" className="member-name" title="Im Baum anzeigen und Profil öffnen" onClick={onSelect}>
             {member.firstName} {member.lastName}
           </button>
         </h3>
@@ -131,7 +130,7 @@ export default function MembersControls({
   isDefaultFamily: boolean;
   members: Member[] | null;
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
-  // Member whose profile (the edit form) was requested from their scroll in the scene.
+  // Member whose profile was requested from their scroll in the scene.
   profile: Focus;
   onSelect: (id: string) => void;
   onFamiliesChanged: () => void;
@@ -145,6 +144,7 @@ export default function MembersControls({
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
   const [editing, setEditing] = useState<Member | null>(null);
   const [relativesOf, setRelativesOf] = useState<Member | null>(null);
+  const [profileId, setProfileId] = useState<string | null>(null);
   const listButtonRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLElement>(null);
 
@@ -192,12 +192,14 @@ export default function MembersControls({
     };
   }, [familyId, setMembers]);
 
-  useEffect(() => {
-    const member = profile && members?.find((m) => m.id === profile.id);
-    if (member) openForm(member);
-    // Only a new profile request should open the form, not later member changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile]);
+  // Only a new profile request opens the profile (adjusted during render instead of in an effect).
+  const [requestedProfile, setRequestedProfile] = useState(profile);
+  if (profile !== requestedProfile) {
+    setRequestedProfile(profile);
+    if (profile) setProfileId(profile.id);
+  }
+  // Looked up on every render, so the profile follows edits and disappears with a deleted member.
+  const profileMember = profileId ? members?.find((m) => m.id === profileId) : undefined;
 
   // The list is not modal: a press anywhere else or Escape closes it. While the relatives
   // dialog is open on top of it, that dialog handles both.
@@ -390,6 +392,7 @@ export default function MembersControls({
                     onEditRelatives={() => setRelativesOf(member)}
                     onSelect={() => {
                       setIsListOpen(false);
+                      setProfileId(member.id);
                       onSelect(member.id);
                     }}
                     onDelete={() => void removeMember(member)}
@@ -483,6 +486,28 @@ export default function MembersControls({
             </form>
           </section>
         </div>
+      )}
+
+      {profileMember && members && (
+        <ProfileDialog
+          // Remounted per person, so focus (and so Escape) lands in the dialog again.
+          key={profileMember.id}
+          member={profileMember}
+          members={members}
+          onShow={(id) => {
+            setProfileId(id);
+            onSelect(id);
+          }}
+          onEdit={() => {
+            setProfileId(null);
+            openForm(profileMember);
+          }}
+          onEditRelatives={() => {
+            setProfileId(null);
+            setRelativesOf(profileMember);
+          }}
+          onClose={() => setProfileId(null)}
+        />
       )}
 
       {relativesOf && members && familyId && (

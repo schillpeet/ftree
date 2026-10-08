@@ -10,7 +10,7 @@ The repository is currently an early visual prototype, not a working family-tree
 ### Scene and camera
 
 The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a members list with edit and delete actions and a form for creating and editing members.
-Selecting a member in the list moves the camera to their scroll; clicking a scroll (or pressing Enter on it) opens that member's edit form, while a drag that starts on a scroll still orbits the camera.
+Selecting a member in the list moves the camera to their scroll and opens their profile; clicking a scroll (or pressing Enter on it) opens that member's profile, while a drag that starts on a scroll still orbits the camera.
 The zoom slider in the debug panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
 
 ### Sky and time of day
@@ -53,6 +53,9 @@ Every member appears in the scene as a papyrus scroll showing photo (from `photo
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
 The members list shows siblings and half-siblings alongside parents, children, and partners.
+A read-only profile dialog shows a member's photo, name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
+Clicking a relative in the profile shows that person's profile and moves the camera to their scroll.
+From the profile, "Bearbeiten" opens the edit form and "Beziehungen zuweisen" the relatives dialog; the "Bearbeiten" button in the members list still opens the edit form directly.
 Dialogs and the members list close on Escape or a click outside them; the edit form and the relatives dialog first ask before discarding unsaved changes, and the create form keeps its draft.
 
 ### Pins and card placement
@@ -102,6 +105,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/moon.ts` paints the moon's face and halo on canvases.
 - `ui/app/Scroll.tsx` renders a member's papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, partners, and (half-)siblings.
+- `ui/app/ProfileDialog.tsx` shows a member's read-only profile with their relatives.
+- `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the debug panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
 - `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally, collects the branch points that pins are picked from, and rebuilds the aerial roots and outer-ring roots for the crown scale.
 - `ui/app/growth.ts` says how far each ring around the tree has grown at a crown scale; `ui/app/growth.check.mjs` is its self-check (`node app/growth.check.mjs` in `ui/`).
