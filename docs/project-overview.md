@@ -56,6 +56,7 @@ The members list shows siblings and half-siblings alongside parents, children, a
 A read-only profile dialog shows a member's photo, name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
 Clicking a relative in the profile shows that person's profile and moves the camera to their scroll.
 From the profile, "Bearbeiten" opens the edit form and "Beziehungen zuweisen" the relatives dialog; the "Bearbeiten" button in the members list still opens the edit form directly.
+A photo can also be uploaded in the member form: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and behind "Foto ansehen".
 Dialogs and the members list close on Escape or a click outside them; the edit form and the relatives dialog first ask before discarding unsaved changes, and the create form keeps its draft.
 
 ### Pins and card placement
@@ -84,6 +85,7 @@ Partners without shared children are joined by a gold line.
 
 The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
+Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
 Authentication and a broader family-tree model (relationship types such as adoption, dates of partnerships, uncertain links) are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
@@ -146,7 +148,7 @@ Do not assume that a tree is public by default.
 These decisions have not been implemented:
 
 - The broader person and family-tree domain model, including how uncertain or conflicting information is represented.
-- Relationship types beyond parent/child and partners (adoption, partnership dates, uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, and `member_partners` tables, plus backups and data export/deletion behavior.
+- Relationship types beyond parent/child and partners (adoption, partnership dates, uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data export/deletion behavior.
 - Remaining BFF API operations, error format, and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.
 - How concurrent edits are handled and whether an audit/history model is needed.

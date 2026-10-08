@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ftree BFF API
-  version: 0.2.0
+  version: 0.3.0
   description: API contract for the ftree UI and Backend for Frontend.
 servers:
   - url: http://localhost:8080
@@ -378,6 +378,91 @@ paths:
           description: Member not found.
         "409":
           description: Another member's card already hangs on this pin.
+  /families/{familyId}/members/{id}/photo:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getFamilyMemberPhoto
+      tags:
+        - Members
+      summary: Get a member's uploaded photo
+      description: Cached for a year; clients add photoUpdatedAt to the URL so a new photo gets a new URL.
+      responses:
+        "200":
+          description: The photo with its stored content type.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=31536000
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Member or photo not found.
+    put:
+      operationId: uploadFamilyMemberPhoto
+      tags:
+        - Members
+      summary: Upload or replace a member's photo
+      description: The raw image bytes, at most 2 MB, as JPEG, PNG, or WebP.
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/webp:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "204":
+          description: Photo stored.
+        "400":
+          description: The body is empty.
+        "404":
+          description: Member not found.
+        "413":
+          description: The photo is larger than 2 MB.
+        "415":
+          description: The content type is not JPEG, PNG, or WebP.
+    delete:
+      operationId: deleteFamilyMemberPhoto
+      tags:
+        - Members
+      summary: Remove a member's uploaded photo
+      responses:
+        "204":
+          description: Photo removed.
+        "404":
+          description: Member or photo not found.
 components:
   schemas:
     FamilySummary:
@@ -518,6 +603,12 @@ components:
           type: string
           format: uri
           nullable: true
+        photoUpdatedAt:
+          description: When the uploaded photo last changed; null when the member has none.
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
         parentIds:
           description: Ids of this member's parents. Children are the members listing this id.
           type: array

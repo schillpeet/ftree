@@ -293,6 +293,7 @@ function DaySky({ date, location }: { date: Date; location: Location }) {
 type Drag = { id: string; position: Point; target: Drop };
 
 function Scrolls({
+  familyId,
   members,
   focus,
   pins,
@@ -302,6 +303,7 @@ function Scrolls({
   onOpen,
   onPlace,
 }: {
+  familyId: string | null;
   members: Member[];
   focus: Focus;
   pins: Point[];
@@ -434,6 +436,7 @@ function Scrolls({
         <Scroll
           key={member.id}
           member={member}
+          familyId={familyId}
           position={positions.get(member.id)!}
           onOpen={() => onOpen(member.id)}
           onDrag={showPins && spacing == null ? (event) => startDrag(member.id, event) : undefined}
@@ -452,12 +455,14 @@ function Scrolls({
 }
 
 export default function Scene({
+  familyId,
   members,
   focus,
   onOpen,
   onPlace,
   debugTools,
 }: {
+  familyId: string | null;
   members: Member[];
   focus: Focus;
   onOpen: (id: string) => void;
@@ -519,6 +524,7 @@ export default function Scene({
         <Meadow />
         <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
         <Scrolls
+          familyId={familyId}
           members={members}
           focus={focus}
           pins={pins}

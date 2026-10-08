@@ -120,6 +120,7 @@ export default function FamilyTree() {
   return (
     <>
       <Scene
+        familyId={activeFamilyId}
         members={members ?? []}
         focus={focus}
         onOpen={(id) => setProfile({ id })}

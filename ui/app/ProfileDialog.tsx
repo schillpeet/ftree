@@ -10,6 +10,7 @@ const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
 // person or their relatives happens in the existing dialogs.
 export default function ProfileDialog({
   member,
+  photo,
   members,
   onShow,
   onEdit,
@@ -17,6 +18,7 @@ export default function ProfileDialog({
   onClose,
 }: {
   member: Member;
+  photo: string | null | undefined;
   members: Member[];
   onShow: (id: string) => void;
   onEdit: () => void;
@@ -50,10 +52,10 @@ export default function ProfileDialog({
           </button>
         </header>
         <div className="profile">
-          {member.photoUrl && (
+          {photo && (
             // Arbitrary user URLs: next/image would need every host configured.
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="profile-photo" src={member.photoUrl} alt={`Foto von ${fullName(member)}`} />
+            <img className="profile-photo" src={photo} alt={`Foto von ${fullName(member)}`} />
           )}
           <div>
             {birth && <p>Geboren: {birth}</p>}

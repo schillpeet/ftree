@@ -3,7 +3,7 @@
  * Do not edit manually.
  * ftree BFF API
  * API contract for the ftree UI and Backend for Frontend.
- * OpenAPI spec version: 0.2.0
+ * OpenAPI spec version: 0.3.0
  */
 export interface TestFamilySettings {
   /**
@@ -119,6 +119,11 @@ export interface Member {
   note?: string | null;
   /** @nullable */
   photoUrl?: string | null;
+  /**
+     * When the uploaded photo last changed; null when the member has none.
+     * @nullable
+     */
+  readonly photoUpdatedAt?: string | null;
   /** Ids of this member's parents. Children are the members listing this id. */
   parentIds: string[];
   /** Ids of this member's partners, current or former. Always mutual. */
@@ -1124,4 +1129,201 @@ const res = await fetch(getUpdateFamilyMemberPlacementUrl(familyId,id),
 
   const data: updateFamilyMemberPlacementResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as updateFamilyMemberPlacementResponse
+}
+
+
+
+export type getFamilyMemberPhotoResponse200ImageJpeg = {
+  data: Blob
+  status: 200
+}
+
+export type getFamilyMemberPhotoResponse200ImagePng = {
+  data: Blob
+  status: 200
+}
+
+export type getFamilyMemberPhotoResponse200ImageWebp = {
+  data: Blob
+  status: 200
+}
+
+export type getFamilyMemberPhotoResponse404 = {
+  data: void
+  status: 404
+}
+
+export type getFamilyMemberPhotoResponseSuccess = (getFamilyMemberPhotoResponse200ImageJpeg | getFamilyMemberPhotoResponse200ImagePng | getFamilyMemberPhotoResponse200ImageWebp) & {
+  headers: Headers;
+};
+export type getFamilyMemberPhotoResponseError = (getFamilyMemberPhotoResponse404) & {
+  headers: Headers;
+};
+
+export type getFamilyMemberPhotoResponse = (getFamilyMemberPhotoResponseSuccess | getFamilyMemberPhotoResponseError)
+
+export const getGetFamilyMemberPhotoUrl = (familyId: string,
+    id: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members/${id}/photo`
+}
+
+/**
+ * Cached for a year; clients add photoUpdatedAt to the URL so a new photo gets a new URL.
+ * @summary Get a member's uploaded photo
+ */
+export const getFamilyMemberPhoto = async (familyId: string,
+    id: string, options?: RequestInit): Promise<getFamilyMemberPhotoResponse> => {
+
+  const res = await fetch(getGetFamilyMemberPhotoUrl(familyId,id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.blob();
+  const data: getFamilyMemberPhotoResponse['data'] = body as getFamilyMemberPhotoResponse['data']
+  return { data, status: res.status, headers: res.headers } as getFamilyMemberPhotoResponse
+}
+
+
+
+export type uploadFamilyMemberPhotoResponse204 = {
+  data: void
+  status: 204
+}
+
+export type uploadFamilyMemberPhotoResponse400 = {
+  data: void
+  status: 400
+}
+
+export type uploadFamilyMemberPhotoResponse404 = {
+  data: void
+  status: 404
+}
+
+export type uploadFamilyMemberPhotoResponse413 = {
+  data: void
+  status: 413
+}
+
+export type uploadFamilyMemberPhotoResponse415 = {
+  data: void
+  status: 415
+}
+
+export type uploadFamilyMemberPhotoResponseSuccess = (uploadFamilyMemberPhotoResponse204) & {
+  headers: Headers;
+};
+export type uploadFamilyMemberPhotoResponseError = (uploadFamilyMemberPhotoResponse400 | uploadFamilyMemberPhotoResponse404 | uploadFamilyMemberPhotoResponse413 | uploadFamilyMemberPhotoResponse415) & {
+  headers: Headers;
+};
+
+export type uploadFamilyMemberPhotoResponse = (uploadFamilyMemberPhotoResponseSuccess | uploadFamilyMemberPhotoResponseError)
+
+export const getUploadFamilyMemberPhotoUrl = (familyId: string,
+    id: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members/${id}/photo`
+}
+
+/**
+ * The raw image bytes, at most 2 MB, as JPEG, PNG, or WebP.
+ * @summary Upload or replace a member's photo
+ */
+export const uploadFamilyMemberPhoto = async (familyId: string,
+    id: string,
+    uploadFamilyMemberPhotoBody: Blob, options?: RequestInit): Promise<uploadFamilyMemberPhotoResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUploadFamilyMemberPhotoUrl(familyId,id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'image/jpeg', ...getHeaders(options?.headers) },
+    body: uploadFamilyMemberPhotoBody
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: uploadFamilyMemberPhotoResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as uploadFamilyMemberPhotoResponse
+}
+
+
+
+export type deleteFamilyMemberPhotoResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteFamilyMemberPhotoResponse404 = {
+  data: void
+  status: 404
+}
+
+export type deleteFamilyMemberPhotoResponseSuccess = (deleteFamilyMemberPhotoResponse204) & {
+  headers: Headers;
+};
+export type deleteFamilyMemberPhotoResponseError = (deleteFamilyMemberPhotoResponse404) & {
+  headers: Headers;
+};
+
+export type deleteFamilyMemberPhotoResponse = (deleteFamilyMemberPhotoResponseSuccess | deleteFamilyMemberPhotoResponseError)
+
+export const getDeleteFamilyMemberPhotoUrl = (familyId: string,
+    id: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/members/${id}/photo`
+}
+
+/**
+ * @summary Remove a member's uploaded photo
+ */
+export const deleteFamilyMemberPhoto = async (familyId: string,
+    id: string, options?: RequestInit): Promise<deleteFamilyMemberPhotoResponse> => {
+
+  const res = await fetch(getDeleteFamilyMemberPhotoUrl(familyId,id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteFamilyMemberPhotoResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteFamilyMemberPhotoResponse
 }
