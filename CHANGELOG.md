@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.7.0](https://github.com/schillpeet/ftree/compare/v0.6.0...v0.7.0) (2026-10-08)
+
+
+### Features
+
+* **ui:** follow the time of day in the sky ([#66](https://github.com/schillpeet/ftree/issues/66)) ([5dfa783](https://github.com/schillpeet/ftree/commit/5dfa783ade8295c3bcb13d41b07320e028f84f8e))
+* **ui:** grow aerial roots and roots with the crown ([#69](https://github.com/schillpeet/ftree/issues/69)) ([1288c38](https://github.com/schillpeet/ftree/commit/1288c38f58bb22086a72d06dbed61e55fe4d96cc))
+
+
+### Bug Fixes
+
+* **ui:** keep aerial roots attached to the crown ([#68](https://github.com/schillpeet/ftree/issues/68)) ([9a6a867](https://github.com/schillpeet/ftree/commit/9a6a86731f4b73b0c7f0a7864834a54b46f28dd6))
+
 ## [0.6.0](https://github.com/schillpeet/ftree/compare/v0.5.0...v0.6.0) (2026-10-07)
 
 
