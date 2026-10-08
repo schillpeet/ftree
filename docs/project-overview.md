@@ -2,13 +2,86 @@
 
 ## Purpose
 
-ftree is intended to become a web service where family members can create and maintain a shared family tree. The repository is currently an early visual prototype, not a working family-tree service.
+ftree is intended to become a web service where family members can create and maintain a shared family tree.
+The repository is currently an early visual prototype, not a working family-tree service.
 
 ## Current State
 
-The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a members list with edit and delete actions and a form for creating and editing members. A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family. A collapsible debug panel in the upper-right corner (open by default) groups the tools into sections: "Daten" with the family selector and the "Zufallsfamilie generieren" board (which open to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, and the "Uhr" checkbox (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds). The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent. The family selector displays compact people/children/generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control; any family, including `default`, can be deleted after confirmation. While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family. Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set. The original `/members` endpoints remain available for the default family. Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note. Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list. Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents). The members list shows siblings and half-siblings alongside parents, children, and partners. Scrolls are no longer placed automatically. Red pins on the tree's outer branches are anchor points: they are derived from the procedural branch geometry, ordered top-down, and kept at least a card width (horizontally) or card height (vertically) plus a 16 px gap apart, so cards on neighbouring pins never overlap in space (from oblique camera angles they can still cover each other). A pin's id is its index in that list. A card either hangs directly below a pin (at most one card per pin) or sits at free 3D coordinates relative to the tree base; both are stored per member. When the "Anheftpunkte" checkbox shows the pins, a card can be dragged on a plane facing the camera: released while it touches free pins it docks to the nearest one, released only over occupied pins it springs back, otherwise it stays where it was dropped. With the pins hidden, cards cannot be dragged and a drag orbits the camera as before. A database migration pinned existing members per family (oldest birth date first); members created afterwards, including generated test families, and members whose pin does not exist are shown on the free pins top-down in birth order (oldest first, unknown birth dates last), computed in the UI and not saved until their card is dragged. Only members left over when the free pins run out wait in rows on an arc in front of the tree. Pinned cards are kept in generation order for display: generation by generation (partners count as the same generation), a card hanging less than a card height plus gap below one of its pinned parents moves to the nearest free pin that low, or else to the nearest free pin at least below the parent. A card with pinned descendants only stays where enough pins hang below it for them (a card height plus gap per generation, or at least lower when the crown is too small), so ancestors hanging too low move up; a child still hanging above a parent after that swaps pins with them. Parents therefore always hang above their children, also while bundling or after scaling the crown, though on a very small crown less than a card height apart. Cards that already fit or are unrelated keep their pins. This is not saved, and free or waiting cards are not moved. A drop less than a card height plus gap below a placed parent or above a placed child springs back, both onto a pin and at a free spot. A development-only slider scales the crown and its pins together while the card size itself stays fixed. A second development-only slider in the debug panel previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order. The preview is not saved, and cards cannot be dragged while it is on. The aerial roots stay on their limbs and are rebuilt to reach the ground below wherever the scaled limb now is. The grounded roots deliberately do not scale with the crown yet, so at large crown scales the trunk base can look wider than the root spread. Light lines drawn over the foliage connect families between the cards' current positions: each parent drops to a bar joining the parents, a stem from its middle leads to a bar from which the children hang, and where two families' bars would overlap in a row they get different heights. Partners without shared children are joined by a gold line. Selecting a member in the list moves the camera to their scroll; clicking a scroll (or pressing Enter on it) opens that member's edit form, while a drag that starts on a scroll still orbits the camera. Dialogs and the members list close on Escape or a click outside them; the edit form and the relatives dialog first ask before discarding unsaved changes, and the create form keeps its draft. The sun stands where it currently is at the browser's location: the browser is asked once for its position (kept in the browser, never sent anywhere); without permission the time zone's standard meridian at 51° latitude is used. South lies straight ahead from the start view. Sun and sky light, haze, and sky colors follow the sun's altitude, with the afterglow stretched through civil twilight; at night a full moon (a camera-facing disc with a painted texture of maria, craters, and ray craters, plus a soft halo) stands opposite the sun (its arc flattened to about 20° so it stays in view) and lights the scene bluish, and stars come out one by one as the sun sinks to 14° below the horizon. The time updates every minute. With "Uhr" checked, a 24-hour dial (midnight at the top) appears whose hand can be dragged or moved with the arrow keys in 15-minute steps to preview any time of today. The zoom slider in the debug panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch. The UI calls a generated client. The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor. Authentication and a broader family-tree model (relationship types such as adoption, dates of partnerships, uncertain links) are not implemented.
+### Scene and camera
 
-The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF). The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js. The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records. pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
+The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a members list with edit and delete actions and a form for creating and editing members.
+Selecting a member in the list moves the camera to their scroll; clicking a scroll (or pressing Enter on it) opens that member's edit form, while a drag that starts on a scroll still orbits the camera.
+The zoom slider in the debug panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
+
+### Sky and time of day
+
+The sun stands where it currently is at the browser's location: the browser is asked once for its position (kept in the browser, never sent anywhere); without permission the time zone's standard meridian at 51° latitude is used.
+South lies straight ahead from the start view.
+Sun and sky light, haze, and sky colors follow the sun's altitude, with the afterglow stretched through civil twilight; at night a full moon (a camera-facing disc with a painted texture of maria, craters, and ray craters, plus a soft halo) stands opposite the sun (its arc flattened to about 20° so it stays in view) and lights the scene bluish, and stars come out one by one as the sun sinks to 14° below the horizon.
+The time updates every minute.
+With "Uhr" checked, a 24-hour dial (midnight at the top) appears whose hand can be dragged or moved with the arrow keys in 15-minute steps to preview any time of today.
+
+### Tree and roots
+
+The aerial roots stay on their limbs and are rebuilt to reach the ground below wherever the scaled limb now is.
+The grounded roots deliberately do not scale with the crown yet, so at large crown scales the trunk base can look wider than the root spread.
+
+### Debug panel
+
+A collapsible debug panel in the upper-right corner (open by default) groups the tools into sections: "Daten" with the family selector and the "Zufallsfamilie generieren" board (which open to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, and the "Uhr" checkbox (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
+A development-only slider scales the crown and its pins together while the card size itself stays fixed.
+A second development-only slider in the debug panel previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
+The preview is not saved, and cards cannot be dragged while it is on.
+
+### Families
+
+A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
+The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
+The family selector displays compact people/children/generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control; any family, including `default`, can be deleted after confirmation.
+While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
+Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
+The original `/members` endpoints remain available for the default family.
+
+### Members and relatives
+
+Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note.
+Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
+Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
+The members list shows siblings and half-siblings alongside parents, children, and partners.
+Dialogs and the members list close on Escape or a click outside them; the edit form and the relatives dialog first ask before discarding unsaved changes, and the create form keeps its draft.
+
+### Pins and card placement
+
+Scrolls are no longer placed automatically.
+Red pins on the tree's outer branches are anchor points: they are derived from the procedural branch geometry, ordered top-down, and kept at least a card width (horizontally) or card height (vertically) plus a 16 px gap apart, so cards on neighbouring pins never overlap in space (from oblique camera angles they can still cover each other).
+A pin's id is its index in that list.
+A card either hangs directly below a pin (at most one card per pin) or sits at free 3D coordinates relative to the tree base; both are stored per member.
+When the "Anheftpunkte" checkbox shows the pins, a card can be dragged on a plane facing the camera: released while it touches free pins it docks to the nearest one, released only over occupied pins it springs back, otherwise it stays where it was dropped.
+With the pins hidden, cards cannot be dragged and a drag orbits the camera as before.
+A database migration pinned existing members per family (oldest birth date first); members created afterwards, including generated test families, and members whose pin does not exist are shown on the free pins top-down in birth order (oldest first, unknown birth dates last), computed in the UI and not saved until their card is dragged.
+Only members left over when the free pins run out wait in rows on an arc in front of the tree.
+Pinned cards are kept in generation order for display: generation by generation (partners count as the same generation), a card hanging less than a card height plus gap below one of its pinned parents moves to the nearest free pin that low, or else to the nearest free pin at least below the parent.
+A card with pinned descendants only stays where enough pins hang below it for them (a card height plus gap per generation, or at least lower when the crown is too small), so ancestors hanging too low move up; a child still hanging above a parent after that swaps pins with them.
+Parents therefore always hang above their children, also while bundling or after scaling the crown, though on a very small crown less than a card height apart.
+Cards that already fit or are unrelated keep their pins.
+This is not saved, and free or waiting cards are not moved.
+A drop less than a card height plus gap below a placed parent or above a placed child springs back, both onto a pin and at a free spot.
+
+### Relation lines
+
+Light lines drawn over the foliage connect families between the cards' current positions: each parent drops to a bar joining the parents, a stem from its middle leads to a bar from which the children hang, and where two families' bars would overlap in a row they get different heights.
+Partners without shared children are joined by a gold line.
+
+### BFF and API
+
+The UI calls a generated client.
+The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
+Authentication and a broader family-tree model (relationship types such as adoption, dates of partnerships, uncertain links) are not implemented.
+
+The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
+The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
+The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records.
+pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
 ## Code Map
 
@@ -40,13 +113,21 @@ The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF)
 - `.github/workflows/ci.yml` runs on every pull request and push to `main`. Its `ui` job lints, type-checks, and builds the UI and checks that the generated API client matches the spec; its `bff` job builds and tests the BFF against PostgreSQL. Each job runs only when its app directory, `api/openapi.yaml`, or `ci.yml` changes, ignoring Markdown. The `ci-ok` job waits for both and fails if either failed or was cancelled; configure `ci-ok` (together with the PR-title `validate` check) as a required status check so pull requests cannot be merged before the relevant checks finish.
 - `.github/workflows/pinact.yml` runs `actionlint` on all GitHub Actions workflows and uses Pinact to open a pull request when workflow actions need SHA pins. It runs when workflow files change.
 
-The procedural scene is presentation code. It is not a family-tree domain model or a persistence layer.
+The procedural scene is presentation code.
+It is not a family-tree domain model or a persistence layer.
 
 ## Initial Architecture Direction
 
-Keep the UI and Kotlin BFF as separate applications in this repository. The BFF exposes the UI-facing API and owns access to PostgreSQL; no separate backend service is currently planned. `api/openapi.yaml` is the shared contract; Orval generates the UI client, and OpenAPI Generator creates Java API interfaces and DTOs implemented by Kotlin. Flyway manages the schema with versioned SQL migrations in `bff/src/main/resources/db/migration/`, and Hibernate only validates the entities against it (`ddl-auto=validate`). Databases created earlier by Hibernate are baselined at V1 (`baseline-on-migrate`), so V1 is not run on them; the family-set migration associates those existing members with `default`. Authentication and authorization must be designed before family data is shared.
+Keep the UI and Kotlin BFF as separate applications in this repository.
+The BFF exposes the UI-facing API and owns access to PostgreSQL; no separate backend service is currently planned.
+`api/openapi.yaml` is the shared contract; Orval generates the UI client, and OpenAPI Generator creates Java API interfaces and DTOs implemented by Kotlin.
+Flyway manages the schema with versioned SQL migrations in `bff/src/main/resources/db/migration/`, and Hibernate only validates the entities against it (`ddl-auto=validate`).
+Databases created earlier by Hibernate are baselined at V1 (`baseline-on-migrate`), so V1 is not run on them; the family-set migration associates those existing members with `default`.
+Authentication and authorization must be designed before family data is shared.
 
-Family relationships and identifying information are sensitive. Any shared-data implementation must define who can view and change a tree, how membership and invitations work, and how users can recover or remove access. Do not assume that a tree is public by default.
+Family relationships and identifying information are sensitive.
+Any shared-data implementation must define who can view and change a tree, how membership and invitations work, and how users can recover or remove access.
+Do not assume that a tree is public by default.
 
 ## Open Decisions
 
@@ -63,18 +144,36 @@ Resolve these based on product needs before committing to a backend or collabora
 
 ## Repository Structure
 
-The repository separates `ui/` and `bff/` while keeping them under one Git root. pnpm manages only the UI, so its lockfile and workspace settings live in `ui/`; the Kotlin BFF uses its own Gradle build. Keep this structure rather than nesting a second Git repository. GitHub Actions runs CI for both applications, and release-please creates version tags and GitHub releases for the repository as a whole; deployment is not configured yet. Revisit further package or repository splits only when separate ownership, access control, or release lifecycles make them useful.
+The repository separates `ui/` and `bff/` while keeping them under one Git root.
+pnpm manages only the UI, so its lockfile and workspace settings live in `ui/`; the Kotlin BFF uses its own Gradle build.
+Keep this structure rather than nesting a second Git repository.
+GitHub Actions runs CI for both applications, and release-please creates version tags and GitHub releases for the repository as a whole; deployment is not configured yet.
+Revisit further package or repository splits only when separate ownership, access control, or release lifecycles make them useful.
 
 ## Versioning and Releases
 
-The repository is versioned as a whole with Semantic Versioning tags (`vX.Y.Z`) on `main`. No file holds the version: `bff/build.gradle.kts` derives it with `git describe --tags` (for example `0.1.0` on a tag, `0.1.0-3-g<sha>` after it, `0.0.0-dev` without Git history), and `ui/package.json` has no version field. CI checks out the full history for the BFF so tags are available.
+The repository is versioned as a whole with Semantic Versioning tags (`vX.Y.Z`) on `main`.
+No file holds the version: `bff/build.gradle.kts` derives it with `git describe --tags` (for example `0.1.0` on a tag, `0.1.0-3-g<sha>` after it, `0.0.0-dev` without Git history), and `ui/package.json` has no version field.
+CI checks out the full history for the BFF so tags are available.
 
-release-please (`.github/workflows/release-please.yml`, `release-please-config.json`, `.release-please-manifest.json`) opens or updates a release PR after each merge to `main`. Commit types decide the next version: `fix` bumps the patch version, `feat` the minor version, and breaking changes also bump the minor version while in `0.x`; other types do not trigger a release. Merging the release PR updates `CHANGELOG.md` and creates the tag and GitHub release. Release PRs are titled `chore(repo): release X.Y.Z` (`pull-request-title-pattern`) so they pass the PR-title check, and are created with the fine-grained personal access token in the `RELEASE_PLEASE_TOKEN` secret (this repository only; Contents and Pull requests read/write), because PRs opened with `GITHUB_TOKEN` do not trigger workflows and their required checks would never run.
+release-please (`.github/workflows/release-please.yml`, `release-please-config.json`, `.release-please-manifest.json`) opens or updates a release PR after each merge to `main`.
+Commit types decide the next version: `fix` bumps the patch version, `feat` the minor version, and breaking changes also bump the minor version while in `0.x`; other types do not trigger a release.
+Merging the release PR updates `CHANGELOG.md` and creates the tag and GitHub release.
+Release PRs are titled `chore(repo): release X.Y.Z` (`pull-request-title-pattern`) so they pass the PR-title check, and are created with the fine-grained personal access token in the `RELEASE_PLEASE_TOKEN` secret (this repository only; Contents and Pull requests read/write), because PRs opened with `GITHUB_TOKEN` do not trigger workflows and their required checks would never run.
 
-Pull requests are squash-merged, so the PR title becomes the only commit message release-please sees for that PR; individual commits on the PR branch do not become separate changelog entries. Every independently releasable feature or fix must therefore have its own PR, with an accurate, lowercase Conventional Commit title such as `feat(ui): add family visibility toggle` or `fix(repo): manage local services`. Do not bundle independent features into one PR or expect their branch commits to preserve separate release notes. The PR-title workflow rejects titles that do not follow the lowercase `<type>(<scope>): <message>` convention. Configure its status check as required in GitHub branch protection so invalid titles cannot be merged. A malformed or capitalized title can be ignored by release-please even when the commits inside the PR contain valid conventional commit messages, resulting in a missing version bump or changelog entry. Merge commits would list each change twice, because release-please also parses the PR title in the merge commit body.
+Pull requests are squash-merged, so the PR title becomes the only commit message release-please sees for that PR; individual commits on the PR branch do not become separate changelog entries.
+Every independently releasable feature or fix must therefore have its own PR, with an accurate, lowercase Conventional Commit title such as `feat(ui): add family visibility toggle` or `fix(repo): manage local services`.
+Do not bundle independent features into one PR or expect their branch commits to preserve separate release notes.
+The PR-title workflow rejects titles that do not follow the lowercase `<type>(<scope>): <message>` convention.
+Configure its status check as required in GitHub branch protection so invalid titles cannot be merged.
+A malformed or capitalized title can be ignored by release-please even when the commits inside the PR contain valid conventional commit messages, resulting in a missing version bump or changelog entry.
+Merge commits would list each change twice, because release-please also parses the PR title in the merge commit body.
 
 `info.version` in `api/openapi.yaml` is the API contract version and changes only when the contract changes.
 
 ## Keeping This Overview Useful
 
-Keep current behavior and future intent clearly separated. Update this document when the app structure, product direction, or an architectural decision changes. Avoid duplicating detailed setup instructions here; the root `README.md` is the setup entry point, and `AGENTS.md` contains repository-specific agent guidance.
+Keep current behavior and future intent clearly separated.
+Update this document when the app structure, product direction, or an architectural decision changes.
+Write one sentence per line and put new behavior as new lines in the matching `###` section of "Current State" (or a new section), rather than extending an existing sentence or paragraph, so branches that document different features do not conflict.
+Avoid duplicating detailed setup instructions here; the root `README.md` is the setup entry point, and `AGENTS.md` contains repository-specific agent guidance.
