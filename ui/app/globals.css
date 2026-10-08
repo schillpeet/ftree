@@ -691,6 +691,18 @@ textarea {
   resize: vertical;
 }
 
+.member-photo-remove {
+  align-self: end;
+  justify-self: start;
+  min-height: 42px;
+  padding: 0 14px;
+  border: 1px solid rgba(23, 58, 43, 0.22);
+  border-radius: 5px;
+  background: transparent;
+  color: #8b321d;
+  cursor: pointer;
+}
+
 .member-form-error {
   margin: 0;
   color: #8b321d;

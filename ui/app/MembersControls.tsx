@@ -5,8 +5,11 @@ import {
   archiveFamily,
   createFamilyMember,
   deleteFamilyMember,
+  deleteFamilyMemberPhoto,
   getFamilyMembers,
+  getGetFamilyMemberPhotoUrl,
   updateFamilyMember,
+  uploadFamilyMemberPhoto,
   type CreateMemberRequest,
   type Member,
 } from '../lib/api/generated/members';
@@ -56,8 +59,34 @@ export function formatDate(value?: string | null) {
   return `${day}.${month}.${year}`;
 }
 
+// An uploaded photo wins over the photo URL; its timestamp makes a new photo a new (uncached) URL.
+export function photoSrc(member: Member, familyId: string | null) {
+  if (member.photoUpdatedAt && familyId) {
+    return `${getGetFamilyMemberPhotoUrl(familyId, member.id)}?v=${encodeURIComponent(member.photoUpdatedAt)}`;
+  }
+  return member.photoUrl ?? null;
+}
+
+// Scales the picked image down to at most 800 px on the longer edge and re-encodes it as JPEG,
+// which keeps uploads well below the BFF's 2 MB limit.
+async function toJpeg(file: File) {
+  const image = await createImageBitmap(file);
+  const scale = Math.min(1, 800 / Math.max(image.width, image.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(image.width * scale);
+  canvas.height = Math.round(image.height * scale);
+  const context = canvas.getContext('2d')!;
+  context.fillStyle = '#fff'; // JPEG has no transparency
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(image, 0, 0, canvas.width, canvas.height);
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Image encoding failed'))), 'image/jpeg', 0.85),
+  );
+}
+
 function MemberDetails({
   member,
+  familyId,
   members,
   onSelect,
   onEdit,
@@ -65,6 +94,7 @@ function MemberDetails({
   onDelete,
 }: {
   member: Member;
+  familyId: string | null;
   members: Member[];
   onSelect: () => void;
   onEdit: () => void;
@@ -80,6 +110,7 @@ function MemberDetails({
   const partners = names(relatives.partners);
   const siblings = names(relatives.siblings);
   const halfSiblings = names(relatives.halfSiblings);
+  const photo = photoSrc(member, familyId);
 
   return (
     <li className="member-row">
@@ -101,9 +132,9 @@ function MemberDetails({
       {siblings && <p>Geschwister: {siblings}</p>}
       {halfSiblings && <p>Halbgeschwister: {halfSiblings}</p>}
       {member.note && <p>{member.note}</p>}
-      {member.photoUrl && (
+      {photo && (
         <p>
-          <a href={member.photoUrl} target="_blank" rel="noreferrer">Foto ansehen</a>
+          <a href={photo} target="_blank" rel="noreferrer">Foto ansehen</a>
         </p>
       )}
       <button type="button" className="member-relatives-button" onClick={onEdit}>
@@ -143,6 +174,8 @@ export default function MembersControls({
   const [formError, setFormError] = useState<string | null>(null);
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
   const [editing, setEditing] = useState<Member | null>(null);
+  // Picked image, uploaded once the member is saved.
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [relativesOf, setRelativesOf] = useState<Member | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
   const listButtonRef = useRef<HTMLButtonElement>(null);
@@ -271,6 +304,7 @@ export default function MembersControls({
       setForm({ ...EMPTY_FORM });
     }
     setEditing(member);
+    setPhotoFile(null);
     setIsListOpen(false);
     setFormError(null);
     setIsFormOpen(true);
@@ -280,7 +314,7 @@ export default function MembersControls({
   function dismissForm() {
     if (isSaving) return;
     const initial = editing && toForm(editing);
-    const changed = initial && (Object.keys(initial) as (keyof MemberForm)[]).some((key) => form[key] !== initial[key]);
+    const changed = initial && (!!photoFile || (Object.keys(initial) as (keyof MemberForm)[]).some((key) => form[key] !== initial[key]));
     if (changed && !window.confirm(DISCARD_PROMPT)) return;
     setIsFormOpen(false);
   }
@@ -307,6 +341,7 @@ export default function MembersControls({
     };
 
     try {
+      let saved: Member;
       if (editing) {
         const response = await updateFamilyMember(familyId, editing.id, request);
         if (response.status !== 200) {
@@ -317,27 +352,59 @@ export default function MembersControls({
           );
           return;
         }
-        const updated = response.data;
-        setMembers((current) => current?.map((m) => (m.id === updated.id ? updated : m)) ?? null);
-        onFamiliesChanged();
-        setIsFormOpen(false);
-        onSelect(updated.id);
-        return;
+        saved = response.data;
+      } else {
+        const response = await createFamilyMember(familyId, request);
+        if (response.status !== 201) {
+          setFormError('Die Person konnte nicht angelegt werden. Bitte prüfe die Eingaben.');
+          return;
+        }
+        saved = response.data;
       }
-      const response = await createFamilyMember(familyId, request);
-      if (response.status !== 201) {
-        setFormError('Die Person konnte nicht angelegt werden. Bitte prüfe die Eingaben.');
-        return;
+      let photoFailed = false;
+      if (photoFile) {
+        try {
+          const response = await uploadFamilyMemberPhoto(familyId, saved.id, await toJpeg(photoFile));
+          if (response.status !== 204) throw new Error('Unexpected photo response');
+          saved = { ...saved, photoUpdatedAt: new Date().toISOString() };
+        } catch {
+          photoFailed = true;
+        }
       }
-      setMembers((current) => [response.data, ...(current ?? [])]);
+      const member = saved;
+      setMembers((current) =>
+        editing ? current?.map((m) => (m.id === member.id ? member : m)) ?? null : [member, ...(current ?? [])],
+      );
       onFamiliesChanged();
+      if (photoFailed) {
+        // The person exists now, so saving again must update them instead of creating a duplicate.
+        setEditing(member);
+        setForm(toForm(member));
+        setFormError('Die Person wurde gespeichert, das Foto aber nicht. Ist es ein Bild?');
+        return;
+      }
       setIsFormOpen(false);
-      onSelect(response.data.id);
-      setForm({ ...EMPTY_FORM });
+      onSelect(member.id);
+      setPhotoFile(null);
+      if (!editing) setForm({ ...EMPTY_FORM });
     } catch {
       setFormError('Das BFF ist noch nicht erreichbar oder der Endpunkt noch nicht implementiert.');
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function removePhoto() {
+    if (!familyId || !editing || !window.confirm('Foto wirklich entfernen?')) return;
+    setFormError(null);
+    try {
+      const response = await deleteFamilyMemberPhoto(familyId, editing.id);
+      if (response.status !== 204 && response.status !== 404) throw new Error('Unexpected photo response');
+      const updated = { ...editing, photoUpdatedAt: null };
+      setEditing(updated);
+      setMembers((current) => current?.map((m) => (m.id === updated.id ? updated : m)) ?? null);
+    } catch {
+      setFormError('Das Foto konnte nicht entfernt werden. Ist das BFF erreichbar?');
     }
   }
 
@@ -387,6 +454,7 @@ export default function MembersControls({
                   <MemberDetails
                     key={member.id}
                     member={member}
+                    familyId={familyId}
                     members={members}
                     onEdit={() => openForm(member)}
                     onEditRelatives={() => setRelativesOf(member)}
@@ -470,6 +538,15 @@ export default function MembersControls({
                 Foto-URL
                 <input type="url" maxLength={2048} value={form.photoUrl} onChange={(event) => updateForm('photoUrl', event.target.value)} />
               </label>
+              <label className="member-field">
+                Foto hochladen
+                <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} />
+              </label>
+              {editing?.photoUpdatedAt && (
+                <button type="button" className="member-photo-remove" disabled={isSaving} onClick={() => void removePhoto()}>
+                  Foto entfernen
+                </button>
+              )}
               <label className="member-field member-field-wide">
                 Notiz
                 <textarea maxLength={5000} value={form.note} onChange={(event) => updateForm('note', event.target.value)} />
@@ -493,6 +570,7 @@ export default function MembersControls({
           // Remounted per person, so focus (and so Escape) lands in the dialog again.
           key={profileMember.id}
           member={profileMember}
+          photo={photoSrc(profileMember, familyId)}
           members={members}
           onShow={(id) => {
             setProfileId(id);

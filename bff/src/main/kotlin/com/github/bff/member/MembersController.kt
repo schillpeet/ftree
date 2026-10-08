@@ -5,13 +5,23 @@ import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Relatives
+import jakarta.servlet.http.HttpServletRequest
+import org.springframework.core.io.ByteArrayResource
+import org.springframework.core.io.Resource
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
+import java.time.Duration
 import java.util.UUID
 
 @RestController
-class MembersController(private val memberService: MemberService) : MembersApi {
+class MembersController(
+    private val memberService: MemberService,
+    // Request-scoped proxy; the generated interface does not pass the body's Content-Type.
+    private val request: HttpServletRequest,
+) : MembersApi {
     override fun getMembers(): ResponseEntity<List<Member>> =
         ResponseEntity.ok(memberService.findDefaultFamilyMembers())
 
@@ -67,6 +77,27 @@ class MembersController(private val memberService: MemberService) : MembersApi {
             PlacementResult.NOT_FOUND -> ResponseEntity.notFound().build()
             PlacementResult.PIN_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
+
+    override fun uploadFamilyMemberPhoto(familyId: UUID, id: UUID, body: Resource): ResponseEntity<Void> =
+        when (memberService.updatePhoto(familyId, id, request.contentType, body.contentAsByteArray)) {
+            PhotoResult.UPDATED -> ResponseEntity.noContent().build()
+            PhotoResult.INVALID -> ResponseEntity.badRequest().build()
+            PhotoResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            PhotoResult.TOO_LARGE -> ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build()
+            PhotoResult.UNSUPPORTED_TYPE -> ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build()
+        }
+
+    override fun getFamilyMemberPhoto(familyId: UUID, id: UUID): ResponseEntity<Resource> =
+        memberService.findPhoto(familyId, id)?.let { photo ->
+            ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(photo.contentType))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePrivate())
+                .header("X-Content-Type-Options", "nosniff")
+                .body<Resource>(ByteArrayResource(photo.data))
+        } ?: ResponseEntity.notFound().build()
+
+    override fun deleteFamilyMemberPhoto(familyId: UUID, id: UUID): ResponseEntity<Void> =
+        if (memberService.deletePhoto(familyId, id)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 
     override fun deleteFamilyMember(familyId: UUID, id: UUID): ResponseEntity<Void> =
         if (memberService.delete(familyId, id)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()

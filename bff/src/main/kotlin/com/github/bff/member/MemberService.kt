@@ -5,9 +5,11 @@ import com.github.bff.generated.model.Member
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Position
 import com.github.bff.generated.model.Relatives
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
+import java.time.OffsetDateTime
 import java.util.UUID
 
 @Service
@@ -15,11 +17,10 @@ import java.util.UUID
 class MemberService(
     private val familyRepository: FamilyRepository,
     private val memberRepository: MemberRepository,
+    private val jdbc: JdbcTemplate,
 ) {
     fun findDefaultFamilyMembers(): List<Member> =
-        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
-            ?.let { memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(it.id).map { member -> member.toResponse() } }
-            .orEmpty()
+        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)?.let { findAll(it.id) }.orEmpty()
 
     @Transactional
     fun createDefaultFamilyMember(request: CreateMemberRequest): Member? =
@@ -45,7 +46,8 @@ class MemberService(
 
     fun findAll(familyId: UUID): List<Member>? {
         if (!familyRepository.existsById(familyId)) return null
-        return memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId).map { it.toResponse() }
+        val photos = photoTimes(familyId)
+        return memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId).map { it.toResponse(photos[it.id]) }
     }
 
     @Transactional
@@ -63,7 +65,7 @@ class MemberService(
                 note = request.note,
                 photoUrl = request.photoUrl?.toString(),
             ),
-        ).toResponse()
+        ).toResponse(null)
     }
 
     /** Replaces the member's fields but keeps its parent/child links; null when it is not in the family. */
@@ -78,7 +80,7 @@ class MemberService(
         entity.deathPlace = request.deathPlace
         entity.note = request.note
         entity.photoUrl = request.photoUrl?.toString()
-        return entity.toResponse()
+        return entity.toResponse(photoTimes(familyId)[id])
     }
 
     @Transactional
@@ -157,7 +159,48 @@ class MemberService(
         return true
     }
 
-    private fun MemberEntity.toResponse() = Member().apply {
+    /** Stores or replaces the member's photo; only JPEG, PNG, and WebP up to MAX_PHOTO_BYTES. */
+    @Transactional
+    fun updatePhoto(familyId: UUID, id: UUID, contentType: String?, data: ByteArray): PhotoResult {
+        val type = contentType?.substringBefore(';')?.trim()?.lowercase()
+        if (type !in PHOTO_TYPES) return PhotoResult.UNSUPPORTED_TYPE
+        if (data.isEmpty()) return PhotoResult.INVALID
+        if (data.size > MAX_PHOTO_BYTES) return PhotoResult.TOO_LARGE
+        if (memberRepository.findByIdAndFamilyId(id, familyId) == null) return PhotoResult.NOT_FOUND
+        jdbc.update(
+            """
+            INSERT INTO member_photos (member_id, content_type, data, updated_at) VALUES (?, ?, ?, now())
+            ON CONFLICT (member_id) DO UPDATE
+                SET content_type = excluded.content_type, data = excluded.data, updated_at = excluded.updated_at
+            """,
+            id, type, data,
+        )
+        return PhotoResult.UPDATED
+    }
+
+    fun findPhoto(familyId: UUID, id: UUID): MemberPhoto? =
+        jdbc.query(
+            "SELECT p.content_type, p.data FROM member_photos p JOIN members m ON m.id = p.member_id WHERE p.member_id = ? AND m.family_id = ?",
+            { rs, _ -> MemberPhoto(rs.getString(1), rs.getBytes(2)) },
+            id, familyId,
+        ).firstOrNull()
+
+    @Transactional
+    fun deletePhoto(familyId: UUID, id: UUID): Boolean =
+        jdbc.update(
+            "DELETE FROM member_photos p USING members m WHERE m.id = p.member_id AND p.member_id = ? AND m.family_id = ?",
+            id, familyId,
+        ) > 0
+
+    // One query for the whole family instead of one per member; never loads the bytes.
+    private fun photoTimes(familyId: UUID): Map<UUID, OffsetDateTime> =
+        jdbc.query(
+            "SELECT p.member_id, p.updated_at FROM member_photos p JOIN members m ON m.id = p.member_id WHERE m.family_id = ?",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, OffsetDateTime::class.java) },
+            familyId,
+        ).toMap()
+
+    private fun MemberEntity.toResponse(photoUpdatedAt: OffsetDateTime?) = Member().apply {
         id = this@toResponse.id
         firstName = this@toResponse.firstName
         lastName = this@toResponse.lastName
@@ -167,6 +210,7 @@ class MemberService(
         deathPlace = this@toResponse.deathPlace
         note = this@toResponse.note
         photoUrl = this@toResponse.photoUrl?.let(URI::create)
+        this.photoUpdatedAt = photoUpdatedAt
         parentIds = this@toResponse.parents.map { it.id }
         partnerIds = this@toResponse.partners.map { it.id }
         pinId = this@toResponse.pinId
@@ -177,6 +221,13 @@ class MemberService(
 enum class RelativesResult { UPDATED, INVALID, NOT_FOUND }
 
 enum class PlacementResult { UPDATED, INVALID, NOT_FOUND, PIN_TAKEN }
+
+enum class PhotoResult { UPDATED, INVALID, NOT_FOUND, TOO_LARGE, UNSUPPORTED_TYPE }
+
+class MemberPhoto(val contentType: String, val data: ByteArray)
+
+internal const val MAX_PHOTO_BYTES = 2 * 1024 * 1024
+internal val PHOTO_TYPES = setOf("image/jpeg", "image/png", "image/webp")
 
 /** True if following parent links from some member leads back to that member. */
 internal fun hasCycle(parentsOf: Map<UUID, Set<UUID>>): Boolean {

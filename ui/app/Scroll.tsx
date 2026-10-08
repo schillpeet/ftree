@@ -3,7 +3,7 @@
 import { useRef, type PointerEvent } from 'react';
 import { Html } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
-import { formatDate } from './MembersControls';
+import { formatDate, photoSrc } from './MembersControls';
 
 // Pointer travel (px) up to which a press on a scroll still counts as a click, not a drag.
 export const CLICK_TOLERANCE = 5;
@@ -13,17 +13,20 @@ export const CLICK_TOLERANCE = 5;
 // is set (while the pins are shown).
 export default function Scroll({
   member,
+  familyId,
   position,
   onOpen,
   onDrag,
 }: {
   member: Member;
+  familyId: string | null;
   position: [number, number, number];
   onOpen: () => void;
   onDrag?: (event: PointerEvent<HTMLDivElement>) => void;
 }) {
   const birth = formatDate(member.birthDate);
   const death = formatDate(member.deathDate);
+  const photo = photoSrc(member, familyId);
   const pressedAt = useRef<{ x: number; y: number } | null>(null);
 
   return (
@@ -55,10 +58,10 @@ export default function Scroll({
       >
         <div className="scroll-rod" />
         <div className="scroll-sheet">
-          {member.photoUrl && (
+          {photo && (
             // Arbitrary user URLs: next/image would need every host configured.
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="scroll-photo" src={member.photoUrl} alt="" draggable={false} />
+            <img className="scroll-photo" src={photo} alt="" draggable={false} />
           )}
           <h3>{member.firstName} {member.lastName}</h3>
           {birth && <p>* {birth}</p>}
