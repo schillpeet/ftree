@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.8.0](https://github.com/schillpeet/ftree/compare/v0.7.0...v0.8.0) (2026-10-08)
+
+
+### Features
+
+* **bff:** import and export families as gedcom ([#75](https://github.com/schillpeet/ftree/issues/75)) ([93a8848](https://github.com/schillpeet/ftree/commit/93a884827f5abcb75e88423fd308275bfaacef59))
+* **bff:** upload member photos ([#74](https://github.com/schillpeet/ftree/issues/74)) ([40996fd](https://github.com/schillpeet/ftree/commit/40996fd467a85f3022a9a38a4fd4fa5ed8f5c369))
+* **ui:** move family selection out of the debug panel ([#71](https://github.com/schillpeet/ftree/issues/71)) ([ff0dd25](https://github.com/schillpeet/ftree/commit/ff0dd252caabed5ccb53318707147813c7ba0f00))
+* **ui:** show a member profile before editing ([#73](https://github.com/schillpeet/ftree/issues/73)) ([4125af3](https://github.com/schillpeet/ftree/commit/4125af3091c89c4fa86ccd6aa2439ce402051535))
+
 ## [0.7.0](https://github.com/schillpeet/ftree/compare/v0.6.0...v0.7.0) (2026-10-08)
 
 
