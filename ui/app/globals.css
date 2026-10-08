@@ -436,11 +436,34 @@ textarea {
   cursor: pointer;
 }
 
+/* The download link looks like the visibility toggle. */
+.family-set-export {
+  display: grid;
+  width: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 1px solid rgba(23, 58, 43, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+}
+
+.family-set-import button {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid rgba(23, 58, 43, 0.25);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+  cursor: pointer;
+}
+
 .family-set-visibility[aria-pressed='true'] {
   background: #edf1e8;
 }
 
-.family-set-visibility svg {
+.family-set-visibility svg,
+.family-set-export svg {
   width: 20px;
   height: 20px;
   fill: none;
@@ -452,7 +475,8 @@ textarea {
 
 .family-set-delete:disabled,
 .family-set-select:disabled,
-.family-set-visibility:disabled {
+.family-set-visibility:disabled,
+.family-set-import button:disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -460,6 +484,7 @@ textarea {
 .family-set-select:focus-visible,
 .family-set-delete:focus-visible,
 .family-set-visibility:focus-visible,
+.family-set-export:focus-visible,
 .families-panel button:focus-visible,
 .random-family-panel button:focus-visible {
   outline: 3px solid #e89155;

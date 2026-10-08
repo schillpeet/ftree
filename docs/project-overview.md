@@ -46,6 +46,10 @@ The family selector displays compact people/children/generation counts, switches
 While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The original `/members` endpoints remain available for the default family.
+"GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.
+The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names become "Unbekannt".
+Imported members get no placement, so they are shown on the free pins like other unplaced members.
+Each family in the selector has a download link that exports it as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
 
 ### Members and relatives
 
@@ -86,6 +90,7 @@ Partners without shared children are joined by a gold line.
 The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
 Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
+The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
 Authentication and a broader family-tree model (relationship types such as adoption, dates of partnerships, uncertain links) are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
@@ -119,6 +124,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/` contains the Next.js app, package manifest, pnpm lockfile/workspace settings, TypeScript, ESLint, and Next.js configuration.
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
+- `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` covers it.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF and a Swagger UI container that serves `api/openapi.yaml` at `http://localhost:4010`.
 - `start.sh` and `stop.sh` start and stop PostgreSQL, the Swagger UI container, the BFF, and the UI for local development; `restart.sh` runs both with a UI dependency install in between, so pulled changes (including BFF code, which `bootRun` recompiles) take effect; the custom Node mock server that previously served the spec was removed.
@@ -148,7 +154,8 @@ Do not assume that a tree is public by default.
 These decisions have not been implemented:
 
 - The broader person and family-tree domain model, including how uncertain or conflicting information is represented.
-- Relationship types beyond parent/child and partners (adoption, partnership dates, uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data export/deletion behavior.
+- Relationship types beyond parent/child and partners (adoption, partnership dates, uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data deletion behavior.
+- Data export beyond the per-family GEDCOM export, which leaves out photos and card placement.
 - Remaining BFF API operations, error format, and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.
 - How concurrent edits are handled and whether an audit/history model is needed.

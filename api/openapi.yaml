@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ftree BFF API
-  version: 0.3.0
+  version: 0.4.0
   description: API contract for the ftree UI and Backend for Frontend.
 servers:
   - url: http://localhost:8080
@@ -209,6 +209,58 @@ paths:
           description: Family not found.
         "409":
           description: A family with this name already exists.
+  /families/import:
+    post:
+      operationId: importFamily
+      tags:
+        - Families
+      summary: Import a GEDCOM file as a new named family
+      description: >-
+        Reads people (name, birth, death, notes) and families (partners and children) from a
+        GEDCOM 5.5.1 or 7 file. Dates that are not exact days are kept verbatim in the note.
+        Photos and card placement are not imported.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportFamilyRequest"
+      responses:
+        "201":
+          description: Family and imported members created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: >-
+            The name is invalid, the file cannot be read, someone would be their own ancestor,
+            or it contains more than 2000 people.
+        "409":
+          description: A family with this name already exists.
+  /families/{familyId}/export:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: exportFamily
+      tags:
+        - Families
+      summary: Export a family as a GEDCOM 5.5.1 file
+      description: Photos and card placement are not exported.
+      responses:
+        "200":
+          description: GEDCOM file, sent as an attachment named after the family.
+          content:
+            text/plain; charset=utf-8:
+              schema:
+                type: string
+        "404":
+          description: Family not found.
   /families/{familyId}/members:
     parameters:
       - name: familyId
@@ -558,6 +610,20 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    ImportFamilyRequest:
+      type: object
+      required:
+        - name
+        - gedcom
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        gedcom:
+          description: Content of the GEDCOM file.
+          type: string
+          maxLength: 10000000
     Member:
       type: object
       required:

@@ -156,6 +156,7 @@ export default function FamilyTree() {
           onRetry={() => void loadFamilies()}
           onSelect={selectFamily}
           onToggleVisibility={toggleFamilyVisibility}
+          onImported={addFamily}
         />
       </div>
     </>

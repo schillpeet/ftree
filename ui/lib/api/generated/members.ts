@@ -3,7 +3,7 @@
  * Do not edit manually.
  * ftree BFF API
  * API contract for the ftree UI and Backend for Frontend.
- * OpenAPI spec version: 0.3.0
+ * OpenAPI spec version: 0.4.0
  */
 export interface TestFamilySettings {
   /**
@@ -78,6 +78,19 @@ export interface ArchiveFamilyRequest {
      * @maxLength 100
      */
   name: string;
+}
+
+export interface ImportFamilyRequest {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+  /**
+     * Content of the GEDCOM file.
+     * @maxLength 10000000
+     */
+  gedcom: string;
 }
 
 export interface Position {
@@ -733,6 +746,127 @@ const res = await fetch(getArchiveFamilyUrl(familyId),
 
   const data: archiveFamilyResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as archiveFamilyResponse
+}
+
+
+
+export type importFamilyResponse201 = {
+  data: FamilySummary
+  status: 201
+}
+
+export type importFamilyResponse400 = {
+  data: void
+  status: 400
+}
+
+export type importFamilyResponse409 = {
+  data: void
+  status: 409
+}
+
+export type importFamilyResponseSuccess = (importFamilyResponse201) & {
+  headers: Headers;
+};
+export type importFamilyResponseError = (importFamilyResponse400 | importFamilyResponse409) & {
+  headers: Headers;
+};
+
+export type importFamilyResponse = (importFamilyResponseSuccess | importFamilyResponseError)
+
+export const getImportFamilyUrl = () => {
+
+
+
+
+  return `http://localhost:8080/families/import`
+}
+
+/**
+ * Reads people (name, birth, death, notes) and families (partners and children) from a GEDCOM 5.5.1 or 7 file. Dates that are not exact days are kept verbatim in the note. Photos and card placement are not imported.
+ * @summary Import a GEDCOM file as a new named family
+ */
+export const importFamily = async (importFamilyRequest: ImportFamilyRequest, options?: RequestInit): Promise<importFamilyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getImportFamilyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(importFamilyRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: importFamilyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as importFamilyResponse
+}
+
+
+
+export type exportFamilyResponse200 = {
+  data: string
+  status: 200
+}
+
+export type exportFamilyResponse404 = {
+  data: void
+  status: 404
+}
+
+export type exportFamilyResponseSuccess = (exportFamilyResponse200) & {
+  headers: Headers;
+};
+export type exportFamilyResponseError = (exportFamilyResponse404) & {
+  headers: Headers;
+};
+
+export type exportFamilyResponse = (exportFamilyResponseSuccess | exportFamilyResponseError)
+
+export const getExportFamilyUrl = (familyId: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/export`
+}
+
+/**
+ * Photos and card placement are not exported.
+ * @summary Export a family as a GEDCOM 5.5.1 file
+ */
+export const exportFamily = async (familyId: string, options?: RequestInit): Promise<exportFamilyResponse> => {
+
+  const res = await fetch(getExportFamilyUrl(familyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const contentType = (res.headers.get('content-type') ?? '').toLowerCase();
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: exportFamilyResponse['data'] = body ? (contentType.includes('json') ? JSON.parse(body) : body) : {}
+  return { data, status: res.status, headers: res.headers } as exportFamilyResponse
 }
 
 
