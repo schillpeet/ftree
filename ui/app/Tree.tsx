@@ -18,6 +18,7 @@ import {
   Vector3,
 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { growth } from './growth';
 import { height } from './Meadow';
 import type { Point } from './pins';
 import { makeNoise, seededRandom } from './random';
@@ -27,6 +28,10 @@ const THICK_STEMS = 6;
 const THIN_STRANDS = 40;
 const AERIAL_ROOTS = 10;
 const ROOTS = 24;
+// Aerial roots and creeping roots added by the second and third ring (see growth.ts).
+const RING_LIANAS = [12, 16];
+const RING_ROOTS = [14, 18];
+const GIANT_ROOTS = 4;
 const BRANCH_DEPTH = 5;
 const LEAVES_PER_TIP = 24;
 
@@ -93,20 +98,55 @@ function bakeBarkColors(geometry: BufferGeometry) {
 }
 
 // An aerial root hangs from `anchor` on a limb of the unscaled crown.
-type Liana = { anchor: Vector3; sway: Vector3; thin: number };
+type Liana = { anchor: Vector3; sway: Vector3; thin: number; ring: number };
+// A root of an outer ring along its full-grown path over and under the hill. A fork starts growing
+// once its parent root has grown to the fork (`start`, a share of the ring's growth).
+type Creeper = { path: Vector3[]; thick: number; ring: number; start: number };
 
-// The aerial roots for a crown scaled by `scale`: each stays on its limb and reaches the ground
-// below wherever the limb now is.
+const smoothstep01 = (x: number) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
+
+// The aerial roots and outer-ring roots for a crown scaled by `scale`. Each aerial root stays on
+// its limb and grows down toward the ground below wherever the limb now is; a root grows outward
+// along its path and thickens from half its final thickness as it goes. Both only as far as their
+// ring has grown.
 // ponytail: rebuilt on every crown scale change (a few dozen tubes); move into a shader if it stutters.
-function lianaGeometry(lianas: Liana[], scale: number) {
-  const tubes = lianas.map(({ anchor, sway, thin }) => {
+function growthGeometry(lianas: Liana[], creepers: Creeper[], scale: number) {
+  const tubes: BufferGeometry[] = [];
+  for (const { anchor, sway, thin, ring } of lianas) {
+    const f = growth(ring, scale);
     const top = anchor.clone().multiplyScalar(scale);
-    const bottom = ground(top.x, top.z) - 0.4;
+    const length = (top.y - ground(top.x, top.z) + 0.4) * f;
+    if (length < 0.3) continue;
+    // A dangling tip swings out further; once rooted the strand ends below its anchor again.
+    const bend = 0.5 + 0.5 * f;
     const points = [0, 0.33, 0.66, 1].map((t) =>
-      new Vector3(top.x, top.y + (bottom - top.y) * t, top.z).addScaledVector(sway, Math.sin(t * Math.PI)),
+      new Vector3(top.x, top.y - length * t, top.z).addScaledVector(sway, Math.sin(t * Math.PI * bend)),
     );
-    return tube(points, (t) => thin * (1 + 1.5 * t ** 4), 16, 6);
-  });
+    // Thin toward a dangling tip, flared where it has taken root.
+    const rooted = smoothstep01((f - 0.85) / 0.15);
+    tubes.push(tube(points, (t) => thin * ((1 - 0.6 * t) * (1 - rooted) + (1 + 1.5 * t ** 4) * rooted), 16, 6));
+  }
+  for (const { path, thick, ring, start } of creepers) {
+    const grown = Math.min(1, Math.max(0, (growth(ring, scale) - start) / (1 - start)));
+    const reach = grown * (path.length - 1);
+    const whole = Math.floor(reach);
+    if (reach < 0.5) continue;
+    const points = path.slice(0, whole + 1);
+    if (reach > whole) points.push(path[whole].clone().lerp(path[whole + 1], reach - whole));
+    // Thinner further out along the whole path, with a pointed growing tip.
+    const share = reach / (path.length - 1);
+    tubes.push(
+      tube(
+        points,
+        (t) => thick * (0.5 + 0.5 * grown) * (1 - 0.7 * t * share) * Math.min(1, 0.1 + (1 - t) * 6),
+        points.length * 3,
+        thick > 0.2 ? 8 : 6,
+      ),
+    );
+  }
   const geometry = mergeGeometries(tubes);
   tubes.forEach((g) => g.dispose());
   bakeBarkColors(geometry);
@@ -122,6 +162,8 @@ export function buildTree(seed: number) {
   const leafColors: Color[] = [];
   // Points along the main limbs where aerial roots can hang down to the ground.
   const rootAnchors: Vector3[] = [];
+  // Points along the outer branches where the aerial roots of the outer rings can hang down.
+  const outerAnchors: Vector3[] = [];
   // Points along the outer branches where member cards can be pinned (see pins.ts).
   const pinCandidates: Point[] = [];
 
@@ -161,6 +203,7 @@ export function buildTree(seed: number) {
     canopyTubes.push(tube(points, (t) => r + (rEnd - r) * t, 12, r > 0.2 ? 10 : 6));
     if (depth >= BRANCH_DEPTH - 1) rootAnchors.push(points[2], points[4]);
     if (depth <= 3) pinCandidates.push(points[2].toArray(), points[4].toArray());
+    if (depth >= 1 && depth <= 3) outerAnchors.push(points[2], points[4]);
 
     if (depth === 0) {
       leafCluster(p, d);
@@ -256,7 +299,7 @@ export function buildTree(seed: number) {
   for (let i = 0; i < AERIAL_ROOTS && anchors.length; i++) {
     const anchor = anchors[Math.floor(rand() * anchors.length)];
     const sway = randomDir().setY(0).multiplyScalar(0.3);
-    lianas.push({ anchor, sway, thin: range(0.05, 0.12) });
+    lianas.push({ anchor, sway, thin: range(0.05, 0.12), ring: 1 });
   }
 
   // Roots creep far over the hill, half buried, winding and forking: the tree's footing.
@@ -285,6 +328,94 @@ export function buildTree(seed: number) {
     root(start, a, 4 + thick * range(12, 20), thick, thick > 0.3 ? 2 : 0);
   }
 
+  // The outer rings draw from their own random sequence, so the tree above stays as it was.
+  const grow = seededRandom(seed + 1);
+  const between = (a: number, b: number) => a + grow() * (b - a);
+  const radius = (p: Vector3) => Math.hypot(p.x, p.z);
+  const angleGap = (a: number, b: number) => Math.abs((((a - b) % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI);
+  const hanging = outerAnchors
+    .filter((p) => radius(p) > 3 && p.y - ground(p.x, p.z) > 3)
+    .sort((a, b) => radius(a) - radius(b));
+  const crown = radius(hanging[hanging.length - 1]);
+  // Ring 2 hangs from the middle band of the outer branches, ring 3 from the outermost one; per
+  // sector around the trunk the candidate nearest its (jittered) middle.
+  [hanging.slice(Math.floor(hanging.length * 0.4), Math.floor(hanging.length * 0.7)), hanging.slice(Math.floor(hanging.length * 0.7))].forEach(
+    (band, i) => {
+      const count = RING_LIANAS[i];
+      const picked = new Set<Vector3>();
+      for (let j = 0; j < count; j++) {
+        const a = ((j + between(-0.3, 0.3)) / count) * Math.PI * 2;
+        picked.add(band.reduce((best, p) => (angleGap(Math.atan2(p.z, p.x), a) < angleGap(Math.atan2(best.z, best.x), a) ? p : best)));
+      }
+      for (const anchor of picked) {
+        const sway = new Vector3(between(-1, 1), 0, between(-1, 1)).normalize().multiplyScalar(between(0.3, 0.8));
+        lianas.push({ anchor, sway, thin: between(0.04, 0.1), ring: i + 2 });
+      }
+    },
+  );
+
+  // Roots of the outer rings creep outward half-buried and dive under the hill for a metre or
+  // three now and then, so new roots seem to break through further out as the crown grows. Buried
+  // stretches simply run below the ground, which hides them. Now and then a root forks.
+  const creepers: Creeper[] = [];
+  const STEP = 0.6;
+  function creep(from: Vector3, heading: number, until: (p: Vector3, steps: number) => boolean, thick: number, ring: number, start: number, buried: boolean) {
+    const p = from.clone();
+    const path: Vector3[] = [];
+    const forks: { at: number; p: Vector3; heading: number }[] = [];
+    // Thick roots run longer between dives and dip in and out more gently.
+    const stretch = Math.max(1, thick * 2);
+    const ease = Math.min(1, STEP / (thick * 2));
+    let left = (buried ? between(0.8, 2.5) : between(2.5, 5)) * stretch;
+    // Buried deep enough to stay hidden on the slope; thick roots surface as half-sunk ridges.
+    const [under, over] = [-2 * thick - 0.2, -0.15 * thick * Math.min(stretch, 2)];
+    let depth = buried ? under : over;
+    while (!until(p, path.length) && path.length < 200) {
+      depth += ((buried ? under : over) - depth) * ease;
+      p.y = ground(p.x, p.z) + depth + (buried ? 0 : between(-0.2, 0.2) * Math.min(thick, 0.3));
+      path.push(p.clone());
+      if (!buried && start === 0 && forks.length < 2 && grow() < 0.06) {
+        forks.push({ at: path.length - 1, p: p.clone(), heading: heading + between(0.4, 0.9) * (grow() < 0.5 ? -1 : 1) });
+      }
+      // Wander, but keep heading away from the trunk.
+      heading += between(-0.45, 0.45) - 0.25 * Math.sin(heading - Math.atan2(p.z, p.x));
+      p.x += Math.cos(heading) * STEP;
+      p.z += Math.sin(heading) * STEP;
+      left -= STEP;
+      if (left <= 0) {
+        buried = !buried;
+        left = (buried ? between(0.8, 2.5) : between(2.5, 5)) * stretch;
+      }
+    }
+    if (path.length < 2) return;
+    creepers.push({ path, thick, ring, start });
+    for (const fork of forks) {
+      const share = start + ((1 - start) * fork.at) / (path.length - 1);
+      const steps = Math.round(between(3, 8) / STEP);
+      creep(fork.p, fork.heading, (_, n) => n >= steps, thick * (1 - 0.7 * share) * 0.6, ring, share, false);
+    }
+  }
+  [
+    { from: 0.45, to: 1.05, thick: [0.14, 0.32] },
+    { from: 0.85, to: 1.5, thick: [0.1, 0.22] },
+  ].forEach(({ from, to, thick: [thin, thick] }, i) => {
+    const count = RING_ROOTS[i];
+    for (let j = 0; j < count; j++) {
+      const heading = ((j + between(-0.4, 0.4)) / count) * Math.PI * 2;
+      const r = crown * from * between(0.85, 1.15);
+      const end = crown * to * between(0.85, 1.15);
+      const start = new Vector3(Math.cos(heading) * r, 0, Math.sin(heading) * r);
+      creep(start, heading, (p) => radius(p) >= end, between(thin, thick), i + 2, 0, true);
+    }
+  });
+  // A few giant roots, about fifteen times as thick, swell out of the trunk base and wind over the
+  // hill in long, half-sunk ridges.
+  for (let j = 0; j < GIANT_ROOTS; j++) {
+    const heading = ((j + between(-0.3, 0.3)) / GIANT_ROOTS) * Math.PI * 2 + 1;
+    const end = crown * between(1.1, 1.4);
+    creep(new Vector3(Math.cos(heading), 0, Math.sin(heading)), heading, (p) => radius(p) >= end, between(1.6, 2.4), 2 + (j % 2), 0, false);
+  }
+
   const canopyBark = mergeGeometries(canopyTubes);
   const groundBark = mergeGeometries(groundTubes);
   canopyTubes.forEach((g) => g.dispose());
@@ -305,12 +436,12 @@ export function buildTree(seed: number) {
   leafMesh.castShadow = true;
   leafMesh.receiveShadow = true;
 
-  return { canopyBark, groundBark, leafMesh, pinCandidates, lianas };
+  return { canopyBark, groundBark, leafMesh, pinCandidates, lianas, creepers };
 }
 
 // The scene builds the tree once (`buildTree(7)`) because it also needs the pin candidates.
 export default function Tree({
-  tree: { canopyBark, groundBark, leafMesh, lianas },
+  tree: { canopyBark, groundBark, leafMesh, lianas, creepers },
   position,
   scale = 1,
 }: {
@@ -318,7 +449,7 @@ export default function Tree({
   position: [number, number, number];
   scale?: number;
 }) {
-  const lianaBark = useMemo(() => lianaGeometry(lianas, scale), [lianas, scale]);
+  const lianaBark = useMemo(() => growthGeometry(lianas, creepers, scale), [lianas, creepers, scale]);
   useEffect(() => () => lianaBark.dispose(), [lianaBark]);
   return (
     <group position={position}>
