@@ -32,7 +32,7 @@ The original aerial and grounded roots always stay; nothing grows below scale 1.
 
 ### Debug panel
 
-A collapsible debug panel in the upper-right corner (open by default) groups the tools into sections: "Daten" with the family selector and the "Zufallsfamilie generieren" board (which open to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, and the "Uhr" checkbox (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
+A collapsible debug panel in the upper-right corner (collapsed by default) groups the tools into sections: "Daten" with the "Zufallsfamilie generieren" board (which opens to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, and the "Uhr" checkbox (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
 A development-only slider scales the crown and its pins together while the card size itself stays fixed.
 A second development-only slider in the debug panel previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
 The preview is not saved, and cards cannot be dragged while it is on.
@@ -41,6 +41,7 @@ The preview is not saved, and cards cannot be dragged while it is on.
 
 A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
 The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
+The family selector sits next to the "Personen" and "Person hinzufügen" buttons in the upper-left corner, not in the debug panel, and its board opens below them; Escape or a press outside closes it.
 The family selector displays compact people/children/generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control; any family, including `default`, can be deleted after confirmation.
 While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
@@ -90,7 +91,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 ## Code Map
 
 - `ui/app/page.tsx` renders the home scene.
-- `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the family and random family boards into the scene's debug panel.
+- `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the random family board into the scene's debug panel.
+- `ui/app/FamilyTree.tsx` also places the family selector next to the members toolbar in the upper-left overlay.
 - `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its debug clock, meadow, tree, camera controls, the collapsible debug panel (its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and clock, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).

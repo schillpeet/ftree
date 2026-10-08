@@ -11,14 +11,22 @@ textarea {
   font: inherit;
 }
 
-.members-controls {
+/* Members toolbar and family selector in one row; their boards open below it. */
+.overlay-controls {
   position: fixed;
   z-index: 5;
   top: 16px;
   left: 16px;
-  width: min(420px, calc(100vw - 32px));
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: calc(100vw - 32px);
   color: #173a2b;
   font-family: Georgia, 'Times New Roman', serif;
+}
+
+.members-controls {
+  display: contents;
 }
 
 .members-toolbar {
@@ -62,11 +70,26 @@ textarea {
   background: #24523d;
 }
 
+.members-panel,
+.families-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  box-sizing: border-box;
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100dvh - 88px);
+}
+
+.families-control .members-button {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .members-panel {
   display: flex;
   flex-direction: column;
-  max-height: calc(100dvh - 88px);
-  margin-top: 10px;
   overflow: hidden;
   border: 1px solid rgba(23, 58, 43, 0.16);
   border-radius: 8px;
@@ -284,11 +307,6 @@ textarea {
 
 .families-panel,
 .random-family-panel {
-  /* Opens to the left of the debug panel, so the panel never clips it. */
-  position: absolute;
-  top: 0;
-  right: calc(100% + 8px);
-  max-height: calc(100dvh - 88px);
   overflow-y: auto;
   border: 1px solid rgba(23, 58, 43, 0.16);
   border-radius: 8px;
@@ -297,12 +315,13 @@ textarea {
   backdrop-filter: blur(12px);
 }
 
-.families-panel {
-  width: min(400px, calc(100vw - 32px));
-}
-
 .random-family-panel {
+  /* Opens to the left of the debug panel, so the panel never clips it. */
+  position: absolute;
+  top: 0;
+  right: calc(100% + 8px);
   width: min(360px, calc(100vw - 32px));
+  max-height: calc(100dvh - 88px);
 }
 
 .random-family-form {
@@ -668,10 +687,10 @@ textarea {
 }
 
 @media (max-width: 700px) {
-  .members-controls {
+  .overlay-controls {
     top: 10px;
     left: 10px;
-    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
   }
 
   .debug-panel {
@@ -687,11 +706,13 @@ textarea {
     overflow-y: auto;
   }
 
-  .members-panel {
-    max-height: calc(100dvh - 76px);
+  /* Leaves room for the family selector wrapping onto a second row. */
+  .members-panel,
+  .families-panel {
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 126px);
   }
 
-  .families-panel,
   .random-family-panel {
     position: fixed;
     top: 64px;
