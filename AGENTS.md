@@ -18,6 +18,7 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 - Treat family relationships and identifying information as sensitive. Do not assume public access; define authorization and sharing rules before implementing shared data.
 - Keep the UI and BFF in this repository. Avoid adding more services until there is a concrete need for them.
 - Keep the overview accurate as behavior and decisions change, and distinguish implemented features from planned work.
+- Write `docs/project-overview.md` with one sentence per line, and add new behavior as new lines in the matching section of "Current State" instead of extending existing sentences; parallel branches then rarely conflict there.
 - Commit messages and pull request titles use `<type>(<scope>): <message>`, entirely lowercase, in English and in the imperative mood, for example `feat(ui): add person detail panel`. Never capitalize the type, scope, or message. Choose the type by semantic meaning, not merely because the change concerns Docker, scripts, or repository configuration:
   - `feat`: new user-facing or developer-facing functionality
   - `fix`: bug fixes
