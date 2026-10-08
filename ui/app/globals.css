@@ -866,3 +866,52 @@ textarea {
   cursor: grab;
   touch-action: none;
 }
+
+.debug-clock {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.debug-clock svg {
+  width: 96px;
+  height: 96px;
+  cursor: grab;
+  touch-action: none;
+}
+
+.debug-clock svg:focus-visible {
+  border-radius: 50%;
+  outline: 3px solid #e89155;
+  outline-offset: 2px;
+}
+
+.debug-clock-face {
+  fill: rgba(255, 255, 255, 0.6);
+  stroke: rgba(23, 58, 43, 0.3);
+  stroke-width: 1.5;
+}
+
+.debug-clock-tick {
+  stroke: rgba(23, 58, 43, 0.45);
+  stroke-width: 1.5;
+}
+
+.debug-clock-label {
+  fill: rgba(23, 58, 43, 0.7);
+  font-size: 11px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+}
+
+.debug-clock-hand {
+  stroke: #173a2b;
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.debug-clock-pivot {
+  fill: #173a2b;
+}
