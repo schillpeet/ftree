@@ -1,24 +1,47 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { CameraControls, Line, Sky } from '@react-three/drei';
-import { Plane, Raycaster, SphereGeometry, Vector2, Vector3 } from 'three';
+import { Billboard, CameraControls, Line, Sky, Stars } from '@react-three/drei';
+import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
 import { generationBounds, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
+import { haloTexture, moonTexture } from './moon';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
+import { daylight, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import Tree, { buildTree } from './Tree';
 
-// Low sun in view, left behind the tree: warm side light and long shadows across the meadow.
-const SUN: [number, number, number] = [-120, 16, -50];
-// The sky's sun sits even lower (~1.5°) so the shader shows a real sunset glow; at that angle
-// the light itself would graze the ground and leave it black.
-const SKY_SUN: [number, number, number] = [-60, 0.8, -25];
-const HAZE = '#b98a86';
+// Sky colors (hemisphere sky, ground, haze) at night, with the sun low, and with the sun high.
+const NIGHT = { sky: new Color('#4a5f96'), ground: new Color('#1c1a2c'), haze: new Color('#1a2238') };
+const DUSK = { sky: new Color('#f0a888'), ground: new Color('#3a2c3c'), haze: new Color('#b98a86') };
+const NOON = { sky: new Color('#d8e6f5'), ground: new Color('#3c3a30'), haze: new Color('#a9bccf') };
+const SUN_LOW = new Color('#ffa870');
+const SUN_HIGH = new Color('#fff2dc');
+const MOONLIGHT = new Color('#9fb4ff');
+// The light never comes in flatter than this: grazing light would leave the meadow black.
+const MIN_LIGHT_ALTITUDE = (8 * Math.PI) / 180;
+const LIGHT_DISTANCE = 120;
+const TWILIGHT_GLOW = 0.3;
+const SHADOW = {
+  'shadow-camera-left': -60,
+  'shadow-camera-right': 60,
+  'shadow-camera-top': 60,
+  'shadow-camera-bottom': -60,
+  'shadow-camera-far': 300,
+  'shadow-bias': -0.0005,
+  'shadow-normalBias': 0.02,
+};
+const MOON_DISTANCE = 2500;
+// The moon's arc is flattened to at most ~20° so it stays in view, which the camera never tilts up to.
+const MOON_FLATTEN = 0.35;
+// A full moon looks flat anyway: a disc facing the viewer, about four times its real size.
+const MOON_GEOMETRY = new CircleGeometry(70, 64);
+const HALO_GEOMETRY = new CircleGeometry(260, 32);
+const STARS = 4000;
 const TREE_BASE = height(0, 0);
 const CAMERA_START: [number, number, number] = [40, TREE_BASE + 15, 50];
 const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 9, 0];
@@ -36,6 +59,9 @@ const ZOOM_STEP = 0.1;
 const WAITING_RADIUS = 30;
 const WAITING_PER_ROW = 12;
 const VIEW_FRONT = Math.atan2(CAMERA_START[2], CAMERA_START[0]);
+// South lies straight ahead from the start view, so the sun's whole daily arc crosses in front.
+const SOUTH = VIEW_FRONT + Math.PI;
+const MINUTES_PER_DAY = 24 * 60;
 const PIN_GEOMETRY = new SphereGeometry(PIN_RADIUS, 12, 8);
 
 export type Focus = { id: string } | null;
@@ -150,26 +176,115 @@ function RelationSpacing({
   );
 }
 
-function SunsetSky() {
+// Moves in steps of five minutes, a full turn per day with midnight at the top.
+function DebugClock({ minutes, onMinutes }: { minutes: number; onMinutes: (value: number) => void }) {
+  const angle = (minutes / MINUTES_PER_DAY) * Math.PI * 2;
+  const set = (event: PointerEvent<SVGSVGElement>) => {
+    const box = event.currentTarget.getBoundingClientRect();
+    const turn = Math.atan2(event.clientX - box.left - box.width / 2, -(event.clientY - box.top - box.height / 2));
+    onMinutes((Math.round(((turn / (Math.PI * 2)) * MINUTES_PER_DAY) / 5) * 5 + MINUTES_PER_DAY) % MINUTES_PER_DAY);
+  };
+  return (
+    <div className="debug-clock">
+      <svg
+        viewBox="-50 -50 100 100"
+        role="slider"
+        aria-label="Uhrzeit"
+        aria-valuemin={0}
+        aria-valuemax={MINUTES_PER_DAY - 5}
+        aria-valuenow={minutes}
+        aria-valuetext={formatTime(minutes)}
+        tabIndex={0}
+        onPointerDown={(event) => {
+          event.currentTarget.setPointerCapture(event.pointerId);
+          set(event);
+        }}
+        onPointerMove={(event) => event.buttons && set(event)}
+        onKeyDown={(event) => {
+          const step = { ArrowRight: 15, ArrowUp: 15, ArrowLeft: -15, ArrowDown: -15 }[event.key];
+          if (!step) return;
+          event.preventDefault();
+          onMinutes((minutes + step + MINUTES_PER_DAY) % MINUTES_PER_DAY);
+        }}
+      >
+        <circle r={46} className="debug-clock-face" />
+        {Array.from({ length: 24 }, (_, hour) => {
+          const a = (hour / 24) * Math.PI * 2;
+          const inner = hour % 6 === 0 ? 34 : 40;
+          return <line key={hour} x1={Math.sin(a) * inner} y1={-Math.cos(a) * inner} x2={Math.sin(a) * 44} y2={-Math.cos(a) * 44} className="debug-clock-tick" />;
+        })}
+        {[0, 6, 12, 18].map((hour) => {
+          const a = (hour / 24) * Math.PI * 2;
+          return (
+            <text key={hour} x={Math.sin(a) * 24} y={-Math.cos(a) * 24} className="debug-clock-label">
+              {hour}
+            </text>
+          );
+        })}
+        <line x2={Math.sin(angle) * 38} y2={-Math.cos(angle) * 38} className="debug-clock-hand" />
+        <circle r={3} className="debug-clock-pivot" />
+      </svg>
+      <span className="debug-row-value">{formatTime(minutes)}</span>
+    </div>
+  );
+}
+
+const formatTime = (minutes: number) =>
+  `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+
+// Sun, moon, stars, and light for the given moment at the browser's location. The moon simply
+// stands opposite the sun, lower, and is always full.
+function DaySky({ date, location }: { date: Date; location: Location }) {
+  const stars = useRef<Points>(null);
+  const [moonMap] = useState(moonTexture);
+  const [haloMap] = useState(haloTexture);
+  const { altitude, azimuth } = sunPosition(date, location);
+  // The sky shader's own sunlight ends ~2° below the horizon; raising its sun during twilight
+  // keeps the afterglow (and dawn) through civil twilight instead of minutes.
+  const sun = sunDirection(altitude < 0 ? altitude * TWILIGHT_GLOW : altitude, azimuth, SOUTH);
+  const day = daylight(altitude);
+  const high = highSun(altitude);
+  const mix = (key: keyof typeof NIGHT) => NIGHT[key].clone().lerp(DUSK[key], day).lerp(NOON[key], high);
+  // Sun and moon light cross-fade through twilight, never from flatter than MIN_LIGHT_ALTITUDE.
+  const lightFrom = (alt: number, az: number) =>
+    sunDirection(Math.max(MIN_LIGHT_ALTITUDE, alt), az, SOUTH).map((v) => v * LIGHT_DISTANCE) as [number, number, number];
+  const moon = sunDirection(Math.asin(MOON_FLATTEN * Math.sin(-altitude)), azimuth + Math.PI, SOUTH);
+  const starCount = Math.round(STARS * starlight(altitude));
+
+  useLayoutEffect(() => stars.current?.geometry.setDrawRange(0, starCount), [starCount]);
+
   return (
     <>
-      <Sky sunPosition={SKY_SUN} turbidity={10} rayleigh={3.5} mieCoefficient={0.004} mieDirectionalG={0.9} />
+      <Sky sunPosition={sun} turbidity={10} rayleigh={3.5} mieCoefficient={0.004} mieDirectionalG={0.9} />
+      <Stars ref={stars} radius={3000} depth={500} count={STARS} factor={110} speed={0} fade />
+      {altitude < 0.1 && (
+        <Billboard position={moon.map((v) => v * MOON_DISTANCE) as [number, number, number]}>
+          <mesh geometry={HALO_GEOMETRY} position-z={-5}>
+            <meshBasicMaterial map={haloMap} transparent blending={AdditiveBlending} depthWrite={false} fog={false} toneMapped={false} />
+          </mesh>
+          <mesh geometry={MOON_GEOMETRY}>
+            <meshBasicMaterial map={moonMap} transparent depthWrite={false} fog={false} toneMapped={false} />
+          </mesh>
+        </Billboard>
+      )}
       {/* Exponential haze: the meadow fades gradually toward the horizon instead of ending in a band. */}
-      <fogExp2 attach="fog" args={[HAZE, 0.0009]} />
-      <hemisphereLight args={['#f0a888', '#3a2c3c', 1.4]} />
+      <fogExp2 attach="fog" args={[DUSK.haze, 0.0009]} color={mix('haze')} />
+      <hemisphereLight color={mix('sky')} groundColor={mix('ground')} intensity={0.8 + 0.6 * day} />
       <directionalLight
-        position={SUN}
-        color="#ffa870"
-        intensity={5}
+        position={lightFrom(altitude, azimuth)}
+        color={SUN_LOW.clone().lerp(SUN_HIGH, high)}
+        intensity={5 * day}
         castShadow
         shadow-mapSize={[4096, 4096]}
-        shadow-camera-left={-60}
-        shadow-camera-right={60}
-        shadow-camera-top={60}
-        shadow-camera-bottom={-60}
-        shadow-camera-far={300}
-        shadow-bias={-0.0005}
-        shadow-normalBias={0.02}
+        {...SHADOW}
+      />
+      <directionalLight
+        position={lightFrom(-altitude, azimuth + Math.PI)}
+        color={MOONLIGHT}
+        intensity={1.5 * (1 - day)}
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        {...SHADOW}
       />
     </>
   );
@@ -355,6 +470,10 @@ export default function Scene({
   const [showPins, setShowPins] = useState(false);
   const [spacing, setSpacing] = useState(0);
   const [bundle, setBundle] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+  const [location, setLocation] = useState(fallbackLocation);
+  // Minutes after midnight shown by the debug clock, or null for the real time.
+  const [clock, setClock] = useState<number | null>(null);
   const tree = useMemo(() => buildTree(7), []);
   // Pins follow the crown scale; only points with room for a card above the ground qualify.
   const pins = useMemo(
@@ -365,6 +484,20 @@ export default function Scene({
           .filter(([x, y, z]) => y - PIN_RADIUS - CARD.height > height(x, z)),
       ),
     [tree, previewScale],
+  );
+  useEffect(() => {
+    const timer = setInterval(() => setNow(new Date()), 60_000);
+    // The location never leaves the browser; without permission the time zone has to do.
+    navigator.geolocation?.getCurrentPosition(
+      ({ coords }) => setLocation({ latitude: coords.latitude, longitude: coords.longitude }),
+      () => {},
+      { maximumAge: 24 * 60 * 60 * 1000 },
+    );
+    return () => clearInterval(timer);
+  }, []);
+  const date = useMemo(
+    () => (clock == null ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, clock)),
+    [now, clock],
   );
   // Stable callback, so the start view is only applied once when the controls mount.
   const initControls = useCallback((controls: CameraControls | null) => {
@@ -382,7 +515,7 @@ export default function Scene({
         camera={{ position: CAMERA_START, fov: 50, far: 10000 }}
         style={{ position: 'fixed', inset: 0 }}
       >
-        <SunsetSky />
+        <DaySky date={date} location={location} />
         <Meadow />
         <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
         <Scrolls
@@ -418,6 +551,17 @@ export default function Scene({
               <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
               Anheftpunkte
             </label>
+            <label className="debug-check">
+              <input
+                type="checkbox"
+                checked={clock != null}
+                onChange={(event) =>
+                  setClock(event.target.checked ? Math.round((now.getHours() * 60 + now.getMinutes()) / 5) * 5 % MINUTES_PER_DAY : null)
+                }
+              />
+              Uhr
+            </label>
+            {clock != null && <DebugClock minutes={clock} onMinutes={setClock} />}
           </section>
           {process.env.NODE_ENV !== 'production' && (
             <section>
