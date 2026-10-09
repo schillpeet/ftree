@@ -10,7 +10,7 @@ The repository is currently an early visual prototype, not a working family-tree
 ### Scene and camera
 
 The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a members list with edit and delete actions and a form for creating and editing members.
-Selecting a member in the list moves the camera to their scroll and opens their profile; clicking a scroll (or pressing Enter on it) opens that member's profile, while a drag that starts on a scroll still orbits the camera.
+Selecting a member in the list moves the camera to their card (for the scrolls in the tree and the wooden boards close up from the side the card faces, below the crown) and opens their profile; clicking a scroll (or pressing Enter on it) opens that member's profile, while a drag that starts on a scroll still orbits the camera.
 The zoom slider in the debug panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
 
 ### Sky and time of day
@@ -32,7 +32,7 @@ The original aerial and grounded roots always stay; nothing grows below scale 1.
 
 ### Debug panel
 
-A collapsible debug panel in the upper-right corner (collapsed by default) groups the tools into sections: "Daten" with the "Zufallsfamilie generieren" board (which opens to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, and the "Uhr" checkbox (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
+A collapsible debug panel in the upper-right corner (collapsed by default) groups the tools into sections: "Daten" with the "Zufallsfamilie generieren" board (which opens to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, the "Uhr" checkbox, and the "Kartenstil" select (both see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
 A development-only slider scales the crown and its pins together while the card size itself stays fixed.
 A second development-only slider in the debug panel previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
 The preview is not saved, and cards cannot be dragged while it is on.
@@ -53,7 +53,13 @@ Each family in the selector has a download link that exports it as a GEDCOM 5.5.
 
 ### Members and relatives
 
-Every member appears in the scene as a papyrus scroll showing photo (from `photoUrl`), name, birth and death dates, and note.
+Every member appears in the scene as a card whose look the "Kartenstil" select picks; the choice is remembered per browser in `localStorage`.
+"Rolle im Baum" (the default) is a 3D papyrus scroll hanging from its pin on two ropes, facing away from the trunk, swinging gently, and written on both sides.
+"Rolle, lesbar" is the same scroll turned toward the camera and glowing slightly for legibility.
+"Holzschild" is a swinging wooden board with burnt-in name and dates and the photo in a medallion beside them.
+These three are lit by the sun, cast shadows, are hidden by leaves in front of them, and cannot take keyboard focus (the members list is the keyboard path); a photo that cannot be loaded with CORS headers is left out.
+"Papyrus (klassisch)" is the earlier camera-facing HTML scroll, drawn over the scene and focusable.
+Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
 The members list shows siblings and half-siblings alongside parents, children, and partners.
@@ -103,14 +109,15 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/page.tsx` renders the home scene.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the random family board into the scene's debug panel.
 - `ui/app/FamilyTree.tsx` also places the family selector next to the members toolbar in the upper-left overlay.
-- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its debug clock, meadow, tree, camera controls, the collapsible debug panel (its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and clock, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
+- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its debug clock, meadow, tree, camera controls, the collapsible debug panel (its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, clock, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).
 - `ui/app/generations.ts` derives generations, moves cards between free pins (lifting ancestors when needed) so children hang below their parents, and bounds where a dragged card may drop; `ui/app/generations.check.mjs` is its self-check (`node app/generations.check.mjs` in `ui/`).
 - `ui/app/pins.ts` holds the card footprint, the pin spacing rule and selection, and the drop rule (dock, spring back, or place freely); `ui/app/pins.check.mjs` is its self-check (`node app/pins.check.mjs` in `ui/`).
 - `ui/app/sky.ts` computes the sun's position from date and location, the fallback location, and the daylight and starlight fades; `ui/app/sky.check.mjs` is its self-check (`node app/sky.check.mjs` in `ui/`).
 - `ui/app/moon.ts` paints the moon's face and halo on canvases.
-- `ui/app/Scroll.tsx` renders a member's papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
+- `ui/app/Scroll.tsx` renders the classic papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
+- `ui/app/HangingCard.tsx` renders the 3D card styles (scroll and wooden board on ropes), which must fit the card footprint in `pins.ts`; `ui/app/cardTextures.ts` draws their surfaces and text on canvases, with `ui/app/cardTextures.check.mjs` as its self-check (`node app/cardTextures.check.mjs` in `ui/`).
 - `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, partners, and (half-)siblings.
 - `ui/app/ProfileDialog.tsx` shows a member's read-only profile with their relatives.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
