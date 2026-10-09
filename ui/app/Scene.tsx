@@ -13,7 +13,7 @@ import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, 
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
-import { daylight, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onStorage, useLanguage, useT } from './i18n';
 import { EvolutionIcon, LanguageIcon, SunIcon } from './icons';
 import Tree, { buildTree } from './Tree';
@@ -313,6 +313,7 @@ function Scrolls({
   showPins,
   cardStyle,
   spacing,
+  evening,
   controlsRef,
   onOpen,
   onPlace,
@@ -325,6 +326,8 @@ function Scrolls({
   cardStyle: CardStyle;
   // Relation spacing while bundling, otherwise null.
   spacing: number | null;
+  // 0 by day, 1 at night: how strongly the light orbs and card glow show.
+  evening: number;
   controlsRef: RefObject<CameraControls | null>;
   onOpen: (id: string) => void;
   onPlace: (id: string, placement: Placement) => void;
@@ -473,8 +476,8 @@ function Scrolls({
           onDrag: showPins && spacing == null ? (event: { clientX: number; clientY: number }) => startDrag(member.id, event) : undefined,
         };
         if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} />;
-        if (cardStyle === 'sign') return <SignCard key={member.id} {...card} />;
-        return <ScrollCard key={member.id} {...card} mode={cardStyle} />;
+        if (cardStyle === 'sign') return <SignCard key={member.id} {...card} evening={evening} />;
+        return <ScrollCard key={member.id} {...card} mode={cardStyle} evening={evening} />;
       })}
       {showPins &&
         pins.map((pin, i) => (
@@ -512,6 +515,7 @@ export default function Scene({
   const [controls, setControls] = useState<CameraControls | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
   const [showPins, setShowPins] = useState(false);
+  const [showOrbs, setShowOrbs] = useState(true);
   const [spacing, setSpacing] = useState(0);
   const [bundle, setBundle] = useState(false);
   const [openTool, setOpenTool] = useState<'time' | 'evolution' | null>(null);
@@ -573,6 +577,9 @@ export default function Scene({
     () => (clock == null ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, clock)),
     [now, clock],
   );
+  // How strongly the evening glow orbs above the cards show, unless they are switched off.
+  const { altitude } = sunPosition(date, location);
+  const eveningFactor = showOrbs ? evening(altitude) : 0;
   // Stable callback, so the start view is only applied once when the controls mount.
   const initControls = useCallback((controls: CameraControls | null) => {
     controlsRef.current = controls;
@@ -600,6 +607,7 @@ export default function Scene({
           showPins={showPins}
           cardStyle={cardStyle}
           spacing={bundle ? spacing : null}
+          evening={eveningFactor}
           controlsRef={controlsRef}
           onOpen={onOpen}
           onPlace={onPlace}
@@ -677,6 +685,10 @@ export default function Scene({
               <label className="debug-check pin-toggle">
                 <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
                 {t.tools.pins}
+              </label>
+              <label className="debug-check">
+                <input type="checkbox" checked={showOrbs} onChange={(event) => setShowOrbs(event.target.checked)} />
+                {t.tools.orbs}
               </label>
               <label className="debug-row">
                 <span>{t.tools.cardStyle}</span>
