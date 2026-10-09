@@ -25,7 +25,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.0",
     "orval": "^8.40.0",
-    "typescript": "^5"
+    "typescript": "^6"
   },
   "packageManager": "pnpm@10.33.4"
 }
