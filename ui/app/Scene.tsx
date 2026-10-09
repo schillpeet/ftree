@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
@@ -10,6 +10,7 @@ import { relationLines } from './familyLayout';
 import { generationBounds, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
+import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import { daylight, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
@@ -63,6 +64,21 @@ const VIEW_FRONT = Math.atan2(CAMERA_START[2], CAMERA_START[0]);
 const SOUTH = VIEW_FRONT + Math.PI;
 const MINUTES_PER_DAY = 24 * 60;
 const PIN_GEOMETRY = new SphereGeometry(PIN_RADIUS, 12, 8);
+// How member cards look; the choice is remembered per browser.
+const CARD_STYLES = {
+  scroll: 'Rolle im Baum',
+  label: 'Rolle, lesbar',
+  sign: 'Holzschild',
+  papyrus: 'Papyrus (klassisch)',
+} as const;
+type CardStyle = keyof typeof CARD_STYLES;
+const CARD_STYLE_KEY = 'ftree.cardStyle';
+const onStorage = (listener: () => void) => {
+  window.addEventListener('storage', listener);
+  return () => window.removeEventListener('storage', listener);
+};
+// Swaying cards face away from the trunk; the camera flies in from that side.
+const facesOutward = (style: CardStyle) => style === 'scroll' || style === 'sign';
 
 export type Focus = { id: string } | null;
 
@@ -298,6 +314,7 @@ function Scrolls({
   focus,
   pins,
   showPins,
+  cardStyle,
   spacing,
   controlsRef,
   onOpen,
@@ -308,6 +325,7 @@ function Scrolls({
   focus: Focus;
   pins: Point[];
   showPins: boolean;
+  cardStyle: CardStyle;
   // Relation spacing while bundling, otherwise null.
   spacing: number | null;
   controlsRef: RefObject<CameraControls | null>;
@@ -352,9 +370,15 @@ function Scrolls({
     const target = focus && placed.get(focus.id);
     const controls = controlsRef.current;
     if (!target || !controls) return;
-    const [x, y, z] = target;
-    // Keep the current viewing direction, just move close to the scroll.
-    const eye = camera.position.clone().sub(controls.getTarget(new Vector3())).setLength(FOCUS_DISTANCE).add(new Vector3(x, y, z));
+    // Look at the middle of the card, which hangs below its position.
+    const [x, y, z] = [target[0], target[1] - CARD.height / 2, target[2]];
+    // Cards hanging outward are seen from the outside at about their height and from up close, so
+    // few leaves get in between; otherwise keep the current viewing direction and move closer.
+    const outward = facesOutward(cardStyle);
+    const direction = outward
+      ? new Vector3(x, 0.1 * Math.hypot(x, z), z)
+      : camera.position.clone().sub(controls.getTarget(new Vector3()));
+    const eye = direction.setLength(outward ? MIN_DISTANCE : FOCUS_DISTANCE).add(new Vector3(x, y, z));
     void controls.setLookAt(eye.x, eye.y, eye.z, x, y, z, true);
     // Only a new focus request should move the camera, not later member changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -362,8 +386,7 @@ function Scrolls({
 
   // The card follows the pointer on a plane facing the camera through its start position. The
   // drop target is decided on screen, where the user sees the card touch a pin.
-  function startDrag(id: string, event: PointerEvent<HTMLDivElement>) {
-    const card = event.currentTarget;
+  function startDrag(id: string, event: { clientX: number; clientY: number }) {
     const canvas = gl.domElement.getBoundingClientRect();
     const toScreen = (p: Point) => {
       const v = new Vector3(...p).project(camera);
@@ -395,7 +418,18 @@ function Scrolls({
         return { id: pinId, ...centre, r: Math.hypot(edge.x - centre.x, edge.y - centre.y) };
       })
       .filter((p) => p.z < 1);
-    const { width, height: cardHeight } = card.getBoundingClientRect();
+    // The card's footprint on screen, the same for every card style.
+    const right = new Vector3(CARD.width / 2, 0, 0).applyQuaternion(camera.quaternion);
+    const down = new Vector3(0, -CARD.height, 0).applyQuaternion(camera.quaternion);
+    const top = toScreen(start.toArray());
+    const onScreen = (offset: Vector3) => {
+      const p = toScreen(start.clone().add(offset).toArray());
+      return Math.hypot(p.x - top.x, p.y - top.y);
+    };
+    const [width, cardHeight] = [2 * onScreen(right), onScreen(down)];
+    // Keep the camera still while a card is carried; this also cancels an orbit that started.
+    const controls = controlsRef.current;
+    if (controls) controls.enabled = false;
     const [x0, y0] = [event.clientX, event.clientY];
     let last: Drag | null = null;
 
@@ -414,6 +448,7 @@ function Scrolls({
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
+      if (controls) controls.enabled = true;
       setDrag(null);
       // No movement: a click, which Scroll turns into opening the profile.
       if (!last || last.target === 'reject') return;
@@ -432,16 +467,18 @@ function Scrolls({
   if (!events.connected) return null;
   return (
     <>
-      {members.map((member) => (
-        <Scroll
-          key={member.id}
-          member={member}
-          familyId={familyId}
-          position={positions.get(member.id)!}
-          onOpen={() => onOpen(member.id)}
-          onDrag={showPins && spacing == null ? (event) => startDrag(member.id, event) : undefined}
-        />
-      ))}
+      {members.map((member) => {
+        const card = {
+          member,
+          familyId,
+          position: positions.get(member.id)!,
+          onOpen: () => onOpen(member.id),
+          onDrag: showPins && spacing == null ? (event: { clientX: number; clientY: number }) => startDrag(member.id, event) : undefined,
+        };
+        if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} />;
+        if (cardStyle === 'sign') return <SignCard key={member.id} {...card} />;
+        return <ScrollCard key={member.id} {...card} mode={cardStyle} />;
+      })}
       {showPins &&
         pins.map((pin, i) => (
           <mesh key={i} position={pin} geometry={PIN_GEOMETRY} scale={i === highlighted ? 2 : 1} renderOrder={1}>
@@ -479,6 +516,14 @@ export default function Scene({
   const [location, setLocation] = useState(fallbackLocation);
   // Minutes after midnight shown by the debug clock, or null for the real time.
   const [clock, setClock] = useState<number | null>(null);
+  // The server render has no localStorage and starts with the default.
+  const savedStyle = useSyncExternalStore(onStorage, () => localStorage.getItem(CARD_STYLE_KEY), () => null);
+  const cardStyle: CardStyle = savedStyle && savedStyle in CARD_STYLES ? (savedStyle as CardStyle) : 'scroll';
+  const chooseCardStyle = (style: CardStyle) => {
+    localStorage.setItem(CARD_STYLE_KEY, style);
+    // `storage` only fires in other tabs; tell this one too.
+    window.dispatchEvent(new StorageEvent('storage', { key: CARD_STYLE_KEY }));
+  };
   const tree = useMemo(() => buildTree(7), []);
   // Pins follow the crown scale; only points with room for a card above the ground qualify.
   const pins = useMemo(
@@ -529,6 +574,7 @@ export default function Scene({
           focus={focus}
           pins={pins}
           showPins={showPins}
+          cardStyle={cardStyle}
           spacing={bundle ? spacing : null}
           controlsRef={controlsRef}
           onOpen={onOpen}
@@ -568,6 +614,14 @@ export default function Scene({
               Uhr
             </label>
             {clock != null && <DebugClock minutes={clock} onMinutes={setClock} />}
+            <label className="debug-row">
+              <span>Kartenstil</span>
+              <select value={cardStyle} onChange={(event) => chooseCardStyle(event.target.value as CardStyle)}>
+                {Object.entries(CARD_STYLES).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+            </label>
           </section>
           {process.env.NODE_ENV !== 'production' && (
             <section>
