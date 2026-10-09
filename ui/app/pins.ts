@@ -6,6 +6,7 @@ export type Point = [number, number, number];
 // Footprint of one scroll in world units. Scroll.tsx renders a 180px-wide `.scroll` inside drei's
 // `<Html transform sprite distanceFactor={8}>`, which maps 1 CSS px to 0.02 world units: ~3.6 wide
 // and ~4.8 tall for a card with photo and dates. Recalibrate when the card or distanceFactor changes.
+// The 3D cards in HangingCard.tsx must fit into the same footprint.
 export const CARD = { width: 3.6, height: 4.8 };
 // Air between the cards of neighbouring pins: 16 CSS px.
 export const CARD_GAP = 16 * 0.02;
