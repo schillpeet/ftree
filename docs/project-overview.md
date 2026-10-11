@@ -11,7 +11,7 @@ The repository is currently an early visual prototype, not a working family-tree
 
 The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a members list with edit and delete actions and a form for creating and editing members.
 Selecting a member in the list moves the camera to their card (for the scrolls in the tree and the wooden boards close up from the side the card faces, below the crown) and opens their profile; clicking a scroll (or pressing Enter on it) opens that member's profile, while a drag that starts on a scroll still orbits the camera.
-The zoom slider in the debug panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
+The zoom slider in the Evolution panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
 
 ### Sky and time of day
 
@@ -19,7 +19,7 @@ The sun stands where it currently is at the browser's location: the browser is a
 South lies straight ahead from the start view.
 Sun and sky light, haze, and sky colors follow the sun's altitude, with the afterglow stretched through civil twilight; at night a full moon (a camera-facing disc with a painted texture of maria, craters, and ray craters, plus a soft halo) stands opposite the sun (its arc flattened to about 20° so it stays in view) and lights the scene bluish, and stars come out one by one as the sun sinks to 14° below the horizon.
 The time updates every minute.
-With "Uhr" checked, a 24-hour dial (midnight at the top) appears whose hand can be dragged or moved with the arrow keys in 15-minute steps to preview any time of today.
+The "Time" button next to "Evolution" opens a panel in which "Uhrzeit vorschauen" shows a 24-hour dial (midnight at the top) appears whose hand can be dragged or moved with the arrow keys in 15-minute steps to preview any time of today.
 
 ### Tree and roots
 
@@ -32,7 +32,7 @@ The original aerial and grounded roots always stay; nothing grows below scale 1.
 
 ### Debug panel
 
-A collapsible debug panel in the upper-right corner (collapsed by default) groups the tools into sections: "Daten" with the "Zufallsfamilie generieren" board (which opens to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, the "Uhr" checkbox, and the "Kartenstil" select (both see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
+The "Evolution" button in the upper-right corner (the former debug panel, closed by default) opens a translucent panel that groups the tools into sections: "Daten" with the "Zufallsfamilie generieren" board (which opens to the left of the panel), "Ansicht" with the zoom slider, the "Anheftpunkte" pin checkbox, and the "Kartenstil" select (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
 A development-only slider scales the crown and its pins together while the card size itself stays fixed.
 A second development-only slider in the debug panel previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
 The preview is not saved, and cards cannot be dragged while it is on.
@@ -41,7 +41,8 @@ The preview is not saved, and cards cannot be dragged while it is on.
 
 A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
 The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
-The family selector sits next to the "Personen" and "Person hinzufügen" buttons in the upper-left corner, not in the debug panel, and its board opens below them; Escape or a press outside closes it.
+The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
+A dropdown at the top centre shows the selected family and switches it, with "Keine Familie" hiding the tree.
 The family selector displays compact people/children/generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control; any family, including `default`, can be deleted after confirmation.
 While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
@@ -62,11 +63,11 @@ These three are lit by the sun, cast shadows, are hidden by leaves in front of t
 Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
-The members list shows siblings and half-siblings alongside parents, children, and partners.
+The members list ("Personen" in the burger menu) shows one compact row per person with avatar, name, years, and eye, pencil, and trash actions, plus a "Person hinzufügen" button; relatives are shown in the profile.
 A read-only profile dialog shows a member's photo, name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
 Clicking a relative in the profile shows that person's profile and moves the camera to their scroll.
-From the profile, "Bearbeiten" opens the edit form and "Beziehungen zuweisen" the relatives dialog; the "Bearbeiten" button in the members list still opens the edit form directly.
-A photo can also be uploaded in the member form: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and behind "Foto ansehen".
+From the profile, "Bearbeiten" opens the edit form and "Beziehungen zuweisen" the relatives dialog; the pencil in the members list still opens the edit form directly.
+A photo can also be uploaded in the member form: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the members list.
 Dialogs and the members list close on Escape or a click outside them; the edit form and the relatives dialog first ask before discarding unsaved changes, and the create form keeps its draft.
 
 ### Pins and card placement
@@ -108,8 +109,9 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 
 - `ui/app/page.tsx` renders the home scene.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the random family board into the scene's debug panel.
-- `ui/app/FamilyTree.tsx` also places the family selector next to the members toolbar in the upper-left overlay.
-- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its debug clock, meadow, tree, camera controls, the collapsible debug panel (its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, clock, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
+- `ui/app/FamilyTree.tsx` also renders the dashboard, the members list board, and the families board.
+- `ui/app/Dashboard.tsx` renders the burger menu and the family dropdown; `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
+- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).
 - `ui/app/generations.ts` derives generations, moves cards between free pins (lifting ancestors when needed) so children hang below their parents, and bounds where a dragged card may drop; `ui/app/generations.check.mjs` is its self-check (`node app/generations.check.mjs` in `ui/`).
@@ -121,7 +123,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, partners, and (half-)siblings.
 - `ui/app/ProfileDialog.tsx` shows a member's read-only profile with their relatives.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
-- `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the debug panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
+- `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the Evolution panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
 - `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally, collects the branch points that pins are picked from, and rebuilds the aerial roots and outer-ring roots for the crown scale.
 - `ui/app/growth.ts` says how far each ring around the tree has grown at a crown scale; `ui/app/growth.check.mjs` is its self-check (`node app/growth.check.mjs` in `ui/`).
 - `ui/app/Meadow.tsx` builds the terrain and instanced grass; it exports terrain height used by the tree and scene.

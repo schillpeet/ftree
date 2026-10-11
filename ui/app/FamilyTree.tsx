@@ -8,6 +8,7 @@ import {
   type Member,
   type Placement,
 } from '../lib/api/generated/members';
+import Dashboard, { type DashboardPanel } from './Dashboard';
 import FamiliesPanel from './FamiliesPanel';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
@@ -23,7 +24,9 @@ export default function FamilyTree() {
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [familiesError, setFamiliesError] = useState<string | null>(null);
-  const [openBoard, setOpenBoard] = useState<'families' | 'random-family' | null>(null);
+  const [openBoard, setOpenBoard] = useState<'random-family' | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [panel, setPanel] = useState<DashboardPanel | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
@@ -117,6 +120,8 @@ export default function FamilyTree() {
     selectFamily(family.id);
   }
 
+  const activeFamily = families?.find((family) => family.id === activeFamilyId);
+
   return (
     <>
       <Scene
@@ -134,31 +139,45 @@ export default function FamilyTree() {
           />
         }
       />
-      <div className="overlay-controls">
-        <MembersControls
-          key={activeFamilyId ?? 'no-family'}
-          familyId={activeFamilyId}
-          isDefaultFamily={families?.find((family) => family.id === activeFamilyId)?.name.toLocaleLowerCase() === 'default'}
-          members={members}
-          setMembers={setMembers}
-          profile={profile}
-          onSelect={(id) => setFocus({ id })}
-          onFamiliesChanged={() => void loadFamilies()}
-        />
-        <FamiliesPanel
-          families={families}
-          setFamilies={setFamilies}
-          activeFamilyId={activeFamilyId}
-          isLoading={isLoadingFamilies}
-          error={familiesError}
-          isOpen={openBoard === 'families'}
-          onToggle={() => setOpenBoard((open) => open === 'families' ? null : 'families')}
-          onRetry={() => void loadFamilies()}
-          onSelect={selectFamily}
-          onToggleVisibility={toggleFamilyVisibility}
-          onImported={addFamily}
-        />
-      </div>
+      <Dashboard
+        isOpen={isMenuOpen}
+        panel={panel}
+        families={families}
+        activeFamilyId={activeFamilyId}
+        onToggle={() => {
+          setIsMenuOpen((open) => !open);
+          setPanel(null);
+        }}
+        onPanel={(next) => setPanel((current) => (current === next ? null : next))}
+      />
+      <MembersControls
+        key={activeFamilyId ?? 'no-family'}
+        familyId={activeFamilyId}
+        familyName={activeFamily?.name ?? null}
+        isDefaultFamily={activeFamily?.name.toLocaleLowerCase() === 'default'}
+        members={members}
+        setMembers={setMembers}
+        profile={profile}
+        isListOpen={panel === 'people'}
+        onListOpenChange={(open) => setPanel(open ? 'people' : null)}
+        onSelect={(id) => setFocus({ id })}
+        onFamiliesChanged={() => void loadFamilies()}
+        onBack={() => setPanel('families')}
+      />
+      <FamiliesPanel
+        families={families}
+        setFamilies={setFamilies}
+        activeFamilyId={activeFamilyId}
+        isLoading={isLoadingFamilies}
+        error={familiesError}
+        isOpen={panel === 'families'}
+        onClose={() => setPanel(null)}
+        onRetry={() => void loadFamilies()}
+        onSelect={selectFamily}
+        onChosen={() => setPanel('people')}
+        onToggleVisibility={toggleFamilyVisibility}
+        onImported={addFamily}
+      />
     </>
   );
 }
