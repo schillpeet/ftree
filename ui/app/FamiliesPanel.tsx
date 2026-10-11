@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import {
-  DownloadIcon, EyeIcon, EyeOffIcon, TrashIcon, UploadIcon, UsersIcon, CloseIcon,
+  DownloadIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon, UploadIcon, UsersIcon, CloseIcon,
 } from './icons';
-import { deleteFamily, getExportFamilyUrl, importFamily, type FamilySummary } from '../lib/api/generated/members';
+import { deleteFamily, getExportFamilyUrl, importFamily, renameFamily, type FamilySummary } from '../lib/api/generated/members';
 
 export default function FamiliesPanel({
   families,
@@ -38,6 +38,8 @@ export default function FamiliesPanel({
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameError, setRenameError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
@@ -116,6 +118,31 @@ export default function FamiliesPanel({
     }
   }
 
+  async function rename(family: FamilySummary) {
+    const name = window.prompt('Unter welchem Namen soll die Familie geführt werden?', family.name)?.trim();
+    if (!name || name === family.name) return;
+    setIsRenaming(true);
+    setRenameError(null);
+    try {
+      const response = await renameFamily(family.id, { name });
+      if (response.status === 409) {
+        setRenameError(`Eine Familie „${name}“ existiert bereits.`);
+        return;
+      }
+      if (response.status === 404) {
+        setRenameError('Die Familie existiert nicht mehr.');
+        return;
+      }
+      if (response.status !== 200) throw new Error(`HTTP ${response.status}`);
+      const renamed = response.data;
+      setFamilies((current) => current?.map((item) => (item.id === renamed.id ? { ...item, name: renamed.name } : item)) ?? null);
+    } catch {
+      setRenameError('Die Familie konnte nicht umbenannt werden. Ist das BFF erreichbar?');
+    } finally {
+      setIsRenaming(false);
+    }
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -129,11 +156,23 @@ export default function FamiliesPanel({
       </header>
       <div className="families-panel-body">
         {activeFamily && (
-          <p className="family-current">
-            <span>Ausgewählt</span>
+          <div className="family-current">
+            <div className="family-current-line">
+              <span>Ausgewählt</span>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Familienname ändern"
+                disabled={isRenaming}
+                onClick={() => void rename(activeFamily)}
+              >
+                <PencilIcon />
+              </button>
+            </div>
             <strong>{activeFamily.name}</strong>
-          </p>
+          </div>
         )}
+        {renameError && <p className="member-form-error" role="alert">{renameError}</p>}
         <div className="family-set-import">
           <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
             <UploadIcon />

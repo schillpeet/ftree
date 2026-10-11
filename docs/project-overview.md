@@ -45,6 +45,7 @@ The family selector is the "Familien" entry of the burger menu in the upper-left
 A dropdown at the top centre shows the selected family and switches it, with "Keine Familie" hiding the tree.
 The family selector displays compact people/children/generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control; any family, including `default`, can be deleted after confirmation.
 While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
+A pencil icon next to the selected family's name renames it via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The original `/members` endpoints remain available for the default family.
 "GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.

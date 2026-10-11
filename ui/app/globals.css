@@ -1132,6 +1132,12 @@ textarea {
   margin: 0 0 12px;
 }
 
+.family-current-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
 .family-current span {
   color: var(--glass-muted);
   font-size: 12px;
