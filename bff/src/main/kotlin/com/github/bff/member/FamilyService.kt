@@ -4,6 +4,7 @@ import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
+import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.TestFamilySettings
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -121,6 +122,20 @@ class FamilyService(
         return FamilyImportResult.IMPORTED(family.toSummary(saved.values.toList()))
     }
 
+    @Transactional
+    fun rename(id: UUID, request: RenameFamilyRequest): FamilyRenameResult {
+        val family = familyRepository.findById(id).orElse(null) ?: return FamilyRenameResult.NOT_FOUND
+        val name = request.name?.trim().orEmpty()
+        if (name.isEmpty() || name.length > 100) return FamilyRenameResult.INVALID
+        if (!name.equals(family.name, ignoreCase = true) && familyRepository.existsByNameIgnoreCase(name)) {
+            return FamilyRenameResult.NAME_TAKEN
+        }
+        family.name = name
+        familyRepository.flush()
+        val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
+        return FamilyRenameResult.RENAMED(family.toSummary(members))
+    }
+
     fun export(id: UUID): FamilyExport? {
         val family = familyRepository.findById(id).orElse(null) ?: return null
         val people = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id).map { member ->
@@ -205,6 +220,13 @@ sealed interface FamilyImportResult {
     data class IMPORTED(val summary: FamilySummary) : FamilyImportResult
     data object INVALID : FamilyImportResult
     data object NAME_TAKEN : FamilyImportResult
+}
+
+sealed interface FamilyRenameResult {
+    data class RENAMED(val summary: FamilySummary) : FamilyRenameResult
+    data object NOT_FOUND : FamilyRenameResult
+    data object INVALID : FamilyRenameResult
+    data object NAME_TAKEN : FamilyRenameResult
 }
 
 data class FamilyExport(val name: String, val gedcom: String)

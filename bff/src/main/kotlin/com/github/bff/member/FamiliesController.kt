@@ -5,6 +5,7 @@ import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
+import com.github.bff.generated.model.RenameFamilyRequest
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -50,6 +51,14 @@ class FamiliesController(private val familyService: FamilyService) : FamiliesApi
 
     override fun deleteFamily(familyId: UUID): ResponseEntity<Void> =
         if (familyService.delete(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+
+    override fun renameFamily(familyId: UUID, renameFamilyRequest: RenameFamilyRequest): ResponseEntity<FamilySummary> =
+        when (val result = familyService.rename(familyId, renameFamilyRequest)) {
+            is FamilyRenameResult.RENAMED -> ResponseEntity.ok(result.summary)
+            FamilyRenameResult.INVALID -> ResponseEntity.badRequest().build()
+            FamilyRenameResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            FamilyRenameResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
 }
 
 private val UNSAFE_FILE_NAME_CHARS = Regex("""[\\/:*?"<>|\p{Cntrl}]""")

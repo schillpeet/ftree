@@ -176,6 +176,31 @@ paths:
           description: Family and its members deleted.
         "404":
           description: Family not found.
+    put:
+      operationId: renameFamily
+      tags:
+        - Families
+      summary: Rename a family
+      description: Renames the family without touching its members, links, or placements.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RenameFamilyRequest"
+      responses:
+        "200":
+          description: Family renamed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The name is invalid.
+        "404":
+          description: Family not found.
+        "409":
+          description: A family with this name already exists.
   /families/{familyId}/archive:
     parameters:
       - name: familyId
@@ -602,6 +627,15 @@ components:
           minimum: 0
           maximum: 3
     ArchiveFamilyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    RenameFamilyRequest:
       type: object
       required:
         - name

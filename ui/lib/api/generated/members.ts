@@ -80,6 +80,14 @@ export interface ArchiveFamilyRequest {
   name: string;
 }
 
+export interface RenameFamilyRequest {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+}
+
 export interface ImportFamilyRequest {
   /**
      * @minLength 1
@@ -670,6 +678,82 @@ export const deleteFamily = async (familyId: string, options?: RequestInit): Pro
 
   const data: deleteFamilyResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteFamilyResponse
+}
+
+
+
+export type renameFamilyResponse200 = {
+  data: FamilySummary
+  status: 200
+}
+
+export type renameFamilyResponse400 = {
+  data: void
+  status: 400
+}
+
+export type renameFamilyResponse404 = {
+  data: void
+  status: 404
+}
+
+export type renameFamilyResponse409 = {
+  data: void
+  status: 409
+}
+
+export type renameFamilyResponseSuccess = (renameFamilyResponse200) & {
+  headers: Headers;
+};
+export type renameFamilyResponseError = (renameFamilyResponse400 | renameFamilyResponse404 | renameFamilyResponse409) & {
+  headers: Headers;
+};
+
+export type renameFamilyResponse = (renameFamilyResponseSuccess | renameFamilyResponseError)
+
+export const getRenameFamilyUrl = (familyId: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}`
+}
+
+/**
+ * Renames the family without touching its members, links, or placements.
+ * @summary Rename a family
+ */
+export const renameFamily = async (familyId: string,
+    renameFamilyRequest: RenameFamilyRequest, options?: RequestInit): Promise<renameFamilyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getRenameFamilyUrl(familyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(renameFamilyRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: renameFamilyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as renameFamilyResponse
 }
 
 
