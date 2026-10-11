@@ -5,6 +5,7 @@ import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.Relatives
+import com.github.bff.generated.model.RenameFamilyRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.transaction.annotation.Transactional
@@ -209,6 +210,32 @@ class FamilyServiceTest {
         assertEquals(FamilyImportResult.INVALID, familyService.import(ImportFamilyRequest("Text ${UUID.randomUUID()}", "kein GEDCOM")))
         assertEquals(FamilyImportResult.NAME_TAKEN, familyService.import(ImportFamilyRequest(family.name, "0 HEAD\n0 @I1@ INDI")))
         assertNull(familyService.export(UUID.randomUUID()))
+    }
+
+    @Test
+    fun `renames a family without touching its members or settings`() {
+        val family = (familyService.create(request()) as FamilyCreationResult.CREATED).summary
+        val membersBefore = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id)
+
+        val result = familyService.rename(family.id, RenameFamilyRequest("Umbenannt ${UUID.randomUUID()}"))
+
+        assertTrue(result is FamilyRenameResult.RENAMED)
+        assertEquals(result.summary.name, familyRepository.findById(family.id).get().name)
+        assertEquals(family.memberCount, result.summary.memberCount)
+        assertEquals(family.testSettings, result.summary.testSettings)
+        assertEquals(membersBefore.map { it.id }, memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).map { it.id })
+    }
+
+    @Test
+    fun `refuses to rename to an invalid, taken, or for an unknown family`() {
+        val family = (familyService.create(request()) as FamilyCreationResult.CREATED).summary
+        val other = (familyService.create(request()) as FamilyCreationResult.CREATED).summary
+
+        assertEquals(FamilyRenameResult.INVALID, familyService.rename(family.id, RenameFamilyRequest(" ")))
+        assertEquals(FamilyRenameResult.NAME_TAKEN, familyService.rename(family.id, RenameFamilyRequest(other.name)))
+        assertEquals(FamilyRenameResult.NOT_FOUND, familyService.rename(UUID.randomUUID(), RenameFamilyRequest("Neu")))
+        // Keeping the same name (case-insensitively) is allowed.
+        assertTrue(familyService.rename(family.id, RenameFamilyRequest(family.name)) is FamilyRenameResult.RENAMED)
     }
 
     private fun request() = CreateFamilyRequest(
