@@ -14,6 +14,7 @@ import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import { daylight, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { EvolutionIcon, SunIcon } from './icons';
 import Tree, { buildTree } from './Tree';
 
 // Sky colors (hemisphere sky, ground, haze) at night, with the sun low, and with the sun high.
@@ -512,6 +513,28 @@ export default function Scene({
   const [showPins, setShowPins] = useState(false);
   const [spacing, setSpacing] = useState(0);
   const [bundle, setBundle] = useState(false);
+  const [openTool, setOpenTool] = useState<'time' | 'evolution' | null>(null);
+  const toggleTool = (tool: 'time' | 'evolution') => setOpenTool((open) => (open === tool ? null : tool));
+  const actionsRef = useRef<HTMLDivElement>(null);
+  const toolRef = useRef<HTMLElement>(null);
+
+  // A press outside the buttons and the open tool closes it, like the burger menu.
+  useEffect(() => {
+    if (!openTool) return;
+    function closeOnOutsidePress(event: globalThis.PointerEvent) {
+      const target = event.target as Node;
+      if (!actionsRef.current?.contains(target) && !toolRef.current?.contains(target)) setOpenTool(null);
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpenTool(null);
+    }
+    document.addEventListener('pointerdown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsidePress);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [openTool]);
   const [now, setNow] = useState(() => new Date());
   const [location, setLocation] = useState(fallbackLocation);
   // Minutes after midnight shown by the debug clock, or null for the real time.
@@ -589,49 +612,81 @@ export default function Scene({
           dollySpeed={DOLLY_SPEED}
         />
       </Canvas>
-      <details className="debug-panel">
-        <summary>Debug</summary>
-        <div className="debug-panel-body">
-          <section>
-            <h2>Daten</h2>
-            {debugTools}
-          </section>
-          <section>
-            <h2>Ansicht</h2>
-            <ZoomScale controls={controls} />
-            <label className="debug-check pin-toggle">
-              <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
-              Anheftpunkte
-            </label>
-            <label className="debug-check">
-              <input
-                type="checkbox"
-                checked={clock != null}
-                onChange={(event) =>
-                  setClock(event.target.checked ? Math.round((now.getHours() * 60 + now.getMinutes()) / 5) * 5 % MINUTES_PER_DAY : null)
-                }
-              />
-              Uhr
-            </label>
-            {clock != null && <DebugClock minutes={clock} onMinutes={setClock} />}
-            <label className="debug-row">
-              <span>Kartenstil</span>
-              <select value={cardStyle} onChange={(event) => chooseCardStyle(event.target.value as CardStyle)}>
-                {Object.entries(CARD_STYLES).map(([value, label]) => (
-                  <option key={value} value={value}>{label}</option>
-                ))}
-              </select>
-            </label>
-          </section>
-          {process.env.NODE_ENV !== 'production' && (
+      <div className="dashboard-actions" role="group" aria-label="Werkzeuge" ref={actionsRef}>
+        <button
+          className="glass glass-button"
+          type="button"
+          aria-expanded={openTool === 'time'}
+          aria-controls="time-panel"
+          onClick={() => toggleTool('time')}
+        >
+          <SunIcon />
+          Time
+        </button>
+        <button
+          className="glass glass-button"
+          type="button"
+          aria-expanded={openTool === 'evolution'}
+          aria-controls="evolution-panel"
+          onClick={() => toggleTool('evolution')}
+        >
+          <EvolutionIcon />
+          Evolution
+        </button>
+      </div>
+      {openTool === 'time' && (
+        <section className="glass debug-panel" id="time-panel" aria-label="Uhrzeit" ref={toolRef}>
+          <div className="debug-panel-body">
             <section>
-              <h2>Vorschau</h2>
-              <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
-              <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
+              <h2>Tageszeit</h2>
+              <label className="debug-check">
+                <input
+                  type="checkbox"
+                  checked={clock != null}
+                  onChange={(event) =>
+                    setClock(event.target.checked ? Math.round((now.getHours() * 60 + now.getMinutes()) / 5) * 5 % MINUTES_PER_DAY : null)
+                  }
+                />
+                Uhrzeit vorschauen
+              </label>
+              {clock != null && <DebugClock minutes={clock} onMinutes={setClock} />}
             </section>
-          )}
-        </div>
-      </details>
+          </div>
+        </section>
+      )}
+      {openTool === 'evolution' && (
+        <section className="glass debug-panel" id="evolution-panel" aria-label="Evolution" ref={toolRef}>
+          <div className="debug-panel-body">
+            <section>
+              <h2>Daten</h2>
+              {debugTools}
+            </section>
+            <section>
+              <h2>Ansicht</h2>
+              <ZoomScale controls={controls} />
+              <label className="debug-check pin-toggle">
+                <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
+                Anheftpunkte
+              </label>
+              <label className="debug-row">
+                <span>Kartenstil</span>
+                <select value={cardStyle} onChange={(event) => chooseCardStyle(event.target.value as CardStyle)}>
+                  {Object.entries(CARD_STYLES).map(([value, label]) => (
+                    <option key={value} value={value}>{label}</option>
+                  ))}
+                </select>
+              </label>
+            </section>
+            {process.env.NODE_ENV !== 'production' && (
+              <section>
+                <h2>Vorschau</h2>
+                <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
+                <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
+              </section>
+            )}
+          </div>
+        </section>
+      )}
     </>
   );
 }

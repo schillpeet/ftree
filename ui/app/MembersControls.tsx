@@ -15,7 +15,7 @@ import {
 } from '../lib/api/generated/members';
 import ProfileDialog from './ProfileDialog';
 import RelativesDialog from './RelativesDialog';
-import { relativesOf as findRelatives } from './relatives';
+import { ChevronLeftIcon, CloseIcon, EyeIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
 
 type MemberForm = {
@@ -84,64 +84,49 @@ async function toJpeg(file: File) {
   );
 }
 
+const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
+
 function MemberDetails({
   member,
   familyId,
-  members,
   onSelect,
   onEdit,
-  onEditRelatives,
   onDelete,
 }: {
   member: Member;
   familyId: string | null;
-  members: Member[];
   onSelect: () => void;
   onEdit: () => void;
-  onEditRelatives: () => void;
   onDelete: () => void;
 }) {
-  const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
-  const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
-  const names = (list: Member[]) => list.map((m) => `${m.firstName} ${m.lastName}`).join(', ');
-  const relatives = findRelatives(member, members);
-  const parents = names(relatives.parents);
-  const children = names(relatives.children);
-  const partners = names(relatives.partners);
-  const siblings = names(relatives.siblings);
-  const halfSiblings = names(relatives.halfSiblings);
+  const name = `${member.firstName} ${member.lastName}`;
+  const years = member.birthDate ? `${yearOf(member.birthDate)} – ${yearOf(member.deathDate)}`.trim() : yearOf(member.deathDate) && `† ${yearOf(member.deathDate)}`;
   const photo = photoSrc(member, familyId);
 
   return (
     <li className="member-row">
-      <div className="member-row-header">
-        <h3>
-          <button type="button" className="member-name" title="Im Baum anzeigen und Profil öffnen" onClick={onSelect}>
-            {member.firstName} {member.lastName}
-          </button>
-        </h3>
-        <button type="button" aria-label={`${member.firstName} ${member.lastName} löschen`} onClick={onDelete}>
-          ×
-        </button>
-      </div>
-      {birth && <p>Geboren: {birth}</p>}
-      {death && <p>Verstorben: {death}</p>}
-      {parents && <p>Eltern: {parents}</p>}
-      {children && <p>Kinder: {children}</p>}
-      {partners && <p>Partner: {partners}</p>}
-      {siblings && <p>Geschwister: {siblings}</p>}
-      {halfSiblings && <p>Halbgeschwister: {halfSiblings}</p>}
-      {member.note && <p>{member.note}</p>}
-      {photo && (
-        <p>
-          <a href={photo} target="_blank" rel="noreferrer">Foto ansehen</a>
-        </p>
+      {photo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img className="member-avatar" src={photo} alt="" />
+      ) : (
+        <span className="member-avatar" aria-hidden="true">
+          {(member.firstName[0] ?? '') + (member.lastName[0] ?? '')}
+        </span>
       )}
-      <button type="button" className="member-relatives-button" onClick={onEdit}>
-        Bearbeiten
+      <div className="member-row-text">
+        <button type="button" className="member-name" title="Im Baum anzeigen und Profil öffnen" onClick={onSelect}>
+          {name}
+        </button>
+        {years && <span>{years}</span>}
+      </div>
+      <button type="button" className="icon-button" aria-label={`${name} im Baum anzeigen`} onClick={onSelect}>
+        <EyeIcon />
       </button>
-      <button type="button" className="member-relatives-button" onClick={onEditRelatives}>
-        Beziehungen zuweisen
+      <button type="button" className="icon-button" aria-label={`${name} bearbeiten`} onClick={onEdit}>
+        <PencilIcon />
+      </button>
+      <button type="button" className="icon-button icon-button-danger" aria-label={`${name} löschen`} onClick={onDelete}>
+        <TrashIcon />
       </button>
     </li>
   );
@@ -149,24 +134,32 @@ function MemberDetails({
 
 export default function MembersControls({
   familyId,
+  familyName,
   isDefaultFamily,
   members,
   setMembers,
   profile,
+  isListOpen,
+  onListOpenChange: setIsListOpen,
   onSelect,
   onFamiliesChanged,
+  onBack,
 }: {
   familyId: string | null;
+  familyName: string | null;
   // Only the default family is archived: its people move to a new family and it starts empty.
   isDefaultFamily: boolean;
   members: Member[] | null;
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
   // Member whose profile was requested from their scroll in the scene.
   profile: Focus;
+  isListOpen: boolean;
+  onListOpenChange: (open: boolean) => void;
   onSelect: (id: string) => void;
   onFamiliesChanged: () => void;
+  // Returns to the family overview when the list was opened from the families panel.
+  onBack?: () => void;
 }) {
-  const [isListOpen, setIsListOpen] = useState(false);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -178,7 +171,6 @@ export default function MembersControls({
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [relativesOf, setRelativesOf] = useState<Member | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
-  const listButtonRef = useRef<HTMLButtonElement>(null);
   const listRef = useRef<HTMLElement>(null);
 
   async function reloadMembers() {
@@ -240,7 +232,8 @@ export default function MembersControls({
     if (!isListOpen || relativesOf) return;
     function closeOnOutsidePress(event: PointerEvent) {
       const target = event.target as Node;
-      if (!listRef.current?.contains(target) && !listButtonRef.current?.contains(target)) setIsListOpen(false);
+      // The menu switches boards itself.
+      if (!listRef.current?.contains(target) && !(target as Element).closest?.('.dashboard-menu')) setIsListOpen(false);
     }
     function closeOnEscape(event: KeyboardEvent) {
       if (event.key === 'Escape') setIsListOpen(false);
@@ -251,7 +244,7 @@ export default function MembersControls({
       document.removeEventListener('pointerdown', closeOnOutsidePress);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [isListOpen, relativesOf]);
+  }, [isListOpen, relativesOf, setIsListOpen]);
 
   async function archive() {
     if (!familyId) return;
@@ -287,12 +280,6 @@ export default function MembersControls({
     } catch {
       setRequestError('Die Person konnte nicht gelöscht werden. Ist das BFF erreichbar?');
     }
-  }
-
-  function toggleMembers() {
-    const willOpen = !isListOpen;
-    setIsListOpen(willOpen);
-    setIsFormOpen(false);
   }
 
   function openForm(member: Member | null = null) {
@@ -410,28 +397,18 @@ export default function MembersControls({
 
   return (
     <div className="members-controls">
-      <div className="members-toolbar" role="group" aria-label="Mitglieder">
-        <button
-          className="members-button members-button-primary"
-          type="button"
-          aria-expanded={isListOpen}
-          aria-controls="members-panel"
-          ref={listButtonRef}
-          onClick={toggleMembers}
-        >
-          Personen
-        </button>
-        <button className="members-button" type="button" disabled={!familyId} onClick={() => openForm()}>
-          Person hinzufügen
-        </button>
-      </div>
-
       {isListOpen && (
-        <section className="members-panel" id="members-panel" aria-label="Personenliste" ref={listRef}>
-          <header className="members-panel-header">
-            <h2>Personen</h2>
+        <section className="glass dashboard-board members-panel" id="members-panel" aria-label="Personenliste" ref={listRef}>
+          <header className="dashboard-board-header">
+            {onBack && (
+              <button type="button" aria-label="Zurück zur Familienübersicht" onClick={onBack}>
+                <ChevronLeftIcon />
+              </button>
+            )}
+            <UsersIcon />
+            <h2>{familyName ?? 'Personen'}</h2>
             <button type="button" aria-label="Liste schließen" onClick={() => setIsListOpen(false)}>
-              ×
+              <CloseIcon />
             </button>
           </header>
           <div className="members-panel-body" aria-live="polite">
@@ -455,9 +432,7 @@ export default function MembersControls({
                     key={member.id}
                     member={member}
                     familyId={familyId}
-                    members={members}
                     onEdit={() => openForm(member)}
-                    onEditRelatives={() => setRelativesOf(member)}
                     onSelect={() => {
                       setIsListOpen(false);
                       setProfileId(member.id);
@@ -468,6 +443,10 @@ export default function MembersControls({
                 ))}
               </ul>
             )}
+            <button type="button" className="member-add" disabled={!familyId} onClick={() => openForm()}>
+              <PlusIcon />
+              Person hinzufügen
+            </button>
             {isDefaultFamily && !isLoading && !!members?.length && (
               <div className="members-archive">
                 <button type="button" onClick={() => void archive()}>Familie archivieren</button>
