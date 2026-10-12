@@ -101,7 +101,8 @@ textarea {
   border-color: rgba(23, 58, 43, 0.36);
 }
 
-.debug-button[aria-expanded='true'] {
+.debug-button[aria-expanded='true'],
+.debug-button[aria-pressed='true'] {
   border-color: #173a2b;
   background: #edf1e8;
 }
@@ -109,6 +110,11 @@ textarea {
 .debug-button:disabled {
   cursor: wait;
   opacity: 0.65;
+}
+
+.camera-views {
+  display: flex;
+  gap: 6px;
 }
 
 /* Label · control · value, shared by every slider row. */
@@ -1319,6 +1325,7 @@ textarea {
 
 .debug-button:hover,
 .debug-button[aria-expanded='true'],
+.debug-button[aria-pressed='true'],
 .zoom-steps button:hover {
   border-color: var(--glass-accent);
   background: var(--glass-hover);
