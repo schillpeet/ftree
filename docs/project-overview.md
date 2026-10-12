@@ -12,6 +12,7 @@ The repository is currently an early visual prototype, not a working family-tree
 The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a members list with edit and delete actions and a form for creating and editing members.
 Selecting a member in the list moves the camera to their card (for the scrolls in the tree and the wooden boards close up from the side the card faces, below the crown) and opens their profile; clicking a scroll (or pressing Enter on it) opens that member's profile, while a drag that starts on a scroll still orbits the camera.
 The zoom slider in the Evolution panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
+The UI is available in English (default) and German; the language button next to "Time" switches between them, and the choice is remembered per browser in `localStorage`.
 
 ### Sky and time of day
 
@@ -123,6 +124,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/HangingCard.tsx` renders the 3D card styles (scroll and wooden board on ropes), which must fit the card footprint in `pins.ts`; `ui/app/cardTextures.ts` draws their surfaces and text on canvases, with `ui/app/cardTextures.check.mjs` as its self-check (`node app/cardTextures.check.mjs` in `ui/`).
 - `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, partners, and (half-)siblings.
 - `ui/app/ProfileDialog.tsx` shows a member's read-only profile with their relatives.
+- `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the Evolution panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
 - `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally, collects the branch points that pins are picked from, and rebuilds the aerial roots and outer-ring roots for the crown scale.

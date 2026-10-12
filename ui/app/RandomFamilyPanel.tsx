@@ -2,17 +2,18 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { createFamily, type FamilySummary } from '../lib/api/generated/members';
+import { useT } from './i18n';
 import { planTestFamily } from './testFamilyPlan';
 
 const MAX_PERSONS = 250;
 const MAX_GENERATIONS = 10;
 const MAX_CHILDREN = 3;
 
-function suggestedFamilyName(families: FamilySummary[] | null) {
+function suggestedFamilyName(families: FamilySummary[] | null, prefix: string) {
   const existing = new Set(families?.map((family) => family.name.toLocaleLowerCase()) ?? []);
   let number = 1;
-  while (existing.has(`zufallsfamilie ${number}`)) number++;
-  return `Zufallsfamilie ${number}`;
+  while (existing.has(`${prefix} ${number}`.toLocaleLowerCase())) number++;
+  return `${prefix} ${number}`;
 }
 
 export default function RandomFamilyPanel({
@@ -26,6 +27,7 @@ export default function RandomFamilyPanel({
   onToggle: () => void;
   onCreated: (family: FamilySummary) => void;
 }) {
+  const t = useT();
   const [name, setName] = useState<string | null>(null);
   const [totalUsers, setTotalUsers] = useState(12);
   const [generationCount, setGenerationCount] = useState(3);
@@ -41,7 +43,7 @@ export default function RandomFamilyPanel({
     () => planTestFamily(totalUsers, generationCount, minChildren, maxChildren),
     [totalUsers, generationCount, minChildren, maxChildren],
   );
-  const familyName = name ?? suggestedFamilyName(families);
+  const familyName = name ?? suggestedFamilyName(families, t.random.namePrefix);
 
   useEffect(() => {
     if (!isOpen || isGenerating) return;
@@ -76,20 +78,18 @@ export default function RandomFamilyPanel({
         maxChildren,
       });
       if (response.status === 409) {
-        setError('Eine Familie mit diesem Namen existiert bereits.');
+        setError(t.random.exists);
         return;
       }
       if (response.status !== 201) {
-        setError('Diese Familien-Einstellungen konnten nicht gespeichert werden.');
+        setError(t.random.settingsFailed);
         return;
       }
       onCreated(response.data);
-      setSuccess(
-        `${response.data.name}: ${response.data.memberCount} Personen in ${response.data.generationCount} Generationen angelegt.`,
-      );
+      setSuccess(t.random.created(response.data.name, response.data.memberCount, response.data.generationCount));
       setName(null);
     } catch {
-      setError('Die Familie konnte nicht gespeichert werden. Ist das BFF erreichbar?');
+      setError(t.random.saveFailed);
     } finally {
       setIsGenerating(false);
     }
@@ -106,16 +106,16 @@ export default function RandomFamilyPanel({
         ref={buttonRef}
         onClick={onToggle}
       >
-        Zufallsfamilie generieren
+        {t.random.generate}
       </button>
 
       {isOpen && (
-        <section className="random-family-panel" id="random-family-panel" aria-label="Zufallsfamilie anlegen" ref={panelRef}>
+        <section className="random-family-panel" id="random-family-panel" aria-label={t.random.title} ref={panelRef}>
           <header className="members-panel-header">
-            <h2>Zufallsfamilie anlegen</h2>
+            <h2>{t.random.title}</h2>
             <button
               type="button"
-              aria-label="Zufallsfamilie-Board schließen"
+              aria-label={t.random.close}
               disabled={isGenerating}
               onClick={onToggle}
             >
@@ -124,7 +124,7 @@ export default function RandomFamilyPanel({
           </header>
           <form className="random-family-form" onSubmit={generateFamily}>
             <label className="member-field">
-              Familienname
+              {t.random.name}
               <input
                 autoComplete="off"
                 maxLength={100}
@@ -135,7 +135,7 @@ export default function RandomFamilyPanel({
               />
             </label>
             <label className="member-field">
-              Anzahl Personen
+              {t.random.people}
               <input
                 type="number"
                 min={1}
@@ -147,7 +147,7 @@ export default function RandomFamilyPanel({
               />
             </label>
             <label className="member-field">
-              Generationen
+              {t.random.generations}
               <input
                 type="number"
                 min={1}
@@ -160,7 +160,7 @@ export default function RandomFamilyPanel({
             </label>
             <div className="random-family-child-range">
               <label className="member-field">
-                Kinder mindestens
+                {t.random.minChildren}
                 <input
                   type="number"
                   min={0}
@@ -172,7 +172,7 @@ export default function RandomFamilyPanel({
                 />
               </label>
               <label className="member-field">
-                Kinder höchstens
+                {t.random.maxChildren}
                 <input
                   type="number"
                   min={0}
@@ -185,19 +185,18 @@ export default function RandomFamilyPanel({
               </label>
             </div>
             <p className="random-family-hint">
-              Erstellt eine neue Familie samt Personen und Beziehungen. Maximal {MAX_PERSONS} Personen,{' '}
-              {MAX_GENERATIONS} Generationen und {MAX_CHILDREN} Kinder pro Elternteil.
+              {t.random.hint(MAX_PERSONS, MAX_GENERATIONS, MAX_CHILDREN)}
             </p>
             {plan === null && (
               <p className="member-form-error" role="alert">
-                Diese Anzahl lässt sich mit den gewählten Generationen und Kinderzahlen nicht bilden.
+                {t.random.impossible}
               </p>
             )}
             {error && <p className="member-form-error" role="alert">{error}</p>}
             {success && <p className="random-family-success" role="status">{success}</p>}
             <div className="member-form-actions">
               <button type="submit" disabled={!plan || isGenerating || !familyName.trim()}>
-                {isGenerating ? 'Familie wird angelegt …' : 'Familie speichern und anzeigen'}
+                {isGenerating ? t.random.creating : t.random.submit}
               </button>
             </div>
           </form>

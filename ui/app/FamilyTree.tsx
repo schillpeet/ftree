@@ -13,17 +13,19 @@ import FamiliesPanel from './FamiliesPanel';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
 import RandomFamilyPanel from './RandomFamilyPanel';
+import { useT } from './i18n';
 
 const firstFamilyId = (items: FamilySummary[]) =>
   items.find((family) => family.name.toLocaleLowerCase() === 'default')?.id ?? items[0]?.id ?? null;
 
 // Shares the members between the scene's scrolls and the list/form overlay.
 export default function FamilyTree() {
+  const t = useT();
   const [members, setMembers] = useState<Member[] | null>(null);
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
-  const [familiesError, setFamiliesError] = useState<string | null>(null);
+  const [familiesError, setFamiliesError] = useState(false);
   const [openBoard, setOpenBoard] = useState<'random-family' | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [panel, setPanel] = useState<DashboardPanel | null>(null);
@@ -33,7 +35,7 @@ export default function FamilyTree() {
 
   const loadFamilies = useCallback(async () => {
     setIsLoadingFamilies(true);
-    setFamiliesError(null);
+    setFamiliesError(false);
     try {
       const response = await getFamilies();
       if (response.status !== 200 || !Array.isArray(response.data)) {
@@ -45,7 +47,7 @@ export default function FamilyTree() {
         return response.data.some((family) => family.id === current) ? current : firstFamilyId(response.data);
       });
     } catch {
-      setFamiliesError('Die Familien konnten nicht geladen werden. Ist das BFF erreichbar?');
+      setFamiliesError(true);
     } finally {
       setIsLoadingFamilies(false);
     }
@@ -72,7 +74,7 @@ export default function FamilyTree() {
             : firstFamilyId(orderedFamilies),
         );
       } catch {
-        if (current) setFamiliesError('Die Familien konnten nicht geladen werden. Ist das BFF erreichbar?');
+        if (current) setFamiliesError(true);
       } finally {
         if (current) setIsLoadingFamilies(false);
       }
@@ -169,7 +171,7 @@ export default function FamilyTree() {
         setFamilies={setFamilies}
         activeFamilyId={activeFamilyId}
         isLoading={isLoadingFamilies}
-        error={familiesError}
+        error={familiesError ? t.families.loadFailed : null}
         isOpen={panel === 'families'}
         onClose={() => setPanel(null)}
         onRetry={() => void loadFamilies()}

@@ -3,6 +3,7 @@
 import { useRef, type PointerEvent } from 'react';
 import { Html } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
+import { useT } from './i18n';
 import { formatDate, photoSrc } from './MembersControls';
 
 // Pointer travel (px) up to which a press on a scroll still counts as a click, not a drag.
@@ -24,6 +25,7 @@ export default function Scroll({
   onOpen: () => void;
   onDrag?: (event: PointerEvent<HTMLDivElement>) => void;
 }) {
+  const t = useT();
   const birth = formatDate(member.birthDate);
   const death = formatDate(member.deathDate);
   const photo = photoSrc(member, familyId);
@@ -34,7 +36,7 @@ export default function Scroll({
       <div
         role="button"
         tabIndex={0}
-        aria-label={`Profil von ${member.firstName} ${member.lastName} öffnen`}
+        aria-label={t.profile.open(`${member.firstName} ${member.lastName}`)}
         className={onDrag ? 'scroll scroll-draggable' : 'scroll'}
         onPointerDown={(event) => {
           pressedAt.current = { x: event.clientX, y: event.clientY };

@@ -5,6 +5,7 @@ import {
   DownloadIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon, UploadIcon, UsersIcon, CloseIcon,
 } from './icons';
 import { deleteFamily, getExportFamilyUrl, importFamily, renameFamily, type FamilySummary } from '../lib/api/generated/members';
+import { useT } from './i18n';
 
 export default function FamiliesPanel({
   families,
@@ -34,6 +35,7 @@ export default function FamiliesPanel({
   onToggleVisibility: (familyId: string) => void;
   onImported: (family: FamilySummary) => void;
 }) {
+  const t = useT();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -65,7 +67,7 @@ export default function FamiliesPanel({
   // Always creates a new family; the BFF reads the file and refuses taken names.
   async function importGedcom(file: File) {
     const name = window.prompt(
-      'Unter welchem Namen soll die GEDCOM-Datei als neue Familie angelegt werden?',
+      t.families.importName,
       file.name.replace(/\.ged$/i, ''),
     )?.trim();
     if (!name) return;
@@ -74,29 +76,24 @@ export default function FamiliesPanel({
     try {
       const response = await importFamily({ name, gedcom: await file.text() });
       if (response.status === 409) {
-        setImportError(`Eine Familie „${name}“ existiert bereits.`);
+        setImportError(t.familyExists(name));
         return;
       }
       if (response.status === 400) {
-        setImportError(
-          'Die Datei konnte nicht importiert werden: kein lesbares GEDCOM, mehr als 2000 Personen, ' +
-            'jemand wäre sein eigener Vorfahre oder der Name ist länger als 100 Zeichen.',
-        );
+        setImportError(t.families.importInvalid);
         return;
       }
       if (response.status !== 201) throw new Error('Unexpected import response');
       onImported(response.data);
     } catch {
-      setImportError('Die GEDCOM-Datei konnte nicht importiert werden. Ist das BFF erreichbar?');
+      setImportError(t.families.importFailed);
     } finally {
       setIsImporting(false);
     }
   }
 
   async function removeFamily(family: FamilySummary) {
-    const confirmed = window.confirm(
-      `„${family.name}“ mit ${family.memberCount} Personen und allen Beziehungen endgültig löschen?`,
-    );
+    const confirmed = window.confirm(t.families.confirmDelete(family.name, family.memberCount));
     if (!confirmed) return;
 
     setDeletingId(family.id);
@@ -112,32 +109,32 @@ export default function FamiliesPanel({
         );
       }
     } catch {
-      setDeleteError(`„${family.name}“ konnte nicht gelöscht werden. Ist das BFF erreichbar?`);
+      setDeleteError(t.families.deleteFailed(family.name));
     } finally {
       setDeletingId(null);
     }
   }
 
   async function rename(family: FamilySummary) {
-    const name = window.prompt('Unter welchem Namen soll die Familie geführt werden?', family.name)?.trim();
+    const name = window.prompt(t.families.renameName, family.name)?.trim();
     if (!name || name === family.name) return;
     setIsRenaming(true);
     setRenameError(null);
     try {
       const response = await renameFamily(family.id, { name });
       if (response.status === 409) {
-        setRenameError(`Eine Familie „${name}“ existiert bereits.`);
+        setRenameError(t.familyExists(name));
         return;
       }
       if (response.status === 404) {
-        setRenameError('Die Familie existiert nicht mehr.');
+        setRenameError(t.families.gone);
         return;
       }
       if (response.status !== 200) throw new Error(`HTTP ${response.status}`);
       const renamed = response.data;
       setFamilies((current) => current?.map((item) => (item.id === renamed.id ? { ...item, name: renamed.name } : item)) ?? null);
     } catch {
-      setRenameError('Die Familie konnte nicht umbenannt werden. Ist das BFF erreichbar?');
+      setRenameError(t.families.renameFailed);
     } finally {
       setIsRenaming(false);
     }
@@ -146,11 +143,11 @@ export default function FamiliesPanel({
   if (!isOpen) return null;
 
   return (
-    <section className="glass dashboard-board families-panel" id="families-panel" aria-label="Familien" ref={panelRef}>
+    <section className="glass dashboard-board families-panel" id="families-panel" aria-label={t.families.title} ref={panelRef}>
       <header className="dashboard-board-header">
         <UsersIcon />
-        <h2>Familien</h2>
-        <button type="button" aria-label="Familien schließen" onClick={onClose}>
+        <h2>{t.families.title}</h2>
+        <button type="button" aria-label={t.families.close} onClick={onClose}>
           <CloseIcon />
         </button>
       </header>
@@ -158,11 +155,11 @@ export default function FamiliesPanel({
         {activeFamily && (
           <div className="family-current">
             <div className="family-current-line">
-              <span>Ausgewählt</span>
+              <span>{t.families.selected}</span>
               <button
                 className="icon-button"
                 type="button"
-                aria-label="Familienname ändern"
+                aria-label={t.families.rename}
                 disabled={isRenaming}
                 onClick={() => void rename(activeFamily)}
               >
@@ -176,7 +173,7 @@ export default function FamiliesPanel({
         <div className="family-set-import">
           <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
             <UploadIcon />
-            {isImporting ? 'GEDCOM wird importiert …' : 'GEDCOM importieren'}
+            {isImporting ? t.families.importing : t.families.import}
           </button>
           <input
             ref={fileRef}
@@ -190,21 +187,21 @@ export default function FamiliesPanel({
             }}
           />
         </div>
-        {isLoading && <p className="members-loading">Familien werden geladen …</p>}
+        {isLoading && <p className="members-loading">{t.families.loading}</p>}
         {error && (
           <div className="members-error" role="alert">
             <p>{error}</p>
-            <button type="button" onClick={onRetry}>Erneut versuchen</button>
+            <button type="button" onClick={onRetry}>{t.retry}</button>
           </div>
         )}
         {!isLoading && !error && families?.length === 0 && (
-          <p className="members-empty">Noch keine Familien angelegt. Erstelle eine über „Zufallsfamilie generieren“ unter Evolution oder importiere eine GEDCOM-Datei.</p>
+          <p className="members-empty">{t.families.empty}</p>
         )}
         {deleteError && <p className="member-form-error" role="alert">{deleteError}</p>}
         {importError && <p className="member-form-error" role="alert">{importError}</p>}
         {!!families?.length && (
           <>
-            <h3 className="dashboard-subhead">Alle Familien</h3>
+            <h3 className="dashboard-subhead">{t.families.all}</h3>
             <ul className="family-set-list">
               {families.map((family) => (
                 <li className="family-set-item" key={family.id}>
@@ -220,21 +217,23 @@ export default function FamiliesPanel({
                   >
                     <strong>{family.name}</strong>
                     <span>
-                      {family.memberCount} Personen · {family.childCount} Kinder · {family.generationCount}{' '}
-                      {family.generationCount === 1 ? 'Generation' : 'Generationen'}
+                      {t.families.summary(family.memberCount, family.childCount, family.generationCount)}
                     </span>
                     {family.testSettings && (
                       <span>
-                        Einstellung: {family.testSettings.totalUsers} Personen in{' '}
-                        {family.testSettings.generationCount} Generationen,{' '}
-                        {family.testSettings.minChildren}–{family.testSettings.maxChildren} Kinder je Elternteil
+                        {t.families.settings(
+                          family.testSettings.totalUsers,
+                          family.testSettings.generationCount,
+                          family.testSettings.minChildren,
+                          family.testSettings.maxChildren,
+                        )}
                       </span>
                     )}
                   </button>
                   <button
                     className="icon-button"
                     type="button"
-                    aria-label={`${family.name} ${family.id === activeFamilyId ? 'ausblenden' : 'anzeigen'}`}
+                    aria-label={family.id === activeFamilyId ? t.families.hide(family.name) : t.families.show(family.name)}
                     aria-pressed={family.id === activeFamilyId}
                     disabled={deletingId !== null}
                     onClick={() => onToggleVisibility(family.id)}
@@ -245,15 +244,15 @@ export default function FamiliesPanel({
                     className="icon-button"
                     href={getExportFamilyUrl(family.id)}
                     download
-                    aria-label={`${family.name} als GEDCOM herunterladen`}
-                    title="Als GEDCOM herunterladen"
+                    aria-label={t.families.download(family.name)}
+                    title={t.families.downloadTitle}
                   >
                     <DownloadIcon />
                   </a>
                   <button
                     className="icon-button icon-button-danger"
                     type="button"
-                    aria-label={`${family.name} samt Personen löschen`}
+                    aria-label={t.families.delete(family.name)}
                     disabled={deletingId !== null}
                     onClick={() => void removeFamily(family)}
                   >

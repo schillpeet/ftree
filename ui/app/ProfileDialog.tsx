@@ -2,6 +2,7 @@
 
 import type { Member } from '../lib/api/generated/members';
 import { formatDate } from './MembersControls';
+import { useT } from './i18n';
 import { relativesOf } from './relatives';
 
 const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
@@ -25,15 +26,16 @@ export default function ProfileDialog({
   onEditRelatives: () => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
   const relatives = relativesOf(member, members);
   const groups: [string, Member[]][] = [
-    ['Eltern', relatives.parents],
-    ['Kinder', relatives.children],
-    ['Partner', relatives.partners],
-    ['Geschwister', relatives.siblings],
-    ['Halbgeschwister', relatives.halfSiblings],
+    [t.relatives.parents, relatives.parents],
+    [t.relatives.children, relatives.children],
+    [t.relatives.partners, relatives.partners],
+    [t.relatives.siblings, relatives.siblings],
+    [t.relatives.halfSiblings, relatives.halfSiblings],
   ];
 
   return (
@@ -47,7 +49,7 @@ export default function ProfileDialog({
         <header className="member-dialog-header">
           <h2 id="profile-title">{fullName(member)}</h2>
           {/* Focused on open, so Escape reaches the backdrop's handler. */}
-          <button className="member-dialog-close" type="button" aria-label="Profil schließen" autoFocus onClick={onClose}>
+          <button className="member-dialog-close" type="button" aria-label={t.profile.close} autoFocus onClick={onClose}>
             ×
           </button>
         </header>
@@ -55,11 +57,11 @@ export default function ProfileDialog({
           {photo && (
             // Arbitrary user URLs: next/image would need every host configured.
             // eslint-disable-next-line @next/next/no-img-element
-            <img className="profile-photo" src={photo} alt={`Foto von ${fullName(member)}`} />
+            <img className="profile-photo" src={photo} alt={t.profile.photo(fullName(member))} />
           )}
           <div>
-            {birth && <p>Geboren: {birth}</p>}
-            {death && <p>Verstorben: {death}</p>}
+            {birth && <p>{t.profile.born}: {birth}</p>}
+            {death && <p>{t.profile.died}: {death}</p>}
             {member.note && <p className="profile-note">{member.note}</p>}
           </div>
         </div>
@@ -78,10 +80,10 @@ export default function ProfileDialog({
         )}
         <div className="member-form-actions">
           <button type="button" onClick={onEditRelatives}>
-            Beziehungen zuweisen
+            {t.profile.assignRelatives}
           </button>
           <button type="button" onClick={onEdit}>
-            Bearbeiten
+            {t.profile.edit}
           </button>
         </div>
       </section>
