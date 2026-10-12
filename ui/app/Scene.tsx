@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactNode, type RefObject } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
@@ -49,6 +49,10 @@ const TREE_BASE = height(0, 0);
 const CAMERA_START: [number, number, number] = [40, TREE_BASE + 15, 50];
 const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 9, 0];
 const FOCUS_DISTANCE = 12;
+// High enough above the trunk that the crown and the waiting rows fit into the bird's-eye view.
+const TOP_HEIGHT = 90;
+// Radians per second of the round flight.
+const ORBIT_SPEED = 0.15;
 // A child's card hangs fully below its parents' cards.
 const GENERATION_GAP = CARD.height + CARD_GAP;
 // Relation lines run through the canopy; like the scrolls they are drawn over the leaves.
@@ -124,6 +128,16 @@ function ZoomScale({ controls }: { controls: CameraControls | null }) {
       </span>
     </div>
   );
+}
+
+// Circles the camera around its target until it unmounts or the user grabs the camera.
+function Orbit({ controls, onStop }: { controls: CameraControls; onStop: () => void }) {
+  useFrame((_, delta) => void controls.rotate(delta * ORBIT_SPEED, 0, false));
+  useEffect(() => {
+    controls.addEventListener('controlstart', onStop);
+    return () => controls.removeEventListener('controlstart', onStop);
+  }, [controls, onStop]);
+  return null;
 }
 
 // Development-only calibration slider: scales the crown and its pins live, while the cards keep
@@ -518,6 +532,17 @@ export default function Scene({
   const [showOrbs, setShowOrbs] = useState(true);
   const [spacing, setSpacing] = useState(0);
   const [bundle, setBundle] = useState(false);
+  const [orbit, setOrbit] = useState(false);
+  const stopOrbit = useCallback(() => setOrbit(false), []);
+  const lookFront = () => {
+    setOrbit(false);
+    void controls?.setLookAt(...CAMERA_START, ...CAMERA_TARGET, true);
+  };
+  // A tiny offset toward the front keeps the front at the bottom of the screen.
+  const lookFromAbove = () => {
+    setOrbit(false);
+    void controls?.setLookAt(Math.cos(VIEW_FRONT) * 0.01, TREE_BASE + TOP_HEIGHT, Math.sin(VIEW_FRONT) * 0.01, 0, TREE_BASE, 0, true);
+  };
   const [openTool, setOpenTool] = useState<'time' | 'evolution' | null>(null);
   const toggleTool = (tool: 'time' | 'evolution') => setOpenTool((open) => (open === tool ? null : tool));
   const actionsRef = useRef<HTMLDivElement>(null);
@@ -620,6 +645,7 @@ export default function Scene({
           maxDistance={MAX_DISTANCE}
           dollySpeed={DOLLY_SPEED}
         />
+        {orbit && controls && <Orbit controls={controls} onStop={stopOrbit} />}
       </Canvas>
       <div className="dashboard-actions" role="group" aria-label={t.tools.label} ref={actionsRef}>
         <button
@@ -682,6 +708,13 @@ export default function Scene({
             <section>
               <h2>{t.tools.view}</h2>
               <ZoomScale controls={controls} />
+              <div className="camera-views" role="group" aria-label={t.tools.camera}>
+                <button className="debug-button" type="button" onClick={lookFront}>{t.tools.front}</button>
+                <button className="debug-button" type="button" onClick={lookFromAbove}>{t.tools.above}</button>
+                <button className="debug-button" type="button" aria-pressed={orbit} onClick={() => setOrbit(!orbit)}>
+                  {t.tools.orbit}
+                </button>
+              </div>
               <label className="debug-check pin-toggle">
                 <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
                 {t.tools.pins}
