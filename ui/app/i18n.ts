@@ -11,7 +11,7 @@ const en = {
   familyExists: (name: string) => `A family “${name}” already exists.`,
   language: { switch: 'Switch to German', short: 'EN' },
   menu: { open: 'Open menu', close: 'Close menu', label: 'Menu', families: 'Families', people: 'People', appearance: 'Appearance', noFamily: 'No family' },
-  appearance: { title: 'Appearance', close: 'Close appearance', organic: 'Organic tree', experimental: 'Experimental' },
+  appearance: { title: 'Appearance', close: 'Close appearance', organic: 'Organic tree', organicExperimental: 'Organic tree (experimental)', experimental: 'Experimental' },
   tools: {
     label: 'Tools',
     time: 'Time',
@@ -170,7 +170,7 @@ const de: typeof en = {
   familyExists: (name) => `Eine Familie „${name}“ existiert bereits.`,
   language: { switch: 'Auf Englisch umschalten', short: 'DE' },
   menu: { open: 'Menü öffnen', close: 'Menü schließen', label: 'Menü', families: 'Familien', people: 'Personen', appearance: 'Darstellung', noFamily: 'Keine Familie' },
-  appearance: { title: 'Darstellung', close: 'Darstellung schließen', organic: 'Organischer Baum', experimental: 'Experimentell' },
+  appearance: { title: 'Darstellung', close: 'Darstellung schließen', organic: 'Organischer Baum', organicExperimental: 'Organischer Baum (experimentell)', experimental: 'Experimentell' },
   tools: {
     label: 'Werkzeuge',
     time: 'Zeit',

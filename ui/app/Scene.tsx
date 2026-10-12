@@ -8,13 +8,15 @@ import type { Member, Placement } from '../lib/api/generated/members';
 import { useAppearance } from './appearance';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
-import { generationBounds, layerPins } from './generations';
+import { generationBounds, generations, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import SimpleTree from './SimpleTree';
+import TieredTree, { TIERED_OPTIONS, buildTieredTree } from './TieredTree';
+import { tieredPlan } from './tieredLayout';
 import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onStorage, useLanguage, useT } from './i18n';
 import { EvolutionIcon, LanguageIcon, SunIcon } from './icons';
@@ -352,6 +354,7 @@ function Scrolls({
   cardStyle,
   spacing,
   evening,
+  layout,
   controlsRef,
   onOpen,
   onPlace,
@@ -366,6 +369,8 @@ function Scrolls({
   spacing: number | null;
   // 0 by day, 1 at night: how strongly the light orbs and card glow show.
   evening: number;
+  // Fixed card positions (the tiered tree); pins and stored placements are then ignored.
+  layout?: Map<string, Point>;
   controlsRef: RefObject<CameraControls | null>;
   onOpen: (id: string) => void;
   onPlace: (id: string, placement: Placement) => void;
@@ -386,6 +391,7 @@ function Scrolls({
     [members, pins, pinOf, spacing],
   );
   const placed = useMemo(() => {
+    if (layout) return layout;
     const positions = new Map<string, Point>();
     let waiting = 0;
     for (const m of members) {
@@ -396,7 +402,7 @@ function Scrolls({
       );
     }
     return positions;
-  }, [members, pins, shownPins]);
+  }, [members, pins, shownPins, layout]);
   const positions = useMemo(
     () => (drag ? new Map(placed).set(drag.id, drag.position) : placed),
     [placed, drag],
@@ -548,6 +554,7 @@ export default function Scene({
   const [language, setLanguage] = useLanguage();
   const [appearance] = useAppearance();
   const experimental = appearance === 'experimental';
+  const organic = appearance === 'organic';
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -604,6 +611,13 @@ export default function Scene({
     window.dispatchEvent(new StorageEvent('storage', { key: CARD_STYLE_KEY }));
   };
   const tree = useMemo(() => buildTree(7), []);
+  // The tiered tree grows a tier per generation and a twig per card, so it changes with the family.
+  const tierPlan = JSON.stringify(tieredPlan(members, generations(members), TIERED_OPTIONS));
+  const tieredTree = useMemo(() => buildTieredTree(7, JSON.parse(tierPlan), VIEW_FRONT), [tierPlan]);
+  const tieredLayout = useMemo(
+    () => new Map([...tieredTree.pins].map(([id, [x, y, z]]) => [id, cardTop([x, TREE_BASE + y, z])])),
+    [tieredTree],
+  );
   // Pins follow the crown scale; only points with room for a card above the ground qualify.
   const pins = useMemo(
     () =>
@@ -656,16 +670,21 @@ export default function Scene({
           <>
             <DaySky date={date} location={location} />
             <Meadow />
-            <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
+            {organic ? (
+              <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
+            ) : (
+              <TieredTree tree={tieredTree} position={[0, TREE_BASE, 0]} />
+            )}
             <Scrolls
               familyId={familyId}
               members={members}
               focus={focus}
-              pins={pins}
-              showPins={showPins}
+              pins={organic ? pins : []}
+              showPins={organic && showPins}
               cardStyle={cardStyle}
-              spacing={bundle ? spacing : null}
+              spacing={organic && bundle ? spacing : null}
               evening={eveningFactor}
+              layout={organic ? undefined : tieredLayout}
               controlsRef={controlsRef}
               onOpen={onOpen}
               onPlace={onPlace}
@@ -755,7 +774,7 @@ export default function Scene({
               <fieldset className="organic-only" disabled={experimental}>
                 {experimental && <legend>{t.tools.disabled}</legend>}
                 <label className="debug-check pin-toggle">
-                  <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
+                  <input type="checkbox" checked={showPins} disabled={!organic} onChange={(event) => setShowPins(event.target.checked)} />
                   {t.tools.pins}
                 </label>
                 <label className="debug-check">
@@ -775,8 +794,8 @@ export default function Scene({
             {process.env.NODE_ENV !== 'production' && (
               <section>
                 <h2>{t.tools.preview}</h2>
-                <fieldset className="organic-only" disabled={experimental}>
-                  {experimental && <legend>{t.tools.disabled}</legend>}
+                <fieldset className="organic-only" disabled={!organic}>
+                  {!organic && <legend>{t.tools.disabled}</legend>}
                   <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
                   <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
                 </fieldset>
