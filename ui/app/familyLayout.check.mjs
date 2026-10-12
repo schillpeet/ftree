@@ -52,4 +52,19 @@ const barAbove = (id) => {
   }
 };
 assert.notEqual(barAbove('a1'), barAbove('c1'));
+// Flat rows: ordered by x, two families side by side in one row get their own bar heights where
+// they overlap and share one where they do not.
+const flat = (x, y) => [x, y, 0];
+const flatBar = (layout, id) => {
+  const lines = relationLines(big, layout, ([x]) => x).parents;
+  const at = layout.get(id);
+  for (let i = 0; i < lines.length; i += 2) if (lines[i + 1] === at && lines[i][0] === at[0]) return lines[i][1];
+};
+const overlapping = new Map([
+  ['A', flat(0, 10)], ['B', flat(4, 10)], ['C', flat(8, 10)], ['D', flat(12, 10)],
+  ['a1', flat(1, 0)], ['a2', flat(11, 0)], ['c1', flat(6, 0)],
+]);
+assert.notEqual(flatBar(overlapping, 'a1'), flatBar(overlapping, 'c1'));
+const apart = new Map([...overlapping, ['a2', flat(3, 0)], ['c1', flat(10, 0)]]);
+assert.equal(flatBar(apart, 'a1'), flatBar(apart, 'c1'));
 console.log('familyLayout ok');

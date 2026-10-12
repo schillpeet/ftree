@@ -4,8 +4,10 @@ type Person = { id: string; parentIds: string[]; partnerIds: string[] };
 
 // Line segments (as point pairs) in family-tree style: from each parent a line drops to a bar
 // joining them, from the middle of that bar a stem drops to a second bar, and each child hangs
-// from it. Partners without shared children get a direct line instead.
-export function relationLines(people: Person[], positions: Map<string, Point>) {
+// from it. Partners without shared children get a direct line instead. `along` orders bars within a
+// row: the angle around the trunk by default, plain x for a flat tree.
+const angle = ([x, , z]: Point) => Math.atan2(z, x);
+export function relationLines(people: Person[], positions: Map<string, Point>, along = angle) {
   const parents: Point[] = [];
   const partners: Point[] = [];
   const at = (id: string) => positions.get(id)!;
@@ -30,13 +32,12 @@ export function relationLines(people: Person[], positions: Map<string, Point>) {
 
   // Child bars of different families in one row get their own heights wherever they overlap,
   // so two families never look like one.
-  const angle = ([x, , z]: Point) => Math.atan2(z, x);
   const plans = [...families.values()].map(({ parentIds, childIds }) => {
     const parentY = Math.min(...parentIds.map((id) => at(id)[1]));
     const drop = parentY - Math.max(...childIds.map((id) => at(id)[1]));
     const drops = parentIds.map((id) => level(at(id), parentY - drop / 2)).sort((a, b) => a[0] - b[0]);
     const middle = [0, 1, 2].map((k) => drops.reduce((sum, d) => sum + d[k], 0) / drops.length) as Point;
-    const spans = [middle, ...childIds.map(at)].map(angle);
+    const spans = [middle, ...childIds.map(at)].map(along);
     return { parentIds, childIds, parentY, drop, drops, middle, from: Math.min(...spans), to: Math.max(...spans), lane: 0 };
   });
   const lanesByRow = new Map<number, number[]>();
