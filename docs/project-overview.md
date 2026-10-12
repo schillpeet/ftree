@@ -15,6 +15,8 @@ The zoom slider in the Evolution panel, with its − and + steps, zooms in and o
 Below the zoom slider, "Front" flies the camera back to the start view in front of the tree and "Above" shows the tree from a bird's-eye view.
 "Orbit" circles the camera slowly around the tree until it is switched off, another view is chosen, or the user moves the camera.
 The UI is available in English (default) and German; the language button next to "Time" switches between them, and the choice is remembered per browser in `localStorage`.
+The burger menu's "Appearance" board switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
+The experimental view is a dark floor with a glowing grid and no cards yet; it is the starting point for a simpler family tree, and organic-only controls (time, pins, light orbs, card style, crown, bundling) are greyed out there.
 
 ### Sky and time of day
 
