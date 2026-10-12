@@ -42,10 +42,10 @@ const BARK_DARK = new Color('#ab9b7e');
 const BARK_SPOT = new Color('#86765c');
 
 // Ground height in tree-local coordinates (the tree stands at the hilltop, height(0, 0)).
-const ground = (x: number, z: number) => height(x, z) - height(0, 0);
+export const ground = (x: number, z: number) => height(x, z) - height(0, 0);
 
 // Tube along a smooth curve whose radius varies with t ∈ [0, 1].
-function tube(points: Vector3[], radius: (t: number) => number, segments = 16, radial = 7) {
+export function tube(points: Vector3[], radius: (t: number) => number, segments = 16, radial = 7) {
   const curve = new CatmullRomCurve3(points);
   const g = new TubeGeometry(curve, segments, 1, radial, false);
   const pos = g.attributes.position;
@@ -65,7 +65,7 @@ function tube(points: Vector3[], radius: (t: number) => number, segments = 16, r
 }
 
 // Bodhi leaf: heart-shaped base with a long drawn-out tip, petiole at origin, tip along +y.
-function leafGeometry() {
+export function leafGeometry() {
   const s = new Shape();
   s.moveTo(0, 0);
   s.bezierCurveTo(-0.35, -0.15, -0.65, 0.3, -0.45, 0.65);
@@ -81,7 +81,7 @@ function leafGeometry() {
 // Mottled bark with occasional darker spots, baked from the vertex positions.
 const mottle = makeNoise(4, 4);
 const spots = makeNoise(5, 3);
-function bakeBarkColors(geometry: BufferGeometry) {
+export function bakeBarkColors(geometry: BufferGeometry) {
   const clamp01 = (v: number) => Math.min(1, Math.max(0, v));
   const pos = geometry.attributes.position;
   const colors = new Float32Array(pos.count * 3);

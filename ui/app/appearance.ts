@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react';
 import { onStorage } from './i18n';
 
 // How the family tree is drawn; the choice is remembered per browser.
-export const APPEARANCES = ['organic', 'experimental'] as const;
+export const APPEARANCES = ['organic', 'organicExperimental', 'experimental'] as const;
 export type Appearance = (typeof APPEARANCES)[number];
 const APPEARANCE_KEY = 'ftree.appearance';
 
