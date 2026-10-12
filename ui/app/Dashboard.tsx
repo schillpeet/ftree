@@ -2,13 +2,15 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
+import { APPEARANCES, useAppearance } from './appearance';
 import { useT } from './i18n';
-import { BurgerIcon, ChevronIcon, CloseIcon, PersonIcon, UsersIcon } from './icons';
+import { AppearanceIcon, BurgerIcon, ChevronIcon, CloseIcon, PersonIcon, UsersIcon } from './icons';
 
-export type DashboardPanel = 'families' | 'people';
+export type DashboardPanel = 'families' | 'people' | 'appearance';
 
 // Top-left burger menu and the centred family switcher; the boards it opens are rendered by
-// `FamiliesPanel` and `MembersControls`, the right-hand buttons by `Scene`.
+// `FamiliesPanel` and `MembersControls` (the small appearance board lives here), the right-hand
+// buttons by `Scene`.
 export default function Dashboard({
   isOpen,
   panel,
@@ -25,12 +27,13 @@ export default function Dashboard({
   onPanel: (panel: DashboardPanel) => void;
 }) {
   const t = useT();
+  const [appearance, setAppearance] = useAppearance();
   const menuRef = useRef<HTMLDivElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
 
-  // A press outside the menu (or an Escape) closes the menu; while a board is open it handles both itself.
+  // A press outside the menu (or an Escape) closes the menu; while another board is open it handles both itself.
   useEffect(() => {
-    if (!isOpen || panel) return;
+    if (!isOpen || (panel && panel !== 'appearance')) return;
     function closeOnOutsidePress(event: PointerEvent) {
       const target = event.target as Node;
       if (!menuRef.current?.contains(target)) onToggle();
@@ -49,6 +52,7 @@ export default function Dashboard({
   const items: { id: DashboardPanel; label: string; icon: ReactNode }[] = [
     { id: 'families', label: t.menu.families, icon: <UsersIcon /> },
     { id: 'people', label: t.menu.people, icon: <PersonIcon /> },
+    { id: 'appearance', label: t.menu.appearance, icon: <AppearanceIcon /> },
   ];
 
   return (
@@ -80,6 +84,30 @@ export default function Dashboard({
               </button>
             ))}
           </nav>
+        )}
+        {isOpen && panel === 'appearance' && (
+          <section className="glass dashboard-board" id="appearance-panel" aria-label={t.appearance.title}>
+            <header className="dashboard-board-header">
+              <AppearanceIcon />
+              <h2>{t.appearance.title}</h2>
+              <button type="button" aria-label={t.appearance.close} onClick={() => onPanel('appearance')}>
+                <CloseIcon />
+              </button>
+            </header>
+            <div className="appearance-panel-body" role="radiogroup" aria-label={t.appearance.title}>
+              {APPEARANCES.map((option) => (
+                <label key={option} className="debug-check">
+                  <input
+                    type="radio"
+                    name="appearance"
+                    checked={appearance === option}
+                    onChange={() => setAppearance(option)}
+                  />
+                  {t.appearance[option]}
+                </label>
+              ))}
+            </div>
+          </section>
         )}
       </div>
       <div className="glass dashboard-family">

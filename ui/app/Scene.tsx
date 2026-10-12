@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Billboard, CameraControls, Line, Sky, Stars } from '@react-three/drei';
+import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
+import { useAppearance } from './appearance';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
 import { generationBounds, layerPins } from './generations';
@@ -78,6 +79,28 @@ const CARD_STYLE_KEY = 'ftree.cardStyle';
 const facesOutward = (style: CardStyle) => style === 'scroll' || style === 'sign';
 
 export type Focus = { id: string } | null;
+
+// The experimental view: a plain dark floor with a glowing grid, ready for a simpler family tree.
+function GridFloor() {
+  return (
+    <>
+      <color attach="background" args={['#05070a']} />
+      <ambientLight intensity={0.4} />
+      <Grid
+        position={[0, TREE_BASE, 0]}
+        infiniteGrid
+        cellSize={1}
+        cellThickness={0.6}
+        cellColor="#0b4f5c"
+        sectionSize={10}
+        sectionThickness={1.2}
+        sectionColor="#00e5ff"
+        fadeDistance={160}
+        fadeStrength={1.5}
+      />
+    </>
+  );
+}
 
 // ponytail: cards left over when the free pins run out are not persisted here until dragged; the
 // rows simply grow upward when there are many.
@@ -522,6 +545,8 @@ export default function Scene({
 }) {
   const t = useT();
   const [language, setLanguage] = useLanguage();
+  const [appearance] = useAppearance();
+  const experimental = appearance === 'experimental';
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -621,22 +646,28 @@ export default function Scene({
         camera={{ position: CAMERA_START, fov: 50, far: 10000 }}
         style={{ position: 'fixed', inset: 0 }}
       >
-        <DaySky date={date} location={location} />
-        <Meadow />
-        <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
-        <Scrolls
-          familyId={familyId}
-          members={members}
-          focus={focus}
-          pins={pins}
-          showPins={showPins}
-          cardStyle={cardStyle}
-          spacing={bundle ? spacing : null}
-          evening={eveningFactor}
-          controlsRef={controlsRef}
-          onOpen={onOpen}
-          onPlace={onPlace}
-        />
+        {experimental ? (
+          <GridFloor />
+        ) : (
+          <>
+            <DaySky date={date} location={location} />
+            <Meadow />
+            <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
+            <Scrolls
+              familyId={familyId}
+              members={members}
+              focus={focus}
+              pins={pins}
+              showPins={showPins}
+              cardStyle={cardStyle}
+              spacing={bundle ? spacing : null}
+              evening={eveningFactor}
+              controlsRef={controlsRef}
+              onOpen={onOpen}
+              onPlace={onPlace}
+            />
+          </>
+        )}
         <CameraControls
           ref={initControls}
           makeDefault
@@ -653,6 +684,8 @@ export default function Scene({
           type="button"
           aria-expanded={openTool === 'time'}
           aria-controls="time-panel"
+          disabled={experimental}
+          title={experimental ? t.tools.disabled : undefined}
           onClick={() => toggleTool('time')}
         >
           <SunIcon />
@@ -678,7 +711,7 @@ export default function Scene({
           {t.tools.evolution}
         </button>
       </div>
-      {openTool === 'time' && (
+      {openTool === 'time' && !experimental && (
         <section className="glass debug-panel" id="time-panel" aria-label={t.tools.clock} ref={toolRef}>
           <div className="debug-panel-body">
             <section>
@@ -715,28 +748,34 @@ export default function Scene({
                   {t.tools.orbit}
                 </button>
               </div>
-              <label className="debug-check pin-toggle">
-                <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
-                {t.tools.pins}
-              </label>
-              <label className="debug-check">
-                <input type="checkbox" checked={showOrbs} onChange={(event) => setShowOrbs(event.target.checked)} />
-                {t.tools.orbs}
-              </label>
-              <label className="debug-row">
-                <span>{t.tools.cardStyle}</span>
-                <select value={cardStyle} onChange={(event) => chooseCardStyle(event.target.value as CardStyle)}>
-                  {CARD_STYLES.map((style) => (
-                    <option key={style} value={style}>{t.tools.cardStyles[style]}</option>
-                  ))}
-                </select>
-              </label>
+              <fieldset className="organic-only" disabled={experimental}>
+                {experimental && <legend>{t.tools.disabled}</legend>}
+                <label className="debug-check pin-toggle">
+                  <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
+                  {t.tools.pins}
+                </label>
+                <label className="debug-check">
+                  <input type="checkbox" checked={showOrbs} onChange={(event) => setShowOrbs(event.target.checked)} />
+                  {t.tools.orbs}
+                </label>
+                <label className="debug-row">
+                  <span>{t.tools.cardStyle}</span>
+                  <select value={cardStyle} onChange={(event) => chooseCardStyle(event.target.value as CardStyle)}>
+                    {CARD_STYLES.map((style) => (
+                      <option key={style} value={style}>{t.tools.cardStyles[style]}</option>
+                    ))}
+                  </select>
+                </label>
+              </fieldset>
             </section>
             {process.env.NODE_ENV !== 'production' && (
               <section>
                 <h2>{t.tools.preview}</h2>
-                <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
-                <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
+                <fieldset className="organic-only" disabled={experimental}>
+                  {experimental && <legend>{t.tools.disabled}</legend>}
+                  <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
+                  <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
+                </fieldset>
               </section>
             )}
           </div>
