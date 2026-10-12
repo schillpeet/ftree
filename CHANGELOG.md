@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.10.0](https://github.com/schillpeet/ftree/compare/v0.9.0...v0.10.0) (2026-10-12)
+
+
+### Features
+
+* **repo:** add readme app preview ([#94](https://github.com/schillpeet/ftree/issues/94)) ([4f89334](https://github.com/schillpeet/ftree/commit/4f893342e7245eca226175b9b07485a66583ef1b))
+* **ui:** add appearance switch with experimental view ([#96](https://github.com/schillpeet/ftree/issues/96)) ([150e108](https://github.com/schillpeet/ftree/commit/150e108870c43affe8030a64946e6918510e663c))
+* **ui:** add camera views ([#93](https://github.com/schillpeet/ftree/issues/93)) ([b8a45a1](https://github.com/schillpeet/ftree/commit/b8a45a13b7a4dbeb2edde6acf5e381666de61842))
+* **ui:** add evening light orbs above cards ([#87](https://github.com/schillpeet/ftree/issues/87)) ([5419eda](https://github.com/schillpeet/ftree/commit/5419eda7cd40fc25cf1444551022f4ecd166acfa))
+* **ui:** show families in experimental view ([#97](https://github.com/schillpeet/ftree/issues/97)) ([9db74b7](https://github.com/schillpeet/ftree/commit/9db74b775ea3bb7c17ec45e6499248ff46bca3a1))
+
+
+### Bug Fixes
+
+* **repo:** use triggering commit for readme preview ([#95](https://github.com/schillpeet/ftree/issues/95)) ([340f440](https://github.com/schillpeet/ftree/commit/340f440b0a9072a6c19ec532a2a46ef5d73e90af))
+
 ## [0.9.0](https://github.com/schillpeet/ftree/compare/v0.8.0...v0.9.0) (2026-10-12)
 
 
