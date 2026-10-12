@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.9.0](https://github.com/schillpeet/ftree/compare/v0.8.0...v0.9.0) (2026-10-12)
+
+
+### Features
+
+* **bff:** add rename family endpoint ([#89](https://github.com/schillpeet/ftree/issues/89)) ([eb787cc](https://github.com/schillpeet/ftree/commit/eb787ccc82f1e428fea3436f2a0101e56b6a0bdb))
+* **ui:** add language switch ([#91](https://github.com/schillpeet/ftree/issues/91)) ([0b23b20](https://github.com/schillpeet/ftree/commit/0b23b2005d7c479a9b0375d4a0ecdd2f1dc9fa49))
+* **ui:** add transparent dashboard menu ([#88](https://github.com/schillpeet/ftree/issues/88)) ([670e82a](https://github.com/schillpeet/ftree/commit/670e82a688225859fd33dd597c57aff9d41f8b12))
+* **ui:** adds different card styles for debug mode ([#83](https://github.com/schillpeet/ftree/issues/83)) ([4093fd3](https://github.com/schillpeet/ftree/commit/4093fd3a02e88ba51d6f2042131da5d4139fed48))
+* **ui:** rename family from families panel ([#90](https://github.com/schillpeet/ftree/issues/90)) ([de748ed](https://github.com/schillpeet/ftree/commit/de748edab10ae59551f1791689ccb50d9b77f9ab))
+
 ## [0.8.0](https://github.com/schillpeet/ftree/compare/v0.7.0...v0.8.0) (2026-10-08)
 
 
