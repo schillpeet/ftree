@@ -46,3 +46,6 @@ export const daylight = (altitude: number) => smoothstep(-6 * RAD, 6 * RAD, alti
 export const starlight = (altitude: number) => 1 - smoothstep(-14 * RAD, 0, altitude);
 // 0 at the horizon, 1 once the sun stands 30° high: from warm low light to plain daylight.
 export const highSun = (altitude: number) => smoothstep(0, 30 * RAD, altitude);
+// 0 by day, 1 once the sun sinks to the end of civil twilight: the evening fades in as the light
+// drops, when the little glow orbs above the cards light up.
+export const evening = (altitude: number) => 1 - smoothstep(-6 * RAD, 12 * RAD, altitude);

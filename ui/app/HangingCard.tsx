@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useRef } from 'react';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { CanvasTexture, Group, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { AdditiveBlending, CanvasTexture, Group, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { Member } from '../lib/api/generated/members';
 import { drawScroll, drawSign, papyrus, seedOf, wood, type CardText } from './cardTextures';
 import { formatDate, photoSrc } from './MembersControls';
 import type { Point } from './pins';
+import { seededRandom } from './random';
 import { CLICK_TOLERANCE } from './Scroll';
 
 // Member cards as real 3D objects hanging from their pin on two ropes: lit by the sun, casting
@@ -159,18 +160,114 @@ function sheet(cup: number) {
 const FRONT_SHEET = sheet(-0.12);
 const BACK_SHEET = sheet(0.12);
 
+// Soft warm glow drawn once and shared by every light orb.
+function orbGlowTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 64;
+  const ctx = canvas.getContext('2d')!;
+  const g = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+  g.addColorStop(0, 'rgba(255,246,220,0.9)');
+  g.addColorStop(0.25, 'rgba(255,238,196,0.45)');
+  g.addColorStop(0.6, 'rgba(255,222,164,0.12)');
+  g.addColorStop(1, 'rgba(255,216,150,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 64, 64);
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+let glow: CanvasTexture | null = null;
+const glowTexture = () => (glow ??= orbGlowTexture());
+
+// A central orb plus a short chain along the card's top edge, seeded so every card glows a little
+// differently. Positions are local to the card (the rod sits at y = −rope).
+function orbLayout(width: number, rope: number, seed: number) {
+  const rand = seededRandom(seed);
+  const top = -rope + 0.45;
+  const orb = (x: number, y: number, z: number, radius: number) => ({
+    position: [x, y, z] as Point,
+    radius,
+    phase: rand() * Math.PI * 2,
+  });
+  return [
+    orb(0, top, 0.12, 0.11),
+    orb(width * 0.16, top + 0.16, 0.1, 0.085),
+    orb(-width * 0.16, top + 0.16, 0.1, 0.085),
+    orb(width * 0.33, top + 0.05, 0.06, 0.065),
+    orb(-width * 0.33, top + 0.05, 0.06, 0.065),
+  ];
+}
+
+// One little firefly: a bright core and an additive halo, bobbing and pulsing in place. Its size
+// and brightness follow `evening`, so it rises and lights up as the sun sinks.
+function GlowOrb({ position, radius, phase, evening }: { position: Point; radius: number; phase: number; evening: number }) {
+  const ref = useRef<Group>(null);
+  const halo = glowTexture();
+  const scale = radius * (0.25 + 0.75 * evening);
+  useFrame(({ clock }) => {
+    const group = ref.current;
+    if (!group) return;
+    const t = clock.elapsedTime;
+    const pulse = 1 + Math.sin(t * 1.7 + phase) * 0.1;
+    const bob = Math.sin(t * 0.9 + phase * 1.7) * 0.05;
+    const drift = Math.sin(t * 0.6 + phase) * 0.07;
+    group.position.set(position[0] + drift, position[1] + bob, position[2]);
+    group.scale.setScalar(scale * pulse);
+  });
+  return (
+    <group ref={ref}>
+      <sprite scale={[4, 4, 1]} renderOrder={1}>
+        <spriteMaterial
+          map={halo}
+          transparent
+          opacity={evening}
+          blending={AdditiveBlending}
+          depthWrite={false}
+          fog={false}
+          toneMapped={false}
+        />
+      </sprite>
+      <mesh>
+        <sphereGeometry args={[1, 16, 12]} />
+        <meshBasicMaterial
+          color="#fff6e0"
+          transparent
+          opacity={evening}
+          blending={AdditiveBlending}
+          depthWrite={false}
+          fog={false}
+          toneMapped={false}
+        />
+      </mesh>
+    </group>
+  );
+}
+
+function GlowOrbs({ width, rope, seed, evening }: { width: number; rope: number; seed: number; evening: number }) {
+  const orbs = useMemo(() => orbLayout(width, rope, seed), [width, rope, seed]);
+  if (evening <= 0.001) return null;
+  return (
+    <group>
+      {orbs.map((orb, i) => (
+        <GlowOrb key={i} {...orb} evening={evening} />
+      ))}
+    </group>
+  );
+}
+
 // Papyrus scroll with a rod on top and a rolled-up bottom edge, written on both sides. 'label'
 // turns to the camera and glows a little, so it stays readable against the low sun.
-export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode }: CardProps & { mode: 'scroll' | 'label' }) {
+export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode, evening }: CardProps & { mode: 'scroll' | 'label'; evening: number }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, mode === 'label' ? 'face-camera' : 'sway', seed);
   const face = useCardTexture(member, familyId, SCROLL.width * PX, SCROLL.height * PX, drawScroll);
   const surface = plainTextures().papyrus;
-  const glow = mode === 'label' ? 0.45 : 0.08;
+  const glow = mode === 'label' ? 0.45 : 0.08 + 0.42 * evening;
   const { width, height, rope } = SCROLL;
   const sheetY = -rope - height / 2 - 0.02;
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
+      <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
       <Rope from={[0, 0, 0]} to={[-width / 2 - 0.05, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 + 0.05, -rope, 0]} />
       <mesh position={[0, -rope, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
@@ -199,7 +296,7 @@ export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode }:
 
 // Wooden board with burnt-in name and dates, the photo in a medallion beside them; written on
 // both sides like the scroll.
-export function SignCard({ member, familyId, position, onOpen, onDrag }: CardProps) {
+export function SignCard({ member, familyId, position, onOpen, onDrag, evening }: CardProps & { evening: number }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, 'sway', seed);
   const face = useCardTexture(member, familyId, SIGN.width * PX, SIGN.height * PX, drawSign);
@@ -209,6 +306,7 @@ export function SignCard({ member, familyId, position, onOpen, onDrag }: CardPro
   const maps = [surface, surface, surface, surface, face, face];
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
+      <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
       <Rope from={[0, 0, 0]} to={[-width / 2 + 0.15, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 - 0.15, -rope, 0]} />
       <mesh position={[0, -rope - height / 2, 0]} castShadow receiveShadow>
@@ -220,7 +318,7 @@ export function SignCard({ member, familyId, position, onOpen, onDrag }: CardPro
             map={map}
             emissiveMap={map}
             emissive="#ffffff"
-            emissiveIntensity={map === face ? 0.3 : 0.15}
+            emissiveIntensity={map === face ? 0.3 + 0.25 * evening : 0.15 + 0.15 * evening}
             roughness={0.85}
           />
         ))}

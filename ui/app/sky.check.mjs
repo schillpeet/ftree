@@ -1,7 +1,7 @@
 // Run with `node app/sky.check.mjs`: the sun stands where it should over Berlin, and daylight and
 // stars fade monotonically through twilight.
 import assert from 'node:assert/strict';
-import { daylight, starlight, sunDirection, sunPosition } from './sky.ts';
+import { daylight, evening, starlight, sunDirection, sunPosition } from './sky.ts';
 
 const berlin = { latitude: 52.52, longitude: 13.4 };
 const deg = (r) => (r * 180) / Math.PI;
@@ -30,9 +30,12 @@ assert.ok(Math.abs(sunDirection(Math.PI / 2, 0, south)[1] - 1) < 1e-9);
 for (let a = -20; a < 20; a++) {
   const [r, s] = [(a * Math.PI) / 180, ((a + 1) * Math.PI) / 180];
   assert.ok(daylight(s) >= daylight(r) && starlight(s) <= starlight(r));
+  assert.ok(evening(s) <= evening(r));
 }
 assert.equal(daylight(-0.2), 0);
 assert.equal(daylight(0.2), 1);
 assert.equal(starlight(-0.3), 1);
 assert.equal(starlight(0), 0);
+assert.equal(evening(0.3), 0);
+assert.equal(evening(-0.2), 1);
 console.log('sky ok');

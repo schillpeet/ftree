@@ -21,6 +21,7 @@ South lies straight ahead from the start view.
 Sun and sky light, haze, and sky colors follow the sun's altitude, with the afterglow stretched through civil twilight; at night a full moon (a camera-facing disc with a painted texture of maria, craters, and ray craters, plus a soft halo) stands opposite the sun (its arc flattened to about 20° so it stays in view) and lights the scene bluish, and stars come out one by one as the sun sinks to 14° below the horizon.
 The time updates every minute.
 The "Time" button next to "Evolution" opens a panel in which "Uhrzeit vorschauen" shows a 24-hour dial (midnight at the top) appears whose hand can be dragged or moved with the arrow keys in 15-minute steps to preview any time of today.
+As evening falls, small warm-white light orbs rise above the hanging scrolls and boards, glowing brighter and larger as the sun sinks to civil twilight; a "Leuchtkugeln" checkbox in the debug panel (on by default) switches them off.
 
 ### Tree and roots
 
@@ -62,6 +63,7 @@ Every member appears in the scene as a card whose look the "Kartenstil" select p
 "Holzschild" is a swinging wooden board with burnt-in name and dates and the photo in a medallion beside them.
 These three are lit by the sun, cast shadows, are hidden by leaves in front of them, and cannot take keyboard focus (the members list is the keyboard path); a photo that cannot be loaded with CORS headers is left out.
 "Papyrus (klassisch)" is the earlier camera-facing HTML scroll, drawn over the scene and focusable.
+At night the scroll and board cards glow softly (their emissive faces brighten) so their names stay readable, lit by the little orbs above them.
 Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
