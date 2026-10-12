@@ -8,6 +8,8 @@
 
 > **Early prototype.** Today, ftree shows a procedurally generated 3D tree in a meadow and lets you create, edit, list, and delete family members. Accounts, sharing, and family relationships are still to come.
 
+![ftree preview with a demo family](https://github.com/schillpeet/ftree/releases/latest/download/preview.png)
+
 ## Quick Start
 
 You need [Node.js 22](https://nodejs.org) with [pnpm](https://pnpm.io) (`corepack enable` installs the pinned version), [Java 21](https://adoptium.net), and [Docker](https://www.docker.com).
