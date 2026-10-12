@@ -17,6 +17,8 @@ Below the zoom slider, "Front" flies the camera back to the start view in front 
 The UI is available in English (default) and German; the language button next to "Time" switches between them, and the choice is remembered per browser in `localStorage`.
 The burger menu's "Appearance" board switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
 The experimental view is a dark floor with a glowing grid and no cards yet; it is the starting point for a simpler family tree, and organic-only controls (time, pins, light orbs, card style, crown, bundling) are greyed out there.
+In the experimental view, the selected family appears as a flat family tree facing the start camera: one row per generation, partners side by side, and children hanging from a bar below their parents; a click on a floating name opens the profile.
+Positions in the experimental view follow from the stored relations alone (`ui/app/simpleLayout.ts`), so the same family always looks the same and nothing can be dragged there.
 
 ### Sky and time of day
 

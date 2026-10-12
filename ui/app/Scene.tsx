@@ -14,6 +14,7 @@ import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, 
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
+import SimpleTree from './SimpleTree';
 import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onStorage, useLanguage, useT } from './i18n';
 import { EvolutionIcon, LanguageIcon, SunIcon } from './icons';
@@ -647,7 +648,10 @@ export default function Scene({
         style={{ position: 'fixed', inset: 0 }}
       >
         {experimental ? (
-          <GridFloor />
+          <>
+            <GridFloor />
+            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} onOpen={onOpen} />
+          </>
         ) : (
           <>
             <DaySky date={date} location={location} />
