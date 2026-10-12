@@ -14,7 +14,8 @@ import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import { daylight, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
-import { EvolutionIcon, SunIcon } from './icons';
+import { onStorage, useLanguage, useT } from './i18n';
+import { EvolutionIcon, LanguageIcon, SunIcon } from './icons';
 import Tree, { buildTree } from './Tree';
 
 // Sky colors (hemisphere sky, ground, haze) at night, with the sun low, and with the sun high.
@@ -66,18 +67,9 @@ const SOUTH = VIEW_FRONT + Math.PI;
 const MINUTES_PER_DAY = 24 * 60;
 const PIN_GEOMETRY = new SphereGeometry(PIN_RADIUS, 12, 8);
 // How member cards look; the choice is remembered per browser.
-const CARD_STYLES = {
-  scroll: 'Rolle im Baum',
-  label: 'Rolle, lesbar',
-  sign: 'Holzschild',
-  papyrus: 'Papyrus (klassisch)',
-} as const;
-type CardStyle = keyof typeof CARD_STYLES;
+const CARD_STYLES = ['scroll', 'label', 'sign', 'papyrus'] as const;
+type CardStyle = (typeof CARD_STYLES)[number];
 const CARD_STYLE_KEY = 'ftree.cardStyle';
-const onStorage = (listener: () => void) => {
-  window.addEventListener('storage', listener);
-  return () => window.removeEventListener('storage', listener);
-};
 // Swaying cards face away from the trunk; the camera flies in from that side.
 const facesOutward = (style: CardStyle) => style === 'scroll' || style === 'sign';
 
@@ -100,6 +92,7 @@ const toDistance = (zoom: number) => MAX_DISTANCE * (MIN_DISTANCE / MAX_DISTANCE
 // Lives outside the canvas and owns its own state, so syncing it on every camera frame
 // doesn't re-render the scene.
 function ZoomScale({ controls }: { controls: CameraControls | null }) {
+  const t = useT();
   const [zoom, setZoom] = useState(0);
 
   useEffect(() => {
@@ -114,11 +107,11 @@ function ZoomScale({ controls }: { controls: CameraControls | null }) {
     void controls?.dollyTo(toDistance(Math.min(1, Math.max(0, value))), smooth);
 
   return (
-    <div className="debug-row" role="group" aria-label="Zoom">
-      <span>Zoom</span>
+    <div className="debug-row" role="group" aria-label={t.tools.zoom}>
+      <span>{t.tools.zoom}</span>
       <input
         type="range"
-        aria-label="Zoomstufe"
+        aria-label={t.tools.zoomLevel}
         min={0}
         max={1}
         step={0.01}
@@ -126,8 +119,8 @@ function ZoomScale({ controls }: { controls: CameraControls | null }) {
         onChange={(event) => zoomTo(Number(event.target.value), false)}
       />
       <span className="zoom-steps">
-        <button type="button" aria-label="Herauszoomen" onClick={() => zoomTo(zoom - ZOOM_STEP, true)}>−</button>
-        <button type="button" aria-label="Hineinzoomen" onClick={() => zoomTo(zoom + ZOOM_STEP, true)}>+</button>
+        <button type="button" aria-label={t.tools.zoomOut} onClick={() => zoomTo(zoom - ZOOM_STEP, true)}>−</button>
+        <button type="button" aria-label={t.tools.zoomIn} onClick={() => zoomTo(zoom + ZOOM_STEP, true)}>+</button>
       </span>
     </div>
   );
@@ -142,12 +135,13 @@ function CrownScale({
   previewScale: number;
   onPreviewScale: (value: number) => void;
 }) {
+  const t = useT();
   return (
     <label className="debug-row">
-      <span>Krone</span>
+      <span>{t.tools.crown}</span>
       <input
         type="range"
-        aria-label="Kronengröße"
+        aria-label={t.tools.crownSize}
         min={0.3}
         max={2}
         step={0.01}
@@ -173,15 +167,16 @@ function RelationSpacing({
   onSpacing: (value: number) => void;
   onBundle: (value: boolean) => void;
 }) {
+  const t = useT();
   return (
-    <div className="debug-row" role="group" aria-label="Beziehungsabstand">
+    <div className="debug-row" role="group" aria-label={t.tools.relationSpacing}>
       <label className="debug-check">
         <input type="checkbox" checked={bundle} onChange={(event) => onBundle(event.target.checked)} />
-        Bündeln
+        {t.tools.bundle}
       </label>
       <input
         type="range"
-        aria-label="Beziehungsabstand"
+        aria-label={t.tools.relationSpacing}
         min={-10}
         max={10}
         step={1}
@@ -195,6 +190,7 @@ function RelationSpacing({
 
 // Moves in steps of five minutes, a full turn per day with midnight at the top.
 function DebugClock({ minutes, onMinutes }: { minutes: number; onMinutes: (value: number) => void }) {
+  const t = useT();
   const angle = (minutes / MINUTES_PER_DAY) * Math.PI * 2;
   const set = (event: PointerEvent<SVGSVGElement>) => {
     const box = event.currentTarget.getBoundingClientRect();
@@ -206,7 +202,7 @@ function DebugClock({ minutes, onMinutes }: { minutes: number; onMinutes: (value
       <svg
         viewBox="-50 -50 100 100"
         role="slider"
-        aria-label="Uhrzeit"
+        aria-label={t.tools.clock}
         aria-valuemin={0}
         aria-valuemax={MINUTES_PER_DAY - 5}
         aria-valuenow={minutes}
@@ -507,6 +503,11 @@ export default function Scene({
   onPlace: (id: string, placement: Placement) => void;
   debugTools?: ReactNode;
 }) {
+  const t = useT();
+  const [language, setLanguage] = useLanguage();
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const controlsRef = useRef<CameraControls>(null);
   const [controls, setControls] = useState<CameraControls | null>(null);
   const [previewScale, setPreviewScale] = useState(1);
@@ -541,7 +542,7 @@ export default function Scene({
   const [clock, setClock] = useState<number | null>(null);
   // The server render has no localStorage and starts with the default.
   const savedStyle = useSyncExternalStore(onStorage, () => localStorage.getItem(CARD_STYLE_KEY), () => null);
-  const cardStyle: CardStyle = savedStyle && savedStyle in CARD_STYLES ? (savedStyle as CardStyle) : 'scroll';
+  const cardStyle: CardStyle = CARD_STYLES.includes(savedStyle as CardStyle) ? (savedStyle as CardStyle) : 'scroll';
   const chooseCardStyle = (style: CardStyle) => {
     localStorage.setItem(CARD_STYLE_KEY, style);
     // `storage` only fires in other tabs; tell this one too.
@@ -612,7 +613,7 @@ export default function Scene({
           dollySpeed={DOLLY_SPEED}
         />
       </Canvas>
-      <div className="dashboard-actions" role="group" aria-label="Werkzeuge" ref={actionsRef}>
+      <div className="dashboard-actions" role="group" aria-label={t.tools.label} ref={actionsRef}>
         <button
           className="glass glass-button"
           type="button"
@@ -621,7 +622,16 @@ export default function Scene({
           onClick={() => toggleTool('time')}
         >
           <SunIcon />
-          Time
+          {t.tools.time}
+        </button>
+        <button
+          className="glass glass-button"
+          type="button"
+          aria-label={t.language.switch}
+          onClick={() => setLanguage(language === 'en' ? 'de' : 'en')}
+        >
+          <LanguageIcon />
+          {t.language.short}
         </button>
         <button
           className="glass glass-button"
@@ -631,14 +641,14 @@ export default function Scene({
           onClick={() => toggleTool('evolution')}
         >
           <EvolutionIcon />
-          Evolution
+          {t.tools.evolution}
         </button>
       </div>
       {openTool === 'time' && (
-        <section className="glass debug-panel" id="time-panel" aria-label="Uhrzeit" ref={toolRef}>
+        <section className="glass debug-panel" id="time-panel" aria-label={t.tools.clock} ref={toolRef}>
           <div className="debug-panel-body">
             <section>
-              <h2>Tageszeit</h2>
+              <h2>{t.tools.dayTime}</h2>
               <label className="debug-check">
                 <input
                   type="checkbox"
@@ -647,7 +657,7 @@ export default function Scene({
                     setClock(event.target.checked ? Math.round((now.getHours() * 60 + now.getMinutes()) / 5) * 5 % MINUTES_PER_DAY : null)
                   }
                 />
-                Uhrzeit vorschauen
+                {t.tools.previewTime}
               </label>
               {clock != null && <DebugClock minutes={clock} onMinutes={setClock} />}
             </section>
@@ -655,31 +665,31 @@ export default function Scene({
         </section>
       )}
       {openTool === 'evolution' && (
-        <section className="glass debug-panel" id="evolution-panel" aria-label="Evolution" ref={toolRef}>
+        <section className="glass debug-panel" id="evolution-panel" aria-label={t.tools.evolution} ref={toolRef}>
           <div className="debug-panel-body">
             <section>
-              <h2>Daten</h2>
+              <h2>{t.tools.data}</h2>
               {debugTools}
             </section>
             <section>
-              <h2>Ansicht</h2>
+              <h2>{t.tools.view}</h2>
               <ZoomScale controls={controls} />
               <label className="debug-check pin-toggle">
                 <input type="checkbox" checked={showPins} onChange={(event) => setShowPins(event.target.checked)} />
-                Anheftpunkte
+                {t.tools.pins}
               </label>
               <label className="debug-row">
-                <span>Kartenstil</span>
+                <span>{t.tools.cardStyle}</span>
                 <select value={cardStyle} onChange={(event) => chooseCardStyle(event.target.value as CardStyle)}>
-                  {Object.entries(CARD_STYLES).map(([value, label]) => (
-                    <option key={value} value={value}>{label}</option>
+                  {CARD_STYLES.map((style) => (
+                    <option key={style} value={style}>{t.tools.cardStyles[style]}</option>
                   ))}
                 </select>
               </label>
             </section>
             {process.env.NODE_ENV !== 'production' && (
               <section>
-                <h2>Vorschau</h2>
+                <h2>{t.tools.preview}</h2>
                 <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
                 <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
               </section>

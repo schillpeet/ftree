@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import { useEffect, useEffectEvent, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
   archiveFamily,
   createFamilyMember,
@@ -13,6 +13,7 @@ import {
   type CreateMemberRequest,
   type Member,
 } from '../lib/api/generated/members';
+import { useLanguage, useT } from './i18n';
 import ProfileDialog from './ProfileDialog';
 import RelativesDialog from './RelativesDialog';
 import { ChevronLeftIcon, CloseIcon, EyeIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
@@ -39,8 +40,6 @@ const EMPTY_FORM: MemberForm = {
   note: '',
   photoUrl: '',
 };
-
-export const DISCARD_PROMPT = 'Ungespeicherte Änderungen verwerfen?';
 
 const toForm = (member: Member): MemberForm => ({
   firstName: member.firstName,
@@ -99,6 +98,7 @@ function MemberDetails({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   const name = `${member.firstName} ${member.lastName}`;
   const years = member.birthDate ? `${yearOf(member.birthDate)} – ${yearOf(member.deathDate)}`.trim() : yearOf(member.deathDate) && `† ${yearOf(member.deathDate)}`;
   const photo = photoSrc(member, familyId);
@@ -114,18 +114,18 @@ function MemberDetails({
         </span>
       )}
       <div className="member-row-text">
-        <button type="button" className="member-name" title="Im Baum anzeigen und Profil öffnen" onClick={onSelect}>
+        <button type="button" className="member-name" title={t.members.showInTree} onClick={onSelect}>
           {name}
         </button>
         {years && <span>{years}</span>}
       </div>
-      <button type="button" className="icon-button" aria-label={`${name} im Baum anzeigen`} onClick={onSelect}>
+      <button type="button" className="icon-button" aria-label={t.members.showNamed(name)} onClick={onSelect}>
         <EyeIcon />
       </button>
-      <button type="button" className="icon-button" aria-label={`${name} bearbeiten`} onClick={onEdit}>
+      <button type="button" className="icon-button" aria-label={t.members.editNamed(name)} onClick={onEdit}>
         <PencilIcon />
       </button>
-      <button type="button" className="icon-button icon-button-danger" aria-label={`${name} löschen`} onClick={onDelete}>
+      <button type="button" className="icon-button icon-button-danger" aria-label={t.members.deleteNamed(name)} onClick={onDelete}>
         <TrashIcon />
       </button>
     </li>
@@ -160,6 +160,8 @@ export default function MembersControls({
   // Returns to the family overview when the list was opened from the families panel.
   onBack?: () => void;
 }) {
+  const t = useT();
+  const [language] = useLanguage();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -184,11 +186,13 @@ export default function MembersControls({
       }
       setMembers(response.data);
     } catch {
-      setRequestError('Die Mitglieder konnten nicht geladen werden. Ist das BFF erreichbar?');
+      setRequestError(t.members.loadFailed);
     } finally {
       setIsLoading(false);
     }
   }
+
+  const onLoadFailed = useEffectEvent(() => setRequestError(t.members.familyLoadFailed));
 
   // A family switch clears the previous tree before loading the selected family's members.
   useEffect(() => {
@@ -204,9 +208,7 @@ export default function MembersControls({
         }
         setMembers(response.data);
       } catch {
-        if (current) {
-          setRequestError('Die Mitglieder dieser Familie konnten nicht geladen werden. Ist das BFF erreichbar?');
-        }
+        if (current) onLoadFailed();
       } finally {
         if (current) setIsLoading(false);
       }
@@ -249,28 +251,28 @@ export default function MembersControls({
   async function archive() {
     if (!familyId) return;
     const name = window.prompt(
-      'Unter welchem Namen soll die Familie archiviert werden? „default“ ist danach leer.',
-      `Familie vom ${new Date().toLocaleDateString('de-DE')}`,
+      t.members.archiveName,
+      t.members.archiveDefault(new Date().toLocaleDateString(language)),
     )?.trim();
     if (!name) return;
     setRequestError(null);
     try {
       const response = await archiveFamily(familyId, { name });
       if (response.status === 409) {
-        setRequestError(`Eine Familie „${name}“ existiert bereits.`);
+        setRequestError(t.familyExists(name));
         return;
       }
       if (response.status !== 201) throw new Error('Unexpected archive response');
       setMembers([]);
       onFamiliesChanged();
     } catch {
-      setRequestError('Die Familie konnte nicht archiviert werden. Ist das BFF erreichbar?');
+      setRequestError(t.members.archiveFailed);
     }
   }
 
   async function removeMember(member: Member) {
     if (!familyId) return;
-    if (!window.confirm(`${member.firstName} ${member.lastName} wirklich löschen?`)) return;
+    if (!window.confirm(t.members.confirmDelete(`${member.firstName} ${member.lastName}`))) return;
     setRequestError(null);
     try {
       const response = await deleteFamilyMember(familyId, member.id);
@@ -278,7 +280,7 @@ export default function MembersControls({
       setMembers((current) => current?.filter((m) => m.id !== member.id) ?? null);
       onFamiliesChanged();
     } catch {
-      setRequestError('Die Person konnte nicht gelöscht werden. Ist das BFF erreichbar?');
+      setRequestError(t.members.deleteFailed);
     }
   }
 
@@ -302,7 +304,7 @@ export default function MembersControls({
     if (isSaving) return;
     const initial = editing && toForm(editing);
     const changed = initial && (!!photoFile || (Object.keys(initial) as (keyof MemberForm)[]).some((key) => form[key] !== initial[key]));
-    if (changed && !window.confirm(DISCARD_PROMPT)) return;
+    if (changed && !window.confirm(t.discardChanges)) return;
     setIsFormOpen(false);
   }
 
@@ -333,9 +335,7 @@ export default function MembersControls({
         const response = await updateFamilyMember(familyId, editing.id, request);
         if (response.status !== 200) {
           setFormError(
-            response.status === 404
-              ? 'Die Person existiert nicht mehr.'
-              : 'Die Person konnte nicht gespeichert werden. Bitte prüfe die Eingaben.',
+            response.status === 404 ? t.members.gone : t.members.saveFailed,
           );
           return;
         }
@@ -343,7 +343,7 @@ export default function MembersControls({
       } else {
         const response = await createFamilyMember(familyId, request);
         if (response.status !== 201) {
-          setFormError('Die Person konnte nicht angelegt werden. Bitte prüfe die Eingaben.');
+          setFormError(t.members.createFailed);
           return;
         }
         saved = response.data;
@@ -367,7 +367,7 @@ export default function MembersControls({
         // The person exists now, so saving again must update them instead of creating a duplicate.
         setEditing(member);
         setForm(toForm(member));
-        setFormError('Die Person wurde gespeichert, das Foto aber nicht. Ist es ein Bild?');
+        setFormError(t.members.photoFailed);
         return;
       }
       setIsFormOpen(false);
@@ -375,14 +375,14 @@ export default function MembersControls({
       setPhotoFile(null);
       if (!editing) setForm({ ...EMPTY_FORM });
     } catch {
-      setFormError('Das BFF ist noch nicht erreichbar oder der Endpunkt noch nicht implementiert.');
+      setFormError(t.members.unreachable);
     } finally {
       setIsSaving(false);
     }
   }
 
   async function removePhoto() {
-    if (!familyId || !editing || !window.confirm('Foto wirklich entfernen?')) return;
+    if (!familyId || !editing || !window.confirm(t.members.confirmRemovePhoto)) return;
     setFormError(null);
     try {
       const response = await deleteFamilyMemberPhoto(familyId, editing.id);
@@ -391,39 +391,39 @@ export default function MembersControls({
       setEditing(updated);
       setMembers((current) => current?.map((m) => (m.id === updated.id ? updated : m)) ?? null);
     } catch {
-      setFormError('Das Foto konnte nicht entfernt werden. Ist das BFF erreichbar?');
+      setFormError(t.members.removePhotoFailed);
     }
   }
 
   return (
     <div className="members-controls">
       {isListOpen && (
-        <section className="glass dashboard-board members-panel" id="members-panel" aria-label="Personenliste" ref={listRef}>
+        <section className="glass dashboard-board members-panel" id="members-panel" aria-label={t.members.list} ref={listRef}>
           <header className="dashboard-board-header">
             {onBack && (
-              <button type="button" aria-label="Zurück zur Familienübersicht" onClick={onBack}>
+              <button type="button" aria-label={t.members.back} onClick={onBack}>
                 <ChevronLeftIcon />
               </button>
             )}
             <UsersIcon />
-            <h2>{familyName ?? 'Personen'}</h2>
-            <button type="button" aria-label="Liste schließen" onClick={() => setIsListOpen(false)}>
+            <h2>{familyName ?? t.members.title}</h2>
+            <button type="button" aria-label={t.members.closeList} onClick={() => setIsListOpen(false)}>
               <CloseIcon />
             </button>
           </header>
           <div className="members-panel-body" aria-live="polite">
-            {familyId && isLoading && <p className="members-loading">Mitglieder werden geladen …</p>}
+            {familyId && isLoading && <p className="members-loading">{t.members.loading}</p>}
             {requestError && !isLoading && (
               <div className="members-error" role="alert">
                 <p>{requestError}</p>
-                <button type="button" onClick={() => void reloadMembers()}>Erneut versuchen</button>
+                <button type="button" onClick={() => void reloadMembers()}>{t.retry}</button>
               </div>
             )}
             {!familyId && (
-              <p className="members-empty">Wähle eine Familie aus oder generiere eine Zufallsfamilie.</p>
+              <p className="members-empty">{t.members.noFamily}</p>
             )}
             {!isLoading && !requestError && familyId && members?.length === 0 && (
-              <p className="members-empty">Noch keine Personen in dieser Familie angelegt.</p>
+              <p className="members-empty">{t.members.empty}</p>
             )}
             {!isLoading && !requestError && members && members.length > 0 && (
               <ul className="member-list">
@@ -445,11 +445,11 @@ export default function MembersControls({
             )}
             <button type="button" className="member-add" disabled={!familyId} onClick={() => openForm()}>
               <PlusIcon />
-              Person hinzufügen
+              {t.members.add}
             </button>
             {isDefaultFamily && !isLoading && !!members?.length && (
               <div className="members-archive">
-                <button type="button" onClick={() => void archive()}>Familie archivieren</button>
+                <button type="button" onClick={() => void archive()}>{t.members.archive}</button>
               </div>
             )}
           </div>
@@ -465,11 +465,11 @@ export default function MembersControls({
           {/* tabIndex keeps focus (and so Escape) inside when clicking non-focusable parts. */}
           <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="member-form-title" tabIndex={-1}>
             <header className="member-dialog-header">
-              <h2 id="member-form-title">{editing ? 'Person bearbeiten' : 'Person hinzufügen'}</h2>
+              <h2 id="member-form-title">{editing ? t.members.edit : t.members.add}</h2>
               <button
                 className="member-dialog-close"
                 type="button"
-                aria-label="Formular schließen"
+                aria-label={t.members.closeForm}
                 onClick={() => setIsFormOpen(false)}
               >
                 ×
@@ -477,7 +477,7 @@ export default function MembersControls({
             </header>
             <form className="member-form" onSubmit={submitMember}>
               <label className="member-field">
-                Vorname
+                {t.members.firstName}
                 <input
                   autoFocus
                   autoComplete="given-name"
@@ -488,7 +488,7 @@ export default function MembersControls({
                 />
               </label>
               <label className="member-field">
-                Nachname
+                {t.members.lastName}
                 <input
                   autoComplete="family-name"
                   maxLength={100}
@@ -498,45 +498,45 @@ export default function MembersControls({
                 />
               </label>
               <label className="member-field">
-                Geburtsdatum
+                {t.members.birthDate}
                 <input type="date" value={form.birthDate} onChange={(event) => updateForm('birthDate', event.target.value)} />
               </label>
               <label className="member-field">
-                Geburtsort
+                {t.members.birthPlace}
                 <input maxLength={200} value={form.birthPlace} onChange={(event) => updateForm('birthPlace', event.target.value)} />
               </label>
               <label className="member-field">
-                Sterbedatum
+                {t.members.deathDate}
                 <input type="date" value={form.deathDate} onChange={(event) => updateForm('deathDate', event.target.value)} />
               </label>
               <label className="member-field">
-                Sterbeort
+                {t.members.deathPlace}
                 <input maxLength={200} value={form.deathPlace} onChange={(event) => updateForm('deathPlace', event.target.value)} />
               </label>
               <label className="member-field member-field-wide">
-                Foto-URL
+                {t.members.photoUrl}
                 <input type="url" maxLength={2048} value={form.photoUrl} onChange={(event) => updateForm('photoUrl', event.target.value)} />
               </label>
               <label className="member-field">
-                Foto hochladen
+                {t.members.uploadPhoto}
                 <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} />
               </label>
               {editing?.photoUpdatedAt && (
                 <button type="button" className="member-photo-remove" disabled={isSaving} onClick={() => void removePhoto()}>
-                  Foto entfernen
+                  {t.members.removePhoto}
                 </button>
               )}
               <label className="member-field member-field-wide">
-                Notiz
+                {t.members.note}
                 <textarea maxLength={5000} value={form.note} onChange={(event) => updateForm('note', event.target.value)} />
               </label>
               {formError && <p className="member-form-error" role="alert">{formError}</p>}
               <div className="member-form-actions">
                 <button type="button" disabled={isSaving} onClick={() => setIsFormOpen(false)}>
-                  Abbrechen
+                  {t.cancel}
                 </button>
                 <button type="submit" disabled={isSaving}>
-                  {isSaving ? 'Wird gespeichert …' : 'Person speichern'}
+                  {isSaving ? t.saving : t.members.save}
                 </button>
               </div>
             </form>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
+import { useT } from './i18n';
 import { BurgerIcon, ChevronIcon, CloseIcon, PersonIcon, UsersIcon } from './icons';
 
 export type DashboardPanel = 'families' | 'people';
@@ -23,6 +24,7 @@ export default function Dashboard({
   onToggle: () => void;
   onPanel: (panel: DashboardPanel) => void;
 }) {
+  const t = useT();
   const menuRef = useRef<HTMLDivElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
 
@@ -45,8 +47,8 @@ export default function Dashboard({
   }, [isOpen, panel, onToggle]);
 
   const items: { id: DashboardPanel; label: string; icon: ReactNode }[] = [
-    { id: 'families', label: 'Familien', icon: <UsersIcon /> },
-    { id: 'people', label: 'Personen', icon: <PersonIcon /> },
+    { id: 'families', label: t.menu.families, icon: <UsersIcon /> },
+    { id: 'people', label: t.menu.people, icon: <PersonIcon /> },
   ];
 
   return (
@@ -57,13 +59,13 @@ export default function Dashboard({
           type="button"
           aria-expanded={isOpen}
           aria-controls="dashboard-nav"
-          aria-label={isOpen ? 'Menü schließen' : 'Menü öffnen'}
+          aria-label={isOpen ? t.menu.close : t.menu.open}
           onClick={onToggle}
         >
           {isOpen ? <CloseIcon /> : <BurgerIcon />}
         </button>
         {isOpen && (
-          <nav className="glass dashboard-nav" id="dashboard-nav" aria-label="Menü">
+          <nav className="glass dashboard-nav" id="dashboard-nav" aria-label={t.menu.label}>
             {items.map((item) => (
               <button
                 key={item.id}
@@ -83,7 +85,7 @@ export default function Dashboard({
       <div className="glass dashboard-family">
         <UsersIcon />
         <span className="dashboard-family-name">
-          {activeFamily?.name ?? 'Keine Familie'}
+          {activeFamily?.name ?? t.menu.noFamily}
         </span>
       </div>
     </>

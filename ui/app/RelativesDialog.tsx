@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { updateFamilyMemberRelatives, type Member, type Sibling } from '../lib/api/generated/members';
-import { DISCARD_PROMPT } from './MembersControls';
+import { useT } from './i18n';
 
 const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
 
@@ -35,6 +35,7 @@ export default function RelativesDialog({
   onClose: () => void;
   onSaved: () => void;
 }) {
+  const t = useT();
   const others = members.filter((m) => m.id !== member.id);
   const [initial] = useState(() => {
     const childIds = others.filter((m) => m.parentIds.includes(member.id)).map((m) => m.id);
@@ -68,13 +69,13 @@ export default function RelativesDialog({
     try {
       const response = await updateFamilyMemberRelatives(familyId, member.id, { parentIds, childIds, partnerIds, siblings });
       if (response.status === 400) {
-        setError('Diese Zuordnung ist nicht möglich. Niemand kann sein eigener Vorfahre sein.');
+        setError(t.relatives.ownAncestor);
         return;
       }
       if (response.status !== 204) throw new Error('Unexpected relatives response');
       onSaved();
     } catch {
-      setError('Die Beziehungen konnten nicht gespeichert werden. Ist das BFF erreichbar?');
+      setError(t.relatives.saveFailed);
     } finally {
       setIsSaving(false);
     }
@@ -89,7 +90,7 @@ export default function RelativesDialog({
       differs(childIds, initial.childIds) ||
       differs(partnerIds, initial.partnerIds) ||
       differs(siblings.map(siblingKey), initial.siblings.map(siblingKey));
-    if (changed && !window.confirm(DISCARD_PROMPT)) return;
+    if (changed && !window.confirm(t.discardChanges)) return;
     onClose();
   }
 
@@ -104,7 +105,7 @@ export default function RelativesDialog({
     return (
       <fieldset className="relatives-list" disabled={disabled}>
         <legend>{legend}</legend>
-        {others.length === 0 && <p>Noch keine anderen Personen angelegt.</p>}
+        {others.length === 0 && <p>{t.relatives.noOthers}</p>}
         {others.length > 0 && hint && <p>{hint}</p>}
         {others.map((m) => (
           <label key={m.id}>
@@ -131,26 +132,26 @@ export default function RelativesDialog({
       {/* tabIndex keeps focus (and so Escape) inside when clicking non-focusable parts. */}
       <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="relatives-title" tabIndex={-1}>
         <header className="member-dialog-header">
-          <h2 id="relatives-title">Beziehungen von {fullName(member)}</h2>
+          <h2 id="relatives-title">{t.relatives.title(fullName(member))}</h2>
           {/* Focused on open, so Escape reaches the backdrop's handler. */}
-          <button className="member-dialog-close" type="button" aria-label="Dialog schließen" autoFocus onClick={onClose}>
+          <button className="member-dialog-close" type="button" aria-label={t.relatives.close} autoFocus onClick={onClose}>
             ×
           </button>
         </header>
         <form className="member-form" onSubmit={save}>
-          {list('Eltern', parentIds, [...childIds, ...partnerIds, ...siblingIds], (id) => setParentIds((ids) => toggle(ids, id)))}
-          {list('Kinder', childIds, [...parentIds, ...partnerIds, ...siblingIds], (id) => setChildIds((ids) => toggle(ids, id)))}
-          {list('Partner', partnerIds, [...parentIds, ...childIds, ...siblingIds], (id) => setPartnerIds((ids) => toggle(ids, id)))}
+          {list(t.relatives.parents, parentIds, [...childIds, ...partnerIds, ...siblingIds], (id) => setParentIds((ids) => toggle(ids, id)))}
+          {list(t.relatives.children, childIds, [...parentIds, ...partnerIds, ...siblingIds], (id) => setChildIds((ids) => toggle(ids, id)))}
+          {list(t.relatives.partners, partnerIds, [...parentIds, ...childIds, ...siblingIds], (id) => setPartnerIds((ids) => toggle(ids, id)))}
           {list(
-            'Geschwister',
+            t.relatives.siblings,
             fullIds,
             [...parentIds, ...childIds, ...partnerIds, ...withOtherParents],
             (id) => setShared(id, fullIds.includes(id) ? [] : parentIds),
-            { hint: parentIds.length === 0 && 'Erst Eltern zuweisen', disabled: parentIds.length === 0 },
+            { hint: parentIds.length === 0 && t.relatives.parentsFirst, disabled: parentIds.length === 0 },
           )}
           {/* Existing half-siblings can always be removed; adding one needs a second parent to leave out. */}
           {list(
-            'Halbgeschwister',
+            t.relatives.halfSiblings,
             halfIds,
             [
               ...parentIds,
@@ -160,19 +161,19 @@ export default function RelativesDialog({
             ],
             (id) => setShared(id, halfIds.includes(id) ? [] : [parentIds[0]]),
             {
-              hint: parentIds.length === 0 ? 'Erst Eltern zuweisen' : parentIds.length === 1 && 'Erst zwei Eltern zuweisen',
+              hint: parentIds.length === 0 ? t.relatives.parentsFirst : parentIds.length === 1 && t.relatives.twoParentsFirst,
               disabled: parentIds.length === 0,
               extra: (m) =>
                 parentIds.length >= 2 &&
                 halfIds.includes(m.id) && (
                   <select
-                    aria-label={`Gemeinsamer Elternteil mit ${fullName(m)}`}
+                    aria-label={t.relatives.sharedParent(fullName(m))}
                     value={siblings.find((s) => s.id === m.id)?.parentIds[0]}
                     onChange={(event) => setShared(m.id, [event.target.value])}
                   >
                     {parentIds.map((id) => (
                       <option key={id} value={id}>
-                        über {fullName(others.find((p) => p.id === id)!)}
+                        {t.relatives.via(fullName(others.find((p) => p.id === id)!))}
                       </option>
                     ))}
                   </select>
@@ -182,10 +183,10 @@ export default function RelativesDialog({
           {error && <p className="member-form-error" role="alert">{error}</p>}
           <div className="member-form-actions">
             <button type="button" disabled={isSaving} onClick={onClose}>
-              Abbrechen
+              {t.cancel}
             </button>
             <button type="submit" disabled={isSaving}>
-              {isSaving ? 'Wird gespeichert …' : 'Beziehungen speichern'}
+              {isSaving ? t.saving : t.relatives.save}
             </button>
           </div>
         </form>
