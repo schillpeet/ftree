@@ -23,6 +23,8 @@ The experimental view centres every couple over its first and last child, packs 
 In-law families (a partner's parents at the top of the tree) are placed right next to the family their child married into and centred over their own children too; deeper in-law families can still get a one-sided bar.
 Partners in the experimental view are marked by a small ⚭ (two rings) between their names instead of a line.
 Someone with children by several partners forks halfway down in the experimental view, one branch toward each partner, so every couple gets a bar of its own.
+Parents of a shared child stand side by side in the experimental view even without a stored partnership, so the child hangs centred below both.
+Children of only one of several co-parents stand outside on that parent's side in the experimental view, and that parent's fork runs over to them.
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
 Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.
 Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a person and their partners hang in the middle of it, and their children's branch leaves the trunk right below them, so parents always hang directly above their children.
@@ -82,7 +84,7 @@ At night the scroll and board cards glow softly (their emissive faces brighten) 
 Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
-The members list ("Personen" in the burger menu) shows one compact row per person with avatar, name, years, and eye, pencil, and trash actions, plus a "Person hinzufügen" button; relatives are shown in the profile.
+The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and eye, pencil, and trash actions; relatives are shown in the profile.
 A read-only profile dialog shows a member's photo, name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
 GEDCOM export writes a differing birth name as a second NAME with TYPE birth; import also reads TYPE maiden, a NAME of TYPE married as the current name, and `_MARNM`.
