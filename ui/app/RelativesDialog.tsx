@@ -102,24 +102,31 @@ export default function RelativesDialog({
     onToggle: (id: string) => void,
     { hint, disabled, extra }: { hint?: string | false; disabled?: boolean; extra?: (m: Member) => ReactNode } = {},
   ) {
+    const names = others.filter((m) => selected.includes(m.id)).map(fullName);
+    // Collapsed to one line per relation; the checkbox list opens on click.
     return (
-      <fieldset className="relatives-list" disabled={disabled}>
-        <legend>{legend}</legend>
-        {others.length === 0 && <p>{t.relatives.noOthers}</p>}
-        {others.length > 0 && hint && <p>{hint}</p>}
-        {others.map((m) => (
-          <label key={m.id}>
-            <input
-              type="checkbox"
-              checked={selected.includes(m.id)}
-              disabled={blocked.includes(m.id)}
-              onChange={() => onToggle(m.id)}
-            />
-            {fullName(m)}
-            {extra?.(m)}
-          </label>
-        ))}
-      </fieldset>
+      <details className="relatives-picker">
+        <summary>
+          {names.length ? t.relatives.edit(legend) : t.relatives.assign(legend)}
+          {names.length > 0 && <span>{names.join(', ')}</span>}
+        </summary>
+        <fieldset className="relatives-list" aria-label={legend} disabled={disabled}>
+          {others.length === 0 && <p>{t.relatives.noOthers}</p>}
+          {others.length > 0 && hint && <p>{hint}</p>}
+          {others.map((m) => (
+            <label key={m.id}>
+              <input
+                type="checkbox"
+                checked={selected.includes(m.id)}
+                disabled={blocked.includes(m.id)}
+                onChange={() => onToggle(m.id)}
+              />
+              {fullName(m)}
+              {extra?.(m)}
+            </label>
+          ))}
+        </fieldset>
+      </details>
     );
   }
 

@@ -131,6 +131,8 @@ const en = {
     sharedParent: (name: string) => `Shared parent with ${name}`,
     via: (name: string) => `via ${name}`,
     save: 'Save relationships',
+    assign: (relation: string) => `Assign ${relation.toLowerCase()}`,
+    edit: (relation: string) => `Edit ${relation.toLowerCase()}`,
   },
   profile: {
     close: 'Close profile',
@@ -292,6 +294,8 @@ const de: typeof en = {
     sharedParent: (name) => `Gemeinsamer Elternteil mit ${name}`,
     via: (name) => `über ${name}`,
     save: 'Beziehungen speichern',
+    assign: (relation) => `${relation} zuweisen`,
+    edit: (relation) => `${relation} bearbeiten`,
   },
   profile: {
     close: 'Profil schließen',

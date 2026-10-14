@@ -84,6 +84,7 @@ At night the scroll and board cards glow softly (their emissive faces brighten) 
 Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
+The relatives dialog collapses each relation into one line such as "Eltern zuweisen" (or "Eltern bearbeiten" with the selected names) that opens its checkbox list on click.
 The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and eye, pencil, and trash actions; relatives are shown in the profile.
 A read-only profile dialog shows a member's photo, name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
