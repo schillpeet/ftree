@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.11.0](https://github.com/schillpeet/ftree/compare/v0.10.0...v0.11.0) (2026-10-14)
+
+
+### Features
+
+* **bff:** add birth name to members ([#103](https://github.com/schillpeet/ftree/issues/103)) ([545bf7f](https://github.com/schillpeet/ftree/commit/545bf7fc3bedc9eaa9754a61aed94895e4914429))
+* **ui:** add tiered organic tree view ([#98](https://github.com/schillpeet/ftree/issues/98)) ([7d1ef0e](https://github.com/schillpeet/ftree/commit/7d1ef0e6ee735f70b7db564692d08a3403a12163))
+* **ui:** collapse relatives into expandable pickers ([#104](https://github.com/schillpeet/ftree/issues/104)) ([1328063](https://github.com/schillpeet/ftree/commit/132806340ccab0a74a6291e3669bae7f629628d5))
+* **ui:** put add member button at the top of the members list ([#102](https://github.com/schillpeet/ftree/issues/102)) ([4bfce52](https://github.com/schillpeet/ftree/commit/4bfce523d5aad9a722718eb6fd171c378d1305f3))
+
+
+### Bug Fixes
+
+* **ui:** keep parents above children in experimental view ([#101](https://github.com/schillpeet/ftree/issues/101)) ([6f46c12](https://github.com/schillpeet/ftree/commit/6f46c1248890403052f0fd8470d4469eef1ce521))
+* **ui:** untangle experimental family tree ([#100](https://github.com/schillpeet/ftree/issues/100)) ([693ca0a](https://github.com/schillpeet/ftree/commit/693ca0a5555ef9150267ce7d32e5d6cc8c56a0b9))
+
 ## [0.10.0](https://github.com/schillpeet/ftree/compare/v0.9.0...v0.10.0) (2026-10-12)
 
 
