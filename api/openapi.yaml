@@ -679,6 +679,11 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        birthName:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Surname at birth, for example a maiden name that was given up.
         birthDate:
           type: string
           format: date
@@ -817,6 +822,11 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+        birthName:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Surname at birth, for example a maiden name that was given up.
         birthDate:
           type: string
           format: date

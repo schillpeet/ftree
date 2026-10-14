@@ -22,6 +22,7 @@ import type { Focus } from './Scene';
 type MemberForm = {
   firstName: string;
   lastName: string;
+  birthName: string;
   birthDate: string;
   birthPlace: string;
   deathDate: string;
@@ -33,6 +34,7 @@ type MemberForm = {
 const EMPTY_FORM: MemberForm = {
   firstName: '',
   lastName: '',
+  birthName: '',
   birthDate: '',
   birthPlace: '',
   deathDate: '',
@@ -44,6 +46,7 @@ const EMPTY_FORM: MemberForm = {
 const toForm = (member: Member): MemberForm => ({
   firstName: member.firstName,
   lastName: member.lastName,
+  birthName: member.birthName ?? '',
   birthDate: member.birthDate ?? '',
   birthPlace: member.birthPlace ?? '',
   deathDate: member.deathDate ?? '',
@@ -83,6 +86,10 @@ async function toJpeg(file: File) {
   );
 }
 
+// Only shown when it differs from the current surname.
+export const birthNameOf = (member: Member, t: ReturnType<typeof useT>) =>
+  member.birthName && member.birthName !== member.lastName ? t.members.nee(member.birthName) : null;
+
 const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
 
 function MemberDetails({
@@ -102,6 +109,7 @@ function MemberDetails({
   const name = `${member.firstName} ${member.lastName}`;
   const years = member.birthDate ? `${yearOf(member.birthDate)} – ${yearOf(member.deathDate)}`.trim() : yearOf(member.deathDate) && `† ${yearOf(member.deathDate)}`;
   const photo = photoSrc(member, familyId);
+  const details = [birthNameOf(member, t), years].filter(Boolean).join(' · ');
 
   return (
     <li className="member-row">
@@ -117,7 +125,7 @@ function MemberDetails({
         <button type="button" className="member-name" title={t.members.showInTree} onClick={onSelect}>
           {name}
         </button>
-        {years && <span>{years}</span>}
+        {details && <span>{details}</span>}
       </div>
       <button type="button" className="icon-button" aria-label={t.members.showNamed(name)} onClick={onSelect}>
         <EyeIcon />
@@ -321,6 +329,7 @@ export default function MembersControls({
     const request: CreateMemberRequest = {
       firstName: form.firstName.trim(),
       lastName: form.lastName.trim(),
+      birthName: form.birthName.trim() || null,
       birthDate: form.birthDate || null,
       birthPlace: form.birthPlace.trim() || null,
       deathDate: form.deathDate || null,
@@ -496,6 +505,10 @@ export default function MembersControls({
                   value={form.lastName}
                   onChange={(event) => updateForm('lastName', event.target.value)}
                 />
+              </label>
+              <label className="member-field member-field-wide">
+                {t.members.birthName}
+                <input maxLength={100} value={form.birthName} onChange={(event) => updateForm('birthName', event.target.value)} />
               </label>
               <label className="member-field">
                 {t.members.birthDate}
