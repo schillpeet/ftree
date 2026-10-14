@@ -19,6 +19,10 @@ The burger menu's "Appearance" board switches between the organic tree (default)
 The experimental view is a dark floor with a glowing grid and no cards yet; it is the starting point for a simpler family tree, and organic-only controls (time, pins, light orbs, card style, crown, bundling) are greyed out there.
 In the experimental view, the selected family appears as a flat family tree facing the start camera: one row per generation, partners side by side, and children hanging from a bar below their parents; a click on a floating name opens the profile.
 Positions in the experimental view follow from the stored relations alone (`ui/app/simpleLayout.ts`), so the same family always looks the same and nothing can be dragged there.
+The experimental view centres every couple over its first and last child, packs families as tightly as their shapes allow, and keeps their lines from crossing.
+In-law families (a partner's parents at the top of the tree) are placed right next to the family their child married into and centred over their own children too; deeper in-law families can still get a one-sided bar.
+Partners in the experimental view are marked by a small ⚭ (two rings) between their names instead of a line.
+Someone with children by several partners forks halfway down in the experimental view, one branch toward each partner, so every couple gets a bar of its own.
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
 Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.
 Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a person and their partners hang in the middle of it, and their children's branch leaves the trunk right below them, so parents always hang directly above their children.

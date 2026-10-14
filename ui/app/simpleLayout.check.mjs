@@ -2,7 +2,7 @@
 // row, partners next to each other and children below their own parents, always the same way.
 import assert from 'node:assert/strict';
 import { generations } from './generations.ts';
-import { NAME_GAP, ROW_GAP, simpleLayout } from './simpleLayout.ts';
+import { FAMILY_GAP, NAME_GAP, ROW_GAP, simpleLayout } from './simpleLayout.ts';
 
 const person = (id, parentIds = [], partnerIds = []) => ({ id, parentIds, partnerIds });
 // The sketch: Johann ── Maria with Peter ── Anna and Thomas ── Lisa, each with children.
@@ -35,8 +35,75 @@ assert.equal(Math.abs(x('thomas') - x('lisa')), NAME_GAP);
 const side = Math.sign(x('peter') - x('thomas'));
 assert.equal(Math.sign(x('max') - x('paul')), side);
 assert.equal(Math.sign(x('julia') - x('paul')), side);
-// Rows are centred.
+// The tree is centred, and so is the top couple over it.
 assert.equal(x('johann') + x('maria'), 0);
+// Inverted U: every couple sits centred over its first and last child.
+const mid = (...ids) => (Math.min(...ids.map(x)) + Math.max(...ids.map(x))) / 2;
+assert.equal(mid('johann', 'maria'), mid('peter', 'thomas'));
+assert.equal(mid('peter', 'anna'), mid('max', 'julia'));
+assert.equal(mid('thomas', 'lisa'), x('paul'));
+// Compact and uncrossed: married-in partners on the outside, cousins one family gap apart.
+assert.ok(Math.abs(x('peter') - x('thomas')) >= NAME_GAP);
+assert.ok(x('paul') - Math.max(x('max'), x('julia')) >= NAME_GAP + FAMILY_GAP);
+assert.equal(Math.abs(x('julia') - x('max')), NAME_GAP);
 // Same family in another order, same layout.
 assert.deepEqual(layout([...family].reverse()), at);
+
+// Regression: a lone couple at the row's edge with two children used to get a one-sided bar.
+const edge = layout([
+  person('a', [], ['b']),
+  person('b', [], ['a']),
+  person('c'),
+  person('k1', ['a', 'b']),
+  person('k2', ['a', 'b']),
+]);
+const ex = (id) => edge.get(id)[0];
+assert.equal((ex('a') + ex('b')) / 2, (ex('k1') + ex('k2')) / 2);
+
+// Wide families below interlock without their child bars overlapping.
+const wide = layout([
+  person('g1', [], ['g2']),
+  person('g2', [], ['g1']),
+  person('l', ['g1', 'g2']),
+  person('r', ['g1', 'g2']),
+  ...['l1', 'l2', 'l3'].map((id) => person(id, ['l'])),
+  ...['r1', 'r2', 'r3'].map((id) => person(id, ['r'])),
+]);
+const wx = (id) => wide.get(id)[0];
+assert.ok(wx('l3') + NAME_GAP + FAMILY_GAP <= wx('r1'));
+assert.equal(wx('l'), wx('l2'));
+assert.equal(wx('r'), wx('r2'));
+
+// In-laws: Beth hangs under her parents, Jerry's parents sit right of them, centred over Jerry and
+// his sister, who moves right to make room.
+const inLaws = layout([
+  person('rick', [], ['diane']),
+  person('diane', [], ['rick']),
+  person('joyce', [], ['leonard']),
+  person('leonard', [], ['joyce']),
+  person('beth', ['rick', 'diane'], ['jerry']),
+  person('jerry', ['joyce', 'leonard'], ['beth']),
+  person('space', ['rick', 'diane']),
+  person('tammy', ['joyce', 'leonard']),
+]);
+const ix = (id) => inLaws.get(id)[0];
+const order = (...ids) => ids.every((id, i) => !i || ix(ids[i - 1]) < ix(id));
+assert.ok(order('space', 'beth', 'jerry', 'tammy'));
+assert.ok(Math.max(ix('rick'), ix('diane')) + NAME_GAP + FAMILY_GAP <= Math.min(ix('joyce'), ix('leonard')));
+assert.equal((ix('rick') + ix('diane')) / 2, (ix('space') + ix('beth')) / 2);
+assert.equal((ix('joyce') + ix('leonard')) / 2, (ix('jerry') + ix('tammy')) / 2);
+
+// Two partners: each couple's child hangs straight below that couple.
+const twice = layout([
+  person('gaia', [], ['morty']),
+  person('morty', [], ['gaia', 'gwen']),
+  person('gwen', [], ['morty']),
+  person('naruto', ['gaia', 'morty']),
+  person('junior', ['gwen', 'morty']),
+]);
+const tx = (id) => twice.get(id)[0];
+assert.equal(Math.abs(tx('morty') - tx('gaia')), NAME_GAP);
+assert.equal(Math.abs(tx('morty') - tx('gwen')), NAME_GAP);
+assert.equal(tx('naruto'), (tx('gaia') + tx('morty')) / 2);
+assert.equal(tx('junior'), (tx('gwen') + tx('morty')) / 2);
 console.log('simpleLayout ok');
