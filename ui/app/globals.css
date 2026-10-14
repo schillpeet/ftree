@@ -842,11 +842,24 @@ textarea {
   font-size: 14px;
 }
 
-.relatives-list legend {
-  padding: 0 4px;
-  color: #31483a;
-  font-size: 13px;
+.relatives-picker summary {
+  display: grid;
+  gap: 2px;
+  padding: 8px 12px;
+  border: 1px solid rgba(23, 58, 43, 0.2);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
   font-weight: 600;
+}
+
+.relatives-picker summary span {
+  font-weight: 400;
+  opacity: 0.75;
+}
+
+.relatives-picker[open] summary {
+  margin-bottom: 6px;
 }
 
 .relatives-list label {
@@ -1413,7 +1426,6 @@ textarea {
 .member-dialog a,
 .member-field,
 .profile-relatives h3,
-.relatives-list legend,
 .relatives-list p {
   color: var(--glass-muted);
 }
@@ -1427,7 +1439,8 @@ textarea {
   color-scheme: dark;
 }
 
-.relatives-list {
+.relatives-list,
+.relatives-picker summary {
   border-color: var(--glass-border);
 }
 
