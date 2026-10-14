@@ -106,4 +106,20 @@ assert.equal(Math.abs(tx('morty') - tx('gaia')), NAME_GAP);
 assert.equal(Math.abs(tx('morty') - tx('gwen')), NAME_GAP);
 assert.equal(tx('naruto'), (tx('gaia') + tx('morty')) / 2);
 assert.equal(tx('junior'), (tx('gwen') + tx('morty')) / 2);
+
+// Parents of a shared child stand together even without a stored partnership; children of one of
+// them alone stand outside on that parent's side, so the couple's children stay centred.
+const coParents = layout([
+  person('p1'),
+  person('p2'),
+  person('c1', ['p1', 'p2']),
+  person('c2', ['p1', 'p2']),
+  person('solo', ['p1']),
+]);
+const cx = (id) => coParents.get(id)[0];
+assert.equal(Math.abs(cx('p1') - cx('p2')), NAME_GAP);
+assert.equal((cx('p1') + cx('p2')) / 2, (cx('c1') + cx('c2')) / 2);
+// solo stands beyond both c1 and c2, on p1's side.
+const p1Side = Math.sign(cx('p1') - cx('p2'));
+assert.ok(['c1', 'c2'].every((id) => p1Side * (cx('solo') - cx(id)) >= NAME_GAP));
 console.log('simpleLayout ok');
