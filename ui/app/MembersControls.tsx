@@ -412,6 +412,10 @@ export default function MembersControls({
             </button>
           </header>
           <div className="members-panel-body" aria-live="polite">
+            <button type="button" className="member-add" disabled={!familyId} onClick={() => openForm()}>
+              <PlusIcon />
+              {t.members.add}
+            </button>
             {familyId && isLoading && <p className="members-loading">{t.members.loading}</p>}
             {requestError && !isLoading && (
               <div className="members-error" role="alert">
@@ -443,10 +447,6 @@ export default function MembersControls({
                 ))}
               </ul>
             )}
-            <button type="button" className="member-add" disabled={!familyId} onClick={() => openForm()}>
-              <PlusIcon />
-              {t.members.add}
-            </button>
             {isDefaultFamily && !isLoading && !!members?.length && (
               <div className="members-archive">
                 <button type="button" onClick={() => void archive()}>{t.members.archive}</button>

@@ -1173,7 +1173,10 @@ textarea {
   font: 500 14px/1.2 Arial, sans-serif;
 }
 
-.member-add,
+.member-add {
+  margin-bottom: 12px;
+}
+
 .members-archive {
   margin-top: 12px;
 }
