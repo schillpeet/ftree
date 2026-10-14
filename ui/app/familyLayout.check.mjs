@@ -85,4 +85,22 @@ const coupleBars = [];
 for (let i = 0; i < forked.length; i += 2)
   if (forked[i][1] === 5 && forked[i + 1][1] === 5) coupleBars.push([forked[i][0], forked[i + 1][0]].sort((a, b) => a - b));
 assert.deepEqual(coupleBars.sort((a, b) => a[0] - b[0]), [[0, 4.5], [7.5, 12]]);
+// B's child by nobody else gets a branch over to it, stem straight above it.
+const withSolo = new Map([...twice, ['solo', flat(18, 0)]]);
+const soloLines = relationLines(
+  [
+    { id: 'A', parentIds: [], partnerIds: ['B'] },
+    { id: 'B', parentIds: [], partnerIds: ['A', 'C'] },
+    { id: 'C', parentIds: [], partnerIds: ['B'] },
+    { id: 'ab', parentIds: ['A', 'B'], partnerIds: [] },
+    { id: 'bc', parentIds: ['B', 'C'], partnerIds: [] },
+    { id: 'solo', parentIds: ['B'], partnerIds: [] },
+  ],
+  withSolo,
+  ([x]) => x,
+  1.5,
+).parents;
+const intoSolo = soloLines.findIndex((p, i) => i % 2 === 1 && p === withSolo.get('solo'));
+assert.equal(soloLines[intoSolo - 1][0], 18);
+assert.ok(soloLines.some((p, i) => i % 2 === 0 && p[0] === 6 && soloLines[i + 1][0] === 18 && p[1] === soloLines[i + 1][1]));
 console.log('familyLayout ok');

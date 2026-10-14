@@ -23,6 +23,8 @@ The experimental view centres every couple over its first and last child, packs 
 In-law families (a partner's parents at the top of the tree) are placed right next to the family their child married into and centred over their own children too; deeper in-law families can still get a one-sided bar.
 Partners in the experimental view are marked by a small ⚭ (two rings) between their names instead of a line.
 Someone with children by several partners forks halfway down in the experimental view, one branch toward each partner, so every couple gets a bar of its own.
+Parents of a shared child stand side by side in the experimental view even without a stored partnership, so the child hangs centred below both.
+Children of only one of several co-parents stand outside on that parent's side in the experimental view, and that parent's fork runs over to them.
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
 Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.
 Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a person and their partners hang in the middle of it, and their children's branch leaves the trunk right below them, so parents always hang directly above their children.

@@ -51,30 +51,37 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
 
   // With `fork` (flat trees only, it steps along x), someone with children by several partners forks
   // halfway down to the couple bars: each branch steps `fork` toward that partner, so every couple
-  // gets a bar of its own. The stems stay at the couples' middles.
+  // gets a bar of its own, and the branch to children of theirs alone runs over to those children.
+  // The stems stay centred over their children.
   const familiesOf = new Map<string, number>();
   for (const { parentIds } of plans) for (const id of parentIds) familiesOf.set(id, (familiesOf.get(id) ?? 0) + 1);
   for (const { parentIds, childIds, parentY, drop, middle, lane } of plans) {
     const lanes = lanesByRow.get(parentY)!.length;
     // Lanes share the space between 60 % and 85 % of the way down to the children.
     const childBar = parentY - drop * (lanes > 1 ? 0.6 + (0.25 * lane) / (lanes - 1) : 0.75);
+    const childXs = childIds.map((id) => at(id)[0]);
     const ends = parentIds.map((id) => {
       const [x, , z] = at(id);
       const others = parentIds.filter((other) => other !== id).map((other) => at(other)[0]);
-      const side = fork && familiesOf.get(id)! > 1 && others.length ? Math.sign(others.reduce((a, b) => a + b) / others.length - x) : 0;
-      const end: Point = [x + side * fork, parentY - drop / 2, z];
-      if (!side) parents.push(at(id), end);
+      let endX = x;
+      if (fork && familiesOf.get(id)! > 1)
+        endX = others.length
+          ? x + fork * Math.sign(others.reduce((a, b) => a + b) / others.length - x)
+          : (Math.min(...childXs) + Math.max(...childXs)) / 2;
+      const end: Point = [endX, parentY - drop / 2, z];
+      if (endX === x) parents.push(at(id), end);
       else {
         const forkY = parentY - drop / 4;
-        parents.push(at(id), [x, forkY, z], [x, forkY, z], [end[0], forkY, z], [end[0], forkY, z], end);
+        parents.push(at(id), [x, forkY, z], [x, forkY, z], [endX, forkY, z], [endX, forkY, z], end);
       }
       return end;
     });
     ends.sort((a, b) => a[0] - b[0]);
     for (let i = 1; i < ends.length; i++) parents.push(ends[i - 1], ends[i]);
-    parents.push(middle, level(middle, childBar));
+    const stem = ends.length === 1 ? ends[0] : middle;
+    parents.push(stem, level(stem, childBar));
     for (const id of childIds) {
-      parents.push(level(middle, childBar), level(at(id), childBar), level(at(id), childBar), at(id));
+      parents.push(level(stem, childBar), level(at(id), childBar), level(at(id), childBar), at(id));
     }
   }
   return { parents, partners };

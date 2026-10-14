@@ -30,10 +30,17 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
   const genOf = (id: string) => gen.get(id)!;
 
   // Partners in the same generation form a unit, ordered as a chain so partners sit side by side.
+  // Parents of a shared child count as partners here even when no partnership is stored, so the
+  // child hangs below both of them.
+  const coParents = new Map<string, Set<string>>();
+  for (const p of people)
+    for (const a of p.parentIds)
+      for (const b of p.parentIds) if (a !== b) coParents.set(a, (coParents.get(a) ?? new Set()).add(b));
+  const mates = (id: string) =>
+    [...new Set([...byId.get(id)!.partnerIds, ...(coParents.get(id) ?? [])])].filter((m) => byId.has(m) && genOf(m) === genOf(id));
   const unitOf = new Map<string, string[]>();
   for (const p of sorted) {
     if (unitOf.has(p.id)) continue;
-    const mates = (id: string) => byId.get(id)!.partnerIds.filter((m) => byId.has(m) && genOf(m) === genOf(id));
     const members = new Set<string>();
     for (const queue = [p.id]; queue.length; ) {
       const id = queue.shift()!;
@@ -67,14 +74,18 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
 
   const gapAt = (g: number, depth: number, sameFamily: boolean) =>
     g === depth && sameFamily ? NAME_GAP : NAME_GAP + FAMILY_GAP;
-  // Places `next` right of `acc` as close as every shared generation allows, but not left of `atLeast`.
-  const pack = (acc: Shape, next: Shape, depth: number, sameFamily: boolean, atLeast = -Infinity) => {
-    let by = atLeast;
-    for (const [g, [l]] of next.contour) {
-      const right = acc.contour.get(g)?.[1];
-      if (right != null) by = Math.max(by, right + gapAt(g, depth, sameFamily) - l);
+  // Places `next` right of `acc` (left with `side` -1) as close as every shared generation allows,
+  // but not closer than `hint`.
+  const pack = (acc: Shape, next: Shape, depth: number, sameFamily: boolean, hint = -Infinity, side = 1) => {
+    let by = hint * side;
+    for (const [g, [l, r]] of next.contour) {
+      const [al, ar] = acc.contour.get(g) ?? [];
+      if (al == null || ar == null) continue;
+      const gap = gapAt(g, depth, sameFamily);
+      by = Math.max(by, side > 0 ? ar + gap - l : r + gap - al);
     }
-    const placed = shifted(next, by === -Infinity ? 0 : by);
+    by *= side;
+    const placed = shifted(next, Number.isFinite(by) ? by : 0);
     for (const [g, [l, r]] of placed.contour) {
       const [al, ar] = acc.contour.get(g) ?? [l, r];
       acc.contour.set(g, [Math.min(al, l), Math.max(ar, r)]);
@@ -103,10 +114,12 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
       const at = child.indexOf(via);
       if (i === kids.length - 1 ? at > 0 : i === 0 && at < child.length - 1) child.reverse();
     });
-    // Each couple's children are packed as one group centred under that couple, pushed right only
-    // where an earlier group is in the way; half-siblings stand as close as siblings.
+    // Each couple's children are packed as one group centred under that couple, pushed aside only
+    // where an earlier group is in the way; half-siblings stand as close as siblings. Children of one
+    // parent alone come after the couples', on that parent's side (their line runs over to them).
     const shape: Shape = { xs: own, contour: new Map([[g, [0, (unit.length - 1) * NAME_GAP]]]) };
     const children: Shape = { xs: new Map(), contour: new Map() };
+    const groups: { couple: boolean; shape: Shape; at: number; right: boolean }[] = [];
     for (let i = 0; i < kids.length; ) {
       const key = parentsKey(kids[i].via);
       const group: Shape = { xs: new Map(), contour: new Map() };
@@ -116,8 +129,15 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
         ends.push(kids[i].via);
       }
       const xs = ends.map((id) => group.xs.get(id)!);
-      pack(children, group, g + 1, true, meanX(ends[0]) - (Math.min(...xs) + Math.max(...xs)) / 2);
+      const centre = meanX(ends[0]);
+      const at = centre - (Math.min(...xs) + Math.max(...xs)) / 2;
+      groups.push({ couple: key.includes(','), shape: group, at, right: centre >= ((unit.length - 1) * NAME_GAP) / 2 });
     }
+    const first = groups.some((group) => group.couple) ? groups.filter((group) => group.couple) : groups;
+    const rest = groups.filter((group) => !first.includes(group));
+    for (const { shape, at } of first) pack(children, shape, g + 1, true, at);
+    for (const { shape, at } of rest.filter(({ right }) => right)) pack(children, shape, g + 1, true, at);
+    for (const { shape, at } of rest.filter(({ right }) => !right).reverse()) pack(children, shape, g + 1, true, at, -1);
     return pack(shape, children, Infinity, false);
   };
 
