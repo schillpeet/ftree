@@ -7,7 +7,7 @@ type Person = { id: string; parentIds: string[]; partnerIds: string[] };
 // from it. Partners without shared children get a direct line instead. `along` orders bars within a
 // row: the angle around the trunk by default, plain x for a flat tree.
 const angle = ([x, , z]: Point) => Math.atan2(z, x);
-export function relationLines(people: Person[], positions: Map<string, Point>, along = angle) {
+export function relationLines(people: Person[], positions: Map<string, Point>, along = angle, fork = 0) {
   const parents: Point[] = [];
   const partners: Point[] = [];
   const at = (id: string) => positions.get(id)!;
@@ -49,12 +49,29 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
     ends[plan.lane] = plan.to;
   }
 
-  for (const { parentIds, childIds, parentY, drop, drops, middle, lane } of plans) {
+  // With `fork` (flat trees only, it steps along x), someone with children by several partners forks
+  // halfway down to the couple bars: each branch steps `fork` toward that partner, so every couple
+  // gets a bar of its own. The stems stay at the couples' middles.
+  const familiesOf = new Map<string, number>();
+  for (const { parentIds } of plans) for (const id of parentIds) familiesOf.set(id, (familiesOf.get(id) ?? 0) + 1);
+  for (const { parentIds, childIds, parentY, drop, middle, lane } of plans) {
     const lanes = lanesByRow.get(parentY)!.length;
     // Lanes share the space between 60 % and 85 % of the way down to the children.
     const childBar = parentY - drop * (lanes > 1 ? 0.6 + (0.25 * lane) / (lanes - 1) : 0.75);
-    for (const id of parentIds) parents.push(at(id), level(at(id), parentY - drop / 2));
-    for (let i = 1; i < drops.length; i++) parents.push(drops[i - 1], drops[i]);
+    const ends = parentIds.map((id) => {
+      const [x, , z] = at(id);
+      const others = parentIds.filter((other) => other !== id).map((other) => at(other)[0]);
+      const side = fork && familiesOf.get(id)! > 1 && others.length ? Math.sign(others.reduce((a, b) => a + b) / others.length - x) : 0;
+      const end: Point = [x + side * fork, parentY - drop / 2, z];
+      if (!side) parents.push(at(id), end);
+      else {
+        const forkY = parentY - drop / 4;
+        parents.push(at(id), [x, forkY, z], [x, forkY, z], [end[0], forkY, z], [end[0], forkY, z], end);
+      }
+      return end;
+    });
+    ends.sort((a, b) => a[0] - b[0]);
+    for (let i = 1; i < ends.length; i++) parents.push(ends[i - 1], ends[i]);
     parents.push(middle, level(middle, childBar));
     for (const id of childIds) {
       parents.push(level(middle, childBar), level(at(id), childBar), level(at(id), childBar), at(id));

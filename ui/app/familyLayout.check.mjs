@@ -67,4 +67,22 @@ const overlapping = new Map([
 assert.notEqual(flatBar(overlapping, 'a1'), flatBar(overlapping, 'c1'));
 const apart = new Map([...overlapping, ['a2', flat(3, 0)], ['c1', flat(10, 0)]]);
 assert.equal(flatBar(apart, 'a1'), flatBar(apart, 'c1'));
+// With a fork, B (children by A and by C) gets one bar per couple instead of one long bar.
+const twice = new Map([['A', flat(0, 10)], ['B', flat(6, 10)], ['C', flat(12, 10)], ['ab', flat(3, 0)], ['bc', flat(9, 0)]]);
+const forked = relationLines(
+  [
+    { id: 'A', parentIds: [], partnerIds: ['B'] },
+    { id: 'B', parentIds: [], partnerIds: ['A', 'C'] },
+    { id: 'C', parentIds: [], partnerIds: ['B'] },
+    { id: 'ab', parentIds: ['A', 'B'], partnerIds: [] },
+    { id: 'bc', parentIds: ['B', 'C'], partnerIds: [] },
+  ],
+  twice,
+  ([x]) => x,
+  1.5,
+).parents;
+const coupleBars = [];
+for (let i = 0; i < forked.length; i += 2)
+  if (forked[i][1] === 5 && forked[i + 1][1] === 5) coupleBars.push([forked[i][0], forked[i + 1][0]].sort((a, b) => a - b));
+assert.deepEqual(coupleBars.sort((a, b) => a[0] - b[0]), [[0, 4.5], [7.5, 12]]);
 console.log('familyLayout ok');

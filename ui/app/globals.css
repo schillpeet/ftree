@@ -1552,6 +1552,14 @@ textarea {
   cursor: pointer;
 }
 
+.simple-rings {
+  display: block;
+  color: #e6fdff;
+  font: 14px/1 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
+  text-shadow: 0 0 6px #00e5ff;
+  pointer-events: none;
+}
+
 .simple-name:hover {
   background: rgba(0, 229, 255, 0.12);
 }
