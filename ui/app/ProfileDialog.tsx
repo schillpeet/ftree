@@ -1,7 +1,7 @@
 'use client';
 
 import type { Member } from '../lib/api/generated/members';
-import { formatDate } from './MembersControls';
+import { birthNameOf, formatDate } from './MembersControls';
 import { useT } from './i18n';
 import { relativesOf } from './relatives';
 
@@ -60,6 +60,7 @@ export default function ProfileDialog({
             <img className="profile-photo" src={photo} alt={t.profile.photo(fullName(member))} />
           )}
           <div>
+            {birthNameOf(member, t) && <p>{birthNameOf(member, t)}</p>}
             {birth && <p>{t.profile.born}: {birth}</p>}
             {death && <p>{t.profile.died}: {death}</p>}
             {member.note && <p className="profile-note">{member.note}</p>}

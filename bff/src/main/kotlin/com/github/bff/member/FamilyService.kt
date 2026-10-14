@@ -103,6 +103,7 @@ class FamilyService(
                     id = ids.getValue(person.id),
                     firstName = person.firstName,
                     lastName = person.lastName,
+                    birthName = person.birthName,
                     family = family,
                     birthDate = person.birthDate,
                     birthPlace = person.birthPlace,
@@ -150,6 +151,7 @@ class FamilyService(
                 note = member.note,
                 parentIds = member.parents.map { it.id.toString() }.toSet(),
                 partnerIds = member.partners.map { it.id.toString() }.toSet(),
+                birthName = member.birthName,
             )
         }
         return FamilyExport(family.name, writeGedcom(people))

@@ -57,6 +57,7 @@ class MemberService(
             MemberEntity(
                 firstName = request.firstName,
                 lastName = request.lastName,
+                birthName = request.birthName,
                 family = family,
                 birthDate = request.birthDate,
                 birthPlace = request.birthPlace,
@@ -74,6 +75,7 @@ class MemberService(
         val entity = memberRepository.findByIdAndFamilyId(id, familyId) ?: return null
         entity.firstName = request.firstName
         entity.lastName = request.lastName
+        entity.birthName = request.birthName
         entity.birthDate = request.birthDate
         entity.birthPlace = request.birthPlace
         entity.deathDate = request.deathDate
@@ -204,6 +206,7 @@ class MemberService(
         id = this@toResponse.id
         firstName = this@toResponse.firstName
         lastName = this@toResponse.lastName
+        birthName = this@toResponse.birthName
         birthDate = this@toResponse.birthDate
         birthPlace = this@toResponse.birthPlace
         deathDate = this@toResponse.deathDate

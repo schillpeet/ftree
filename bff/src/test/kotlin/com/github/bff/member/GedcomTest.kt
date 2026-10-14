@@ -75,6 +75,26 @@ class GedcomTest {
     }
 
     @Test
+    fun `reads birth names from typed names and _MARNM`() {
+        val head = "0 HEAD\n0 @I1@ INDI\n"
+        fun read(vararg lines: String) = assertNotNull(parseGedcom(head + lines.joinToString("\n"))).single()
+
+        read("1 NAME Anna /Müller/", "1 NAME Anna /Schmidt/", "2 TYPE birth").run {
+            assertEquals("Müller", lastName)
+            assertEquals("Schmidt", birthName)
+        }
+        read("1 NAME Anna /Schmidt/", "1 NAME Anna /Müller/", "2 TYPE married").run {
+            assertEquals("Müller", lastName)
+            assertEquals("Schmidt", birthName)
+        }
+        read("1 NAME Anna /Schmidt/", "2 _MARNM Müller").run {
+            assertEquals("Müller", lastName)
+            assertEquals("Schmidt", birthName)
+        }
+        assertNull(read("1 NAME Anna /Schmidt/", "2 TYPE birth").birthName)
+    }
+
+    @Test
     fun `rejects text that is not gedcom`() {
         assertNull(parseGedcom("""{"name": "keine GEDCOM-Datei"}"""))
         assertNull(parseGedcom("0 @I1@ INDI\n1 NAME Ohne /Kopf/"))
@@ -84,7 +104,7 @@ class GedcomTest {
     fun `writes what it reads back`() {
         val people = listOf(
             GedcomPerson("a", "Anna", "Alt", LocalDate.of(1900, 1, 2), "Berlin", LocalDate.of(1980, 12, 31), "Bonn", "Zeile 1\nZeile 2 mit @", partnerIds = setOf("b")),
-            GedcomPerson("b", "Bernd", "Alt", partnerIds = setOf("a")),
+            GedcomPerson("b", "Bernd", "Alt", partnerIds = setOf("a"), birthName = "Jung"),
             GedcomPerson("c", "Clara", "Alt", parentIds = setOf("a", "b")),
             // Co-parents who are not partners stay unpaired.
             GedcomPerson("d", "Dora", "Neu"),

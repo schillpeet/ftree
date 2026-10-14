@@ -22,6 +22,8 @@ class MemberEntity(
     var firstName: String,
     @Column(nullable = false, length = 100)
     var lastName: String,
+    @Column(length = 100)
+    var birthName: String? = null,
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "family_id", nullable = false)
     var family: FamilyEntity,

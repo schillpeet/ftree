@@ -119,6 +119,12 @@ export interface Member {
      * @maxLength 100
      */
   lastName: string;
+  /**
+     * Surname at birth, for example a maiden name that was given up.
+     * @maxLength 100
+     * @nullable
+     */
+  birthName?: string | null;
   /** @nullable */
   birthDate?: string | null;
   /**
@@ -196,6 +202,12 @@ export interface CreateMemberRequest {
      * @maxLength 100
      */
   lastName: string;
+  /**
+     * Surname at birth, for example a maiden name that was given up.
+     * @maxLength 100
+     * @nullable
+     */
+  birthName?: string | null;
   /** @nullable */
   birthDate?: string | null;
   /**

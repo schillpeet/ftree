@@ -15,6 +15,7 @@ internal data class GedcomPerson(
     val note: String? = null,
     val parentIds: Set<String> = emptySet(),
     val partnerIds: Set<String> = emptySet(),
+    val birthName: String? = null,
 )
 
 private class GedcomLine(val level: Int, val xref: String?, val tag: String, val value: String) {
@@ -40,6 +41,17 @@ private val LINE = Regex("""^\s*(\d+)\s+(?:(@[^@\s]+@)\s+)?(\S+)(?: (.*))?$""")
 private val EXACT_DATE = Regex("""^(\d{1,2}) ([A-Z]{3}) (\d{1,4})$""")
 private val MONTHS = listOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 private const val UNKNOWN_NAME = "Unbekannt"
+private val BIRTH_NAME_TYPES = setOf("birth", "maiden")
+
+private fun GedcomLine.nameType() = child("TYPE")?.value?.trim()?.lowercase()
+
+/** Given name and surname of a NAME line, from "Given /Surname/" or its GIVN/SURN parts. */
+private fun GedcomLine?.nameParts(): Pair<String, String> {
+    val parts = this?.value?.split('/').orEmpty()
+    val given = parts.getOrNull(0)?.trim().orEmpty().ifEmpty { this?.child("GIVN")?.value?.trim().orEmpty() }
+    val surname = parts.getOrNull(1)?.trim().orEmpty().ifEmpty { this?.child("SURN")?.value?.trim().orEmpty() }
+    return given to surname
+}
 
 /**
  * Reads people, partners (HUSB/WIFE of a FAM) and parents (its CHIL) from a GEDCOM 5.5.1 or 7 file.
@@ -76,10 +88,21 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
     }
 
     return individuals.map { (xref, person) ->
-        val name = person.child("NAME")
-        val parts = name?.value?.split('/').orEmpty()
-        val given = parts.getOrNull(0)?.trim().orEmpty().ifEmpty { name?.child("GIVN")?.value?.trim().orEmpty() }
-        val surname = parts.getOrNull(1)?.trim().orEmpty().ifEmpty { name?.child("SURN")?.value?.trim().orEmpty() }
+        // The current name is a NAME of TYPE married, else the first one not marked as birth name. The birth name
+        // comes from a NAME of TYPE birth/maiden, or is the surname a _MARNM or a married NAME replaces.
+        val names = person.all("NAME")
+        val birthLine = names.firstOrNull { it.nameType() in BIRTH_NAME_TYPES }
+        val married = names.firstOrNull { it.nameType() == "married" }
+        val current = married ?: names.firstOrNull { it !== birthLine } ?: birthLine
+        val (given, currentSurname) = current.nameParts()
+        val marriedName = current?.child("_MARNM")?.value?.trim().orEmpty()
+        val surname = marriedName.ifEmpty { currentSurname }
+        val birthName = when {
+            birthLine != null && birthLine !== current -> birthLine.nameParts().second
+            marriedName.isNotEmpty() -> currentSurname
+            married != null -> names.firstOrNull { it !== married }?.nameParts()?.second
+            else -> null
+        }?.ifEmpty { null }?.takeIf { it != surname }?.take(100)
         val birth = person.child("BIRT")
         val death = person.child("DEAT")
         val birthDate = birth?.child("DATE")?.value?.trim()
@@ -101,6 +124,7 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
             note = (notes + dateNotes).filter { it.isNotBlank() }.joinToString("\n").ifEmpty { null }?.take(5000),
             parentIds = parents.getValue(xref),
             partnerIds = partners.getValue(xref),
+            birthName = birthName,
         )
     }
 }
@@ -160,6 +184,10 @@ internal fun writeGedcom(people: List<GedcomPerson>): String {
     people.forEach { person ->
         lines += "0 ${xref(person.id)} INDI"
         lines += "1 NAME ${person.firstName} /${person.lastName}/"
+        person.birthName?.takeIf { it != person.lastName }?.let {
+            lines += "1 NAME ${person.firstName} /$it/"
+            lines += "2 TYPE birth"
+        }
         event("BIRT", person.birthDate, person.birthPlace)
         event("DEAT", person.deathDate, person.deathPlace)
         person.note?.let { text(1, "NOTE", it) }
