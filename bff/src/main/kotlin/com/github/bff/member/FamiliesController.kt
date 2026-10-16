@@ -1,6 +1,7 @@
 package com.github.bff.member
 
 import com.github.bff.generated.api.FamiliesApi
+import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
@@ -31,6 +32,14 @@ class FamiliesController(private val familyService: FamilyService) : FamiliesApi
             FamilyArchiveResult.INVALID -> ResponseEntity.badRequest().build()
             FamilyArchiveResult.NOT_FOUND -> ResponseEntity.notFound().build()
             FamilyArchiveResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
+
+    override fun anonymizeFamily(familyId: UUID, anonymizeFamilyRequest: AnonymizeFamilyRequest): ResponseEntity<FamilySummary> =
+        when (val result = familyService.anonymize(familyId, anonymizeFamilyRequest)) {
+            is FamilyAnonymizeResult.ANONYMIZED -> ResponseEntity.status(HttpStatus.CREATED).body(result.summary)
+            FamilyAnonymizeResult.INVALID -> ResponseEntity.badRequest().build()
+            FamilyAnonymizeResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            FamilyAnonymizeResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
 
     override fun importFamily(importFamilyRequest: ImportFamilyRequest): ResponseEntity<FamilySummary> =

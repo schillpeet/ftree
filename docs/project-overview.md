@@ -72,6 +72,7 @@ The original `/members` endpoints remain available for the default family.
 The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names stay empty.
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
 Each family in the selector has a download link that exports it as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
+A copy icon next to the selected family's name ("Anonyme Kopie") asks for a name ("<name> (anonym)" by default) and creates a copy of the family with random names, for example to show the tree's structure in a snapshot without personal names.
 
 ### Members and relatives
 
@@ -128,6 +129,8 @@ The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
 Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
 Partnership status and wedding date live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
+`POST /families/{familyId}/anonymize` copies a family in one transaction into a new named family with the same members, dates, places, notes, links, partnership details, and placement but without photos, leaving the original untouched.
+The copy replaces first names at random and maps each distinct last name (birth names included) consistently to a random last name from fixed lists in `AnonymousNames.kt`, never reusing a name from the original; empty names stay empty.
 The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
 Authentication and a broader family-tree model (relationship types such as adoption, separation dates, uncertain links) are not implemented.
 

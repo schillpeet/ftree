@@ -1177,6 +1177,11 @@ textarea {
   justify-content: space-between;
 }
 
+.family-current-actions {
+  display: flex;
+  gap: 4px;
+}
+
 .family-current span {
   color: var(--glass-muted);
   font-size: 12px;
