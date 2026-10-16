@@ -1456,6 +1456,67 @@ textarea {
   color: var(--glass-danger);
 }
 
+.profile-initials {
+  display: grid;
+  height: 120px;
+  place-items: center;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: 600 36px/1 Arial, sans-serif;
+}
+
+.member-photo-drop {
+  position: relative;
+}
+
+.member-photo-drop span {
+  padding: 18px 12px;
+  border: 1px dashed var(--glass-border);
+  border-radius: 6px;
+  font-weight: 400;
+  text-align: center;
+  cursor: pointer;
+}
+
+.member-photo-drop-active span {
+  border-color: var(--glass-accent);
+  background: rgba(127, 214, 255, 0.12);
+}
+
+/* The drop field above replaces the native picker's look; the input stays for keyboard and click. */
+.member-photo-drop input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.member-photo-drop:focus-within span {
+  outline: 2px solid var(--glass-accent);
+}
+
+.relatives-fields {
+  display: grid;
+  gap: 8px;
+}
+
+.relatives-fields h3 {
+  margin: 0;
+  color: var(--glass-muted);
+  font-size: 13px;
+}
+
+.member-delete {
+  grid-column: 1 / -1;
+  min-height: 42px;
+  border: 1px solid var(--glass-danger);
+  border-radius: 5px;
+  background: rgba(255, 143, 122, 0.12);
+  color: var(--glass-danger);
+  cursor: pointer;
+}
+
 .member-form-actions button[type='submit'] {
   border-color: var(--glass-accent);
   background: rgba(127, 214, 255, 0.22);

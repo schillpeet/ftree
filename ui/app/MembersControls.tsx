@@ -9,13 +9,15 @@ import {
   getFamilyMembers,
   getGetFamilyMemberPhotoUrl,
   updateFamilyMember,
+  updateFamilyMemberRelatives,
   uploadFamilyMemberPhoto,
   type CreateMemberRequest,
   type Member,
+  type Relatives,
 } from '../lib/api/generated/members';
 import { useLanguage, useT } from './i18n';
 import ProfileDialog from './ProfileDialog';
-import RelativesDialog from './RelativesDialog';
+import RelativesFields from './RelativesFields';
 import { ChevronLeftIcon, CloseIcon, EyeIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
 
@@ -28,7 +30,6 @@ type MemberForm = {
   deathDate: string;
   deathPlace: string;
   note: string;
-  photoUrl: string;
 };
 
 const EMPTY_FORM: MemberForm = {
@@ -40,7 +41,6 @@ const EMPTY_FORM: MemberForm = {
   deathDate: '',
   deathPlace: '',
   note: '',
-  photoUrl: '',
 };
 
 const toForm = (member: Member): MemberForm => ({
@@ -52,7 +52,6 @@ const toForm = (member: Member): MemberForm => ({
   deathDate: member.deathDate ?? '',
   deathPlace: member.deathPlace ?? '',
   note: member.note ?? '',
-  photoUrl: member.photoUrl ?? '',
 });
 
 export function formatDate(value?: string | null) {
@@ -90,6 +89,8 @@ async function toJpeg(file: File) {
 export const birthNameOf = (member: Member, t: ReturnType<typeof useT>) =>
   member.birthName && member.birthName !== member.lastName ? t.members.nee(member.birthName) : null;
 
+export const initialsOf = (member: Member) => (member.firstName[0] ?? '') + (member.lastName[0] ?? '');
+
 const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
 
 function MemberDetails({
@@ -118,7 +119,7 @@ function MemberDetails({
         <img className="member-avatar" src={photo} alt="" />
       ) : (
         <span className="member-avatar" aria-hidden="true">
-          {(member.firstName[0] ?? '') + (member.lastName[0] ?? '')}
+          {initialsOf(member)}
         </span>
       )}
       <div className="member-row-text">
@@ -179,7 +180,10 @@ export default function MembersControls({
   const [editing, setEditing] = useState<Member | null>(null);
   // Picked image, uploaded once the member is saved.
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [relativesOf, setRelativesOf] = useState<Member | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [formKey, setFormKey] = useState(0);
+  // Latest selection of the relatives fields, saved after the member.
+  const relatives = useRef<{ value: Relatives; changed: boolean } | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
   const listRef = useRef<HTMLElement>(null);
 
@@ -236,10 +240,9 @@ export default function MembersControls({
   // Looked up on every render, so the profile follows edits and disappears with a deleted member.
   const profileMember = profileId ? members?.find((m) => m.id === profileId) : undefined;
 
-  // The list is not modal: a press anywhere else or Escape closes it. While the relatives
-  // dialog is open on top of it, that dialog handles both.
+  // The list is not modal: a press anywhere else or Escape closes it.
   useEffect(() => {
-    if (!isListOpen || relativesOf) return;
+    if (!isListOpen) return;
     function closeOnOutsidePress(event: PointerEvent) {
       const target = event.target as Node;
       // The menu switches boards itself.
@@ -254,7 +257,7 @@ export default function MembersControls({
       document.removeEventListener('pointerdown', closeOnOutsidePress);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [isListOpen, relativesOf, setIsListOpen]);
+  }, [isListOpen, setIsListOpen]);
 
   async function archive() {
     if (!familyId) return;
@@ -278,17 +281,20 @@ export default function MembersControls({
     }
   }
 
-  async function removeMember(member: Member) {
-    if (!familyId) return;
-    if (!window.confirm(t.members.confirmDelete(`${member.firstName} ${member.lastName}`))) return;
-    setRequestError(null);
+  // Resolves whether the member is gone; onError shows a failure where it was requested.
+  async function removeMember(member: Member, onError = setRequestError) {
+    if (!familyId) return false;
+    if (!window.confirm(t.members.confirmDelete(`${member.firstName} ${member.lastName}`))) return false;
+    onError(null);
     try {
       const response = await deleteFamilyMember(familyId, member.id);
       if (response.status !== 204 && response.status !== 404) throw new Error('Unexpected delete response');
       setMembers((current) => current?.filter((m) => m.id !== member.id) ?? null);
       onFamiliesChanged();
+      return true;
     } catch {
-      setRequestError(t.members.deleteFailed);
+      onError(t.members.deleteFailed);
+      return false;
     }
   }
 
@@ -302,6 +308,8 @@ export default function MembersControls({
     }
     setEditing(member);
     setPhotoFile(null);
+    relatives.current = null;
+    setFormKey((key) => key + 1);
     setIsListOpen(false);
     setFormError(null);
     setIsFormOpen(true);
@@ -311,7 +319,9 @@ export default function MembersControls({
   function dismissForm() {
     if (isSaving) return;
     const initial = editing && toForm(editing);
-    const changed = initial && (!!photoFile || (Object.keys(initial) as (keyof MemberForm)[]).some((key) => form[key] !== initial[key]));
+    const changed =
+      initial &&
+      (!!photoFile || !!relatives.current?.changed || (Object.keys(initial) as (keyof MemberForm)[]).some((key) => form[key] !== initial[key]));
     if (changed && !window.confirm(t.discardChanges)) return;
     setIsFormOpen(false);
   }
@@ -335,7 +345,8 @@ export default function MembersControls({
       deathDate: form.deathDate || null,
       deathPlace: form.deathPlace.trim() || null,
       note: form.note.trim() || null,
-      photoUrl: form.photoUrl.trim() || null,
+      // No longer editable, but kept for members that still have one.
+      photoUrl: editing?.photoUrl ?? null,
     };
 
     try {
@@ -367,16 +378,33 @@ export default function MembersControls({
           photoFailed = true;
         }
       }
+      // A new person with relatives counts as changed, an edited one only when the selection differs.
+      const related = relatives.current;
+      const relate = related && (editing ? related.changed : Object.values(related.value).some((ids) => ids?.length));
+      let relativesError: string | null = null;
+      if (relate) {
+        try {
+          const response = await updateFamilyMemberRelatives(familyId, saved.id, related.value);
+          if (response.status === 400) relativesError = t.relatives.ownAncestor;
+          else if (response.status !== 204) throw new Error('Unexpected relatives response');
+        } catch {
+          relativesError = t.relatives.saveFailed;
+        }
+      }
       const member = saved;
       setMembers((current) =>
         editing ? current?.map((m) => (m.id === member.id ? member : m)) ?? null : [member, ...(current ?? [])],
       );
+      // Relatives change other members too, so the whole family is reloaded.
+      if (relate && !relativesError) void reloadMembers();
       onFamiliesChanged();
-      if (photoFailed) {
+      if (photoFailed || relativesError) {
         // The person exists now, so saving again must update them instead of creating a duplicate.
+        // The relatives fields keep their selection, so a failed save can be retried.
         setEditing(member);
         setForm(toForm(member));
-        setFormError(t.members.photoFailed);
+        setPhotoFile(null);
+        setFormError(relativesError ?? t.members.photoFailed);
         return;
       }
       setIsFormOpen(false);
@@ -526,12 +554,23 @@ export default function MembersControls({
                 {t.members.deathPlace}
                 <input maxLength={200} value={form.deathPlace} onChange={(event) => updateForm('deathPlace', event.target.value)} />
               </label>
-              <label className="member-field member-field-wide">
-                {t.members.photoUrl}
-                <input type="url" maxLength={2048} value={form.photoUrl} onChange={(event) => updateForm('photoUrl', event.target.value)} />
-              </label>
-              <label className="member-field">
+              {/* Dropping an image on the field picks it like the file chooser does. */}
+              <label
+                className={`member-field member-field-wide member-photo-drop${isDragging ? ' member-photo-drop-active' : ''}`}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsDragging(true);
+                }}
+                onDragLeave={() => setIsDragging(false)}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setIsDragging(false);
+                  const file = event.dataTransfer.files[0];
+                  if (file?.type.startsWith('image/')) setPhotoFile(file);
+                }}
+              >
                 {t.members.uploadPhoto}
+                <span>{photoFile ? photoFile.name : t.members.dropPhoto}</span>
                 <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} />
               </label>
               {editing?.photoUpdatedAt && (
@@ -543,6 +582,18 @@ export default function MembersControls({
                 {t.members.note}
                 <textarea maxLength={5000} value={form.note} onChange={(event) => updateForm('note', event.target.value)} />
               </label>
+              {members && (
+                <RelativesFields
+                  // Remounted per opened form, so the selection starts from the stored relatives but
+                  // survives a failed save that turns a new person into an edited one.
+                  key={formKey}
+                  member={editing}
+                  members={members}
+                  onChange={(value, changed) => {
+                    relatives.current = { value, changed };
+                  }}
+                />
+              )}
               {formError && <p className="member-form-error" role="alert">{formError}</p>}
               <div className="member-form-actions">
                 <button type="button" disabled={isSaving} onClick={() => setIsFormOpen(false)}>
@@ -552,6 +603,18 @@ export default function MembersControls({
                   {isSaving ? t.saving : t.members.save}
                 </button>
               </div>
+              {editing && (
+                <button
+                  type="button"
+                  className="member-delete"
+                  disabled={isSaving}
+                  onClick={async () => {
+                    if (await removeMember(editing, setFormError)) setIsFormOpen(false);
+                  }}
+                >
+                  {t.members.delete}
+                </button>
+              )}
             </form>
           </section>
         </div>
@@ -572,25 +635,7 @@ export default function MembersControls({
             setProfileId(null);
             openForm(profileMember);
           }}
-          onEditRelatives={() => {
-            setProfileId(null);
-            setRelativesOf(profileMember);
-          }}
           onClose={() => setProfileId(null)}
-        />
-      )}
-
-      {relativesOf && members && familyId && (
-        <RelativesDialog
-          member={relativesOf}
-          familyId={familyId}
-          members={members}
-          onClose={() => setRelativesOf(null)}
-          onSaved={() => {
-            setRelativesOf(null);
-            void reloadMembers();
-            onFamiliesChanged();
-          }}
         />
       )}
     </div>
