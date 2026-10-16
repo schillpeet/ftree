@@ -16,6 +16,7 @@ import {
   type Relatives,
 } from '../lib/api/generated/members';
 import { useLanguage, useT } from './i18n';
+import { initialsOf, nameOf } from './names';
 import ProfileDialog from './ProfileDialog';
 import RelativesFields from './RelativesFields';
 import { ChevronLeftIcon, CloseIcon, EyeIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
@@ -89,7 +90,7 @@ async function toJpeg(file: File) {
 export const birthNameOf = (member: Member, t: ReturnType<typeof useT>) =>
   member.birthName && member.birthName !== member.lastName ? t.members.nee(member.birthName) : null;
 
-export const initialsOf = (member: Member) => (member.firstName[0] ?? '') + (member.lastName[0] ?? '');
+export { initialsOf };
 
 const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
 
@@ -107,7 +108,7 @@ function MemberDetails({
   onDelete: () => void;
 }) {
   const t = useT();
-  const name = `${member.firstName} ${member.lastName}`;
+  const name = nameOf(member, t.members.unknown);
   const years = member.birthDate ? `${yearOf(member.birthDate)} – ${yearOf(member.deathDate)}`.trim() : yearOf(member.deathDate) && `† ${yearOf(member.deathDate)}`;
   const photo = photoSrc(member, familyId);
   const details = [birthNameOf(member, t), years].filter(Boolean).join(' · ');
@@ -284,7 +285,7 @@ export default function MembersControls({
   // Resolves whether the member is gone; onError shows a failure where it was requested.
   async function removeMember(member: Member, onError = setRequestError) {
     if (!familyId) return false;
-    if (!window.confirm(t.members.confirmDelete(`${member.firstName} ${member.lastName}`))) return false;
+    if (!window.confirm(t.members.confirmDelete(nameOf(member, t.members.unknown)))) return false;
     onError(null);
     try {
       const response = await deleteFamilyMember(familyId, member.id);
@@ -519,7 +520,6 @@ export default function MembersControls({
                   autoFocus
                   autoComplete="given-name"
                   maxLength={100}
-                  required
                   value={form.firstName}
                   onChange={(event) => updateForm('firstName', event.target.value)}
                 />
@@ -529,7 +529,6 @@ export default function MembersControls({
                 <input
                   autoComplete="family-name"
                   maxLength={100}
-                  required
                   value={form.lastName}
                   onChange={(event) => updateForm('lastName', event.target.value)}
                 />

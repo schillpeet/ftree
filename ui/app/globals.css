@@ -789,6 +789,12 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.scroll h3.scroll-unknown {
+  font-size: 13px;
+  font-weight: 400;
+  font-style: italic;
+}
+
 .scroll p {
   margin: 2px 0;
   font-size: 13px;

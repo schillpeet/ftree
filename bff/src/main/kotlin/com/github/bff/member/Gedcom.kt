@@ -40,7 +40,6 @@ private class GedcomLine(val level: Int, val xref: String?, val tag: String, val
 private val LINE = Regex("""^\s*(\d+)\s+(?:(@[^@\s]+@)\s+)?(\S+)(?: (.*))?$""")
 private val EXACT_DATE = Regex("""^(\d{1,2}) ([A-Z]{3}) (\d{1,4})$""")
 private val MONTHS = listOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
-private const val UNKNOWN_NAME = "Unbekannt"
 private val BIRTH_NAME_TYPES = setOf("birth", "maiden")
 
 private fun GedcomLine.nameType() = child("TYPE")?.value?.trim()?.lowercase()
@@ -115,8 +114,8 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
         )
         GedcomPerson(
             id = xref,
-            firstName = given.ifEmpty { UNKNOWN_NAME }.take(100),
-            lastName = surname.ifEmpty { UNKNOWN_NAME }.take(100),
+            firstName = given.take(100),
+            lastName = surname.take(100),
             birthDate = birthDate?.let(::exactDate),
             birthPlace = birth?.child("PLAC")?.text()?.trim()?.ifEmpty { null }?.take(200),
             deathDate = deathDate?.let(::exactDate),
@@ -183,9 +182,10 @@ internal fun writeGedcom(people: List<GedcomPerson>): String {
     }
     people.forEach { person ->
         lines += "0 ${xref(person.id)} INDI"
-        lines += "1 NAME ${person.firstName} /${person.lastName}/"
+        // Unknown (empty) names stay empty: "/Surname/" or "//".
+        lines += "1 NAME ${"${person.firstName} /${person.lastName}/".trim()}"
         person.birthName?.takeIf { it != person.lastName }?.let {
-            lines += "1 NAME ${person.firstName} /$it/"
+            lines += "1 NAME ${"${person.firstName} /$it/".trim()}"
             lines += "2 TYPE birth"
         }
         event("BIRT", person.birthDate, person.birthPlace)

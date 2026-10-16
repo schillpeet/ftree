@@ -5,6 +5,8 @@ import { Html, Line } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
 import { relationLines } from './familyLayout';
 import { generations } from './generations';
+import { useT } from './i18n';
+import { isNameless } from './names';
 import type { Point } from './pins';
 import { NAME_GAP, simpleLayout } from './simpleLayout';
 
@@ -29,6 +31,7 @@ export default function SimpleTree({
   facing: number;
   onOpen: (id: string) => void;
 }) {
+  const t = useT();
   const positions = useMemo(() => simpleLayout(members, generations(members)), [members]);
   const links = useMemo(() => relationLines(members, positions, ([x]) => x, FORK), [members, positions]);
   // Partners are marked by two rings between their names instead of a line.
@@ -47,9 +50,7 @@ export default function SimpleTree({
         // Labels scale with the distance like the rest of the scene, so the gaps between them hold.
         <Html key={member.id} position={positions.get(member.id)} center distanceFactor={NAME_SCALE}>
           <button className="simple-name" type="button" onClick={() => onOpen(member.id)}>
-            {member.firstName}
-            <br />
-            {member.lastName}
+            {isNameless(member) ? t.members.unknown : <>{member.firstName}<br />{member.lastName}</>}
           </button>
         </Html>
       ))}

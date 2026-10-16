@@ -128,12 +128,12 @@ export interface Position {
 export interface Member {
   readonly id: string;
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   firstName: string;
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   lastName: string;
@@ -218,12 +218,12 @@ export interface Relatives {
 
 export interface CreateMemberRequest {
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   firstName: string;
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   lastName: string;

@@ -3,9 +3,8 @@
 import type { Member } from '../lib/api/generated/members';
 import { birthNameOf, formatDate, initialsOf } from './MembersControls';
 import { useT } from './i18n';
+import { nameOf } from './names';
 import { relativesOf } from './relatives';
-
-const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
 
 // Read-only profile of a member. Clicking a relative shows their profile instead; the person and
 // their relatives are edited in the member form.
@@ -25,6 +24,7 @@ export default function ProfileDialog({
   onClose: () => void;
 }) {
   const t = useT();
+  const fullName = (m: Member) => nameOf(m, t.members.unknown);
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
   const relatives = relativesOf(member, members);

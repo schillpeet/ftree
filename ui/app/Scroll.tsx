@@ -5,6 +5,7 @@ import { Html } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { formatDate, photoSrc } from './MembersControls';
+import { isNameless, nameOf } from './names';
 
 // Pointer travel (px) up to which a press on a scroll still counts as a click, not a drag.
 export const CLICK_TOLERANCE = 5;
@@ -36,7 +37,7 @@ export default function Scroll({
       <div
         role="button"
         tabIndex={0}
-        aria-label={t.profile.open(`${member.firstName} ${member.lastName}`)}
+        aria-label={t.profile.open(nameOf(member, t.members.unknown))}
         className={onDrag ? 'scroll scroll-draggable' : 'scroll'}
         onPointerDown={(event) => {
           pressedAt.current = { x: event.clientX, y: event.clientY };
@@ -65,7 +66,7 @@ export default function Scroll({
             // eslint-disable-next-line @next/next/no-img-element
             <img className="scroll-photo" src={photo} alt="" draggable={false} />
           )}
-          <h3>{member.firstName} {member.lastName}</h3>
+          <h3 className={isNameless(member) ? 'scroll-unknown' : undefined}>{nameOf(member, t.members.unknown)}</h3>
           {birth && <p>* {birth}</p>}
           {death && <p>† {death}</p>}
           {member.note && <p className="scroll-note">{member.note}</p>}
