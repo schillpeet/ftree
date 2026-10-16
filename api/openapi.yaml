@@ -234,6 +234,43 @@ paths:
           description: Family not found.
         "409":
           description: A family with this name already exists.
+  /families/{familyId}/anonymize:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: anonymizeFamily
+      tags:
+        - Families
+      summary: Copy a family under a new name with random member names
+      description: >-
+        Copies every member with dates, places, notes, parent/child and partner links, partnership
+        details, and placement into a new family. First, last, and birth names are replaced with
+        random ones; a last name maps to the same random name throughout the copy. Photos are not
+        copied. The source family is not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnonymizeFamilyRequest"
+      responses:
+        "201":
+          description: Anonymized copy created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The name is invalid.
+        "404":
+          description: Family not found.
+        "409":
+          description: A family with this name already exists.
   /families/import:
     post:
       operationId: importFamily
@@ -627,6 +664,15 @@ components:
           minimum: 0
           maximum: 3
     ArchiveFamilyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+    AnonymizeFamilyRequest:
       type: object
       required:
         - name

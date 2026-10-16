@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import {
-  DownloadIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon, UploadIcon, UsersIcon, CloseIcon,
+  CopyIcon, DownloadIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon, UploadIcon, UsersIcon, CloseIcon,
 } from './icons';
-import { deleteFamily, getExportFamilyUrl, importFamily, renameFamily, type FamilySummary } from '../lib/api/generated/members';
+import { anonymizeFamily, deleteFamily, getExportFamilyUrl, importFamily, renameFamily, type FamilySummary } from '../lib/api/generated/members';
 import { useT } from './i18n';
 
 export default function FamiliesPanel({
@@ -42,6 +42,7 @@ export default function FamiliesPanel({
   const [importError, setImportError] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [isAnonymizing, setIsAnonymizing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
@@ -140,6 +141,31 @@ export default function FamiliesPanel({
     }
   }
 
+  // A new family with the same structure under random names; the original stays as it is.
+  async function anonymize(family: FamilySummary) {
+    const name = window.prompt(t.families.anonymizeName, t.families.anonymizeDefault(family.name))?.trim();
+    if (!name) return;
+    setIsAnonymizing(true);
+    setRenameError(null);
+    try {
+      const response = await anonymizeFamily(family.id, { name });
+      if (response.status === 409) {
+        setRenameError(t.familyExists(name));
+        return;
+      }
+      if (response.status === 404) {
+        setRenameError(t.families.gone);
+        return;
+      }
+      if (response.status !== 201) throw new Error(`HTTP ${response.status}`);
+      onImported(response.data);
+    } catch {
+      setRenameError(t.families.anonymizeFailed);
+    } finally {
+      setIsAnonymizing(false);
+    }
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -156,15 +182,27 @@ export default function FamiliesPanel({
           <div className="family-current">
             <div className="family-current-line">
               <span>{t.families.selected}</span>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label={t.families.rename}
-                disabled={isRenaming}
-                onClick={() => void rename(activeFamily)}
-              >
-                <PencilIcon />
-              </button>
+              <div className="family-current-actions">
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label={t.families.rename}
+                  disabled={isRenaming}
+                  onClick={() => void rename(activeFamily)}
+                >
+                  <PencilIcon />
+                </button>
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label={t.families.anonymize}
+                  title={t.families.anonymize}
+                  disabled={isAnonymizing}
+                  onClick={() => void anonymize(activeFamily)}
+                >
+                  {isAnonymizing ? '…' : <CopyIcon />}
+                </button>
+              </div>
             </div>
             <strong>{activeFamily.name}</strong>
           </div>
