@@ -101,6 +101,24 @@ export interface ImportFamilyRequest {
   gedcom: string;
 }
 
+export type PartnershipStatus = typeof PartnershipStatus[keyof typeof PartnershipStatus];
+
+
+export const PartnershipStatus = {
+  together: 'together',
+  married: 'married',
+} as const;
+
+export interface Partnership {
+  partnerId: string;
+  status: PartnershipStatus;
+  /**
+     * Wedding date; only kept when the status is married.
+     * @nullable
+     */
+  marriedOn?: string | null;
+}
+
 export interface Position {
   x: number;
   y: number;
@@ -155,6 +173,8 @@ export interface Member {
   parentIds: string[];
   /** Ids of this member's partners, current or former. Always mutual. */
   partnerIds: string[];
+  /** Status and wedding date per partner in partnerIds; the same on both sides. */
+  readonly partnerships: readonly Partnership[];
   /**
      * Branch point the card hangs from; null when placed freely or not yet placed.
      * @minimum 0
@@ -189,6 +209,11 @@ export interface Relatives {
      * @nullable
      */
   siblings?: Sibling[] | null;
+  /**
+     * Status and wedding date of partners in partnerIds, stored for both sides; partners left out are "together", and when absent, existing details stay unchanged.
+     * @nullable
+     */
+  partnerships?: Partnership[] | null;
 }
 
 export interface CreateMemberRequest {

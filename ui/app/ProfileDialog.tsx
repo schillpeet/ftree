@@ -28,6 +28,11 @@ export default function ProfileDialog({
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
   const relatives = relativesOf(member, members);
+  const partnershipOf = (id: string) => {
+    const partnership = member.partnerships.find((p) => p.partnerId === id);
+    if (partnership?.status !== 'married') return t.relatives.together;
+    return partnership.marriedOn ? t.profile.marriedSince(formatDate(partnership.marriedOn)!) : t.relatives.married;
+  };
   const groups: [string, Member[]][] = [
     [t.relatives.parents, relatives.parents],
     [t.relatives.children, relatives.children],
@@ -76,6 +81,7 @@ export default function ProfileDialog({
                 {list.map((m) => (
                   <button key={m.id} type="button" className="member-relatives-button" onClick={() => onShow(m.id)}>
                     {fullName(m)}
+                    {list === relatives.partners && <span>{partnershipOf(m.id)}</span>}
                   </button>
                 ))}
               </section>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import type { Member, Relatives, Sibling } from '../lib/api/generated/members';
+import type { Member, Partnership, Relatives, Sibling } from '../lib/api/generated/members';
 import { useT } from './i18n';
 
 const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
@@ -18,6 +18,12 @@ function siblingsOf(others: Member[], parentIds: string[], related: string[], ed
     .map((m) => ({ id: m.id, parentIds: (edits[m.id] ?? m.parentIds).filter((id) => parentIds.includes(id)) }))
     .filter((s) => s.parentIds.length > 0);
 }
+
+// Details per partner id; partners without an entry are only together.
+type Details = Record<string, Omit<Partnership, 'partnerId'>>;
+const detailsOf = (details: Details, id: string) => details[id] ?? { status: 'together' as const, marriedOn: null };
+const detailsKey = (details: Details, ids: string[]) =>
+  ids.map((id) => `${id}:${detailsOf(details, id).status}:${detailsOf(details, id).marriedOn ?? ''}`).sort().join(',');
 
 const siblingKey = (s: Sibling) => `${s.id}:${[...s.parentIds].sort().join(',')}`;
 
@@ -43,11 +49,15 @@ export default function RelativesFields({
       childIds,
       partnerIds,
       siblings: siblingsOf(others, parentIds, [...parentIds, ...childIds, ...partnerIds], {}),
+      details: Object.fromEntries((member?.partnerships ?? []).map(({ partnerId, ...rest }) => [partnerId, rest])) as Details,
     };
   });
   const [parentIds, setParentIds] = useState(initial.parentIds);
   const [childIds, setChildIds] = useState(initial.childIds);
   const [partnerIds, setPartnerIds] = useState(initial.partnerIds);
+  const [details, setDetails] = useState(initial.details);
+  const setDetail = (id: string, detail: Partial<Details[string]>) =>
+    setDetails((current) => ({ ...current, [id]: { ...detailsOf(current, id), ...detail } }));
   const [siblingEdits, setSiblingEdits] = useState<Record<string, string[]>>({});
   const siblings = siblingsOf(others, parentIds, [...parentIds, ...childIds, ...partnerIds], siblingEdits);
   const siblingIds = siblings.map((s) => s.id);
@@ -62,9 +72,11 @@ export default function RelativesFields({
     differs(parentIds, initial.parentIds) ||
     differs(childIds, initial.childIds) ||
     differs(partnerIds, initial.partnerIds) ||
-    differs(siblings.map(siblingKey), initial.siblings.map(siblingKey));
+    differs(siblings.map(siblingKey), initial.siblings.map(siblingKey)) ||
+    detailsKey(details, partnerIds) !== detailsKey(initial.details, partnerIds);
+  const partnerships = partnerIds.map((partnerId) => ({ partnerId, ...detailsOf(details, partnerId) }));
   // The form reads the latest selection on submit and dismiss; a ref there avoids re-rendering it.
-  useEffect(() => onChange({ parentIds, childIds, partnerIds, siblings }, changed));
+  useEffect(() => onChange({ parentIds, childIds, partnerIds, siblings, partnerships }, changed));
 
   // extra renders next to an entry, e.g. the shared parent of a half-sibling.
   function list(
@@ -107,7 +119,33 @@ export default function RelativesFields({
       <h3 id="relatives-heading">{t.relatives.heading}</h3>
       {list(t.relatives.parents, parentIds, [...childIds, ...partnerIds, ...siblingIds], (id) => setParentIds((ids) => toggle(ids, id)))}
       {list(t.relatives.children, childIds, [...parentIds, ...partnerIds, ...siblingIds], (id) => setChildIds((ids) => toggle(ids, id)))}
-      {list(t.relatives.partners, partnerIds, [...parentIds, ...childIds, ...siblingIds], (id) => setPartnerIds((ids) => toggle(ids, id)))}
+      {list(t.relatives.partners, partnerIds, [...parentIds, ...childIds, ...siblingIds], (id) => setPartnerIds((ids) => toggle(ids, id)), {
+        // Selected partners get their status and, when married, the wedding date.
+        extra: (m) => {
+          if (!partnerIds.includes(m.id)) return null;
+          const { status, marriedOn } = detailsOf(details, m.id);
+          return (
+            <>
+              <select
+                aria-label={t.relatives.status(fullName(m))}
+                value={status}
+                onChange={(event) => setDetail(m.id, { status: event.target.value as Partnership['status'] })}
+              >
+                <option value="together">{t.relatives.together}</option>
+                <option value="married">{t.relatives.married}</option>
+              </select>
+              {status === 'married' && (
+                <input
+                  type="date"
+                  aria-label={t.relatives.marriedOn(fullName(m))}
+                  value={marriedOn ?? ''}
+                  onChange={(event) => setDetail(m.id, { marriedOn: event.target.value || null })}
+                />
+              )}
+            </>
+          );
+        },
+      })}
       {list(
         t.relatives.siblings,
         fullIds,
