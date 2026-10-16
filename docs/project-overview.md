@@ -73,6 +73,7 @@ The import takes names, exact birth and death dates and places, and notes from i
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
 Each family in the selector has a download link that exports it as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
 A copy icon next to the selected family's name ("Anonyme Kopie") asks for a name ("<name> (anonym)" by default) and creates a copy of the family with random names, for example to show the tree's structure in a snapshot without personal names.
+Families in the selector's "Alle Familien" list can be reordered by drag and drop; the order is saved via `PUT /families/order` (which must list every family exactly once), new families are appended at the end, and a failed save restores the previous order.
 
 ### Members and relatives
 

@@ -7,6 +7,7 @@ import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.RenameFamilyRequest
+import com.github.bff.generated.model.ReorderFamiliesRequest
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -57,6 +58,9 @@ class FamiliesController(private val familyService: FamilyService) : FamiliesApi
             .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(fileName, Charsets.UTF_8).build().toString())
             .body(export.gedcom)
     }
+
+    override fun reorderFamilies(reorderFamiliesRequest: ReorderFamiliesRequest): ResponseEntity<Void> =
+        if (familyService.reorder(reorderFamiliesRequest)) ResponseEntity.noContent().build() else ResponseEntity.badRequest().build()
 
     override fun deleteFamily(familyId: UUID): ResponseEntity<Void> =
         if (familyService.delete(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()

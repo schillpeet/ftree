@@ -96,6 +96,10 @@ export interface RenameFamilyRequest {
   name: string;
 }
 
+export interface ReorderFamiliesRequest {
+  familyIds: string[];
+}
+
 export interface ImportFamilyRequest {
   /**
      * @minLength 1
@@ -672,6 +676,70 @@ const res = await fetch(getCreateFamilyUrl(),
 
   const data: createFamilyResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as createFamilyResponse
+}
+
+
+
+export type reorderFamiliesResponse204 = {
+  data: void
+  status: 204
+}
+
+export type reorderFamiliesResponse400 = {
+  data: void
+  status: 400
+}
+
+export type reorderFamiliesResponseSuccess = (reorderFamiliesResponse204) & {
+  headers: Headers;
+};
+export type reorderFamiliesResponseError = (reorderFamiliesResponse400) & {
+  headers: Headers;
+};
+
+export type reorderFamiliesResponse = (reorderFamiliesResponseSuccess | reorderFamiliesResponseError)
+
+export const getReorderFamiliesUrl = () => {
+
+
+
+
+  return `http://localhost:8080/families/order`
+}
+
+/**
+ * @summary Save the order of all families
+ */
+export const reorderFamilies = async (reorderFamiliesRequest: ReorderFamiliesRequest, options?: RequestInit): Promise<reorderFamiliesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getReorderFamiliesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reorderFamiliesRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reorderFamiliesResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as reorderFamiliesResponse
 }
 
 

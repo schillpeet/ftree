@@ -62,16 +62,10 @@ export default function FamilyTree() {
         if (response.status !== 200 || !Array.isArray(response.data)) {
           throw new Error('Unexpected families response');
         }
-        const orderedFamilies = [...response.data].sort((left, right) => {
-          const leftIsDefault = left.name.toLocaleLowerCase() === 'default';
-          const rightIsDefault = right.name.toLocaleLowerCase() === 'default';
-          return Number(rightIsDefault) - Number(leftIsDefault);
-        });
-        setFamilies(orderedFamilies);
+        const loaded = response.data;
+        setFamilies(loaded);
         setActiveFamilyId((selected) =>
-          selected && orderedFamilies.some((family) => family.id === selected)
-            ? selected
-            : firstFamilyId(orderedFamilies),
+          selected && loaded.some((family) => family.id === selected) ? selected : firstFamilyId(loaded),
         );
       } catch {
         if (current) setFamiliesError(true);
@@ -112,13 +106,7 @@ export default function FamilyTree() {
   }
 
   function addFamily(family: FamilySummary) {
-    setFamilies((current) =>
-      [...(current ?? []).filter((item) => item.id !== family.id), family].sort((left, right) => {
-        const leftIsDefault = left.name.toLocaleLowerCase() === 'default';
-        const rightIsDefault = right.name.toLocaleLowerCase() === 'default';
-        return Number(rightIsDefault) - Number(leftIsDefault);
-      }),
-    );
+    setFamilies((current) => [...(current ?? []).filter((item) => item.id !== family.id), family]);
     selectFamily(family.id);
   }
 

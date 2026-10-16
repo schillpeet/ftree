@@ -6,6 +6,7 @@ import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.RenameFamilyRequest
+import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.TestFamilySettings
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
@@ -22,11 +23,19 @@ class FamilyService(
     private val jdbc: JdbcTemplate,
 ) {
     fun findAll(): List<FamilySummary> =
-        familyRepository.findAllByOrderByCreatedAtAsc()
-            .sortedByDescending { it.name.equals(DEFAULT_FAMILY_NAME, ignoreCase = true) }
-            .map { family ->
+        familyRepository.findAllByOrderByPositionAsc().map { family ->
             family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id))
         }
+
+    // Accepts only a permutation of every family id, so no family can be dropped from the list.
+    @Transactional
+    fun reorder(request: ReorderFamiliesRequest): Boolean {
+        val ids = request.familyIds.orEmpty()
+        val families = familyRepository.findAll().associateBy { it.id }
+        if (ids.size != families.size || ids.toSet() != families.keys) return false
+        ids.forEachIndexed { index, id -> families.getValue(id).position = index }
+        return true
+    }
 
     @Transactional
     fun create(request: CreateFamilyRequest): FamilyCreationResult {
