@@ -3,8 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Member, Partnership, Relatives, Sibling } from '../lib/api/generated/members';
 import { useT } from './i18n';
-
-const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
+import { nameOf } from './names';
 
 function toggle(ids: string[], id: string) {
   return ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
@@ -39,6 +38,7 @@ export default function RelativesFields({
   onChange: (relatives: Relatives, changed: boolean) => void;
 }) {
   const t = useT();
+  const fullName = (m: Member) => nameOf(m, t.members.unknown);
   const others = members.filter((m) => m.id !== member?.id);
   const [initial] = useState(() => {
     const parentIds = member?.parentIds ?? [];
