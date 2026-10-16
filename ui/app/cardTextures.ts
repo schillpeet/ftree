@@ -1,7 +1,8 @@
 // Canvas drawings for the 3D cards in HangingCard.tsx: papyrus and wood surfaces plus the member's
 // text. Plain canvas code without React, so `cardTextures.check.mjs` can test the text wrapping.
 
-export type CardText = { name: string; birth: string | null; death: string | null; note?: string | null };
+// `unknown`: the name is only a placeholder, drawn small and italic.
+export type CardText = { name: string; unknown?: boolean; birth: string | null; death: string | null; note?: string | null };
 
 // Stable per member, so a card keeps its fibres and grain across renders.
 export const seedOf = (id: string) => [...id].reduce((a, c) => (a * 31 + c.charCodeAt(0)) % 2147483646, 7) + 1;
@@ -109,7 +110,7 @@ function scrollContent(ctx: CanvasRenderingContext2D, w: number, text: CardText,
     medallion(ctx, photo, w / 2, y + 90, 150, 180, '#9a6b35');
     y += 200;
   }
-  ctx.font = '600 44px Georgia, serif';
+  ctx.font = text.unknown ? 'italic 30px Georgia, serif' : '600 44px Georgia, serif';
   for (const line of wrap(ctx, text.name, w - 70)) ctx.fillText(line, w / 2, (y += 48));
   ctx.font = '30px Georgia, serif';
   if (text.birth) ctx.fillText(`* ${text.birth}`, w / 2, (y += 42));
@@ -158,7 +159,7 @@ export function drawSign(canvas: HTMLCanvasElement, text: CardText, seed: number
     ctx.fillText(line, cx, y);
     ctx.shadowBlur = 0;
   };
-  ctx.font = '600 48px Georgia, serif';
+  ctx.font = text.unknown ? 'italic 32px Georgia, serif' : '600 48px Georgia, serif';
   const names = wrap(ctx, text.name, w - 30 - left).slice(0, 2);
   const dates = [text.birth && `* ${text.birth}`, text.death && `† ${text.death}`].filter((d): d is string => !!d);
   let y = h / 2 - (names.length * 54 + dates.length * 40) / 2 + 40;

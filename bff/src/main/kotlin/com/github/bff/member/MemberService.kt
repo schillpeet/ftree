@@ -59,8 +59,8 @@ class MemberService(
         val family = familyRepository.findById(familyId).orElse(null) ?: return null
         return memberRepository.save(
             MemberEntity(
-                firstName = request.firstName,
-                lastName = request.lastName,
+                firstName = request.firstName.trim(),
+                lastName = request.lastName.trim(),
                 birthName = request.birthName,
                 family = family,
                 birthDate = request.birthDate,
@@ -77,8 +77,8 @@ class MemberService(
     @Transactional
     fun update(familyId: UUID, id: UUID, request: CreateMemberRequest): Member? {
         val entity = memberRepository.findByIdAndFamilyId(id, familyId) ?: return null
-        entity.firstName = request.firstName
-        entity.lastName = request.lastName
+        entity.firstName = request.firstName.trim()
+        entity.lastName = request.lastName.trim()
         entity.birthName = request.birthName
         entity.birthDate = request.birthDate
         entity.birthPlace = request.birthPlace

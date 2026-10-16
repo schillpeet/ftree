@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import {
-  DownloadIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon, UploadIcon, UsersIcon, CloseIcon,
+  CopyIcon, DownloadIcon, EyeIcon, EyeOffIcon, PencilIcon, TrashIcon, UploadIcon, UsersIcon, CloseIcon,
 } from './icons';
-import { deleteFamily, getExportFamilyUrl, importFamily, renameFamily, type FamilySummary } from '../lib/api/generated/members';
+import {
+  anonymizeFamily, deleteFamily, getExportFamilyUrl, importFamily, renameFamily, reorderFamilies, type FamilySummary,
+} from '../lib/api/generated/members';
 import { useT } from './i18n';
 
 export default function FamiliesPanel({
@@ -42,6 +44,10 @@ export default function FamiliesPanel({
   const [importError, setImportError] = useState<string | null>(null);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameError, setRenameError] = useState<string | null>(null);
+  const [isAnonymizing, setIsAnonymizing] = useState(false);
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+  const [reorderError, setReorderError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
@@ -140,7 +146,51 @@ export default function FamiliesPanel({
     }
   }
 
+  // A new family with the same structure under random names; the original stays as it is.
+  async function anonymize(family: FamilySummary) {
+    const name = window.prompt(t.families.anonymizeName, t.families.anonymizeDefault(family.name))?.trim();
+    if (!name) return;
+    setIsAnonymizing(true);
+    setRenameError(null);
+    try {
+      const response = await anonymizeFamily(family.id, { name });
+      if (response.status === 409) {
+        setRenameError(t.familyExists(name));
+        return;
+      }
+      if (response.status === 404) {
+        setRenameError(t.families.gone);
+        return;
+      }
+      if (response.status !== 201) throw new Error(`HTTP ${response.status}`);
+      onImported(response.data);
+    } catch {
+      setRenameError(t.families.anonymizeFailed);
+    } finally {
+      setIsAnonymizing(false);
+    }
+  }
+
+  // Optimistic: the list shows the dropped order at once and goes back if the BFF refuses it.
+  async function moveFamily(id: string, targetId: string) {
+    const before = families;
+    const moved = before?.find((family) => family.id === id);
+    if (!before || !moved || id === targetId) return;
+    const next = before.filter((family) => family.id !== id);
+    next.splice(before.findIndex((family) => family.id === targetId), 0, moved);
+    setFamilies(next);
+    setReorderError(null);
+    try {
+      const response = await reorderFamilies({ familyIds: next.map((family) => family.id) });
+      if (response.status !== 204) throw new Error(`HTTP ${response.status}`);
+    } catch {
+      setFamilies(before);
+      setReorderError(t.families.reorderFailed);
+    }
+  }
+
   if (!isOpen) return null;
+  const draggedIndex = families?.findIndex((family) => family.id === draggedId) ?? -1;
 
   return (
     <section className="glass dashboard-board families-panel" id="families-panel" aria-label={t.families.title} ref={panelRef}>
@@ -156,15 +206,27 @@ export default function FamiliesPanel({
           <div className="family-current">
             <div className="family-current-line">
               <span>{t.families.selected}</span>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label={t.families.rename}
-                disabled={isRenaming}
-                onClick={() => void rename(activeFamily)}
-              >
-                <PencilIcon />
-              </button>
+              <div className="family-current-actions">
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label={t.families.rename}
+                  disabled={isRenaming}
+                  onClick={() => void rename(activeFamily)}
+                >
+                  <PencilIcon />
+                </button>
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label={t.families.anonymize}
+                  title={t.families.anonymize}
+                  disabled={isAnonymizing}
+                  onClick={() => void anonymize(activeFamily)}
+                >
+                  {isAnonymizing ? '…' : <CopyIcon />}
+                </button>
+              </div>
             </div>
             <strong>{activeFamily.name}</strong>
           </div>
@@ -199,12 +261,41 @@ export default function FamiliesPanel({
         )}
         {deleteError && <p className="member-form-error" role="alert">{deleteError}</p>}
         {importError && <p className="member-form-error" role="alert">{importError}</p>}
+        {reorderError && <p className="member-form-error" role="alert">{reorderError}</p>}
         {!!families?.length && (
           <>
             <h3 className="dashboard-subhead">{t.families.all}</h3>
             <ul className="family-set-list">
-              {families.map((family) => (
-                <li className="family-set-item" key={family.id}>
+              {families.map((family, index) => (
+                <li
+                  className="family-set-item"
+                  key={family.id}
+                  title={t.families.dragHint}
+                  draggable
+                  data-drop={
+                    draggedIndex >= 0 && dropTargetId === family.id && draggedId !== family.id
+                      ? draggedIndex < index ? 'after' : 'before'
+                      : undefined
+                  }
+                  onDragStart={(event) => {
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', family.id);
+                    setDraggedId(family.id);
+                  }}
+                  onDragOver={(event) => {
+                    if (!draggedId) return;
+                    event.preventDefault();
+                    setDropTargetId(family.id);
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    if (draggedId) void moveFamily(draggedId, family.id);
+                  }}
+                  onDragEnd={() => {
+                    setDraggedId(null);
+                    setDropTargetId(null);
+                  }}
+                >
                   <button
                     type="button"
                     className="family-set-select"

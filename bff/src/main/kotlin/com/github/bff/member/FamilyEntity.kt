@@ -4,6 +4,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import org.hibernate.annotations.Generated
 import java.time.Instant
 import java.util.UUID
 
@@ -21,4 +22,8 @@ class FamilyEntity(
     var generationCount: Int? = null,
     var minChildren: Int? = null,
     var maxChildren: Int? = null,
+    // The database assigns new families the next position, so they are listed last.
+    @Generated
+    @Column(nullable = false, insertable = false)
+    var position: Int = 0,
 )

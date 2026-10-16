@@ -6,6 +6,8 @@ import { AdditiveBlending, CanvasTexture, Group, PlaneGeometry, Quaternion, SRGB
 import type { Member } from '../lib/api/generated/members';
 import { drawScroll, drawSign, papyrus, seedOf, wood, type CardText } from './cardTextures';
 import { formatDate, photoSrc } from './MembersControls';
+import { useT } from './i18n';
+import { isNameless, nameOf } from './names';
 import type { Point } from './pins';
 import { seededRandom } from './random';
 import { CLICK_TOLERANCE } from './Scroll';
@@ -28,8 +30,9 @@ const PX = 160;
 const SCROLL = { width: 2.9, height: 3.5, rope: 0.45 };
 const SIGN = { width: 3.4, height: 2, depth: 0.12, rope: 0.7 };
 
-const textOf = (m: Member): CardText => ({
-  name: `${m.firstName} ${m.lastName}`,
+const textOf = (m: Member, unknown: string): CardText => ({
+  name: nameOf(m, unknown),
+  unknown: isNameless(m),
   birth: formatDate(m.birthDate),
   death: formatDate(m.deathDate),
   note: m.note,
@@ -57,7 +60,7 @@ const plainTextures = () =>
 // The member's face of the card, redrawn once their photo has loaded. A photo that fails to load
 // (or is served without CORS headers) is left out.
 function useCardTexture(member: Member, familyId: string | null, width: number, height: number, draw: typeof drawScroll) {
-  const text = textOf(member);
+  const text = textOf(member, useT().members.unknown);
   const seed = seedOf(member.id);
   const key = JSON.stringify(text);
   const texture = useMemo(

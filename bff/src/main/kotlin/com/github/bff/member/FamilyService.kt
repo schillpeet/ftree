@@ -1,13 +1,17 @@
 package com.github.bff.member
 
+import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.RenameFamilyRequest
+import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.TestFamilySettings
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -16,13 +20,22 @@ import kotlin.math.roundToInt
 class FamilyService(
     private val familyRepository: FamilyRepository,
     private val memberRepository: MemberRepository,
+    private val jdbc: JdbcTemplate,
 ) {
     fun findAll(): List<FamilySummary> =
-        familyRepository.findAllByOrderByCreatedAtAsc()
-            .sortedByDescending { it.name.equals(DEFAULT_FAMILY_NAME, ignoreCase = true) }
-            .map { family ->
+        familyRepository.findAllByOrderByPositionAsc().map { family ->
             family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id))
         }
+
+    // Accepts only a permutation of every family id, so no family can be dropped from the list.
+    @Transactional
+    fun reorder(request: ReorderFamiliesRequest): Boolean {
+        val ids = request.familyIds.orEmpty()
+        val families = familyRepository.findAll().associateBy { it.id }
+        if (ids.size != families.size || ids.toSet() != families.keys) return false
+        ids.forEachIndexed { index, id -> families.getValue(id).position = index }
+        return true
+    }
 
     @Transactional
     fun create(request: CreateFamilyRequest): FamilyCreationResult {
@@ -121,6 +134,60 @@ class FamilyService(
         }
         memberRepository.flush()
         return FamilyImportResult.IMPORTED(family.toSummary(saved.values.toList()))
+    }
+
+    // Copies every member with links, partnership details, and placement into a new family under
+    // random names; photos stay behind and the source is not changed.
+    @Transactional
+    fun anonymize(id: UUID, request: AnonymizeFamilyRequest): FamilyAnonymizeResult {
+        if (!familyRepository.existsById(id)) return FamilyAnonymizeResult.NOT_FOUND
+        val name = request.name?.trim().orEmpty()
+        if (name.isEmpty() || name.length > 100) return FamilyAnonymizeResult.INVALID
+        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyAnonymizeResult.NAME_TAKEN
+
+        val originals = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
+        val names = AnonymousNames(originals)
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = name))
+        val copies = memberRepository.saveAll(
+            originals.map { member ->
+                MemberEntity(
+                    firstName = names.firstName(member.firstName),
+                    lastName = names.lastName(member.lastName),
+                    birthName = names.birthName(member.birthName),
+                    family = family,
+                    birthDate = member.birthDate,
+                    birthPlace = member.birthPlace,
+                    deathDate = member.deathDate,
+                    deathPlace = member.deathPlace,
+                    note = member.note,
+                    pinId = member.pinId,
+                    posX = member.posX,
+                    posY = member.posY,
+                    posZ = member.posZ,
+                )
+            },
+        )
+        val copyOf = originals.map { it.id }.zip(copies).toMap()
+        originals.zip(copies).forEach { (original, copy) ->
+            original.parents.mapTo(copy.parents) { copyOf.getValue(it.id) }
+            original.partners.mapTo(copy.partners) { copyOf.getValue(it.id) }
+        }
+        memberRepository.flush()
+        // The links above are inserted with the default status, so the details are copied afterwards.
+        val details = jdbc.query(
+            "SELECT p.member_id, p.partner_id, p.status, p.married_on FROM member_partners p JOIN members m ON m.id = p.member_id WHERE m.family_id = ?",
+            { rs, _ ->
+                arrayOf<Any?>(
+                    rs.getString(3),
+                    rs.getObject(4, LocalDate::class.java),
+                    copyOf.getValue(rs.getObject(1, UUID::class.java)).id,
+                    copyOf.getValue(rs.getObject(2, UUID::class.java)).id,
+                )
+            },
+            id,
+        )
+        jdbc.batchUpdate("UPDATE member_partners SET status = ?, married_on = ? WHERE member_id = ? AND partner_id = ?", details)
+        return FamilyAnonymizeResult.ANONYMIZED(family.toSummary(copies))
     }
 
     @Transactional
@@ -222,6 +289,13 @@ sealed interface FamilyImportResult {
     data class IMPORTED(val summary: FamilySummary) : FamilyImportResult
     data object INVALID : FamilyImportResult
     data object NAME_TAKEN : FamilyImportResult
+}
+
+sealed interface FamilyAnonymizeResult {
+    data class ANONYMIZED(val summary: FamilySummary) : FamilyAnonymizeResult
+    data object NOT_FOUND : FamilyAnonymizeResult
+    data object INVALID : FamilyAnonymizeResult
+    data object NAME_TAKEN : FamilyAnonymizeResult
 }
 
 sealed interface FamilyRenameResult {
