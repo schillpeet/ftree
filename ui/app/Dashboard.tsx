@@ -1,10 +1,11 @@
 'use client';
 
+import { toPng } from 'html-to-image';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance } from './appearance';
 import { useT } from './i18n';
-import { AppearanceIcon, BurgerIcon, ChevronIcon, CloseIcon, PersonIcon, UsersIcon } from './icons';
+import { AppearanceIcon, BurgerIcon, ChevronIcon, CloseIcon, DownloadIcon, PersonIcon, UsersIcon } from './icons';
 
 export type DashboardPanel = 'families' | 'people' | 'appearance';
 
@@ -55,6 +56,26 @@ export default function Dashboard({
     { id: 'appearance', label: t.menu.appearance, icon: <AppearanceIcon /> },
   ];
 
+  // Pictures the page as it looks without the menu, keeping only the scene (canvas and its HTML
+  // labels) and the family name; the canvas needs `preserveDrawingBuffer` to be readable.
+  async function takeSnapshot() {
+    onToggle();
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const canvas = document.querySelector('canvas');
+    const link = document.createElement('a');
+    link.href = await toPng(document.body, {
+      width: window.innerWidth,
+      height: window.innerHeight,
+      filter: (node) =>
+        node.parentElement !== document.body ||
+        (node instanceof Element && (node.contains(canvas) || node.classList.contains('dashboard-family'))),
+    });
+    // Swedish dates read yyyy-mm-dd, in local time.
+    const day = new Date().toLocaleDateString('sv-SE');
+    link.download = `ftree-${(activeFamily?.name ?? 'tree').replace(/[^\p{L}\p{N}]+/gu, '-')}-${day}.png`;
+    link.click();
+  }
+
   return (
     <>
       <div className="dashboard-menu" data-panel-open={panel ? '' : undefined} ref={menuRef}>
@@ -83,6 +104,10 @@ export default function Dashboard({
                 <ChevronIcon />
               </button>
             ))}
+            <button type="button" className="dashboard-nav-item" onClick={() => void takeSnapshot()}>
+              <DownloadIcon />
+              <span>{t.menu.snapshot}</span>
+            </button>
           </nav>
         )}
         {isOpen && panel === 'appearance' && (
