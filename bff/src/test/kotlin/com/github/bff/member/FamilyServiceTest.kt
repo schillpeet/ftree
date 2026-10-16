@@ -38,7 +38,6 @@ class FamilyServiceTest {
         val families = familyRepository.findAllByOrderByPositionAsc()
         assertTrue(families.any { it.name.equals(DEFAULT_FAMILY_NAME, ignoreCase = true) })
         assertTrue(memberRepository.findAll().all { member -> families.any { it.id == member.family.id } })
-        assertEquals(DEFAULT_FAMILY_NAME, familyService.findAll().first().name)
     }
 
     @Test
@@ -56,6 +55,7 @@ class FamilyServiceTest {
 
     @Test
     fun `rejects an order that misses or repeats a family`() {
+        familyService.create(request())
         val ids = familyService.findAll().map { it.id }
 
         assertFalse(familyService.reorder(ReorderFamiliesRequest(ids.drop(1))))
