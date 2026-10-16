@@ -58,8 +58,8 @@ class GedcomTest {
         assertEquals(setOf("@I1@"), erika.partnerIds)
 
         val child = people.getValue("@I3@")
-        assertEquals("Unbekannt", child.firstName)
-        assertEquals("Unbekannt", child.lastName)
+        assertEquals("", child.firstName)
+        assertEquals("", child.lastName)
         assertEquals(setOf("@I1@", "@I2@"), child.parentIds)
         assertEquals("Notiz aus Datensatz", child.note)
         assertEquals(3, people.size)
@@ -110,6 +110,9 @@ class GedcomTest {
             GedcomPerson("d", "Dora", "Neu"),
             GedcomPerson("e", "Emil", "Neu", parentIds = setOf("c", "d")),
             GedcomPerson("f", "Fritz", "Solo", parentIds = setOf("d")),
+            // Unknown names.
+            GedcomPerson("g", "", "", parentIds = setOf("f")),
+            GedcomPerson("h", "", "Neu"),
         )
 
         val read = assertNotNull(parseGedcom(writeGedcom(people)))

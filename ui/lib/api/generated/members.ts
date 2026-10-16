@@ -80,12 +80,24 @@ export interface ArchiveFamilyRequest {
   name: string;
 }
 
+export interface AnonymizeFamilyRequest {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+}
+
 export interface RenameFamilyRequest {
   /**
      * @minLength 1
      * @maxLength 100
      */
   name: string;
+}
+
+export interface ReorderFamiliesRequest {
+  familyIds: string[];
 }
 
 export interface ImportFamilyRequest {
@@ -128,12 +140,12 @@ export interface Position {
 export interface Member {
   readonly id: string;
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   firstName: string;
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   lastName: string;
@@ -218,12 +230,12 @@ export interface Relatives {
 
 export interface CreateMemberRequest {
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   firstName: string;
   /**
-     * @minLength 1
+     * @minLength 0
      * @maxLength 100
      */
   lastName: string;
@@ -668,6 +680,70 @@ const res = await fetch(getCreateFamilyUrl(),
 
 
 
+export type reorderFamiliesResponse204 = {
+  data: void
+  status: 204
+}
+
+export type reorderFamiliesResponse400 = {
+  data: void
+  status: 400
+}
+
+export type reorderFamiliesResponseSuccess = (reorderFamiliesResponse204) & {
+  headers: Headers;
+};
+export type reorderFamiliesResponseError = (reorderFamiliesResponse400) & {
+  headers: Headers;
+};
+
+export type reorderFamiliesResponse = (reorderFamiliesResponseSuccess | reorderFamiliesResponseError)
+
+export const getReorderFamiliesUrl = () => {
+
+
+
+
+  return `http://localhost:8080/families/order`
+}
+
+/**
+ * @summary Save the order of all families
+ */
+export const reorderFamilies = async (reorderFamiliesRequest: ReorderFamiliesRequest, options?: RequestInit): Promise<reorderFamiliesResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getReorderFamiliesUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(reorderFamiliesRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: reorderFamiliesResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as reorderFamiliesResponse
+}
+
+
+
 export type deleteFamilyResponse204 = {
   data: void
   status: 204
@@ -867,6 +943,82 @@ const res = await fetch(getArchiveFamilyUrl(familyId),
 
   const data: archiveFamilyResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as archiveFamilyResponse
+}
+
+
+
+export type anonymizeFamilyResponse201 = {
+  data: FamilySummary
+  status: 201
+}
+
+export type anonymizeFamilyResponse400 = {
+  data: void
+  status: 400
+}
+
+export type anonymizeFamilyResponse404 = {
+  data: void
+  status: 404
+}
+
+export type anonymizeFamilyResponse409 = {
+  data: void
+  status: 409
+}
+
+export type anonymizeFamilyResponseSuccess = (anonymizeFamilyResponse201) & {
+  headers: Headers;
+};
+export type anonymizeFamilyResponseError = (anonymizeFamilyResponse400 | anonymizeFamilyResponse404 | anonymizeFamilyResponse409) & {
+  headers: Headers;
+};
+
+export type anonymizeFamilyResponse = (anonymizeFamilyResponseSuccess | anonymizeFamilyResponseError)
+
+export const getAnonymizeFamilyUrl = (familyId: string,) => {
+
+
+
+
+  return `http://localhost:8080/families/${familyId}/anonymize`
+}
+
+/**
+ * Copies every member with dates, places, notes, parent/child and partner links, partnership details, and placement into a new family. First, last, and birth names are replaced with random ones; a last name maps to the same random name throughout the copy. Photos are not copied. The source family is not changed.
+ * @summary Copy a family under a new name with random member names
+ */
+export const anonymizeFamily = async (familyId: string,
+    anonymizeFamilyRequest: AnonymizeFamilyRequest, options?: RequestInit): Promise<anonymizeFamilyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getAnonymizeFamilyUrl(familyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(anonymizeFamilyRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: anonymizeFamilyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as anonymizeFamilyResponse
 }
 
 
