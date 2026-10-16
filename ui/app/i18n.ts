@@ -10,7 +10,7 @@ const en = {
   discardChanges: 'Discard unsaved changes?',
   familyExists: (name: string) => `A family “${name}” already exists.`,
   language: { switch: 'Switch to German', short: 'EN' },
-  menu: { open: 'Open menu', close: 'Close menu', label: 'Menu', families: 'Families', people: 'Members', appearance: 'Appearance', noFamily: 'No family' },
+  menu: { open: 'Open menu', close: 'Close menu', label: 'Menu', families: 'Families', people: 'Members', appearance: 'Appearance', snapshot: 'Snapshot', noFamily: 'No family' },
   appearance: { title: 'Appearance', close: 'Close appearance', organic: 'Organic tree', organicExperimental: 'Organic tree (experimental)', experimental: 'Experimental' },
   tools: {
     label: 'Tools',
@@ -176,7 +176,7 @@ const de: typeof en = {
   discardChanges: 'Ungespeicherte Änderungen verwerfen?',
   familyExists: (name) => `Eine Familie „${name}“ existiert bereits.`,
   language: { switch: 'Auf Englisch umschalten', short: 'DE' },
-  menu: { open: 'Menü öffnen', close: 'Menü schließen', label: 'Menü', families: 'Familien', people: 'Mitglieder', appearance: 'Darstellung', noFamily: 'Keine Familie' },
+  menu: { open: 'Menü öffnen', close: 'Menü schließen', label: 'Menü', families: 'Familien', people: 'Mitglieder', appearance: 'Darstellung', snapshot: 'Momentaufnahme', noFamily: 'Keine Familie' },
   appearance: { title: 'Darstellung', close: 'Darstellung schließen', organic: 'Organischer Baum', organicExperimental: 'Organischer Baum (experimentell)', experimental: 'Experimentell' },
   tools: {
     label: 'Werkzeuge',
