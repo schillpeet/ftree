@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.12.0](https://github.com/schillpeet/ftree/compare/v0.11.0...v0.12.0) (2026-10-16)
+
+
+### Features
+
+* **bff:** allow members with unknown names ([#117](https://github.com/schillpeet/ftree/issues/117)) ([0d973c3](https://github.com/schillpeet/ftree/commit/0d973c3876220f5a70f8fb67fc2336d281e26b45))
+* **bff:** create anonymized family copy ([#120](https://github.com/schillpeet/ftree/issues/120)) ([728daea](https://github.com/schillpeet/ftree/commit/728daea14ef9e79ca6e10ccf273427e7ade988ae))
+* **bff:** store partnership status and wedding date ([#115](https://github.com/schillpeet/ftree/issues/115)) ([6f59746](https://github.com/schillpeet/ftree/commit/6f597469a274042a9eac9005559a56f9fd5d6460))
+* **ui:** download a tree snapshot ([#116](https://github.com/schillpeet/ftree/issues/116)) ([fa9065d](https://github.com/schillpeet/ftree/commit/fa9065d943525ade5c246341c38a375f34fedfb0))
+* **ui:** edit relatives in the person dialog ([#113](https://github.com/schillpeet/ftree/issues/113)) ([aca695a](https://github.com/schillpeet/ftree/commit/aca695a821c0b8da298e5d2017233e437d19dbbf))
+* **ui:** reorder families by drag and drop ([#119](https://github.com/schillpeet/ftree/issues/119)) ([d7cd006](https://github.com/schillpeet/ftree/commit/d7cd0066bd00e81c3b2e819f6c4db1fbde557f43))
+
 ## [0.11.0](https://github.com/schillpeet/ftree/compare/v0.10.0...v0.11.0) (2026-10-14)
 
 
