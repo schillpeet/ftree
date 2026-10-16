@@ -290,6 +290,15 @@ textarea {
   display: flex;
   align-items: stretch;
   gap: 6px;
+  cursor: grab;
+}
+
+.family-set-item[data-drop='before'] {
+  box-shadow: 0 -3px 0 #e89155;
+}
+
+.family-set-item[data-drop='after'] {
+  box-shadow: 0 3px 0 #e89155;
 }
 
 .family-set-select {

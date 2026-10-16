@@ -128,7 +128,7 @@ paths:
       summary: List family sets
       responses:
         "200":
-          description: Family sets ordered by creation time.
+          description: Family sets in their saved order; new families are appended.
           content:
             application/json:
               schema:
@@ -157,6 +157,23 @@ paths:
           description: The name or generation settings are invalid or infeasible.
         "409":
           description: A family with this name already exists.
+  /families/order:
+    put:
+      operationId: reorderFamilies
+      tags:
+        - Families
+      summary: Save the order of all families
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderFamiliesRequest"
+      responses:
+        "204":
+          description: Order saved.
+        "400":
+          description: The list does not contain every family exactly once.
   /families/{familyId}:
     parameters:
       - name: familyId
@@ -690,6 +707,16 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    ReorderFamiliesRequest:
+      type: object
+      required:
+        - familyIds
+      properties:
+        familyIds:
+          type: array
+          items:
+            type: string
+            format: uuid
     ImportFamilyRequest:
       type: object
       required:

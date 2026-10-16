@@ -6,6 +6,7 @@ import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.Relatives
 import com.github.bff.generated.model.RenameFamilyRequest
+import com.github.bff.generated.model.ReorderFamiliesRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.transaction.annotation.Transactional
@@ -34,10 +35,33 @@ class FamilyServiceTest {
 
     @Test
     fun `migration creates an initial family and assigns every existing member`() {
-        val families = familyRepository.findAllByOrderByCreatedAtAsc()
+        val families = familyRepository.findAllByOrderByPositionAsc()
         assertTrue(families.any { it.name.equals(DEFAULT_FAMILY_NAME, ignoreCase = true) })
         assertTrue(memberRepository.findAll().all { member -> families.any { it.id == member.family.id } })
-        assertEquals(DEFAULT_FAMILY_NAME, familyService.findAll().first().name)
+    }
+
+    @Test
+    fun `saves a new family order and appends newly created families`() {
+        val created = familyService.create(request()) as FamilyCreationResult.CREATED
+        val reversed = familyService.findAll().map { it.id }.reversed()
+
+        assertTrue(familyService.reorder(ReorderFamiliesRequest(reversed)))
+        familyRepository.flush()
+        val added = familyService.create(request("Appended ${UUID.randomUUID()}")) as FamilyCreationResult.CREATED
+
+        assertEquals(reversed + added.summary.id, familyService.findAll().map { it.id })
+        assertEquals(reversed.first(), created.summary.id)
+    }
+
+    @Test
+    fun `rejects an order that misses or repeats a family`() {
+        familyService.create(request())
+        val ids = familyService.findAll().map { it.id }
+
+        assertFalse(familyService.reorder(ReorderFamiliesRequest(ids.drop(1))))
+        assertFalse(familyService.reorder(ReorderFamiliesRequest(ids.drop(1) + ids.last())))
+        assertFalse(familyService.reorder(ReorderFamiliesRequest(ids + UUID.randomUUID())))
+        assertEquals(ids, familyService.findAll().map { it.id })
     }
 
     @Test
@@ -238,8 +262,8 @@ class FamilyServiceTest {
         assertTrue(familyService.rename(family.id, RenameFamilyRequest(family.name)) is FamilyRenameResult.RENAMED)
     }
 
-    private fun request() = CreateFamilyRequest(
-        "Family test ${UUID.randomUUID()}",
+    private fun request(name: String = "Family test ${UUID.randomUUID()}") = CreateFamilyRequest(
+        name,
         12,
         3,
         0,
