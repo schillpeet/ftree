@@ -19,7 +19,7 @@ import { useLanguage, useT } from './i18n';
 import { initialsOf, nameOf } from './names';
 import ProfileDialog from './ProfileDialog';
 import RelativesFields from './RelativesFields';
-import { ChevronLeftIcon, CloseIcon, EyeIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
+import { ChevronLeftIcon, CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
 
 type MemberForm = {
@@ -129,9 +129,6 @@ function MemberDetails({
         </button>
         {details && <span>{details}</span>}
       </div>
-      <button type="button" className="icon-button" aria-label={t.members.showNamed(name)} onClick={onSelect}>
-        <EyeIcon />
-      </button>
       <button type="button" className="icon-button" aria-label={t.members.editNamed(name)} onClick={onEdit}>
         <PencilIcon />
       </button>
