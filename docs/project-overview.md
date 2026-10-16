@@ -83,16 +83,19 @@ These three are lit by the sun, cast shadows, are hidden by leaves in front of t
 At night the scroll and board cards glow softly (their emissive faces brighten) so their names stay readable, lit by the little orbs above them.
 Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
-Siblings and half-siblings are not stored separately but derived from shared parents: the relatives dialog lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
-The relatives dialog collapses each relation into one line such as "Eltern zuweisen" (or "Eltern bearbeiten" with the selected names) that opens its checkbox list on click.
+Siblings and half-siblings are not stored separately but derived from shared parents: the relatives section lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
+The relatives section collapses each relation into one line such as "Eltern zuweisen" (or "Eltern bearbeiten" with the selected names) that opens its checkbox list on click.
 The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and eye, pencil, and trash actions; relatives are shown in the profile.
-A read-only profile dialog shows a member's photo, name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
+A read-only profile dialog shows a member's photo (or their initials in its place), name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
 GEDCOM export writes a differing birth name as a second NAME with TYPE birth; import also reads TYPE maiden, a NAME of TYPE married as the current name, and `_MARNM`.
 Clicking a relative in the profile shows that person's profile and moves the camera to their scroll.
-From the profile, "Bearbeiten" opens the edit form and "Beziehungen zuweisen" the relatives dialog; the pencil in the members list still opens the edit form directly.
-A photo can also be uploaded in the member form: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the members list.
-Dialogs and the members list close on Escape or a click outside them; the edit form and the relatives dialog first ask before discarding unsaved changes, and the create form keeps its draft.
+From the profile, "Bearbeiten" opens the edit form; the pencil in the members list still opens the edit form directly.
+The member form contains the relatives section ("Beziehungen"), saved together with the person, so relatives can also be assigned while creating someone.
+The edit form ends with a red "Person löschen" button that deletes the person after confirmation.
+The photo URL is no longer editable in the form; an existing one is kept and still shown.
+A photo can also be uploaded in the member form, by choosing a file or dropping an image on the photo field: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the members list.
+Dialogs and the members list close on Escape or a click outside them; the edit form first asks before discarding unsaved changes, and the create form keeps its draft.
 
 ### Pins and card placement
 
@@ -144,7 +147,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/moon.ts` paints the moon's face and halo on canvases.
 - `ui/app/Scroll.tsx` renders the classic papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/HangingCard.tsx` renders the 3D card styles (scroll and wooden board on ropes), which must fit the card footprint in `pins.ts`; `ui/app/cardTextures.ts` draws their surfaces and text on canvases, with `ui/app/cardTextures.check.mjs` as its self-check (`node app/cardTextures.check.mjs` in `ui/`).
-- `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesDialog.tsx` assigns parents, children, partners, and (half-)siblings.
+- `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesFields.tsx` is the form section that assigns parents, children, partners, and (half-)siblings.
 - `ui/app/ProfileDialog.tsx` shows a member's read-only profile with their relatives.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
