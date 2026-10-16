@@ -1,21 +1,19 @@
 'use client';
 
 import type { Member } from '../lib/api/generated/members';
-import { birthNameOf, formatDate } from './MembersControls';
+import { birthNameOf, formatDate, initialsOf } from './MembersControls';
 import { useT } from './i18n';
+import { nameOf } from './names';
 import { relativesOf } from './relatives';
 
-const fullName = (m: Member) => `${m.firstName} ${m.lastName}`;
-
-// Read-only profile of a member. Clicking a relative shows their profile instead; editing the
-// person or their relatives happens in the existing dialogs.
+// Read-only profile of a member. Clicking a relative shows their profile instead; the person and
+// their relatives are edited in the member form.
 export default function ProfileDialog({
   member,
   photo,
   members,
   onShow,
   onEdit,
-  onEditRelatives,
   onClose,
 }: {
   member: Member;
@@ -23,13 +21,18 @@ export default function ProfileDialog({
   members: Member[];
   onShow: (id: string) => void;
   onEdit: () => void;
-  onEditRelatives: () => void;
   onClose: () => void;
 }) {
   const t = useT();
+  const fullName = (m: Member) => nameOf(m, t.members.unknown);
   const birth = [formatDate(member.birthDate), member.birthPlace].filter(Boolean).join(' · ');
   const death = [formatDate(member.deathDate), member.deathPlace].filter(Boolean).join(' · ');
   const relatives = relativesOf(member, members);
+  const partnershipOf = (id: string) => {
+    const partnership = member.partnerships.find((p) => p.partnerId === id);
+    if (partnership?.status !== 'married') return t.relatives.together;
+    return partnership.marriedOn ? t.profile.marriedSince(formatDate(partnership.marriedOn)!) : t.relatives.married;
+  };
   const groups: [string, Member[]][] = [
     [t.relatives.parents, relatives.parents],
     [t.relatives.children, relatives.children],
@@ -54,10 +57,14 @@ export default function ProfileDialog({
           </button>
         </header>
         <div className="profile">
-          {photo && (
+          {photo ? (
             // Arbitrary user URLs: next/image would need every host configured.
             // eslint-disable-next-line @next/next/no-img-element
             <img className="profile-photo" src={photo} alt={t.profile.photo(fullName(member))} />
+          ) : (
+            <span className="profile-photo profile-initials" aria-hidden="true">
+              {initialsOf(member)}
+            </span>
           )}
           <div>
             {birthNameOf(member, t) && <p>{birthNameOf(member, t)}</p>}
@@ -74,15 +81,13 @@ export default function ProfileDialog({
                 {list.map((m) => (
                   <button key={m.id} type="button" className="member-relatives-button" onClick={() => onShow(m.id)}>
                     {fullName(m)}
+                    {list === relatives.partners && <span>{partnershipOf(m.id)}</span>}
                   </button>
                 ))}
               </section>
             ),
         )}
         <div className="member-form-actions">
-          <button type="button" onClick={onEditRelatives}>
-            {t.profile.assignRelatives}
-          </button>
           <button type="button" onClick={onEdit}>
             {t.profile.edit}
           </button>

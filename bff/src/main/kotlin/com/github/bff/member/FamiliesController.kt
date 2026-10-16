@@ -1,11 +1,13 @@
 package com.github.bff.member
 
 import com.github.bff.generated.api.FamiliesApi
+import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.RenameFamilyRequest
+import com.github.bff.generated.model.ReorderFamiliesRequest
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -33,6 +35,14 @@ class FamiliesController(private val familyService: FamilyService) : FamiliesApi
             FamilyArchiveResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
         }
 
+    override fun anonymizeFamily(familyId: UUID, anonymizeFamilyRequest: AnonymizeFamilyRequest): ResponseEntity<FamilySummary> =
+        when (val result = familyService.anonymize(familyId, anonymizeFamilyRequest)) {
+            is FamilyAnonymizeResult.ANONYMIZED -> ResponseEntity.status(HttpStatus.CREATED).body(result.summary)
+            FamilyAnonymizeResult.INVALID -> ResponseEntity.badRequest().build()
+            FamilyAnonymizeResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            FamilyAnonymizeResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
+
     override fun importFamily(importFamilyRequest: ImportFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.import(importFamilyRequest)) {
             is FamilyImportResult.IMPORTED -> ResponseEntity.status(HttpStatus.CREATED).body(result.summary)
@@ -48,6 +58,9 @@ class FamiliesController(private val familyService: FamilyService) : FamiliesApi
             .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment().filename(fileName, Charsets.UTF_8).build().toString())
             .body(export.gedcom)
     }
+
+    override fun reorderFamilies(reorderFamiliesRequest: ReorderFamiliesRequest): ResponseEntity<Void> =
+        if (familyService.reorder(reorderFamiliesRequest)) ResponseEntity.noContent().build() else ResponseEntity.badRequest().build()
 
     override fun deleteFamily(familyId: UUID): ResponseEntity<Void> =
         if (familyService.delete(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()

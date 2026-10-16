@@ -128,7 +128,7 @@ paths:
       summary: List family sets
       responses:
         "200":
-          description: Family sets ordered by creation time.
+          description: Family sets in their saved order; new families are appended.
           content:
             application/json:
               schema:
@@ -157,6 +157,23 @@ paths:
           description: The name or generation settings are invalid or infeasible.
         "409":
           description: A family with this name already exists.
+  /families/order:
+    put:
+      operationId: reorderFamilies
+      tags:
+        - Families
+      summary: Save the order of all families
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReorderFamiliesRequest"
+      responses:
+        "204":
+          description: Order saved.
+        "400":
+          description: The list does not contain every family exactly once.
   /families/{familyId}:
     parameters:
       - name: familyId
@@ -230,6 +247,43 @@ paths:
                 $ref: "#/components/schemas/FamilySummary"
         "400":
           description: The name is invalid or the family has no members.
+        "404":
+          description: Family not found.
+        "409":
+          description: A family with this name already exists.
+  /families/{familyId}/anonymize:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: anonymizeFamily
+      tags:
+        - Families
+      summary: Copy a family under a new name with random member names
+      description: >-
+        Copies every member with dates, places, notes, parent/child and partner links, partnership
+        details, and placement into a new family. First, last, and birth names are replaced with
+        random ones; a last name maps to the same random name throughout the copy. Photos are not
+        copied. The source family is not changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnonymizeFamilyRequest"
+      responses:
+        "201":
+          description: Anonymized copy created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The name is invalid.
         "404":
           description: Family not found.
         "409":
@@ -635,6 +689,15 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    AnonymizeFamilyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
     RenameFamilyRequest:
       type: object
       required:
@@ -644,6 +707,16 @@ components:
           type: string
           minLength: 1
           maxLength: 100
+    ReorderFamiliesRequest:
+      type: object
+      required:
+        - familyIds
+      properties:
+        familyIds:
+          type: array
+          items:
+            type: string
+            format: uuid
     ImportFamilyRequest:
       type: object
       required:
@@ -666,6 +739,7 @@ components:
         - lastName
         - parentIds
         - partnerIds
+        - partnerships
       properties:
         id:
           type: string
@@ -673,11 +747,11 @@ components:
           readOnly: true
         firstName:
           type: string
-          minLength: 1
+          minLength: 0
           maxLength: 100
         lastName:
           type: string
-          minLength: 1
+          minLength: 0
           maxLength: 100
         birthName:
           type: string
@@ -726,6 +800,12 @@ components:
           items:
             type: string
             format: uuid
+        partnerships:
+          description: Status and wedding date per partner in partnerIds; the same on both sides.
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/Partnership"
         pinId:
           description: Branch point the card hangs from; null when placed freely or not yet placed.
           type: integer
@@ -792,6 +872,33 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/Sibling"
+        partnerships:
+          description: >-
+            Status and wedding date of partners in partnerIds, stored for both sides; partners left out are
+            "together", and when absent, existing details stay unchanged.
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/Partnership"
+    Partnership:
+      type: object
+      required:
+        - partnerId
+        - status
+      properties:
+        partnerId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - together
+            - married
+        marriedOn:
+          description: Wedding date; only kept when the status is married.
+          type: string
+          format: date
+          nullable: true
     Sibling:
       type: object
       required:
@@ -816,11 +923,11 @@ components:
       properties:
         firstName:
           type: string
-          minLength: 1
+          minLength: 0
           maxLength: 100
         lastName:
           type: string
-          minLength: 1
+          minLength: 0
           maxLength: 100
         birthName:
           type: string

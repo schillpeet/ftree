@@ -657,7 +657,7 @@ export default function Scene({
       <Canvas
         shadows="percentage"
         // Lower exposure keeps the bright sky shader from washing out to white; lights compensate.
-        gl={{ toneMappingExposure: 0.6 }}
+        gl={{ toneMappingExposure: 0.6, preserveDrawingBuffer: true }}
         camera={{ position: CAMERA_START, fov: 50, far: 10000 }}
         style={{ position: 'fixed', inset: 0 }}
       >
