@@ -85,6 +85,7 @@ Each card shows photo (from `photoUrl`), name, birth and death dates, and, excep
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives section lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
 The relatives section collapses each relation into one line such as "Eltern zuweisen" (or "Eltern bearbeiten" with the selected names) that opens its checkbox list on click.
+Each selected partner gets a status, "zusammen" or "verheiratet", and a married couple an optional wedding date; both partners share these details, and the profile shows them next to the partner, for example "verheiratet seit 12.06.1985".
 The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and eye, pencil, and trash actions; relatives are shown in the profile.
 A read-only profile dialog shows a member's photo (or their initials in its place), name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
@@ -124,8 +125,9 @@ Partners without shared children are joined by a gold line.
 The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
 Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
+Partnership status and wedding date live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
 The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
-Authentication and a broader family-tree model (relationship types such as adoption, dates of partnerships, uncertain links) are not implemented.
+Authentication and a broader family-tree model (relationship types such as adoption, separation dates, uncertain links) are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
 The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
@@ -191,7 +193,7 @@ Do not assume that a tree is public by default.
 These decisions have not been implemented:
 
 - The broader person and family-tree domain model, including how uncertain or conflicting information is represented.
-- Relationship types beyond parent/child and partners (adoption, partnership dates, uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data deletion behavior.
+- Relationship types beyond parent/child and partners (adoption, separation or divorce dates, uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data deletion behavior.
 - Data export beyond the per-family GEDCOM export, which leaves out photos and card placement.
 - Remaining BFF API operations, error format, and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.

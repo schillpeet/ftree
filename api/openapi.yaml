@@ -666,6 +666,7 @@ components:
         - lastName
         - parentIds
         - partnerIds
+        - partnerships
       properties:
         id:
           type: string
@@ -726,6 +727,12 @@ components:
           items:
             type: string
             format: uuid
+        partnerships:
+          description: Status and wedding date per partner in partnerIds; the same on both sides.
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/Partnership"
         pinId:
           description: Branch point the card hangs from; null when placed freely or not yet placed.
           type: integer
@@ -792,6 +799,33 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/Sibling"
+        partnerships:
+          description: >-
+            Status and wedding date of partners in partnerIds, stored for both sides; partners left out are
+            "together", and when absent, existing details stay unchanged.
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/Partnership"
+    Partnership:
+      type: object
+      required:
+        - partnerId
+        - status
+      properties:
+        partnerId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - together
+            - married
+        marriedOn:
+          description: Wedding date; only kept when the status is married.
+          type: string
+          format: date
+          nullable: true
     Sibling:
       type: object
       required:

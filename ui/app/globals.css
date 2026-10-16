@@ -828,6 +828,20 @@ textarea {
   margin-left: 6px;
 }
 
+.member-relatives-button span {
+  margin-left: 6px;
+  opacity: 0.7;
+}
+
+.relatives-list select,
+.relatives-list input[type='date'] {
+  border: 1px solid var(--glass-border);
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  color: inherit;
+  color-scheme: dark;
+}
+
 .relatives-list {
   display: grid;
   align-content: start;

@@ -2,6 +2,7 @@ package com.github.bff.member
 
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
+import com.github.bff.generated.model.Partnership
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Position
 import com.github.bff.generated.model.Relatives
@@ -9,6 +10,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
+import java.time.LocalDate
 import java.time.OffsetDateTime
 import java.util.UUID
 
@@ -47,7 +49,9 @@ class MemberService(
     fun findAll(familyId: UUID): List<Member>? {
         if (!familyRepository.existsById(familyId)) return null
         val photos = photoTimes(familyId)
-        return memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId).map { it.toResponse(photos[it.id]) }
+        val partnerships = partnerships(familyId)
+        return memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId)
+            .map { it.toResponse(photos[it.id], partnerships[it.id].orEmpty()) }
     }
 
     @Transactional
@@ -66,7 +70,7 @@ class MemberService(
                 note = request.note,
                 photoUrl = request.photoUrl?.toString(),
             ),
-        ).toResponse(null)
+        ).toResponse(null, emptyList())
     }
 
     /** Replaces the member's fields but keeps its parent/child links; null when it is not in the family. */
@@ -82,7 +86,7 @@ class MemberService(
         entity.deathPlace = request.deathPlace
         entity.note = request.note
         entity.photoUrl = request.photoUrl?.toString()
-        return entity.toResponse(photoTimes(familyId)[id])
+        return entity.toResponse(photoTimes(familyId)[id], partnerships(familyId)[id].orEmpty())
     }
 
     @Transactional
@@ -105,6 +109,10 @@ class MemberService(
                 }
             )
         if (invalidSiblings) return RelativesResult.INVALID
+        val partnerships = relatives.partnerships?.associateBy { it.partnerId }
+        if (partnerships != null && (partnerships.size != relatives.partnerships?.size || !partnerIds.containsAll(partnerships.keys))) {
+            return RelativesResult.INVALID
+        }
         // Listed siblings get exactly their shared parents among the member's; everyone else outside the
         // member's own relatives loses the member's parents.
         val takesSiblingParents = { otherId: UUID -> siblings != null && otherId != id && otherId !in everyone }
@@ -129,7 +137,22 @@ class MemberService(
             }
             if (other.id in partnerIds) other.partners.add(member) else other.partners.remove(member)
         }
-        member.partners = partnerIds.map(all::getValue).toMutableSet()
+        // Changed in place, so the rows of kept partners and their details stay.
+        member.partners.removeIf { it.id !in partnerIds }
+        member.partners.addAll(partnerIds.map(all::getValue))
+        if (partnerships != null) {
+            memberRepository.flush()
+            partnerIds.forEach { partnerId ->
+                val partnership = partnerships[partnerId]
+                val married = partnership?.status == Partnership.StatusEnum.MARRIED
+                jdbc.update(
+                    "UPDATE member_partners SET status = ?, married_on = ? WHERE (member_id = ? AND partner_id = ?) OR (member_id = ? AND partner_id = ?)",
+                    if (married) "married" else "together",
+                    partnership?.marriedOn.takeIf { married },
+                    id, partnerId, partnerId, id,
+                )
+            }
+        }
         return RelativesResult.UPDATED
     }
 
@@ -202,7 +225,19 @@ class MemberService(
             familyId,
         ).toMap()
 
-    private fun MemberEntity.toResponse(photoUpdatedAt: OffsetDateTime?) = Member().apply {
+    // Per member the details of each partner, for the whole family at once.
+    private fun partnerships(familyId: UUID): Map<UUID, List<Partnership>> =
+        jdbc.query(
+            "SELECT p.member_id, p.partner_id, p.status, p.married_on FROM member_partners p JOIN members m ON m.id = p.member_id WHERE m.family_id = ?",
+            { rs, _ ->
+                rs.getObject(1, UUID::class.java) to
+                    Partnership(rs.getObject(2, UUID::class.java), Partnership.StatusEnum.fromValue(rs.getString(3)))
+                        .marriedOn(rs.getObject(4, LocalDate::class.java))
+            },
+            familyId,
+        ).groupBy({ it.first }, { it.second })
+
+    private fun MemberEntity.toResponse(photoUpdatedAt: OffsetDateTime?, partnerships: List<Partnership>) = Member().apply {
         id = this@toResponse.id
         firstName = this@toResponse.firstName
         lastName = this@toResponse.lastName
@@ -216,6 +251,7 @@ class MemberService(
         this.photoUpdatedAt = photoUpdatedAt
         parentIds = this@toResponse.parents.map { it.id }
         partnerIds = this@toResponse.partners.map { it.id }
+        this.partnerships = partnerships
         pinId = this@toResponse.pinId
         position = posX?.let { Position(it, posY, posZ) }
     }
