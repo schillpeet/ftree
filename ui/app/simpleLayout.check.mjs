@@ -170,7 +170,19 @@ const former = layout([
 ]);
 const fx = (id) => former.get(id)[0];
 assert.equal(Math.sign(fx('k') - fx('r')), -Math.sign(fx('k') - fx('h')));
-assert.equal(fx('child'), (fx('k') + fx('h')) / 2);
+// The child of a former couple hangs straight below the former partner, even next to the hub.
+assert.equal(fx('child'), fx('h'));
+// A former partner at the unit's edge with a child of their own alone stands over that child.
+const edgeEx = layout([
+  { ...person('p', [], ['q', 's']), partnerships: [{ partnerId: 'q', status: 'together' }, { partnerId: 's', status: 'separated' }] },
+  { ...person('q', [], ['p']), ...status('q', 'p', 'together') },
+  { ...person('s', [], ['p']), ...status('s', 'p', 'separated') },
+  person('pq1', ['p', 'q']),
+  person('pq2', ['p', 'q']),
+  person('pq3', ['p', 'q']),
+  person('sk', ['s']),
+]);
+assert.equal(edgeEx.get('sk')[0], edgeEx.get('s')[0]);
 
 // A current couple whose members both have former partners: each person's exes stand on their own
 // outer side (a2 a1 A B b1 b2); with exes on one side only, the other partner stands on the other side.
@@ -192,8 +204,8 @@ const row = ['a2', 'a1', 'ca', 'cb', 'b1', 'b2'].map(sx);
 const dir = Math.sign(row[5] - row[0]);
 assert.deepEqual(row.map((v) => dir * v), row.map((v) => dir * v).sort((p, q) => p - q));
 for (let i = 1; i < 6; i++) assert.equal(Math.abs(row[i] - row[i - 1]), NAME_GAP);
-// The child of the nearer ex hangs between them, the one of the farther ex under that ex.
-assert.equal(sx('ka1'), (sx('ca') + sx('a1')) / 2);
+// The children of each ex hang straight under that ex.
+assert.equal(sx('ka1'), sx('a1'));
 assert.equal(sx('ka2'), sx('a2'));
 assert.equal(sx('kb2'), sx('b2'));
 const oneSided = layout([

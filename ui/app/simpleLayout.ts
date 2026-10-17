@@ -170,10 +170,13 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     // the children of a partner who is not next to them hang under that partner, so the bar to a
     // farther partner is not mistaken for one to the nearer ones.
     const meanX = (via: string) => {
-      const xs = byId.get(via)!.parentIds.flatMap((pid) => (own.has(pid) ? [own.get(pid)!] : []));
+      const parents = byId.get(via)!.parentIds.filter((pid) => own.has(pid));
+      const xs = parents.map((pid) => own.get(pid)!);
       const hubs = hubsOf.get(unit);
-      const far = hubs ? byId.get(via)!.parentIds.filter((pid) => own.has(pid) && !hubs.has(pid)).map((pid) => own.get(pid)!) : [];
-      if (xs.length === 2 && far.length === 1 && Math.abs(far[0] - xs.find((x) => x !== far[0])!) > NAME_GAP) return far[0];
+      const far = hubs ? parents.filter((pid) => !hubs.has(pid)).map((pid) => own.get(pid)!) : [];
+      // The children of a former couple hang under the former partner, wherever they stand.
+      const apart = parents.length === 2 && separated(parents[0], parents[1]);
+      if (xs.length === 2 && far.length === 1 && (apart || Math.abs(far[0] - xs.find((x) => x !== far[0])!) > NAME_GAP)) return far[0];
       return xs.reduce((a, b) => a + b, 0) / xs.length;
     };
     // Children of the left couple first, then a child whose partner has parents in the tree (in-laws
@@ -283,6 +286,23 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     for (const [id, x] of tree.xs) {
       const [l, r] = tree.contour.get(genOf(id)) ?? [x, x];
       tree.contour.set(genOf(id), [Math.min(l, x), Math.max(r, x)]);
+    }
+  }
+  // Whoever stands at the outer edge of their unit and has children of their own alone steps out over
+  // them, so their line drops straight instead of bending sideways, if the row has room for it.
+  for (const unit of units) {
+    if (unit.length < 2) continue;
+    const at = unit.map((id) => tree.xs.get(id));
+    if (at.some((x) => x == null)) continue;
+    for (const [id, inner] of [[unit[0], unit[1]], [unit.at(-1)!, unit.at(-2)!]] as const) {
+      const kids = people.filter((p) => p.parentIds.includes(id));
+      if (!kids.length || kids.some((kid) => kid.parentIds.some((pid) => pid !== id && byId.has(pid))) || kids.some((kid) => !tree.xs.has(kid.id))) continue;
+      const kidXs = kids.map((kid) => tree.xs.get(kid.id)!);
+      const target = (Math.min(...kidXs) + Math.max(...kidXs)) / 2;
+      const x = tree.xs.get(id)!;
+      if ((target - x) * (x - tree.xs.get(inner)!) <= 0) continue;
+      const room = [...tree.xs].every(([other, ox]) => other === id || genOf(other) !== genOf(id) || (ox - x) * (ox - target) > 0 || Math.abs(ox - target) >= NAME_GAP + FAMILY_GAP || unit.includes(other) && Math.abs(ox - target) >= NAME_GAP);
+      if (room) tree.xs.set(id, target);
     }
   }
   const xs = [...tree.xs.values()];
