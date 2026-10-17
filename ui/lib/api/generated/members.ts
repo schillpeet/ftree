@@ -119,6 +119,7 @@ export type PartnershipStatus = typeof PartnershipStatus[keyof typeof Partnershi
 export const PartnershipStatus = {
   together: 'together',
   married: 'married',
+  separated: 'separated',
 } as const;
 
 export interface Partnership {

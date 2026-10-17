@@ -25,8 +25,16 @@ In-law families (a partner's parents at the top of the tree) are placed right ne
 Partners in the experimental view are marked by a small ⚭ (two rings) between their names instead of a line.
 Someone with children by several partners forks halfway down in the experimental view, one branch toward each partner, so every couple gets a bar of its own.
 A partner's parents (in-laws) are placed after the family their child married into, so the married-in partner's family stands right above them and no line crosses the other family's lines.
+Someone with children by at least two partners stands at the edge of their group in the experimental view, with the partners beside them, the newest nearest (no shared child, else the youngest latest child, else fewer children).
+Children of the nearest partner hang centred under that couple's bar, and children of a farther partner hang under that partner.
+The bars to all partners of someone at the edge run at one height, and the person drops straight down to them.
+Separated partners stand outermost beside the person and the current partner nearest; without a stored status, the guess from the children's birth dates applies.
+Separated partners get no ring in the experimental view; their dashed line marks the relationship.
+The line between separated partners is dashed: their bar, and without a shared child a line at the height of the person's own family bar (under their names when they have none), where the former partner drops straight down to it.
+The children of a separated couple hang straight below the former partner.
 Parents of a shared child stand side by side in the experimental view even without a stored partnership, so the child hangs centred below both.
-Children of only one of several co-parents stand outside on that parent's side in the experimental view, and that parent's fork runs over to them.
+A child of only one of several co-parents hangs with the children of that parent's nearest couple in the experimental view, from the same child bar.
+The child who married into another family stands last in their sibling group, at the edge facing that family.
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
 Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.
 Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a person and their partners hang in the middle of it, and their children's branch leaves the trunk right below them, so parents always hang directly above their children.
@@ -131,6 +139,8 @@ The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
 Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
 Partnership status and wedding date live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
+The status is `together`, `married` (with an optional wedding date), or `separated` (no date), set per partner in the relatives form.
+The GEDCOM import and export do not carry partnership status yet.
 `POST /families/{familyId}/anonymize` copies a family in one transaction into a new named family with the same members, dates, places, notes, links, partnership details, and placement but without photos, leaving the original untouched.
 The copy replaces first names at random and maps each distinct last name (birth names included) consistently to a random last name from fixed lists in `AnonymousNames.kt`, never reusing a name from the original; empty names stay empty.
 The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.

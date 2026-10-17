@@ -30,6 +30,7 @@ export default function ProfileDialog({
   const relatives = relativesOf(member, members);
   const partnershipOf = (id: string) => {
     const partnership = member.partnerships.find((p) => p.partnerId === id);
+    if (partnership?.status === 'separated') return t.relatives.separated;
     if (partnership?.status !== 'married') return t.relatives.together;
     return partnership.marriedOn ? t.profile.marriedSince(formatDate(partnership.marriedOn)!) : t.relatives.married;
   };

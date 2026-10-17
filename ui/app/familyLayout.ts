@@ -1,15 +1,25 @@
 import type { Point } from './pins';
 
-type Person = { id: string; parentIds: string[]; partnerIds: string[] };
+type Person = {
+  id: string;
+  parentIds: string[];
+  partnerIds: string[];
+  partnerships?: readonly { partnerId: string; status: string }[];
+};
 
 // Line segments (as point pairs) in family-tree style: from each parent a line drops to a bar
 // joining them, from the middle of that bar a stem drops to a second bar, and each child hangs
 // from it. Partners without shared children get a direct line instead. `along` orders bars within a
 // row: the angle around the trunk by default, plain x for a flat tree.
 const angle = ([x, , z]: Point) => Math.atan2(z, x);
+const separated = (people: Person[], a: string, b: string) =>
+  people.find((p) => p.id === a)?.partnerships?.some((p) => p.partnerId === b && p.status === 'separated') ?? false;
+
 export function relationLines(people: Person[], positions: Map<string, Point>, along = angle, fork = 0) {
   const parents: Point[] = [];
   const partners: Point[] = [];
+  // Flat trees only: the lines of couples who split up, to draw dashed.
+  const dashed: Point[] = [];
   const at = (id: string) => positions.get(id)!;
   const level = ([x, , z]: Point, y: number): Point => [x, y, z];
 
@@ -21,6 +31,21 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
     const key = parentIds.join();
     if (!families.has(key)) families.set(key, { parentIds, childIds: [] });
     families.get(key)!.childIds.push(p.id);
+  }
+
+  // With `fork` (flat trees), a child of one parent alone hangs from the bar of that parent's couple
+  // whose children stand nearest, as one family, instead of from a bar of its own.
+  if (fork) {
+    for (const [key, { parentIds, childIds }] of [...families]) {
+      if (parentIds.length !== 1) continue;
+      const nearest = [...families.values()]
+        .filter((other) => other.parentIds.length > 1 && other.parentIds.includes(parentIds[0]))
+        .map((other) => ({ other, gap: Math.min(...other.childIds.flatMap((a) => childIds.map((b) => Math.abs(along(at(a)) - along(at(b)))))) }))
+        .sort((a, b) => a.gap - b.gap)[0];
+      if (!nearest) continue;
+      nearest.other.childIds.push(...childIds);
+      families.delete(key);
+    }
   }
 
   for (const p of people) {
@@ -55,8 +80,38 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
   // The stems stay centred over their children.
   const familiesOf = new Map<string, number>();
   for (const { parentIds } of plans) for (const id of parentIds) familiesOf.set(id, (familiesOf.get(id) ?? 0) + 1);
+  // Someone whose partners all stand on one side drops straight to the bars; only with partners on
+  // both sides each branch steps toward its partner, so the couples get bars of their own.
+  const bothSides = (id: string) => {
+    const sides = new Set<number>();
+    for (const { parentIds } of plans)
+      if (parentIds.includes(id))
+        for (const other of parentIds) if (other !== id) sides.add(Math.sign(at(other)[0] - at(id)[0]));
+    return sides.has(-1) && sides.has(1);
+  };
+  // A separated couple without children: when one of them has a family of their own, a dashed line
+  // runs at that family's bar height to the former partner, who drops straight down to it; else it
+  // joins the two under their names.
+  if (fork)
+    for (const p of people)
+      for (const id of p.partnerIds) {
+        if (!(id > p.id && positions.has(id) && separated(people, p.id, id) && !families.has([p.id, id].sort().join()))) continue;
+        const [a, b] = [at(p.id), at(id)];
+        const own = [p.id, id].map((who) => plans.find((plan) => plan.parentIds.includes(who) && plan.parentY === a[1])).find(Boolean);
+        const hub = own && [p.id, id].find((who) => own.parentIds.includes(who))!;
+        if (own && hub && !bothSides(hub)) {
+          const y = own.parentY - own.drop / 2;
+          const [from, to] = hub === p.id ? [a, b] : [b, a];
+          dashed.push(level(from, y), level(to, y));
+          parents.push(to, level(to, y));
+        } else {
+          const under = (point: Point): Point => [point[0], point[1] - 2, point[2]];
+          dashed.push(a, under(a), under(a), under(b), under(b), b);
+        }
+      }
   for (const { parentIds, childIds, parentY, drop, middle, lane } of plans) {
     const lanes = lanesByRow.get(parentY)!.length;
+    const barY = parentY - drop / 2;
     // Lanes share the space between 60 % and 85 % of the way down to the children.
     const childBar = parentY - drop * (lanes > 1 ? 0.6 + (0.25 * lane) / (lanes - 1) : 0.75);
     const childXs = childIds.map((id) => at(id)[0]);
@@ -64,11 +119,11 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
       const [x, , z] = at(id);
       const others = parentIds.filter((other) => other !== id).map((other) => at(other)[0]);
       let endX = x;
-      if (fork && familiesOf.get(id)! > 1)
+      if (fork && familiesOf.get(id)! > 1 && (!others.length || bothSides(id)))
         endX = others.length
           ? x + fork * Math.sign(others.reduce((a, b) => a + b) / others.length - x)
           : (Math.min(...childXs) + Math.max(...childXs)) / 2;
-      const end: Point = [endX, parentY - drop / 2, z];
+      const end: Point = [endX, barY, z];
       if (endX === x) parents.push(at(id), end);
       else {
         const forkY = parentY - drop / 4;
@@ -77,12 +132,17 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
       return end;
     });
     ends.sort((a, b) => a[0] - b[0]);
-    for (let i = 1; i < ends.length; i++) parents.push(ends[i - 1], ends[i]);
-    const stem = ends.length === 1 ? ends[0] : middle;
+    // The bar of a separated couple is dashed, and its children hang straight below the partner who
+    // is not the one with several families, so the bar reads as a link to the earlier partner.
+    const apart = fork > 0 && parentIds.length === 2 && separated(people, parentIds[0], parentIds[1]);
+    for (let i = 1; i < ends.length; i++) (apart ? dashed : parents).push(ends[i - 1], ends[i]);
+    const former = apart ? [...parentIds].sort((a, b) => familiesOf.get(a)! - familiesOf.get(b)!)[0] : undefined;
+    const stem =
+      ends.length === 1 ? ends[0] : former ? level(at(former), barY) : level(middle, barY);
     parents.push(stem, level(stem, childBar));
     for (const id of childIds) {
       parents.push(level(stem, childBar), level(at(id), childBar), level(at(id), childBar), at(id));
     }
   }
-  return { parents, partners };
+  return { parents, partners, dashed };
 }

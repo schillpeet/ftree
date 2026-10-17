@@ -3,6 +3,7 @@ package com.github.bff.member
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Partnership
 import com.github.bff.generated.model.Partnership.StatusEnum.MARRIED
+import com.github.bff.generated.model.Partnership.StatusEnum.SEPARATED
 import com.github.bff.generated.model.Partnership.StatusEnum.TOGETHER
 import com.github.bff.generated.model.Relatives
 import org.springframework.beans.factory.annotation.Autowired
@@ -62,6 +63,14 @@ class PartnershipTest {
         update(anna, listOf(Partnership(bernd, TOGETHER).marriedOn(wedding)))
 
         assertEquals(listOf(TOGETHER to null), detailsOf(anna))
+    }
+
+    @Test
+    fun `stores separated couples for both partners and drops their wedding date`() {
+        update(anna, listOf(Partnership(bernd, SEPARATED).marriedOn(wedding)))
+
+        assertEquals(listOf(SEPARATED to null), detailsOf(anna))
+        assertEquals(listOf(SEPARATED to null), detailsOf(bernd))
     }
 
     @Test

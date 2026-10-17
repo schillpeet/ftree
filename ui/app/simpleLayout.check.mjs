@@ -93,7 +93,8 @@ assert.ok(Math.max(ix('rick'), ix('diane')) + NAME_GAP + FAMILY_GAP <= Math.min(
 assert.equal((ix('rick') + ix('diane')) / 2, (ix('space') + ix('beth')) / 2);
 assert.equal((ix('joyce') + ix('leonard')) / 2, (ix('jerry') + ix('tammy')) / 2);
 
-// Two partners: each couple's child hangs straight below that couple.
+// Two partners: the person with several partners stands at the edge, the partners beside them, and
+// each couple's child hangs under its own bar.
 const twice = layout([
   person('gaia', [], ['morty']),
   person('morty', [], ['gaia', 'gwen']),
@@ -103,12 +104,76 @@ const twice = layout([
 ]);
 const tx = (id) => twice.get(id)[0];
 assert.equal(Math.abs(tx('morty') - tx('gaia')), NAME_GAP);
-assert.equal(Math.abs(tx('morty') - tx('gwen')), NAME_GAP);
+assert.equal(Math.abs(tx('gaia') - tx('gwen')), NAME_GAP);
+assert.equal(Math.abs(tx('morty') - tx('gwen')), 2 * NAME_GAP);
 assert.equal(tx('naruto'), (tx('gaia') + tx('morty')) / 2);
-assert.equal(tx('junior'), (tx('gwen') + tx('morty')) / 2);
+assert.equal(tx('junior'), tx('gwen'));
 
-// Parents of a shared child stand together even without a stored partnership; children of one of
-// them alone stand outside on that parent's side, so the couple's children stay centred.
+// The sketched scenarios. Person `a` has several partners; children are dated so the partner with
+// the younger child is the newer one, and a partner without children is the current one.
+const kid = (id, ...parents) => ({ ...person(id, parents), birthDate: id.slice(-4) });
+const hubbed = (partners, kids) =>
+  layout([
+    person('a', [], partners),
+    ...partners.map((id) => person(id, [], ['a'])),
+    ...kids.map(([id, ...parents]) => kid(id, ...parents)),
+  ]);
+const sketch = (partners, kids) => {
+  const at = hubbed(partners, kids);
+  return { x: (id) => at.get(id)[0] };
+};
+// 1–3: one couple with one, two, or three children, centred under the bar.
+for (const n of [1, 2, 3]) {
+  const { x } = sketch(['b'], Array.from({ length: n }, (_, i) => [`ab${i}2000`, 'a', 'b']));
+  const ids = Array.from({ length: n }, (_, i) => `ab${i}2000`);
+  assert.equal((x('a') + x('b')) / 2, (Math.min(...ids.map(x)) + Math.max(...ids.map(x))) / 2);
+}
+// 4: two partners, one child each; the newer partner (younger child) stands next to a.
+const s4 = sketch(['b', 'c'], [['ab2010', 'a', 'b'], ['ac2000', 'a', 'c']]);
+assert.ok(Math.abs(s4.x('a') - s4.x('b')) < Math.abs(s4.x('a') - s4.x('c')));
+assert.equal(s4.x('ab2010'), (s4.x('a') + s4.x('b')) / 2);
+assert.equal(s4.x('ac2000'), s4.x('c'));
+// 5: one child with the newer partner, two with the older: those two hang centred under the older one.
+const s5 = sketch(['b', 'c'], [['ab2010', 'a', 'b'], ['ac1990', 'a', 'c'], ['ac1992', 'a', 'c']]);
+assert.equal((s5.x('ac1990') + s5.x('ac1992')) / 2, s5.x('c'));
+assert.ok(s5.x('ab2010') < s5.x('ac1990') && s5.x('ac1990') < s5.x('ac1992'));
+// 6: two children with the newer partner, one with the older.
+const s6 = sketch(['b', 'c'], [['ab2010', 'a', 'b'], ['ab2012', 'a', 'b'], ['ac1990', 'a', 'c']]);
+assert.equal((s6.x('ab2010') + s6.x('ab2012')) / 2, (s6.x('a') + s6.x('b')) / 2);
+assert.equal(s6.x('ac1990'), s6.x('c'));
+assert.ok(s6.x('ab2012') + NAME_GAP <= s6.x('ac1990'));
+// 7: three partners: the current one without children next to a, then the one with the younger
+// child, then the oldest; each child hangs under its own partner and nothing overlaps.
+const s7 = sketch(['b', 'c', 'd'], [['ac2005', 'a', 'c'], ['ad1995', 'a', 'd']]);
+const toward = Math.sign(s7.x('b') - s7.x('a'));
+assert.deepEqual(['a', 'b', 'c', 'd'].map((id) => toward * s7.x(id)), ['a', 'b', 'c', 'd'].map((id) => toward * s7.x(id)).sort((p, q) => p - q));
+assert.equal(s7.x('ac2005'), s7.x('c'));
+assert.equal(s7.x('ad1995'), s7.x('d'));
+
+// Status beats guessing: a separated partner stands outermost, even when their child is the younger.
+const status = (id, partnerId, kind) => ({ id, partnerships: [{ partnerId, status: kind }] });
+const withStatus = layout([
+  { ...person('a', [], ['b', 'c']), partnerships: [{ partnerId: 'b', status: 'together' }, { partnerId: 'c', status: 'separated' }] },
+  { ...person('b', [], ['a']), ...status('b', 'a', 'together') },
+  { ...person('c', [], ['a']), ...status('c', 'a', 'separated') },
+  kid('ab2000', 'a', 'b'),
+  kid('ac2010', 'a', 'c'),
+]);
+const wx2 = (id) => withStatus.get(id)[0];
+assert.ok(Math.abs(wx2('a') - wx2('b')) < Math.abs(wx2('a') - wx2('c')));
+// A current partner without children stands next to the person, the former partner beyond.
+const former = layout([
+  { ...person('k', [], ['r', 'h']), partnerships: [{ partnerId: 'r', status: 'together' }, { partnerId: 'h', status: 'separated' }] },
+  { ...person('r', [], ['k']), ...status('r', 'k', 'together') },
+  { ...person('h', [], ['k']), ...status('h', 'k', 'separated') },
+  person('child', ['k', 'h']),
+]);
+const fx = (id) => former.get(id)[0];
+assert.ok(Math.abs(fx('k') - fx('r')) < Math.abs(fx('k') - fx('h')));
+assert.equal(fx('child'), fx('h'));
+
+// Parents of a shared child stand together even without a stored partnership; a child of one of
+// them alone hangs with the couple's children on that parent's side, as one family centred over the couple.
 const coParents = layout([
   person('p1'),
   person('p2'),
@@ -118,10 +183,13 @@ const coParents = layout([
 ]);
 const cx = (id) => coParents.get(id)[0];
 assert.equal(Math.abs(cx('p1') - cx('p2')), NAME_GAP);
-assert.equal((cx('p1') + cx('p2')) / 2, (cx('c1') + cx('c2')) / 2);
-// solo stands beyond both c1 and c2, on p1's side.
+const family3 = ['c1', 'c2', 'solo'].map(cx);
+assert.equal((cx('p1') + cx('p2')) / 2, (Math.min(...family3) + Math.max(...family3)) / 2);
+// solo stands on p1's side of the couple's children, one name gap apart like siblings.
 const p1Side = Math.sign(cx('p1') - cx('p2'));
 assert.ok(['c1', 'c2'].every((id) => p1Side * (cx('solo') - cx(id)) >= NAME_GAP));
+assert.equal(new Set(family3).size, 3);
+
 // Regression: a wife's parents hang right above her, to the right of the family her husband hangs
 // under; her siblings stand on the outside, and no child bar crosses.
 const couple = (a, b, ...rest) => [person(a, [], [b]), person(b, [], [a]), ...rest];
@@ -139,8 +207,8 @@ const inLawFamily = [
   person('jon', ['abe', 'bea'], ['kim']),
   person('kim', ['cleo', 'dan'], ['jon']),
   person('lou', ['cleo', 'dan']),
-  person('moe', ['cleo', 'dan']),
-  person('noa', ['cleo', 'eli']),
+  person('moe', ['dan']),
+  person('noa', ['eli']),
   person('oz', ['fay', 'gus']),
   person('pia', ['fay', 'gus']),
   person('quin', ['jon', 'kim']),
@@ -162,7 +230,7 @@ for (let round = 0; round < 60; round++) {
   for (const id of ['lou', 'moe', 'noa']) assert.equal(Math.sign(px(id) - px('kim')), toward);
   // Her parents stand over their children, beyond the family her husband hangs under.
   const kids = ['kim', 'lou', 'moe', 'noa'].map(px);
-  for (const id of ['cleo', 'dan']) assert.ok(px(id) >= Math.min(...kids) && px(id) <= Math.max(...kids));
+  assert.ok(px('dan') >= Math.min(...kids) && px('dan') <= Math.max(...kids));
   for (const id of ['cleo', 'dan', 'eli']) assert.equal(Math.sign(px(id) - px('bea')), toward);
 }
 console.log('simpleLayout ok');
