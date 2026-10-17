@@ -48,33 +48,50 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
   const mates = (id: string) =>
     [...new Set([...byId.get(id)!.partnerIds, ...(coParents.get(id) ?? [])])].filter((m) => byId.has(m) && genOf(m) === genOf(id));
   // Someone with children by several partners (who are not partners of each other), or with a former
-  // partner, stands at the unit's edge with the partners beside them: current partners nearest, former
-  // ones (status separated) outermost. Within each, a partner without shared children counts as the
-  // newer, then the one whose latest shared child is the youngest, then the one with fewer children.
+  // partner, keeps the partners beside them: current partners nearest, former ones (status separated)
+  // outermost. Within each, a partner without shared children counts as the newer, then the one whose
+  // latest shared child is the youngest, then the one with fewer children.
   const separated = (a: string, b: string) =>
-    byId.get(a)!.partnerships?.some((p) => p.partnerId === b && p.status === 'separated') ?? false;
+    (byId.get(a)!.partnerships?.some((p) => p.partnerId === b && p.status === 'separated') ?? false) ||
+    (byId.get(b)!.partnerships?.some((p) => p.partnerId === a && p.status === 'separated') ?? false);
   const sharedKids = (a: string, b: string) => people.filter((c) => c.parentIds.includes(a) && c.parentIds.includes(b));
-  const starOrder = (members: string[]) => {
+  const nearestFirst = (hub: string, others: string[]) => {
+    const latest = (id: string) => sharedKids(hub, id).map((c) => c.birthDate ?? '').sort().at(-1) ?? '\uffff';
+    const count = (id: string) => sharedKids(hub, id).length;
+    return [...others].sort(
+      (a, b) =>
+        Number(separated(hub, a)) - Number(separated(hub, b)) ||
+        latest(b).localeCompare(latest(a)) ||
+        count(a) - count(b) ||
+        a.localeCompare(b),
+    );
+  };
+  // The unit's order and its hubs (the people whose partners stand beside them). A current couple whose
+  // members have former partners puts each person's former partners on their own outer side
+  // (`a2 a1 A B b1 b2`), so nobody stands next to someone else's ex. A hub with several partners and no
+  // such couple stands at the unit's edge with the partners beside them.
+  const partnerOrder = (members: string[]) => {
+    if (members.length < 3) return null;
+    const current = members.flatMap((a) => mates(a).filter((b) => a < b && !separated(a, b)).map((b): [string, string] => [a, b]));
+    if (current.length === 1) {
+      const [a, b] = current[0];
+      const others = members.filter((id) => id !== a && id !== b);
+      const ofA = others.filter((id) => mates(id).includes(a));
+      const ofB = others.filter((id) => mates(id).includes(b));
+      // Each former partner belongs to exactly one of the couple and has no other partners.
+      if (ofA.length + ofB.length === others.length && !ofA.some((id) => ofB.includes(id)) && others.every((id) => mates(id).length === 1)) {
+        return { order: [...nearestFirst(a, ofA).reverse(), a, b, ...nearestFirst(b, ofB)], hubs: new Set([a, b]) };
+      }
+    }
     const hub = members.find((id) => mates(id).length === members.length - 1);
     const others = members.filter((id) => id !== hub);
-    if (!hub || members.length < 3 || others.some((a) => others.some((b) => a !== b && mates(a).includes(b)))) return null;
+    if (!hub || others.some((a) => others.some((b) => a !== b && mates(a).includes(b)))) return null;
     // Only when at least two partners have children with them or one of them is a former partner;
     // otherwise the person stands between.
     if (others.filter((id) => sharedKids(hub, id).length).length < 2 && !others.some((id) => separated(hub, id))) return null;
-    const latest = (id: string) => sharedKids(hub, id).map((c) => c.birthDate ?? '').sort().at(-1) ?? '\uffff';
-    const count = (id: string) => sharedKids(hub, id).length;
-    return [
-      hub,
-      ...others.sort(
-        (a, b) =>
-          Number(separated(hub, a)) - Number(separated(hub, b)) ||
-          latest(b).localeCompare(latest(a)) ||
-          count(a) - count(b) ||
-          a.localeCompare(b),
-      ),
-    ];
+    return { order: [hub, ...nearestFirst(hub, others)], hubs: new Set([hub]) };
   };
-  const stars = new Set<string[]>();
+  const hubsOf = new Map<string[], Set<string>>();
   const unitOf = new Map<string, string[]>();
   for (const p of sorted) {
     if (unitOf.has(p.id)) continue;
@@ -85,15 +102,15 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
       members.add(id);
       queue.push(...mates(id));
     }
-    const star = starOrder([...members]);
+    const ordered = partnerOrder([...members]);
     const left = [...members].sort((a, b) => mates(a).length - mates(b).length || a.localeCompare(b));
-    const unit = star ?? [left.shift()!];
-    while (!star && left.length) {
+    const unit = ordered?.order ?? [left.shift()!];
+    while (!ordered && left.length) {
       const next = left.findIndex((id) => mates(unit.at(-1)!).includes(id));
       unit.push(...left.splice(Math.max(next, 0), 1));
     }
     for (const id of unit) unitOf.set(id, unit);
-    if (star) stars.add(unit);
+    if (ordered) hubsOf.set(unit, ordered.hubs);
   }
 
   // Each unit hangs below a parent of its first member (by id) with parents in the tree.
@@ -154,8 +171,8 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     // farther partner is not mistaken for one to the nearer ones.
     const meanX = (via: string) => {
       const xs = byId.get(via)!.parentIds.flatMap((pid) => (own.has(pid) ? [own.get(pid)!] : []));
-      const hubX = mates(unit[0]).length === unit.length - 1 ? 0 : (unit.length - 1) * NAME_GAP;
-      const far = stars.has(unit) ? xs.filter((x) => x !== hubX) : [];
+      const hubs = hubsOf.get(unit);
+      const far = hubs ? byId.get(via)!.parentIds.filter((pid) => own.has(pid) && !hubs.has(pid)).map((pid) => own.get(pid)!) : [];
       if (xs.length === 2 && far.length === 1 && Math.abs(far[0] - xs.find((x) => x !== far[0])!) > NAME_GAP) return far[0];
       return xs.reduce((a, b) => a + b, 0) / xs.length;
     };

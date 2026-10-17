@@ -150,7 +150,7 @@ assert.deepEqual(['a', 'b', 'c', 'd'].map((id) => toward * s7.x(id)), ['a', 'b',
 assert.equal(s7.x('ac2005'), s7.x('c'));
 assert.equal(s7.x('ad1995'), s7.x('d'));
 
-// Status beats guessing: a separated partner stands outermost, even when their child is the younger.
+// Status beats guessing: a separated partner stands outside, even when their child is the younger.
 const status = (id, partnerId, kind) => ({ id, partnerships: [{ partnerId, status: kind }] });
 const withStatus = layout([
   { ...person('a', [], ['b', 'c']), partnerships: [{ partnerId: 'b', status: 'together' }, { partnerId: 'c', status: 'separated' }] },
@@ -160,8 +160,8 @@ const withStatus = layout([
   kid('ac2010', 'a', 'c'),
 ]);
 const wx2 = (id) => withStatus.get(id)[0];
-assert.ok(Math.abs(wx2('a') - wx2('b')) < Math.abs(wx2('a') - wx2('c')));
-// A current partner without children stands next to the person, the former partner beyond.
+assert.equal(Math.sign(wx2('a') - wx2('b')), -Math.sign(wx2('a') - wx2('c')));
+// A person with a current and a former partner stands between them; no one stands next to the other's ex.
 const former = layout([
   { ...person('k', [], ['r', 'h']), partnerships: [{ partnerId: 'r', status: 'together' }, { partnerId: 'h', status: 'separated' }] },
   { ...person('r', [], ['k']), ...status('r', 'k', 'together') },
@@ -169,8 +169,44 @@ const former = layout([
   person('child', ['k', 'h']),
 ]);
 const fx = (id) => former.get(id)[0];
-assert.ok(Math.abs(fx('k') - fx('r')) < Math.abs(fx('k') - fx('h')));
-assert.equal(fx('child'), fx('h'));
+assert.equal(Math.sign(fx('k') - fx('r')), -Math.sign(fx('k') - fx('h')));
+assert.equal(fx('child'), (fx('k') + fx('h')) / 2);
+
+// A current couple whose members both have former partners: each person's exes stand on their own
+// outer side (a2 a1 A B b1 b2); with exes on one side only, the other partner stands on the other side.
+const exes = (id, partnerId) => ({ id, partnerships: [{ partnerId, status: 'separated' }] });
+const togetherWith = (id, partnerId) => ({ id, partnerships: [{ partnerId, status: 'together' }] });
+const sides = layout([
+  { ...person('ca', [], ['cb', 'a1', 'a2']), partnerships: [{ partnerId: 'cb', status: 'together' }, { partnerId: 'a1', status: 'separated' }, { partnerId: 'a2', status: 'separated' }] },
+  { ...person('cb', [], ['ca', 'b1', 'b2']), partnerships: [{ partnerId: 'ca', status: 'together' }, { partnerId: 'b1', status: 'separated' }, { partnerId: 'b2', status: 'separated' }] },
+  { ...person('a1', [], ['ca']), ...exes('a1', 'ca') },
+  { ...person('a2', [], ['ca']), ...exes('a2', 'ca') },
+  { ...person('b1', [], ['cb']), ...exes('b1', 'cb') },
+  { ...person('b2', [], ['cb']), ...exes('b2', 'cb') },
+  person('ka1', ['ca', 'a1']),
+  person('ka2', ['ca', 'a2']),
+  person('kb2', ['cb', 'b2']),
+]);
+const sx = (id) => sides.get(id)[0];
+const row = ['a2', 'a1', 'ca', 'cb', 'b1', 'b2'].map(sx);
+const dir = Math.sign(row[5] - row[0]);
+assert.deepEqual(row.map((v) => dir * v), row.map((v) => dir * v).sort((p, q) => p - q));
+for (let i = 1; i < 6; i++) assert.equal(Math.abs(row[i] - row[i - 1]), NAME_GAP);
+// The child of the nearer ex hangs between them, the one of the farther ex under that ex.
+assert.equal(sx('ka1'), (sx('ca') + sx('a1')) / 2);
+assert.equal(sx('ka2'), sx('a2'));
+assert.equal(sx('kb2'), sx('b2'));
+const oneSided = layout([
+  { ...person('oa', [], ['ob', 'x1', 'x2']), partnerships: [{ partnerId: 'ob', status: 'together' }, { partnerId: 'x1', status: 'separated' }, { partnerId: 'x2', status: 'separated' }] },
+  { ...person('ob', [], ['oa']), ...togetherWith('ob', 'oa') },
+  { ...person('x1', [], ['oa']), ...exes('x1', 'oa') },
+  { ...person('x2', [], ['oa']), ...exes('x2', 'oa') },
+]);
+const ox = (id) => oneSided.get(id)[0];
+const orow = ['x2', 'x1', 'oa', 'ob'].map(ox);
+const odir = Math.sign(orow[3] - orow[0]);
+assert.deepEqual(orow.map((v) => odir * v), orow.map((v) => odir * v).sort((p, q) => p - q));
+assert.ok(orow.every((v, i) => i === 0 || Math.abs(v - orow[i - 1]) === NAME_GAP));
 
 // Parents of a shared child stand together even without a stored partnership; a child of one of
 // them alone hangs with the couple's children on that parent's side, as one family centred over the couple.
