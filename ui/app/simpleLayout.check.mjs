@@ -122,47 +122,47 @@ assert.equal((cx('p1') + cx('p2')) / 2, (cx('c1') + cx('c2')) / 2);
 // solo stands beyond both c1 and c2, on p1's side.
 const p1Side = Math.sign(cx('p1') - cx('p2'));
 assert.ok(['c1', 'c2'].every((id) => p1Side * (cx('solo') - cx(id)) >= NAME_GAP));
-// Regression (fam-schiller): Liselotte's parents hang right above her, to the right of the family
-// her husband Eberhard hangs under; her siblings stand on the outside, and no child bar crosses.
+// Regression: a wife's parents hang right above her, to the right of the family her husband hangs
+// under; her siblings stand on the outside, and no child bar crosses.
 const couple = (a, b, ...rest) => [person(a, [], [b]), person(b, [], [a]), ...rest];
-const schollFamily = [
-  ...couple('hans', 'elise'),
-  ...couple('hild', 'horst'),
-  ...couple('jos', 'kh'),
-  person('th', [], ['va', 'pichl']),
-  person('va', [], ['th']),
-  person('pichl', [], ['th']),
-  person('hm', ['hans', 'elise'], ['karin']),
-  person('karin', ['hild', 'horst'], ['hm']),
-  person('rosw', ['hild', 'horst']),
-  person('monika', ['hild', 'horst']),
-  person('eb', ['jos', 'kh'], ['lis']),
-  person('lis', ['th', 'va'], ['eb']),
-  person('maria', ['th', 'va']),
-  person('max', ['th', 'va']),
-  person('emilie', ['th', 'pichl']),
-  person('andreas', ['hm', 'karin']),
-  person('christine', ['hm', 'karin']),
-  person('sabine', ['eb', 'lis']),
-  person('iris', ['eb', 'lis']),
-  person('eberhard', ['eb', 'lis']),
-  person('karlheinz', ['eb', 'lis']),
+const inLawFamily = [
+  ...couple('ole', 'una'),
+  ...couple('ida', 'kai'),
+  ...couple('abe', 'bea'),
+  person('cleo', [], ['dan', 'eli']),
+  person('dan', [], ['cleo']),
+  person('eli', [], ['cleo']),
+  person('fay', ['ole', 'una'], ['gus']),
+  person('gus', ['ida', 'kai'], ['fay']),
+  person('hal', ['ida', 'kai']),
+  person('ivy', ['ida', 'kai']),
+  person('jon', ['abe', 'bea'], ['kim']),
+  person('kim', ['cleo', 'dan'], ['jon']),
+  person('lou', ['cleo', 'dan']),
+  person('moe', ['cleo', 'dan']),
+  person('noa', ['cleo', 'eli']),
+  person('oz', ['fay', 'gus']),
+  person('pia', ['fay', 'gus']),
+  person('quin', ['jon', 'kim']),
+  person('rae', ['jon', 'kim']),
+  person('sol', ['jon', 'kim']),
+  person('tom', ['jon', 'kim']),
 ];
 // Whatever the id order (so whichever family comes first), the result is the same up to mirroring.
 let seed = 7;
 const random = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
 for (let round = 0; round < 60; round++) {
-  const order = schollFamily.map((p) => p.id).sort(() => random() - 0.5);
+  const order = inLawFamily.map((p) => p.id).sort(() => random() - 0.5);
   const name = (id) => `x${String(order.indexOf(id)).padStart(2, '0')}`;
-  const renamed = schollFamily.map((p) => person(name(p.id), p.parentIds.map(name), p.partnerIds.map(name)));
+  const renamed = inLawFamily.map((p) => person(name(p.id), p.parentIds.map(name), p.partnerIds.map(name)));
   const at = layout(renamed);
   const px = (id) => at.get(name(id))[0];
-  const toward = Math.sign(px('lis') - px('eb'));
-  // Liselotte's siblings stand beyond her, on the side away from her husband.
-  for (const id of ['maria', 'max', 'emilie']) assert.equal(Math.sign(px(id) - px('lis')), toward);
+  const toward = Math.sign(px('kim') - px('jon'));
+  // The wife's siblings stand beyond her, on the side away from her husband.
+  for (const id of ['lou', 'moe', 'noa']) assert.equal(Math.sign(px(id) - px('kim')), toward);
   // Her parents stand over their children, beyond the family her husband hangs under.
-  const kids = ['lis', 'maria', 'max', 'emilie'].map(px);
-  for (const id of ['th', 'va']) assert.ok(px(id) >= Math.min(...kids) && px(id) <= Math.max(...kids));
-  for (const id of ['th', 'va', 'pichl']) assert.equal(Math.sign(px(id) - px('kh')), toward);
+  const kids = ['kim', 'lou', 'moe', 'noa'].map(px);
+  for (const id of ['cleo', 'dan']) assert.ok(px(id) >= Math.min(...kids) && px(id) <= Math.max(...kids));
+  for (const id of ['cleo', 'dan', 'eli']) assert.equal(Math.sign(px(id) - px('bea')), toward);
 }
 console.log('simpleLayout ok');
