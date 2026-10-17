@@ -12,7 +12,7 @@ type Person = {
   birthDate?: string | null;
 };
 
-export const NAME_GAP = 6;
+export const NAME_GAP = 9;
 export const FAMILY_GAP = 2;
 export const ROW_GAP = 6;
 
