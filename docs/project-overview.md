@@ -34,6 +34,7 @@ When only one of a current couple has former partners, they stand on that person
 Separated partners get no ring in the experimental view; their dashed line marks the relationship.
 The line between separated partners is dashed: their bar, and without a shared child a line at the height of the person's own family bar (under their names when they have none), where the former partner drops straight down to it.
 The children of a separated couple hang straight below the former partner.
+An outer partner with children of their own alone steps out over them, so their line drops straight.
 Parents of a shared child stand side by side in the experimental view even without a stored partnership, so the child hangs centred below both.
 A child of only one of several co-parents hangs with the children of that parent's nearest couple in the experimental view, from the same child bar.
 The child who married into another family stands last in their sibling group, at the edge facing that family.
