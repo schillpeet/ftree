@@ -144,10 +144,11 @@ class MemberService(
             memberRepository.flush()
             partnerIds.forEach { partnerId ->
                 val partnership = partnerships[partnerId]
-                val married = partnership?.status == Partnership.StatusEnum.MARRIED
+                val status = partnership?.status ?: Partnership.StatusEnum.TOGETHER
+                val married = status == Partnership.StatusEnum.MARRIED
                 jdbc.update(
                     "UPDATE member_partners SET status = ?, married_on = ? WHERE (member_id = ? AND partner_id = ?) OR (member_id = ? AND partner_id = ?)",
-                    if (married) "married" else "together",
+                    status.value,
                     partnership?.marriedOn.takeIf { married },
                     id, partnerId, partnerId, id,
                 )

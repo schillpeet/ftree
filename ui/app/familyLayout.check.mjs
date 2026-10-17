@@ -85,7 +85,7 @@ const coupleBars = [];
 for (let i = 0; i < forked.length; i += 2)
   if (forked[i][1] === 5 && forked[i + 1][1] === 5) coupleBars.push([forked[i][0], forked[i + 1][0]].sort((a, b) => a - b));
 assert.deepEqual(coupleBars.sort((a, b) => a[0] - b[0]), [[0, 4.5], [7.5, 12]]);
-// B's child by nobody else gets a branch over to it, stem straight above it.
+// B's child by nobody else hangs from the child bar of the couple nearest to it (B and C), stem straight above it.
 const withSolo = new Map([...twice, ['solo', flat(18, 0)]]);
 const soloLines = relationLines(
   [
@@ -102,5 +102,61 @@ const soloLines = relationLines(
 ).parents;
 const intoSolo = soloLines.findIndex((p, i) => i % 2 === 1 && p === withSolo.get('solo'));
 assert.equal(soloLines[intoSolo - 1][0], 18);
-assert.ok(soloLines.some((p, i) => i % 2 === 0 && p[0] === 6 && soloLines[i + 1][0] === 18 && p[1] === soloLines[i + 1][1]));
+const childBarY = (x) => soloLines.find((p, i) => i % 2 === 1 && p[0] === x && p[1] > 0 && p[1] < 5)[1];
+assert.equal(childBarY(18), childBarY(9));
+// A person at the row's edge with two partners on one side drops straight down (no fork), and the
+// bars to both partners run at one height, the farther one reaching further.
+const edge = new Map([['H', flat(0, 10)], ['P', flat(6, 10)], ['Q', flat(12, 10)], ['hp', flat(3, 0)], ['hq', flat(12, 0)]]);
+const edgeLines = relationLines(
+  [
+    { id: 'H', parentIds: [], partnerIds: ['P', 'Q'] },
+    { id: 'P', parentIds: [], partnerIds: ['H'] },
+    { id: 'Q', parentIds: [], partnerIds: ['H'] },
+    { id: 'hp', parentIds: ['H', 'P'], partnerIds: [] },
+    { id: 'hq', parentIds: ['H', 'Q'], partnerIds: [] },
+  ],
+  edge,
+  ([x]) => x,
+  1.5,
+).parents;
+const barY = (from, to) =>
+  edgeLines.find((p, i) => i % 2 === 0 && p[0] === from && edgeLines[i + 1][0] === to && edgeLines[i + 1][1] === p[1])[1];
+assert.equal(barY(0, 6), 5);
+assert.equal(barY(0, 12), 5);
+assert.ok(edgeLines.some((p, i) => i % 2 === 0 && p[0] === 0 && p[1] === 10 && edgeLines[i + 1][0] === 0 && edgeLines[i + 1][1] === 5));
+// A separated couple's bar is dashed, and their child hangs straight below the partner who is not
+// the one with several families.
+const apartPeople = [
+  { id: 'H', parentIds: [], partnerIds: ['P', 'Q'], partnerships: [{ partnerId: 'P', status: 'together' }, { partnerId: 'Q', status: 'separated' }] },
+  { id: 'P', parentIds: [], partnerIds: ['H'], partnerships: [{ partnerId: 'H', status: 'together' }] },
+  { id: 'Q', parentIds: [], partnerIds: ['H'], partnerships: [{ partnerId: 'H', status: 'separated' }] },
+  { id: 'hp', parentIds: ['H', 'P'], partnerIds: [] },
+  { id: 'hq', parentIds: ['H', 'Q'], partnerIds: [] },
+];
+const dashedLines = relationLines(apartPeople, edge, ([x]) => x, 1.5);
+assert.ok(dashedLines.dashed.length > 0);
+assert.ok(dashedLines.dashed.some((p, i) => i % 2 === 0 && p[0] === 0 && dashedLines.dashed[i + 1][0] === 12));
+// No dashes without a separated couple.
+assert.equal(relationLines(apartPeople.map((p) => ({ ...p, partnerships: [] })), edge, ([x]) => x, 1.5).dashed.length, 0);
+// A separated couple without children gets a dashed line under their names.
+const childless = relationLines(
+  [
+    { id: 'X', parentIds: [], partnerIds: ['Y'], partnerships: [{ partnerId: 'Y', status: 'separated' }] },
+    { id: 'Y', parentIds: [], partnerIds: ['X'], partnerships: [{ partnerId: 'X', status: 'separated' }] },
+  ],
+  new Map([['X', flat(0, 10)], ['Y', flat(6, 10)]]),
+  ([x]) => x,
+  1.5,
+);
+assert.ok(childless.dashed.some((p) => p[0] === 0) && childless.dashed.some((p) => p[0] === 6));
+// A separated partner without shared children is reached by a dashed line at the bar height of the
+// person's own family, and drops straight down to it.
+const noKids = relationLines(
+  apartPeople.filter((p) => p.id !== 'hq'),
+  edge,
+  ([x]) => x,
+  1.5,
+);
+assert.ok(noKids.dashed.some((p, i) => i % 2 === 0 && p[0] === 0 && p[1] === 5 && noKids.dashed[i + 1][0] === 12 && noKids.dashed[i + 1][1] === 5));
+assert.ok(noKids.parents.some((p, i) => i % 2 === 0 && p[0] === 12 && p[1] === 10 && noKids.parents[i + 1][0] === 12 && noKids.parents[i + 1][1] === 5));
 console.log('familyLayout ok');

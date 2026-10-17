@@ -133,6 +133,7 @@ export default function RelativesFields({
               >
                 <option value="together">{t.relatives.together}</option>
                 <option value="married">{t.relatives.married}</option>
+                <option value="separated">{t.relatives.separated}</option>
               </select>
               {status === 'married' && (
                 <input

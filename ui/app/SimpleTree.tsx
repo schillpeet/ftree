@@ -35,10 +35,18 @@ export default function SimpleTree({
   const positions = useMemo(() => simpleLayout(members, generations(members)), [members]);
   const links = useMemo(() => relationLines(members, positions, ([x]) => x, FORK), [members, positions]);
   // Partners are marked by two rings between their names instead of a line.
-  const rings = members.flatMap((m) => m.partnerIds.filter((id) => id > m.id && positions.has(id)).map((id) => [m.id, id]));
+  const rings = members.flatMap((m) =>
+    m.partnerIds
+      .filter((id) => id > m.id && positions.has(id))
+      .filter((id) => !m.partnerships.some((p) => p.partnerId === id && p.status === 'separated'))
+      .map((id) => [m.id, id] as const),
+  );
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
       {links.parents.length > 0 && <Line points={links.parents} segments color="#00e5ff" lineWidth={2} />}
+      {links.dashed.length > 0 && (
+        <Line points={links.dashed} segments dashed dashSize={0.6} gapSize={0.5} color="#00e5ff" lineWidth={2} />
+      )}
       {rings.map(([a, b]) => (
         <Html key={`${a}-${b}`} position={midpoint(positions.get(a)!, positions.get(b)!)} center distanceFactor={NAME_SCALE}>
           <span className="simple-rings" aria-hidden>

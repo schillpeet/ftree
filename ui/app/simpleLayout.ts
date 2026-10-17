@@ -4,7 +4,13 @@
 // `generations()` (passed in, so the check can import both without a bundler).
 import type { Point } from './pins';
 
-type Person = { id: string; parentIds: string[]; partnerIds: string[] };
+type Person = {
+  id: string;
+  parentIds: string[];
+  partnerIds: string[];
+  partnerships?: readonly { partnerId: string; status: string }[];
+  birthDate?: string | null;
+};
 
 export const NAME_GAP = 6;
 export const FAMILY_GAP = 2;
@@ -41,6 +47,34 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
       for (const b of p.parentIds) if (a !== b) coParents.set(a, (coParents.get(a) ?? new Set()).add(b));
   const mates = (id: string) =>
     [...new Set([...byId.get(id)!.partnerIds, ...(coParents.get(id) ?? [])])].filter((m) => byId.has(m) && genOf(m) === genOf(id));
+  // Someone with children by several partners (who are not partners of each other), or with a former
+  // partner, stands at the unit's edge with the partners beside them: current partners nearest, former
+  // ones (status separated) outermost. Within each, a partner without shared children counts as the
+  // newer, then the one whose latest shared child is the youngest, then the one with fewer children.
+  const separated = (a: string, b: string) =>
+    byId.get(a)!.partnerships?.some((p) => p.partnerId === b && p.status === 'separated') ?? false;
+  const sharedKids = (a: string, b: string) => people.filter((c) => c.parentIds.includes(a) && c.parentIds.includes(b));
+  const starOrder = (members: string[]) => {
+    const hub = members.find((id) => mates(id).length === members.length - 1);
+    const others = members.filter((id) => id !== hub);
+    if (!hub || members.length < 3 || others.some((a) => others.some((b) => a !== b && mates(a).includes(b)))) return null;
+    // Only when at least two partners have children with them or one of them is a former partner;
+    // otherwise the person stands between.
+    if (others.filter((id) => sharedKids(hub, id).length).length < 2 && !others.some((id) => separated(hub, id))) return null;
+    const latest = (id: string) => sharedKids(hub, id).map((c) => c.birthDate ?? '').sort().at(-1) ?? '\uffff';
+    const count = (id: string) => sharedKids(hub, id).length;
+    return [
+      hub,
+      ...others.sort(
+        (a, b) =>
+          Number(separated(hub, a)) - Number(separated(hub, b)) ||
+          latest(b).localeCompare(latest(a)) ||
+          count(a) - count(b) ||
+          a.localeCompare(b),
+      ),
+    ];
+  };
+  const stars = new Set<string[]>();
   const unitOf = new Map<string, string[]>();
   for (const p of sorted) {
     if (unitOf.has(p.id)) continue;
@@ -51,13 +85,15 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
       members.add(id);
       queue.push(...mates(id));
     }
+    const star = starOrder([...members]);
     const left = [...members].sort((a, b) => mates(a).length - mates(b).length || a.localeCompare(b));
-    const unit = [left.shift()!];
-    while (left.length) {
+    const unit = star ?? [left.shift()!];
+    while (!star && left.length) {
       const next = left.findIndex((id) => mates(unit.at(-1)!).includes(id));
       unit.push(...left.splice(Math.max(next, 0), 1));
     }
     for (const id of unit) unitOf.set(id, unit);
+    if (star) stars.add(unit);
   }
 
   // Each unit hangs below a parent of its first member (by id) with parents in the tree.
@@ -113,8 +149,14 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     const g = genOf(unit[0]);
     const own = new Map(unit.map((id, i) => [id, i * NAME_GAP]));
     const parentsKey = (via: string) => byId.get(via)!.parentIds.filter((pid) => own.has(pid)).sort().join();
+    // Where a child's parents are: their middle. Beside someone at the edge with several partners,
+    // the children of a partner who is not next to them hang under that partner, so the bar to a
+    // farther partner is not mistaken for one to the nearer ones.
     const meanX = (via: string) => {
       const xs = byId.get(via)!.parentIds.flatMap((pid) => (own.has(pid) ? [own.get(pid)!] : []));
+      const hubX = mates(unit[0]).length === unit.length - 1 ? 0 : (unit.length - 1) * NAME_GAP;
+      const far = stars.has(unit) ? xs.filter((x) => x !== hubX) : [];
+      if (xs.length === 2 && far.length === 1 && Math.abs(far[0] - xs.find((x) => x !== far[0])!) > NAME_GAP) return far[0];
       return xs.reduce((a, b) => a + b, 0) / xs.length;
     };
     // Children of the left couple first, then a child whose partner has parents in the tree (in-laws
@@ -125,8 +167,8 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
       ...(anchor ? [{ unit: [anchor], via: anchor, anchor: true } as Kid] : []),
     ].sort(
       (a, b) =>
-        meanX(a.via) - meanX(b.via) ||
         Number(!!b.anchor) - Number(!!a.anchor) ||
+        meanX(a.via) - meanX(b.via) ||
         inLaw(a) - inLaw(b) ||
         a.via.localeCompare(b.via),
     );
@@ -140,18 +182,27 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     const shape: Shape = { xs: own, contour: new Map([[g, [0, (unit.length - 1) * NAME_GAP]]]) };
     const children: Shape = { xs: new Map(), contour: new Map() };
     const groups: { couple: boolean; shape: Shape; at: number; right: boolean }[] = [];
-    for (let i = 0; i < kids.length; ) {
-      const key = parentsKey(kids[i].via);
+    // A child of one parent alone hangs with the children of that parent's couple, as one family,
+    // so its line joins theirs instead of running next to it.
+    const couples = kids.map((kid) => parentsKey(kid.via)).filter((key) => key.includes(','));
+    const keyOf = (via: string) => {
+      const key = parentsKey(via);
+      return key.includes(',') ? key : (couples.find((couple) => couple.split(',').includes(key)) ?? key);
+    };
+    const keys = [...new Set(kids.map((kid) => keyOf(kid.via)))];
+    for (const key of keys) {
+      // The child who married into another family stands last, at the edge facing that family.
+      const members = kids
+        .filter((kid) => keyOf(kid.via) === key)
+        .sort((a, b) => Number(!!b.anchor) - Number(!!a.anchor) || inLaw(a) - inLaw(b));
       const group: Shape = { xs: new Map(), contour: new Map() };
-      const ends: string[] = [];
-      for (; i < kids.length && parentsKey(kids[i].via) === key; i++) {
-        const kid = kids[i];
+      for (const kid of members) {
         const stub: Shape = { xs: new Map([[kid.via, 0]]), contour: new Map([[g + 1, [0, 0]]]) };
         pack(group, kid.anchor ? stub : layout(kid.unit), g + 1, true);
-        ends.push(kids[i].via);
       }
+      const ends = members.map((kid) => kid.via);
       const xs = ends.map((id) => group.xs.get(id)!);
-      const centre = meanX(ends[0]);
+      const centre = meanX((members.find((kid) => parentsKey(kid.via) === key) ?? members[0]).via);
       const at = centre - (Math.min(...xs) + Math.max(...xs)) / 2;
       groups.push({ couple: key.includes(','), shape: group, at, right: centre >= ((unit.length - 1) * NAME_GAP) / 2 });
     }
@@ -178,14 +229,19 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     const anchor = childIdsOf(root).find((id) => tree.xs.has(id) && !ownChild(root, id));
     const shape = layout(root, anchor);
     if (anchor) {
-      // Stand over the anchor if nothing else in the way, else fall back to sliding in from the right.
+      // Stand over the anchor; where that is too close to the tree, the siblings and their families
+      // spread out to the right, the couple moving half as far so it stays centred over its children.
       const by = tree.xs.get(anchor)! - shape.xs.get(anchor)!;
       shape.xs.delete(anchor);
-      const clash = [...shape.xs].some(([id, x]) =>
-        [...tree.xs].some(([other, ox]) => genOf(other) === genOf(id) && Math.abs(ox - x - by) < NAME_GAP + FAMILY_GAP),
-      );
-      if (!clash) {
-        for (const [id, x] of shape.xs) tree.xs.set(id, x + by);
+      const moved = (id: string, x: number, spread: number) => x + by + (root.includes(id) ? spread / 2 : spread);
+      const clash = (spread: number) =>
+        [...shape.xs].some(([id, x]) =>
+          [...tree.xs].some(([other, ox]) => genOf(other) === genOf(id) && Math.abs(ox - moved(id, x, spread)) < NAME_GAP + FAMILY_GAP),
+        );
+      let spread = 0;
+      while (spread < 60 && clash(spread)) spread += 1;
+      if (!clash(spread)) {
+        for (const [id, x] of shape.xs) tree.xs.set(id, moved(id, x, spread));
         tree.contour.clear();
         for (const [id, x] of tree.xs) {
           const [l, r] = tree.contour.get(genOf(id)) ?? [x, x];

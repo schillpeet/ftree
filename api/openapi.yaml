@@ -894,6 +894,7 @@ components:
           enum:
             - together
             - married
+            - separated
         marriedOn:
           description: Wedding date; only kept when the status is married.
           type: string
