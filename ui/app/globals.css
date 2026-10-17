@@ -1665,6 +1665,7 @@ textarea {
 
 .simple-rings {
   display: block;
+  margin: 0 8px;
   color: #e6fdff;
   font: 14px/1 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
   text-shadow: 0 0 6px #00e5ff;

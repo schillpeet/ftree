@@ -6,7 +6,7 @@ import type { Member } from '../lib/api/generated/members';
 import { relationLines } from './familyLayout';
 import { generations } from './generations';
 import { useT } from './i18n';
-import { isNameless } from './names';
+import { isNameless, nameOf, shortFirstName } from './names';
 import type { Point } from './pins';
 import { NAME_GAP, simpleLayout } from './simpleLayout';
 
@@ -57,8 +57,8 @@ export default function SimpleTree({
       {members.map((member) => (
         // Labels scale with the distance like the rest of the scene, so the gaps between them hold.
         <Html key={member.id} position={positions.get(member.id)} center distanceFactor={NAME_SCALE}>
-          <button className="simple-name" type="button" onClick={() => onOpen(member.id)}>
-            {isNameless(member) ? t.members.unknown : <>{member.firstName}<br />{member.lastName}</>}
+          <button className="simple-name" type="button" title={nameOf(member, t.members.unknown)} onClick={() => onOpen(member.id)}>
+            {isNameless(member) ? t.members.unknown : <>{shortFirstName(member.firstName)}<br />{member.lastName}</>}
           </button>
         </Html>
       ))}
