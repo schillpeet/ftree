@@ -44,9 +44,12 @@ jobs:
           languages: ${{ matrix.language }}
           build-mode: manual
 
+      # --no-daemon: the CodeQL tracer must see every compiler process, so no reused daemons.
+      # -x test: the tests need the Postgres service that only ci.yml provides; CodeQL only
+      # needs the compiled classes. Add --info to the command to debug memory or task issues.
       - name: Build with Gradle
         working-directory: bff
-        run: ./gradlew build
+        run: ./gradlew --no-daemon build -x test
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@b31ef66637df4fc5b5e4a89d0cc94f8eeb46a04d # v3.39.0
