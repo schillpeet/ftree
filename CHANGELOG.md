@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.13.0](https://github.com/schillpeet/ftree/compare/v0.12.0...v0.13.0) (2026-10-17)
+
+
+### Features
+
+* **ui:** abbreviate additional first names in experimental view ([#127](https://github.com/schillpeet/ftree/issues/127)) ([56bc47c](https://github.com/schillpeet/ftree/commit/56bc47c4184988767b4b8a2dc990d94f47582d17))
+* **ui:** show separated partners and several partners as sketched in experimental view ([#126](https://github.com/schillpeet/ftree/issues/126)) ([ece18c8](https://github.com/schillpeet/ftree/commit/ece18c8d203f9ee58ef52f18ce5487085bf58ab7))
+
+
+### Bug Fixes
+
+* **repo:** prevent out-of-memory error in codeql build ([#122](https://github.com/schillpeet/ftree/issues/122)) ([7fea05e](https://github.com/schillpeet/ftree/commit/7fea05e1443f5988782ba33760793bb6e41c8f3d))
+* **ui:** hang children of former partners straight below them in experimental view ([#129](https://github.com/schillpeet/ftree/issues/129)) ([0ee5bb1](https://github.com/schillpeet/ftree/commit/0ee5bb1a11b8a945e569766b2b1700b1586b59af))
+* **ui:** keep former partners beside their person in experimental view ([#128](https://github.com/schillpeet/ftree/issues/128)) ([881b9a4](https://github.com/schillpeet/ftree/commit/881b9a4c6a6d8081749427c375959e32e9483357))
+* **ui:** place in-law families above their child in experimental view ([#124](https://github.com/schillpeet/ftree/issues/124)) ([4dd64c6](https://github.com/schillpeet/ftree/commit/4dd64c6f5e733bdd865b1e080099bce58078886e))
+
 ## [0.12.0](https://github.com/schillpeet/ftree/compare/v0.11.0...v0.12.0) (2026-10-16)
 
 
