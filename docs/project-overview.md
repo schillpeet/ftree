@@ -29,6 +29,8 @@ Someone with children by at least two partners stands at the edge of their group
 Children of the nearest partner hang centred under that couple's bar, and children of a farther partner hang under that partner.
 The bars to all partners of someone at the edge run at one height, and the person drops straight down to them.
 Separated partners stand outermost beside the person and the current partner nearest; without a stored status, the guess from the children's birth dates applies.
+When a current couple both have former partners, each person's former partners stand on their own outer side, for example `a2 a1 A B b1 b2`, so nobody stands next to someone else's ex.
+When only one of a current couple has former partners, they stand on that person's outer side and the current partner on the other side.
 Separated partners get no ring in the experimental view; their dashed line marks the relationship.
 The line between separated partners is dashed: their bar, and without a shared child a line at the height of the person's own family bar (under their names when they have none), where the former partner drops straight down to it.
 The children of a separated couple hang straight below the former partner.
