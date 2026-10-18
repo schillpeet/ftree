@@ -24,11 +24,13 @@ export default function SimpleTree({
   members,
   base,
   facing,
+  showLines,
   onOpen,
 }: {
   members: Member[];
   base: number;
   facing: number;
+  showLines: boolean;
   onOpen: (id: string) => void;
 }) {
   const t = useT();
@@ -43,8 +45,8 @@ export default function SimpleTree({
   );
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
-      {links.parents.length > 0 && <Line points={links.parents} segments color="#00e5ff" lineWidth={2} />}
-      {links.dashed.length > 0 && (
+      {showLines && links.parents.length > 0 && <Line points={links.parents} segments color="#00e5ff" lineWidth={2} />}
+      {showLines && links.dashed.length > 0 && (
         <Line points={links.dashed} segments dashed dashSize={0.6} gapSize={0.5} color="#00e5ff" lineWidth={2} />
       )}
       {rings.map(([a, b]) => (

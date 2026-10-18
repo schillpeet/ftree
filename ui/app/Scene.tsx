@@ -6,6 +6,7 @@ import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { useAppearance } from './appearance';
+import { useShowLines } from './lines';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
 import { generationBounds, generations, layerPins } from './generations';
@@ -351,6 +352,7 @@ function Scrolls({
   focus,
   pins,
   showPins,
+  showLines,
   cardStyle,
   spacing,
   evening,
@@ -364,6 +366,7 @@ function Scrolls({
   focus: Focus;
   pins: Point[];
   showPins: boolean;
+  showLines: boolean;
   cardStyle: CardStyle;
   // Relation spacing while bundling, otherwise null.
   spacing: number | null;
@@ -529,8 +532,8 @@ function Scrolls({
             <meshBasicMaterial color={i === highlighted ? '#ffd23f' : '#d42020'} depthTest={false} />
           </mesh>
         ))}
-      {links.parents.length > 0 && <Line points={links.parents} segments color="#f5e6c4" lineWidth={3} {...ON_TOP} />}
-      {links.partners.length > 0 && <Line points={links.partners} segments color="#e8b54a" lineWidth={4} {...ON_TOP} />}
+      {showLines && links.parents.length > 0 && <Line points={links.parents} segments color="#f5e6c4" lineWidth={3} {...ON_TOP} />}
+      {showLines && links.partners.length > 0 && <Line points={links.partners} segments color="#e8b54a" lineWidth={4} {...ON_TOP} />}
     </>
   );
 }
@@ -553,6 +556,7 @@ export default function Scene({
   const t = useT();
   const [language, setLanguage] = useLanguage();
   const [appearance] = useAppearance();
+  const [showLines, setShowLines] = useShowLines();
   const experimental = appearance === 'experimental';
   const organic = appearance === 'organic';
   useEffect(() => {
@@ -664,7 +668,7 @@ export default function Scene({
         {experimental ? (
           <>
             <GridFloor />
-            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} onOpen={onOpen} />
+            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} onOpen={onOpen} />
           </>
         ) : (
           <>
@@ -681,6 +685,7 @@ export default function Scene({
               focus={focus}
               pins={organic ? pins : []}
               showPins={organic && showPins}
+              showLines={showLines}
               cardStyle={cardStyle}
               spacing={organic && bundle ? spacing : null}
               evening={eveningFactor}
@@ -771,6 +776,10 @@ export default function Scene({
                   {t.tools.orbit}
                 </button>
               </div>
+              <label className="debug-check">
+                <input type="checkbox" checked={showLines} onChange={(event) => setShowLines(event.target.checked)} />
+                {t.tools.lines}
+              </label>
               <fieldset className="organic-only" disabled={experimental}>
                 {experimental && <legend>{t.tools.disabled}</legend>}
                 <label className="debug-check pin-toggle">
