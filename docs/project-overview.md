@@ -37,6 +37,7 @@ The children of a separated couple hang straight below the former partner.
 An outer partner with children of their own alone steps out over them, so their line drops straight.
 Parents of a shared child stand side by side in the experimental view even without a stored partnership, so the child hangs centred below both.
 A child of only one of several co-parents hangs with the children of that parent's nearest couple in the experimental view, from the same child bar.
+A child of only one former partner hangs straight below that partner in the experimental view, on the same side as the partner, so its line does not cross the children of another couple.
 The child who married into another family stands last in their sibling group, at the edge facing that family.
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
 Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.

@@ -201,7 +201,7 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     // parent alone come after the couples', on that parent's side (their line runs over to them).
     const shape: Shape = { xs: own, contour: new Map([[g, [0, (unit.length - 1) * NAME_GAP]]]) };
     const children: Shape = { xs: new Map(), contour: new Map() };
-    const groups: { couple: boolean; shape: Shape; at: number; right: boolean }[] = [];
+    const groups: { couple: boolean; shape: Shape; at: number; centre: number; right: boolean }[] = [];
     // A child of one parent alone hangs with the children of that parent's couple, as one family,
     // so its line joins theirs instead of running next to it.
     const couples = kids.map((kid) => parentsKey(kid.via)).filter((key) => key.includes(','));
@@ -224,9 +224,13 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
       const xs = ends.map((id) => group.xs.get(id)!);
       const centre = meanX((members.find((kid) => parentsKey(kid.via) === key) ?? members[0]).via);
       const at = centre - (Math.min(...xs) + Math.max(...xs)) / 2;
-      groups.push({ couple: key.includes(','), shape: group, at, right: centre >= ((unit.length - 1) * NAME_GAP) / 2 });
+      groups.push({ couple: key.includes(','), shape: group, at, centre, right: centre >= ((unit.length - 1) * NAME_GAP) / 2 });
     }
     const first = groups.some((group) => group.couple) ? groups.filter((group) => group.couple) : groups;
+    // A parent's children go on the side of the couples' children that the parent stands on, so the
+    // lines do not cross.
+    const middle = first.reduce((sum, group) => sum + group.centre, 0) / first.length;
+    for (const group of groups) if (!first.includes(group)) group.right = group.centre >= middle;
     const rest = groups.filter((group) => !first.includes(group));
     for (const { shape, at } of first) pack(children, shape, g + 1, true, at);
     for (const { shape, at } of rest.filter(({ right }) => right)) pack(children, shape, g + 1, true, at);

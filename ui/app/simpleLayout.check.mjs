@@ -183,6 +183,18 @@ const edgeEx = layout([
   person('sk', ['s']),
 ]);
 assert.equal(edgeEx.get('sk')[0], edgeEx.get('s')[0]);
+// A child of one former partner alone hangs straight below that partner, not past the child of the
+// couple next to them, so no line crosses.
+const soloEx = layout([
+  { ...person('a', [], ['b', 'c', 'd']), partnerships: [{ partnerId: 'b', status: 'together' }, { partnerId: 'c', status: 'separated' }, { partnerId: 'd', status: 'separated' }] },
+  { ...person('b', [], ['a']), ...status('b', 'a', 'together') },
+  { ...person('c', [], ['a']), ...status('c', 'a', 'separated') },
+  { ...person('d', [], ['a']), ...status('d', 'a', 'separated') },
+  { ...person('ad1', ['a', 'd']), birthDate: '1978' },
+  person('c1', ['c']),
+]);
+assert.equal(soloEx.get('c1')[0], soloEx.get('c')[0]);
+assert.equal(soloEx.get('ad1')[0], soloEx.get('d')[0]);
 
 // A current couple whose members both have former partners: each person's exes stand on their own
 // outer side (a2 a1 A B b1 b2); with exes on one side only, the other partner stands on the other side.
