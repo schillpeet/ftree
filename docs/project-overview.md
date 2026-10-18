@@ -66,6 +66,8 @@ The original aerial and grounded roots always stay; nothing grows below scale 1.
 ### Debug panel
 
 The "Evolution" button in the upper-right corner (the former debug panel, closed by default) opens a translucent panel that groups the tools into sections: "Daten" with the "Zufallsfamilie generieren" board (which opens to the left of the panel), "Ansicht" with the zoom slider, the "Front", "Above", and "Orbit" camera buttons, the "Anheftpunkte" pin checkbox, and the "Kartenstil" select (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
+The "Verbindungslinien" checkbox in the "Ansicht" section hides or shows the parent and partner lines in all three appearances, so that only the cards remain.
+The choice is remembered per browser and the lines are shown by default.
 A development-only slider scales the crown and its pins together while the card size itself stays fixed.
 A second development-only slider in the debug panel previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
 The preview is not saved, and cards cannot be dragged while it is on.
