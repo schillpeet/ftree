@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useEffectEvent, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import { useEffect, useEffectEvent, useMemo, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
   archiveFamily,
   createFamilyMember,
@@ -17,7 +17,7 @@ import {
 } from '../lib/api/generated/members';
 import { useLanguage, useT } from './i18n';
 import { initialsOf, nameOf } from './names';
-import ProfileDialog from './ProfileDialog';
+import { Avatar, PanelShell, PersonView } from './PersonPanel';
 import RelativesFields from './RelativesFields';
 import { ChevronLeftIcon, CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
@@ -183,6 +183,12 @@ export default function MembersControls({
   // Latest selection of the relatives fields, saved after the member.
   const relatives = useRef<{ value: Relatives; changed: boolean } | null>(null);
   const [profileId, setProfileId] = useState<string | null>(null);
+  // People shown before the current profile, so a trip through relatives can be walked back.
+  const [trail, setTrail] = useState<string[]>([]);
+  const [relativesChanged, setRelativesChanged] = useState(false);
+  const [showBirthName, setShowBirthName] = useState(false);
+  const [tab, setTab] = useState<'data' | 'relations'>('data');
+  const [viewError, setViewError] = useState<string | null>(null);
   const listRef = useRef<HTMLElement>(null);
 
   async function reloadMembers() {
@@ -233,7 +239,11 @@ export default function MembersControls({
   const [requestedProfile, setRequestedProfile] = useState(profile);
   if (profile !== requestedProfile) {
     setRequestedProfile(profile);
-    if (profile) setProfileId(profile.id);
+    if (profile) {
+      setProfileId(profile.id);
+      setTrail([]);
+      setViewError(null);
+    }
   }
   // Looked up on every render, so the profile follows edits and disappears with a deleted member.
   const profileMember = profileId ? members?.find((m) => m.id === profileId) : undefined;
@@ -307,21 +317,43 @@ export default function MembersControls({
     setEditing(member);
     setPhotoFile(null);
     relatives.current = null;
+    setRelativesChanged(false);
+    setShowBirthName(!!member?.birthName);
+    setTab('data');
     setFormKey((key) => key + 1);
     setIsListOpen(false);
     setFormError(null);
     setIsFormOpen(true);
   }
 
-  // Outside click or Escape: the create draft is kept anyway, edits are only discarded on confirmation.
+  const initialForm = editing && toForm(editing);
+  const formChanged = !!initialForm && (Object.keys(initialForm) as (keyof MemberForm)[]).some((key) => form[key] !== initialForm[key]);
+  // A new person can always be saved; an edited one only once something differs.
+  const isDirty = !editing || formChanged || !!photoFile || relativesChanged;
+
+  // Closes the form (Escape, ×, Discard): the create draft is kept anyway, edits are only discarded on confirmation,
+  // and an edited person is shown again.
   function dismissForm() {
     if (isSaving) return;
-    const initial = editing && toForm(editing);
-    const changed =
-      initial &&
-      (!!photoFile || !!relatives.current?.changed || (Object.keys(initial) as (keyof MemberForm)[]).some((key) => form[key] !== initial[key]));
-    if (changed && !window.confirm(t.discardChanges)) return;
+    if (editing && isDirty && !window.confirm(t.discardChanges)) return;
     setIsFormOpen(false);
+    if (editing) setProfileId(editing.id);
+  }
+
+  function showProfile(id: string) {
+    setTrail((current) => (profileId ? [...current, profileId] : current));
+    setViewError(null);
+    setProfileId(id);
+    onSelect(id);
+  }
+
+  function goBack() {
+    const known = trail.filter((id) => members?.some((m) => m.id === id));
+    const previous = known.at(-1);
+    setTrail(known.slice(0, -1));
+    if (!previous) return;
+    setProfileId(previous);
+    onSelect(previous);
   }
 
   function updateForm(field: keyof MemberForm, value: string) {
@@ -406,6 +438,8 @@ export default function MembersControls({
         return;
       }
       setIsFormOpen(false);
+      setProfileId(member.id);
+      setTrail([]);
       onSelect(member.id);
       setPhotoFile(null);
       if (!editing) setForm({ ...EMPTY_FORM });
@@ -429,6 +463,11 @@ export default function MembersControls({
       setFormError(t.members.removePhotoFailed);
     }
   }
+
+  const photoPreview = useMemo(() => (photoFile ? URL.createObjectURL(photoFile) : null), [photoFile]);
+  useEffect(() => () => {
+    if (photoPreview) URL.revokeObjectURL(photoPreview);
+  }, [photoPreview]);
 
   return (
     <div className="members-controls">
@@ -475,6 +514,8 @@ export default function MembersControls({
                     onSelect={() => {
                       setIsListOpen(false);
                       setProfileId(member.id);
+                      setTrail([]);
+                      setViewError(null);
                       onSelect(member.id);
                     }}
                     onDelete={() => void removeMember(member)}
@@ -492,67 +533,26 @@ export default function MembersControls({
       )}
 
       {isFormOpen && (
-        <div
-          className="member-dialog-backdrop"
-          onPointerDown={(event) => event.target === event.currentTarget && dismissForm()}
-          onKeyDown={(event) => event.key === 'Escape' && dismissForm()}
+        <PanelShell
+          // One panel per opened form, so focus starts in the first field again.
+          key={`form-${formKey}`}
+          label={editing ? t.members.edit : t.members.add}
+          closeLabel={t.members.closeForm}
+          onClose={dismissForm}
+          onDelete={
+            editing
+              ? async () => {
+                  if (await removeMember(editing, setFormError)) setIsFormOpen(false);
+                }
+              : undefined
+          }
         >
-          {/* tabIndex keeps focus (and so Escape) inside when clicking non-focusable parts. */}
-          <section className="member-dialog" role="dialog" aria-modal="true" aria-labelledby="member-form-title" tabIndex={-1}>
-            <header className="member-dialog-header">
-              <h2 id="member-form-title">{editing ? t.members.edit : t.members.add}</h2>
-              <button
-                className="member-dialog-close"
-                type="button"
-                aria-label={t.members.closeForm}
-                onClick={() => setIsFormOpen(false)}
-              >
-                ×
-              </button>
-            </header>
-            <form className="member-form" onSubmit={submitMember}>
-              <label className="member-field">
-                {t.members.firstName}
-                <input
-                  autoFocus
-                  autoComplete="given-name"
-                  maxLength={100}
-                  value={form.firstName}
-                  onChange={(event) => updateForm('firstName', event.target.value)}
-                />
-              </label>
-              <label className="member-field">
-                {t.members.lastName}
-                <input
-                  autoComplete="family-name"
-                  maxLength={100}
-                  value={form.lastName}
-                  onChange={(event) => updateForm('lastName', event.target.value)}
-                />
-              </label>
-              <label className="member-field member-field-wide">
-                {t.members.birthName}
-                <input maxLength={100} value={form.birthName} onChange={(event) => updateForm('birthName', event.target.value)} />
-              </label>
-              <label className="member-field">
-                {t.members.birthDate}
-                <input type="date" value={form.birthDate} onChange={(event) => updateForm('birthDate', event.target.value)} />
-              </label>
-              <label className="member-field">
-                {t.members.birthPlace}
-                <input maxLength={200} value={form.birthPlace} onChange={(event) => updateForm('birthPlace', event.target.value)} />
-              </label>
-              <label className="member-field">
-                {t.members.deathDate}
-                <input type="date" value={form.deathDate} onChange={(event) => updateForm('deathDate', event.target.value)} />
-              </label>
-              <label className="member-field">
-                {t.members.deathPlace}
-                <input maxLength={200} value={form.deathPlace} onChange={(event) => updateForm('deathPlace', event.target.value)} />
-              </label>
-              {/* Dropping an image on the field picks it like the file chooser does. */}
+          <form className="person-form" onSubmit={submitMember}>
+            <div className="person-hero person-hero-edit">
+              {/* Dropping an image on the avatar picks it like the file chooser does. */}
               <label
-                className={`member-field member-field-wide member-photo-drop${isDragging ? ' member-photo-drop-active' : ''}`}
+                className={`person-photo-drop${isDragging ? ' person-photo-drop-active' : ''}`}
+                title={t.members.dropPhoto}
                 onDragOver={(event) => {
                   event.preventDefault();
                   setIsDragging(true);
@@ -565,74 +565,136 @@ export default function MembersControls({
                   if (file?.type.startsWith('image/')) setPhotoFile(file);
                 }}
               >
-                {t.members.uploadPhoto}
-                <span>{photoFile ? photoFile.name : t.members.dropPhoto}</span>
+                <Avatar member={form} photo={photoPreview ?? (editing ? photoSrc(editing, familyId) : null)} large />
+                <span>{t.members.changePhoto}</span>
                 <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} />
               </label>
-              {editing?.photoUpdatedAt && (
-                <button type="button" className="member-photo-remove" disabled={isSaving} onClick={() => void removePhoto()}>
-                  {t.members.removePhoto}
-                </button>
-              )}
-              <label className="member-field member-field-wide">
-                {t.members.note}
-                <textarea maxLength={5000} value={form.note} onChange={(event) => updateForm('note', event.target.value)} />
-              </label>
-              {members && (
-                <RelativesFields
-                  // Remounted per opened form, so the selection starts from the stored relatives but
-                  // survives a failed save that turns a new person into an edited one.
-                  key={formKey}
-                  member={editing}
-                  members={members}
-                  onChange={(value, changed) => {
-                    relatives.current = { value, changed };
-                  }}
+              <div className="person-name-fields">
+                <input
+                  autoFocus
+                  autoComplete="given-name"
+                  maxLength={100}
+                  aria-label={t.members.firstName}
+                  placeholder={t.members.firstName}
+                  value={form.firstName}
+                  onChange={(event) => updateForm('firstName', event.target.value)}
                 />
-              )}
-              {formError && <p className="member-form-error" role="alert">{formError}</p>}
-              <div className="member-form-actions">
-                <button type="button" disabled={isSaving} onClick={() => setIsFormOpen(false)}>
-                  {t.cancel}
+                <input
+                  autoComplete="family-name"
+                  maxLength={100}
+                  aria-label={t.members.lastName}
+                  placeholder={t.members.lastName}
+                  value={form.lastName}
+                  onChange={(event) => updateForm('lastName', event.target.value)}
+                />
+                {editing?.photoUpdatedAt && !photoFile && (
+                  <button type="button" className="person-link-button person-link-danger" disabled={isSaving} onClick={() => void removePhoto()}>
+                    {t.members.removePhoto}
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="person-tabs" role="tablist">
+              {(['data', 'relations'] as const).map((id) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  id={`person-tab-${id}`}
+                  aria-selected={tab === id}
+                  aria-controls={`person-tabpanel-${id}`}
+                  onClick={() => setTab(id)}
+                >
+                  {id === 'data' ? t.members.tabData : t.members.tabRelations}
                 </button>
-                <button type="submit" disabled={isSaving}>
+              ))}
+            </div>
+            <div className="person-tabpanel" role="tabpanel" id="person-tabpanel-data" aria-labelledby="person-tab-data" hidden={tab !== 'data'}>
+            {showBirthName ? (
+              <label className="person-field">
+                {t.members.birthName}
+                <input maxLength={100} value={form.birthName} onChange={(event) => updateForm('birthName', event.target.value)} />
+              </label>
+            ) : (
+              <button type="button" className="person-link-button" onClick={() => setShowBirthName(true)}>
+                {t.members.addBirthName}
+              </button>
+            )}
+            <div className="person-fields">
+              <label className="person-field">
+                {t.members.birthDate}
+                <input type="date" value={form.birthDate} onChange={(event) => updateForm('birthDate', event.target.value)} />
+              </label>
+              <label className="person-field">
+                {t.members.birthPlace}
+                <input maxLength={200} value={form.birthPlace} onChange={(event) => updateForm('birthPlace', event.target.value)} />
+              </label>
+              <label className="person-field">
+                {t.members.deathDate}
+                <input type="date" value={form.deathDate} onChange={(event) => updateForm('deathDate', event.target.value)} />
+              </label>
+              <label className="person-field">
+                {t.members.deathPlace}
+                <input maxLength={200} value={form.deathPlace} onChange={(event) => updateForm('deathPlace', event.target.value)} />
+              </label>
+            </div>
+            <label className="person-field">
+              {t.members.note}
+              <textarea maxLength={5000} value={form.note} onChange={(event) => updateForm('note', event.target.value)} />
+            </label>
+            </div>
+            <div className="person-tabpanel" role="tabpanel" id="person-tabpanel-relations" aria-labelledby="person-tab-relations" hidden={tab !== 'relations'}>
+            {members && (
+              <RelativesFields
+                // Remounted per opened form, so the selection starts from the stored relatives but
+                // survives a failed save that turns a new person into an edited one.
+                key={formKey}
+                member={editing}
+                members={members}
+                photoOf={(m) => photoSrc(m, familyId)}
+                onChange={(value, changed) => {
+                  relatives.current = { value, changed };
+                  setRelativesChanged(changed);
+                }}
+              />
+            )}
+            </div>
+            {formError && <p className="person-error" role="alert">{formError}</p>}
+            {isDirty && (
+              <div className="person-footer">
+                <button type="button" disabled={isSaving} onClick={dismissForm}>
+                  {t.members.discard}
+                </button>
+                <button type="submit" className="person-primary" disabled={isSaving}>
                   {isSaving ? t.saving : t.members.save}
                 </button>
               </div>
-              {editing && (
-                <button
-                  type="button"
-                  className="member-delete"
-                  disabled={isSaving}
-                  onClick={async () => {
-                    if (await removeMember(editing, setFormError)) setIsFormOpen(false);
-                  }}
-                >
-                  {t.members.delete}
-                </button>
-              )}
-            </form>
-          </section>
-        </div>
+            )}
+          </form>
+        </PanelShell>
       )}
 
-      {profileMember && members && (
-        <ProfileDialog
-          // Remounted per person, so focus (and so Escape) lands in the dialog again.
+      {!isFormOpen && profileMember && members && (
+        <PanelShell
+          // Remounted per person, so focus (and so Escape) lands in the panel again.
           key={profileMember.id}
-          member={profileMember}
-          photo={photoSrc(profileMember, familyId)}
-          members={members}
-          onShow={(id) => {
-            setProfileId(id);
-            onSelect(id);
-          }}
-          onEdit={() => {
-            setProfileId(null);
-            openForm(profileMember);
-          }}
+          label={t.profile.title}
+          closeLabel={t.profile.close}
+          autoFocusClose
           onClose={() => setProfileId(null)}
-        />
+          onBack={trail.some((id) => members.some((m) => m.id === id)) ? goBack : undefined}
+          onEdit={() => openForm(profileMember)}
+          onDelete={() => void removeMember(profileMember, setViewError)}
+        >
+          <PersonView
+            member={profileMember}
+            photo={photoSrc(profileMember, familyId)}
+            members={members}
+            photoOf={(m) => photoSrc(m, familyId)}
+            onShow={showProfile}
+            error={viewError}
+          />
+        </PanelShell>
       )}
     </div>
   );

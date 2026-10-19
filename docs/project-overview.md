@@ -102,23 +102,28 @@ At night the scroll and board cards glow softly (their emissive faces brighten) 
 Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives section lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
-The relatives section collapses each relation into one line such as "Eltern zuweisen" (or "Eltern bearbeiten" with the selected names) that opens its checkbox list on click.
+In edit mode each relation shows its people as chips with a × and an "… hinzufügen" button that opens a name search instead of a list of everybody; Enter or a click adds the first or chosen match.
 Each selected partner gets a status, "zusammen" or "verheiratet", and a married couple an optional wedding date; both partners share these details, and the profile shows them next to the partner, for example "verheiratet seit 12.06.1985".
 A search square of the same size sits right of the burger menu; a click widens it to a text field.
 Typing shows up to eight matching members of the selected family as autocomplete suggestions (arrow keys and Enter or a click choose one; Escape or a press outside closes the field).
 Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.
 The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and pencil and trash actions; relatives are shown in the profile.
-A read-only profile dialog shows a member's photo (or their initials in its place), name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
+A person panel in the middle of the screen (`ui/app/PersonPanel.tsx`) replaces the former profile dialog and member form: it sits below the top bar, has no dimmed backdrop, and closes on a press outside it, so the tree and camera stay usable around it.
+The photo is shown large (112 px) beside the name.
+The panel shows a member's photo (or their initials in its place), name, years and age, birth and death dates with places, the note as a quote, and relatives as chips with avatar, name, and years: parents, then the person next to their partners (with the partnership status), then children, with siblings and half-siblings in collapsed sections.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
 GEDCOM export writes a differing birth name as a second NAME with TYPE birth; import also reads TYPE maiden, a NAME of TYPE married as the current name, and `_MARNM`.
 First and last name may be left empty for a person whose name is unknown (the BFF trims names and stores unknown ones as empty strings); such a person is shown as "Unbekannt" (small and italic on their card) and with "?" as initials.
-Clicking a relative in the profile shows that person's profile and moves the camera to their scroll.
-From the profile, "Bearbeiten" opens the edit form; the pencil in the members list still opens the edit form directly.
-The member form contains the relatives section ("Beziehungen"), saved together with the person, so relatives can also be assigned while creating someone.
-The edit form ends with a red "Person löschen" button that deletes the person after confirmation.
+Clicking a relative in the panel shows that person and moves the camera to their scroll; a back arrow in the panel header walks back through the people visited this way.
+The pencil in the panel header turns the same panel into the edit form in place; the pencil in the members list opens the panel directly in edit mode.
+The edit form keeps the avatar (click or drop an image to change the photo) beside the name fields on top and splits the rest into two tabs, so nothing needs scrolling: "Persönliche Daten" (an optional birth name behind "Geburtsname hinzufügen", "Geboren am/in" and "Verstorben am/in" in two columns, the note) and "Beziehungen", saved together with the person, so relatives can also be assigned while creating someone.
+Removing a relative with × asks for confirmation first.
+The relatives section lists parents, partners, children, siblings, and half-siblings; each partner chip has its status and wedding date next to it.
+"Verwerfen" and "Person speichern" stay at the bottom of the panel and appear only for a new person or once something changed; saving shows the person again.
+"Person löschen" sits in the "⋯" menu of the panel header and deletes the person after confirmation.
 The photo URL is no longer editable in the form; an existing one is kept and still shown.
 A photo can also be uploaded in the member form, by choosing a file or dropping an image on the photo field: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the members list.
-Dialogs and the members list close on Escape or a click outside them; the edit form first asks before discarding unsaved changes, and the create form keeps its draft.
+The members list closes on Escape or a click outside it; the person panel closes on Escape, ×, or a press outside it, the edit form first asks before discarding unsaved changes, and the create form keeps its draft.
 
 ### Pins and card placement
 
@@ -175,10 +180,10 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/moon.ts` paints the moon's face and halo on canvases.
 - `ui/app/Scroll.tsx` renders the classic papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/HangingCard.tsx` renders the 3D card styles (scroll and wooden board on ropes), which must fit the card footprint in `pins.ts`; `ui/app/cardTextures.ts` draws their surfaces and text on canvases, with `ui/app/cardTextures.check.mjs` as its self-check (`node app/cardTextures.check.mjs` in `ui/`).
-- `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesFields.tsx` is the form section that assigns parents, children, partners, and (half-)siblings.
+- `ui/app/MembersControls.tsx` contains the members list, the delete actions, and the state and saving of the person panel's edit form (create and edit); `ui/app/RelativesFields.tsx` is the form section that assigns parents, children, partners, and (half-)siblings with chips and a name search.
 - `ui/app/MemberSearch.tsx` renders the search square next to the burger menu; it widens to an input with autocomplete over the loaded members, and choosing a result flies the camera to the card and opens the profile.
 - `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
-- `ui/app/ProfileDialog.tsx` shows a member's read-only profile with their relatives.
+- `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, "⋯", and close), its read-only view with the relatives, and the shared relative chip.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the Evolution panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.

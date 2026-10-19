@@ -4,10 +4,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import type { Member, Partnership, Relatives, Sibling } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { nameOf } from './names';
-
-function toggle(ids: string[], id: string) {
-  return ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id];
-}
+import { searchMembers } from './nameSearch';
+import { RelativeChip } from './PersonPanel';
+import { PlusIcon } from './icons';
 
 // Siblings are not stored but derived from the parents others share with the selected ones. Edits override
 // the parents a member is taken to have (empty: no longer a sibling); the member's own relatives never count.
@@ -26,15 +25,88 @@ const detailsKey = (details: Details, ids: string[]) =>
 
 const siblingKey = (s: Sibling) => `${s.id}:${[...s.parentIds].sort().join(',')}`;
 
-// Assigns any number of parents, children, partners, and (half-)siblings to one member inside the member form.
+// "Add parents" opens a small search instead of a list of everybody; picking someone adds them and closes it.
+function AddRelative({
+  label,
+  options,
+  disabled,
+  onPick,
+}: {
+  label: string;
+  options: Member[];
+  disabled?: boolean;
+  onPick: (id: string) => void;
+}) {
+  const t = useT();
+  const [isOpen, setIsOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const results = searchMembers(options, query, 6);
+  const pick = (id: string) => {
+    onPick(id);
+    setIsOpen(false);
+    setQuery('');
+  };
+  if (!isOpen) {
+    return (
+      <button type="button" className="person-add" disabled={disabled} onClick={() => setIsOpen(true)}>
+        <PlusIcon />
+        {label}
+      </button>
+    );
+  }
+  return (
+    <div
+      className="person-picker"
+      onKeyDown={(event) => {
+        if (event.key !== 'Escape') return;
+        // Only the search closes, not the whole panel.
+        event.preventDefault();
+        event.stopPropagation();
+        setIsOpen(false);
+        setQuery('');
+      }}
+    >
+      <input
+        autoFocus
+        type="search"
+        aria-label={label}
+        placeholder={t.relatives.search}
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            if (results[0]) pick(results[0].id);
+          }
+        }}
+      />
+      <ul>
+        {query.trim() === '' && <li className="person-picker-hint">{t.relatives.typeName}</li>}
+        {query.trim() !== '' && results.length === 0 && <li className="person-picker-hint">{t.relatives.noMatches}</li>}
+        {results.map((m) => (
+          <li key={m.id}>
+            <button type="button" onClick={() => pick(m.id)}>
+              {nameOf(m, t.members.unknown)}
+              <span>{[m.birthDate?.slice(0, 4), m.deathDate && `† ${m.deathDate.slice(0, 4)}`].filter(Boolean).join(' ')}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+// Assigns any number of parents, children, partners, and (half-)siblings to one member inside the person panel.
 // member is null for a new person. Reports the selection and whether it differs from the stored one.
 export default function RelativesFields({
   member,
   members,
+  photoOf,
   onChange,
 }: {
   member: Member | null;
   members: Member[];
+  photoOf: (member: Member) => string | null | undefined;
   onChange: (relatives: Relatives, changed: boolean) => void;
 }) {
   const t = useT();
@@ -78,85 +150,108 @@ export default function RelativesFields({
   // The form reads the latest selection on submit and dismiss; a ref there avoids re-rendering it.
   useEffect(() => onChange({ parentIds, childIds, partnerIds, siblings, partnerships }, changed));
 
-  // extra renders next to an entry, e.g. the shared parent of a half-sibling.
-  function list(
+  // extra renders next to a chip, e.g. the status of a partner or the shared parent of a half-sibling.
+  function group(
     legend: string,
+    addLabel: string,
     selected: string[],
     blocked: string[],
-    onToggle: (id: string) => void,
+    onAdd: (id: string) => void,
+    onRemove: (id: string) => void,
     { hint, disabled, extra }: { hint?: string | false; disabled?: boolean; extra?: (m: Member) => ReactNode } = {},
   ) {
-    const names = others.filter((m) => selected.includes(m.id)).map(fullName);
-    // Collapsed to one line per relation; the checkbox list opens on click.
+    const chosen = others.filter((m) => selected.includes(m.id));
+    const options = others.filter((m) => !selected.includes(m.id) && !blocked.includes(m.id));
     return (
-      <details className="relatives-picker">
-        <summary>
-          {names.length ? t.relatives.edit(legend) : t.relatives.assign(legend)}
-          {names.length > 0 && <span>{names.join(', ')}</span>}
-        </summary>
-        <fieldset className="relatives-list" aria-label={legend} disabled={disabled}>
-          {others.length === 0 && <p>{t.relatives.noOthers}</p>}
-          {others.length > 0 && hint && <p>{hint}</p>}
-          {others.map((m) => (
-            <label key={m.id}>
-              <input
-                type="checkbox"
-                checked={selected.includes(m.id)}
-                disabled={blocked.includes(m.id)}
-                onChange={() => onToggle(m.id)}
+      <section className="person-group" role="group" aria-label={legend}>
+        <h3>{legend}</h3>
+        <div className="person-chips person-chips-edit">
+          {chosen.map((m) => (
+            <span key={m.id} className="person-edit-item">
+              <RelativeChip
+                member={m}
+                photo={photoOf(m)}
+                onRemove={() => {
+                  if (window.confirm(t.relatives.confirmRemove(fullName(m), legend))) onRemove(m.id);
+                }}
               />
-              {fullName(m)}
               {extra?.(m)}
-            </label>
+            </span>
           ))}
-        </fieldset>
-      </details>
+          <AddRelative label={addLabel} options={options} disabled={disabled || options.length === 0} onPick={onAdd} />
+        </div>
+        {hint && <p className="person-muted">{hint}</p>}
+      </section>
     );
   }
+  const without = (ids: string[], id: string) => ids.filter((x) => x !== id);
 
   return (
-    <div className="member-field-wide relatives-fields" role="group" aria-labelledby="relatives-heading">
-      <h3 id="relatives-heading">{t.relatives.heading}</h3>
-      {list(t.relatives.parents, parentIds, [...childIds, ...partnerIds, ...siblingIds], (id) => setParentIds((ids) => toggle(ids, id)))}
-      {list(t.relatives.children, childIds, [...parentIds, ...partnerIds, ...siblingIds], (id) => setChildIds((ids) => toggle(ids, id)))}
-      {list(t.relatives.partners, partnerIds, [...parentIds, ...childIds, ...siblingIds], (id) => setPartnerIds((ids) => toggle(ids, id)), {
-        // Selected partners get their status and, when married, the wedding date.
-        extra: (m) => {
-          if (!partnerIds.includes(m.id)) return null;
-          const { status, marriedOn } = detailsOf(details, m.id);
-          return (
-            <>
-              <select
-                aria-label={t.relatives.status(fullName(m))}
-                value={status}
-                onChange={(event) => setDetail(m.id, { status: event.target.value as Partnership['status'] })}
-              >
-                <option value="together">{t.relatives.together}</option>
-                <option value="married">{t.relatives.married}</option>
-                <option value="separated">{t.relatives.separated}</option>
-              </select>
-              {status === 'married' && (
-                <input
-                  type="date"
-                  aria-label={t.relatives.marriedOn(fullName(m))}
-                  value={marriedOn ?? ''}
-                  onChange={(event) => setDetail(m.id, { marriedOn: event.target.value || null })}
-                />
-              )}
-            </>
-          );
+    <div className="person-relatives-edit" role="group" aria-label={t.relatives.heading}>
+      {group(
+        t.relatives.parents,
+        t.relatives.addParent,
+        parentIds,
+        [...childIds, ...partnerIds, ...siblingIds],
+        (id) => setParentIds((ids) => [...ids, id]),
+        (id) => setParentIds((ids) => without(ids, id)),
+      )}
+      {group(
+        t.relatives.partners,
+        t.relatives.addPartner,
+        partnerIds,
+        [...parentIds, ...childIds, ...siblingIds],
+        (id) => setPartnerIds((ids) => [...ids, id]),
+        (id) => setPartnerIds((ids) => without(ids, id)),
+        {
+          // Selected partners get their status and, when married, the wedding date.
+          extra: (m) => {
+            const { status, marriedOn } = detailsOf(details, m.id);
+            return (
+              <span className="person-partner-details">
+                <select
+                  aria-label={t.relatives.status(fullName(m))}
+                  value={status}
+                  onChange={(event) => setDetail(m.id, { status: event.target.value as Partnership['status'] })}
+                >
+                  <option value="together">{t.relatives.together}</option>
+                  <option value="married">{t.relatives.married}</option>
+                  <option value="separated">{t.relatives.separated}</option>
+                </select>
+                {status === 'married' && (
+                  <input
+                    type="date"
+                    aria-label={t.relatives.marriedOn(fullName(m))}
+                    value={marriedOn ?? ''}
+                    onChange={(event) => setDetail(m.id, { marriedOn: event.target.value || null })}
+                  />
+                )}
+              </span>
+            );
+          },
         },
-      })}
-      {list(
+      )}
+      {group(
+        t.relatives.children,
+        t.relatives.addChild,
+        childIds,
+        [...parentIds, ...partnerIds, ...siblingIds],
+        (id) => setChildIds((ids) => [...ids, id]),
+        (id) => setChildIds((ids) => without(ids, id)),
+      )}
+      {group(
         t.relatives.siblings,
+        t.relatives.addSibling,
         fullIds,
         [...parentIds, ...childIds, ...partnerIds, ...withOtherParents],
-        (id) => setShared(id, fullIds.includes(id) ? [] : parentIds),
+        (id) => setShared(id, parentIds),
+        (id) => setShared(id, []),
         { hint: parentIds.length === 0 && t.relatives.parentsFirst, disabled: parentIds.length === 0 },
       )}
       {/* Existing half-siblings can always be removed; adding one needs a second parent to leave out. */}
-      {list(
+      {group(
         t.relatives.halfSiblings,
+        t.relatives.addHalfSibling,
         halfIds,
         [
           ...parentIds,
@@ -164,14 +259,15 @@ export default function RelativesFields({
           ...partnerIds,
           ...(parentIds.length < 2 ? others.filter((m) => !halfIds.includes(m.id)).map((m) => m.id) : []),
         ],
-        (id) => setShared(id, halfIds.includes(id) ? [] : [parentIds[0]]),
+        (id) => setShared(id, [parentIds[0]]),
+        (id) => setShared(id, []),
         {
           hint: parentIds.length === 0 ? t.relatives.parentsFirst : parentIds.length === 1 && t.relatives.twoParentsFirst,
           disabled: parentIds.length === 0,
           extra: (m) =>
-            parentIds.length >= 2 &&
-            halfIds.includes(m.id) && (
+            parentIds.length >= 2 && (
               <select
+                className="person-shared-parent"
                 aria-label={t.relatives.sharedParent(fullName(m))}
                 value={siblings.find((s) => s.id === m.id)?.parentIds[0]}
                 onChange={(event) => setShared(m.id, [event.target.value])}
