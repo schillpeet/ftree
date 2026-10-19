@@ -104,6 +104,9 @@ Each member can be assigned any number of parents, children, and partners (curre
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives section lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
 The relatives section collapses each relation into one line such as "Eltern zuweisen" (or "Eltern bearbeiten" with the selected names) that opens its checkbox list on click.
 Each selected partner gets a status, "zusammen" or "verheiratet", and a married couple an optional wedding date; both partners share these details, and the profile shows them next to the partner, for example "verheiratet seit 12.06.1985".
+A search square of the same size sits right of the burger menu; a click widens it to a text field.
+Typing shows up to eight matching members of the selected family as autocomplete suggestions (arrow keys and Enter or a click choose one; Escape or a press outside closes the field).
+Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.
 The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and pencil and trash actions; relatives are shown in the profile.
 A read-only profile dialog shows a member's photo (or their initials in its place), name, birth and death dates with places, note, and relatives grouped as parents, children, partners, siblings, and half-siblings.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
@@ -173,6 +176,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/Scroll.tsx` renders the classic papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/HangingCard.tsx` renders the 3D card styles (scroll and wooden board on ropes), which must fit the card footprint in `pins.ts`; `ui/app/cardTextures.ts` draws their surfaces and text on canvases, with `ui/app/cardTextures.check.mjs` as its self-check (`node app/cardTextures.check.mjs` in `ui/`).
 - `ui/app/MembersControls.tsx` contains the members list, edit and delete actions, and the form used to create and edit members; `ui/app/RelativesFields.tsx` is the form section that assigns parents, children, partners, and (half-)siblings.
+- `ui/app/MemberSearch.tsx` renders the search square next to the burger menu; it widens to an input with autocomplete over the loaded members, and choosing a result flies the camera to the card and opens the profile.
+- `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
 - `ui/app/ProfileDialog.tsx` shows a member's read-only profile with their relatives.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
