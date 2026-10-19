@@ -133,3 +133,11 @@ export const CopyIcon = () => (
     <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
   </Icon>
 );
+
+export const DotsIcon = () => (
+  <Icon>
+    <circle cx="5" cy="12" r="1.2" />
+    <circle cx="12" cy="12" r="1.2" />
+    <circle cx="19" cy="12" r="1.2" />
+  </Icon>
+);
