@@ -10,6 +10,7 @@ import {
 } from '../lib/api/generated/members';
 import Dashboard, { type DashboardPanel } from './Dashboard';
 import FamiliesPanel from './FamiliesPanel';
+import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
 import RandomFamilyPanel from './RandomFamilyPanel';
@@ -139,6 +140,15 @@ export default function FamilyTree() {
           setPanel(null);
         }}
         onPanel={(next) => setPanel((current) => (current === next ? null : next))}
+      />
+      <MemberSearch
+        members={members ?? []}
+        onSelect={(id) => {
+          setIsMenuOpen(false);
+          setPanel(null);
+          setFocus({ id });
+          setProfile({ id });
+        }}
       />
       <MembersControls
         key={activeFamilyId ?? 'no-family'}

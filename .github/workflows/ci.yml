@@ -67,6 +67,7 @@ jobs:
       - run: node app/arrange.check.mjs
       - run: node app/generations.check.mjs
       - run: node app/cardTextures.check.mjs
+      - run: node app/nameSearch.check.mjs
       - run: pnpm build
 
   bff:
