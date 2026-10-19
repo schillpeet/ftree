@@ -66,6 +66,40 @@ pnpm --dir ui lint && pnpm --dir ui typecheck && pnpm --dir ui build
 (cd bff && ./gradlew build)         # needs the database running
 ```
 
+## Connect to PostgreSQL
+
+The development database runs as the `db` service in [`docker-compose.yml`](docker-compose.yml) and is only reachable from your own machine (`127.0.0.1`), on port **5433** to avoid clashing with a local PostgreSQL on 5432.
+
+| Setting  | Value       |
+| -------- | ----------- |
+| Host     | `localhost` |
+| Port     | `5433`      |
+| Database | `appdb`     |
+| User     | `app`       |
+| Password | `app`       |
+
+JDBC URL: `jdbc:postgresql://localhost:5433/appdb`. The backend uses the same values by default and reads `DB_URL`, `DB_USER`, and `DB_PASSWORD` if you want to override them.
+
+With a local `psql`:
+
+```bash
+psql "postgresql://app:app@localhost:5433/appdb"
+```
+
+Without a local client, use the one inside the container:
+
+```bash
+docker compose exec db psql -U app -d appdb
+```
+
+In a GUI client (DBeaver, DataGrip, TablePlus, ...) create a PostgreSQL connection with the values above. Useful tables are `families`, `members`, `member_parents`, `member_partners`, and `member_photos`.
+
+The data lives in the Docker volume `ftree_postgres_data` and survives `./stop.sh`. To start with an empty database, stop the services and delete the volume (this removes all families and members):
+
+```bash
+./stop.sh && docker volume rm ftree_postgres_data
+```
+
 ## Contributing
 
 Branches, commit messages, and project conventions are described in [AGENTS.md](AGENTS.md). Commits follow [Conventional Commits](https://www.conventionalcommits.org), which drive automated releases.
