@@ -202,6 +202,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `bff/Dockerfile` builds the BFF into a container image from the repository root (`docker build -f bff/Dockerfile .`); the image runs as a non-root user and reads `DB_URL`, `DB_USER`, and `DB_PASSWORD` at runtime.
 - The root `.dockerignore` only lets `api/openapi.yaml` and `bff/` (without its build output) into that build context.
 - The BFF image has no Git history, so its version is `0.0.0-dev`.
+- `ui/Dockerfile` builds the UI into a container image from `ui/` (`docker build -t ftree-ui ui`) that runs the standalone Next.js server on port 3000 as a non-root user.
+- The UI image's `BFF_URL` build argument (default `http://ftree-bff:8080`) sets the BFF address its `/api` rewrite proxies to; it cannot be changed when the container starts.
 - `start.sh` and `stop.sh` start and stop PostgreSQL, the Swagger UI container, the BFF, and the UI for local development; `restart.sh` runs both with a UI dependency install in between, so pulled changes (including BFF code, which `bootRun` recompiles) take effect; the custom Node mock server that previously served the spec was removed.
 - `api/openapi.yaml` defines family-set listing, generation, deletion, and family-scoped member operations as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts` with the relative base URL `/api`.
@@ -209,6 +211,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/next.config.ts` builds the UI as a standalone server (`.next/standalone/server.js`) for container images.
 - `.github/workflows/ci.yml` runs on every pull request and push to `main`. Its `ui` job lints, type-checks, and builds the UI and checks that the generated API client matches the spec; its `bff` job builds and tests the BFF against PostgreSQL. Each job runs only when its app directory, `api/openapi.yaml`, or `ci.yml` changes, ignoring Markdown. The `ci-ok` job waits for both and fails if either failed or was cancelled; configure `ci-ok` (together with the PR-title `validate` check) as a required status check so pull requests cannot be merged before the relevant checks finish.
 - `.github/workflows/pinact.yml` runs `actionlint` on all GitHub Actions workflows and uses Pinact to open a pull request when workflow actions need SHA pins. It runs when workflow files change.
+- `.github/workflows/release-images.yml` builds the UI and BFF images for arm64 on every published release and pushes them to `ghcr.io/schillpeet/ftree-ui` and `ghcr.io/schillpeet/ftree-bff`, tagged with the release version (for example `0.14.0`) and `sha-<commit>`; it can also be run manually, which only adds the `sha-` tag, and never pushes `latest`.
 
 The procedural scene is presentation code.
 It is not a family-tree domain model or a persistence layer.
@@ -245,7 +248,7 @@ Resolve these based on product needs before committing to a backend or collabora
 The repository separates `ui/` and `bff/` while keeping them under one Git root.
 pnpm manages only the UI, so its lockfile and workspace settings live in `ui/`; the Kotlin BFF uses its own Gradle build.
 Keep this structure rather than nesting a second Git repository.
-GitHub Actions runs CI for both applications, and release-please creates version tags and GitHub releases for the repository as a whole; deployment is not configured yet.
+GitHub Actions runs CI for both applications, and release-please creates version tags and GitHub releases for the repository as a whole; container images are published to GHCR for each release, but deployment is not configured yet.
 Revisit further package or repository splits only when separate ownership, access control, or release lifecycles make them useful.
 
 ## Versioning and Releases
