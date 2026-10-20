@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels: {{- include "ftree.labels" (dict "ctx" . "component" "bff") | nindent 4 }}
+  name: {{ include "ftree.fullname" . }}-bff
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "ftree.selectorLabels" (dict "ctx" . "component" "bff") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "ftree.labels" (dict "ctx" . "component" "bff") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: bff
+          image: "{{ .Values.bff.image.repository }}:{{ .Values.bff.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.bff.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: DB_URL
+              value: {{ .Values.db.url | quote }}
+            - name: DB_USER
+              value: {{ .Values.db.user | quote }}
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.db.existingSecret }}
+                  key: password
+            {{- with .Values.bff.corsAllowedOrigins }}
+            # Unset, the BFF allows http://localhost:3000; an empty value would block every origin.
+            - name: APP_CORS_ALLOWED_ORIGINS
+              value: {{ . | quote }}
+            {{- end }}
+          # The BFF has no health endpoint yet, so the probes only check that the port is open.
+          readinessProbe:
+            tcpSocket:
+              port: http
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: 30
+          resources: {{- toYaml .Values.bff.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels: {{- include "ftree.labels" (dict "ctx" . "component" "bff") | nindent 4 }}
+  name: {{ include "ftree.fullname" . }}-bff
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http
+  selector: {{- include "ftree.selectorLabels" (dict "ctx" . "component" "bff") | nindent 4 }}
