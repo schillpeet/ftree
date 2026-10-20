@@ -201,7 +201,9 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF and a Swagger UI container that serves `api/openapi.yaml` at `http://localhost:4010`.
 - `start.sh` and `stop.sh` start and stop PostgreSQL, the Swagger UI container, the BFF, and the UI for local development; `restart.sh` runs both with a UI dependency install in between, so pulled changes (including BFF code, which `bootRun` recompiles) take effect; the custom Node mock server that previously served the spec was removed.
 - `api/openapi.yaml` defines family-set listing, generation, deletion, and family-scoped member operations as the shared API contract.
-- `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts`; `NEXT_PUBLIC_BFF_URL` sets the BFF base URL at generation time (default `http://localhost:8080`).
+- `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts` with the relative base URL `/api`.
+- `ui/next.config.ts` rewrites `/api/*` to the BFF at `BFF_URL` (default `http://localhost:8080`), so the browser only talks to the UI's origin; `BFF_URL` is read when the UI is built.
+- `ui/next.config.ts` builds the UI as a standalone server (`.next/standalone/server.js`) for container images.
 - `.github/workflows/ci.yml` runs on every pull request and push to `main`. Its `ui` job lints, type-checks, and builds the UI and checks that the generated API client matches the spec; its `bff` job builds and tests the BFF against PostgreSQL. Each job runs only when its app directory, `api/openapi.yaml`, or `ci.yml` changes, ignoring Markdown. The `ci-ok` job waits for both and fails if either failed or was cancelled; configure `ci-ok` (together with the PR-title `validate` check) as a required status check so pull requests cannot be merged before the relevant checks finish.
 - `.github/workflows/pinact.yml` runs `actionlint` on all GitHub Actions workflows and uses Pinact to open a pull request when workflow actions need SHA pins. It runs when workflow files change.
 
