@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.14.0](https://github.com/schillpeet/ftree/compare/v0.13.0...v0.14.0) (2026-10-20)
+
+
+### Features
+
+* **bff:** add a container image build ([#137](https://github.com/schillpeet/ftree/issues/137)) ([a115ddf](https://github.com/schillpeet/ftree/commit/a115ddf080a79c88232e4282de23fde1ea47ae19))
+* **repo:** publish container images on release ([#138](https://github.com/schillpeet/ftree/issues/138)) ([a46d330](https://github.com/schillpeet/ftree/commit/a46d33096e32ffc81e03edd0f79211bae1a06a47))
+* **ui:** add person panel with view and edit tabs ([#133](https://github.com/schillpeet/ftree/issues/133)) ([d9c3cb8](https://github.com/schillpeet/ftree/commit/d9c3cb868c27b301a142574cd093546525d4dc36))
+* **ui:** highlight the lines to the open person's relatives ([#140](https://github.com/schillpeet/ftree/issues/140)) ([32dfd32](https://github.com/schillpeet/ftree/commit/32dfd3239109c34c864ae48a9cfbac2906ee0f5a))
+* **ui:** proxy bff requests through next rewrites ([#136](https://github.com/schillpeet/ftree/issues/136)) ([a3263ad](https://github.com/schillpeet/ftree/commit/a3263ad03f98d0d8926f89b9730f1ca1cb47a6d1))
+
 ## [0.13.0](https://github.com/schillpeet/ftree/compare/v0.12.0...v0.13.0) (2026-10-19)
 
 
