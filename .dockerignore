@@ -1,0 +1,7 @@
+# The BFF image builds from the repository root because the BFF generates code from api/openapi.yaml.
+# Allowlist what that build needs instead of excluding everything else.
+*
+!api/openapi.yaml
+!bff/
+bff/build/
+bff/.gradle/
