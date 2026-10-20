@@ -286,7 +286,7 @@ export const getGetMembersUrl = () => {
 
 
 
-  return `http://localhost:8080/members`
+  return `/api/members`
 }
 
 /**
@@ -337,7 +337,7 @@ export const getCreateMemberUrl = () => {
 
 
 
-  return `http://localhost:8080/members`
+  return `/api/members`
 }
 
 /**
@@ -406,7 +406,7 @@ export const getUpdateMemberUrl = (id: string,) => {
 
 
 
-  return `http://localhost:8080/members/${id}`
+  return `/api/members/${id}`
 }
 
 /**
@@ -472,7 +472,7 @@ export const getDeleteMemberUrl = (id: string,) => {
 
 
 
-  return `http://localhost:8080/members/${id}`
+  return `/api/members/${id}`
 }
 
 /**
@@ -527,7 +527,7 @@ export const getUpdateMemberRelativesUrl = (id: string,) => {
 
 
 
-  return `http://localhost:8080/members/${id}/relatives`
+  return `/api/members/${id}/relatives`
 }
 
 /**
@@ -586,7 +586,7 @@ export const getGetFamiliesUrl = () => {
 
 
 
-  return `http://localhost:8080/families`
+  return `/api/families`
 }
 
 /**
@@ -641,7 +641,7 @@ export const getCreateFamilyUrl = () => {
 
 
 
-  return `http://localhost:8080/families`
+  return `/api/families`
 }
 
 /**
@@ -705,7 +705,7 @@ export const getReorderFamiliesUrl = () => {
 
 
 
-  return `http://localhost:8080/families/order`
+  return `/api/families/order`
 }
 
 /**
@@ -769,7 +769,7 @@ export const getDeleteFamilyUrl = (familyId: string,) => {
 
 
 
-  return `http://localhost:8080/families/${familyId}`
+  return `/api/families/${familyId}`
 }
 
 /**
@@ -830,7 +830,7 @@ export const getRenameFamilyUrl = (familyId: string,) => {
 
 
 
-  return `http://localhost:8080/families/${familyId}`
+  return `/api/families/${familyId}`
 }
 
 /**
@@ -906,7 +906,7 @@ export const getArchiveFamilyUrl = (familyId: string,) => {
 
 
 
-  return `http://localhost:8080/families/${familyId}/archive`
+  return `/api/families/${familyId}/archive`
 }
 
 /**
@@ -982,7 +982,7 @@ export const getAnonymizeFamilyUrl = (familyId: string,) => {
 
 
 
-  return `http://localhost:8080/families/${familyId}/anonymize`
+  return `/api/families/${familyId}/anonymize`
 }
 
 /**
@@ -1053,7 +1053,7 @@ export const getImportFamilyUrl = () => {
 
 
 
-  return `http://localhost:8080/families/import`
+  return `/api/families/import`
 }
 
 /**
@@ -1118,7 +1118,7 @@ export const getExportFamilyUrl = (familyId: string,) => {
 
 
 
-  return `http://localhost:8080/families/${familyId}/export`
+  return `/api/families/${familyId}/export`
 }
 
 /**
@@ -1169,7 +1169,7 @@ export const getGetFamilyMembersUrl = (familyId: string,) => {
 
 
 
-  return `http://localhost:8080/families/${familyId}/members`
+  return `/api/families/${familyId}/members`
 }
 
 /**
@@ -1224,7 +1224,7 @@ export const getCreateFamilyMemberUrl = (familyId: string,) => {
 
 
 
-  return `http://localhost:8080/families/${familyId}/members`
+  return `/api/families/${familyId}/members`
 }
 
 /**
@@ -1295,7 +1295,7 @@ export const getUpdateFamilyMemberUrl = (familyId: string,
 
 
 
-  return `http://localhost:8080/families/${familyId}/members/${id}`
+  return `/api/families/${familyId}/members/${id}`
 }
 
 /**
@@ -1363,7 +1363,7 @@ export const getDeleteFamilyMemberUrl = (familyId: string,
 
 
 
-  return `http://localhost:8080/families/${familyId}/members/${id}`
+  return `/api/families/${familyId}/members/${id}`
 }
 
 /**
@@ -1420,7 +1420,7 @@ export const getUpdateFamilyMemberRelativesUrl = (familyId: string,
 
 
 
-  return `http://localhost:8080/families/${familyId}/members/${id}/relatives`
+  return `/api/families/${familyId}/members/${id}/relatives`
 }
 
 /**
@@ -1498,7 +1498,7 @@ export const getUpdateFamilyMemberPlacementUrl = (familyId: string,
 
 
 
-  return `http://localhost:8080/families/${familyId}/members/${id}/placement`
+  return `/api/families/${familyId}/members/${id}/placement`
 }
 
 /**
@@ -1576,7 +1576,7 @@ export const getGetFamilyMemberPhotoUrl = (familyId: string,
 
 
 
-  return `http://localhost:8080/families/${familyId}/members/${id}/photo`
+  return `/api/families/${familyId}/members/${id}/photo`
 }
 
 /**
@@ -1643,7 +1643,7 @@ export const getUploadFamilyMemberPhotoUrl = (familyId: string,
 
 
 
-  return `http://localhost:8080/families/${familyId}/members/${id}/photo`
+  return `/api/families/${familyId}/members/${id}/photo`
 }
 
 /**
@@ -1711,7 +1711,7 @@ export const getDeleteFamilyMemberPhotoUrl = (familyId: string,
 
 
 
-  return `http://localhost:8080/families/${familyId}/members/${id}/photo`
+  return `/api/families/${familyId}/members/${id}/photo`
 }
 
 /**

@@ -8,7 +8,7 @@ export default defineConfig({
     output: {
       target: './lib/api/generated/members.ts',
       client: 'fetch',
-      baseUrl: process.env.NEXT_PUBLIC_BFF_URL ?? 'http://localhost:8080',
+      baseUrl: '/api',
       mode: 'single',
       clean: true,
     },
