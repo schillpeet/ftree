@@ -11,15 +11,31 @@ type Person = {
 // joining them, from the middle of that bar a stem drops to a second bar, and each child hangs
 // from it. Partners without shared children get a direct line instead. `along` orders bars within a
 // row: the angle around the trunk by default, plain x for a flat tree.
+// With `focusId`, the segments on the way from that person to everyone their person panel lists
+// (parents, partners, children, siblings, half-siblings) go to `focused` and `focusedDashed` instead.
 const angle = ([x, , z]: Point) => Math.atan2(z, x);
 const separated = (people: Person[], a: string, b: string) =>
   people.find((p) => p.id === a)?.partnerships?.some((p) => p.partnerId === b && p.status === 'separated') ?? false;
 
-export function relationLines(people: Person[], positions: Map<string, Point>, along = angle, fork = 0) {
+export function relationLines(people: Person[], positions: Map<string, Point>, along = angle, fork = 0, focusId: string | null = null) {
   const parents: Point[] = [];
   const partners: Point[] = [];
   // Flat trees only: the lines of couples who split up, to draw dashed.
   const dashed: Point[] = [];
+  const focused: Point[] = [];
+  const focusedDashed: Point[] = [];
+  const add = (list: Point[], marked: boolean, ...points: Point[]) =>
+    (marked ? (list === dashed ? focusedDashed : focused) : list).push(...points);
+  const focus = focusId ? people.find((p) => p.id === focusId) : undefined;
+  // The focused person and their relatives as `relativesOf` lists them.
+  const related = new Set<string>();
+  if (focus) {
+    related.add(focus.id);
+    for (const p of people)
+      if (focus.parentIds.includes(p.id) || focus.partnerIds.includes(p.id) || p.parentIds.some((id) => id === focus.id || focus.parentIds.includes(id)))
+        related.add(p.id);
+  }
+  const touchesFocus = (a: string, b: string) => focus != null && (a === focus.id || b === focus.id);
   const at = (id: string) => positions.get(id)!;
   const level = ([x, , z]: Point, y: number): Point => [x, y, z];
 
@@ -51,7 +67,7 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
   for (const p of people) {
     for (const id of p.partnerIds) {
       const haveChildren = families.has([p.id, id].sort().join());
-      if (id > p.id && positions.has(id) && !haveChildren) partners.push(at(p.id), at(id));
+      if (id > p.id && positions.has(id) && !haveChildren) add(partners, touchesFocus(p.id, id), at(p.id), at(id));
     }
   }
 
@@ -97,16 +113,17 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
       for (const id of p.partnerIds) {
         if (!(id > p.id && positions.has(id) && separated(people, p.id, id) && !families.has([p.id, id].sort().join()))) continue;
         const [a, b] = [at(p.id), at(id)];
+        const marked = touchesFocus(p.id, id);
         const own = [p.id, id].map((who) => plans.find((plan) => plan.parentIds.includes(who) && plan.parentY === a[1])).find(Boolean);
         const hub = own && [p.id, id].find((who) => own.parentIds.includes(who))!;
         if (own && hub && !bothSides(hub)) {
           const y = own.parentY - own.drop / 2;
           const [from, to] = hub === p.id ? [a, b] : [b, a];
-          dashed.push(level(from, y), level(to, y));
-          parents.push(to, level(to, y));
+          add(dashed, marked, level(from, y), level(to, y));
+          add(parents, marked, to, level(to, y));
         } else {
           const under = (point: Point): Point => [point[0], point[1] - 2, point[2]];
-          dashed.push(a, under(a), under(a), under(b), under(b), b);
+          add(dashed, marked, a, under(a), under(a), under(b), under(b), b);
         }
       }
   for (const { parentIds, childIds, parentY, drop, middle, lane } of plans) {
@@ -115,6 +132,10 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
     // Lanes share the space between 60 % and 85 % of the way down to the children.
     const childBar = parentY - drop * (lanes > 1 ? 0.6 + (0.25 * lane) / (lanes - 1) : 0.75);
     const childXs = childIds.map((id) => at(id)[0]);
+    // The focused person's way into this family: themselves, or for half-siblings the shared parent.
+    const anchor = focus && ([...parentIds, ...childIds].includes(focus.id) ? focus.id : parentIds.find((id) => focus.parentIds.includes(id)));
+    const on = (id: string) => anchor != null && related.has(id);
+    const linked = parentIds.some(on) && childIds.some(on);
     const ends = parentIds.map((id) => {
       const [x, , z] = at(id);
       const others = parentIds.filter((other) => other !== id).map((other) => at(other)[0]);
@@ -124,25 +145,30 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
           ? x + fork * Math.sign(others.reduce((a, b) => a + b) / others.length - x)
           : (Math.min(...childXs) + Math.max(...childXs)) / 2;
       const end: Point = [endX, barY, z];
-      if (endX === x) parents.push(at(id), end);
+      if (endX === x) add(parents, on(id), at(id), end);
       else {
         const forkY = parentY - drop / 4;
-        parents.push(at(id), [x, forkY, z], [x, forkY, z], [endX, forkY, z], [endX, forkY, z], end);
+        add(parents, on(id), at(id), [x, forkY, z], [x, forkY, z], [endX, forkY, z], [endX, forkY, z], end);
       }
       return end;
     });
+    const reached = parentIds.flatMap((id, i) => (on(id) ? [ends[i][0]] : []));
     ends.sort((a, b) => a[0] - b[0]);
     // The bar of a separated couple is dashed, and its children hang straight below the partner who
     // is not the one with several families, so the bar reads as a link to the earlier partner.
     const apart = fork > 0 && parentIds.length === 2 && separated(people, parentIds[0], parentIds[1]);
-    for (let i = 1; i < ends.length; i++) (apart ? dashed : parents).push(ends[i - 1], ends[i]);
     const former = apart ? [...parentIds].sort((a, b) => familiesOf.get(a)! - familiesOf.get(b)!)[0] : undefined;
     const stem =
       ends.length === 1 ? ends[0] : former ? level(at(former), barY) : level(middle, barY);
-    parents.push(stem, level(stem, childBar));
+    // The bar is focused between the outermost focused parents, and the stem when it leads to a child.
+    const xs = linked ? [...reached, stem[0]] : reached;
+    const between = (a: Point, b: Point) =>
+      xs.length > 1 && Math.min(a[0], b[0]) >= Math.min(...xs) - 1e-6 && Math.max(a[0], b[0]) <= Math.max(...xs) + 1e-6;
+    for (let i = 1; i < ends.length; i++) add(apart ? dashed : parents, between(ends[i - 1], ends[i]), ends[i - 1], ends[i]);
+    add(parents, linked, stem, level(stem, childBar));
     for (const id of childIds) {
-      parents.push(level(stem, childBar), level(at(id), childBar), level(at(id), childBar), at(id));
+      add(parents, on(id), level(stem, childBar), level(at(id), childBar), level(at(id), childBar), at(id));
     }
   }
-  return { parents, partners, dashed };
+  return { parents, partners, dashed, focused, focusedDashed };
 }

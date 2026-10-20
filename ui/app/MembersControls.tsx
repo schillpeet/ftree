@@ -149,6 +149,7 @@ export default function MembersControls({
   isListOpen,
   onListOpenChange: setIsListOpen,
   onSelect,
+  onShownChange,
   onFamiliesChanged,
   onBack,
 }: {
@@ -163,6 +164,8 @@ export default function MembersControls({
   isListOpen: boolean;
   onListOpenChange: (open: boolean) => void;
   onSelect: (id: string) => void;
+  // The person whose panel is open (viewed or edited), or null.
+  onShownChange: (id: string | null) => void;
   onFamiliesChanged: () => void;
   // Returns to the family overview when the list was opened from the families panel.
   onBack?: () => void;
@@ -247,6 +250,8 @@ export default function MembersControls({
   }
   // Looked up on every render, so the profile follows edits and disappears with a deleted member.
   const profileMember = profileId ? members?.find((m) => m.id === profileId) : undefined;
+  const shownId = (isFormOpen ? editing?.id : profileMember?.id) ?? null;
+  useEffect(() => onShownChange(shownId), [shownId, onShownChange]);
 
   // The list is not modal: a press anywhere else or Escape closes it.
   useEffect(() => {

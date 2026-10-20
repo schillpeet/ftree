@@ -17,6 +17,7 @@ const LIFT = 2;
 const NAME_SCALE = 50;
 // Someone with children by several partners forks this far toward each partner.
 const FORK = NAME_GAP / 4;
+const FOCUS_COLOR = '#ff4fd8';
 
 // The experimental view's family tree: names floating on one row per generation, joined by plain
 // lines and rings, at positions that follow from the relations alone. `facing` turns it toward the camera.
@@ -25,17 +26,20 @@ export default function SimpleTree({
   base,
   facing,
   showLines,
+  focusId,
   onOpen,
 }: {
   members: Member[];
   base: number;
   facing: number;
   showLines: boolean;
+  // Whose lines to their relatives stand out, or null.
+  focusId: string | null;
   onOpen: (id: string) => void;
 }) {
   const t = useT();
   const positions = useMemo(() => simpleLayout(members, generations(members)), [members]);
-  const links = useMemo(() => relationLines(members, positions, ([x]) => x, FORK), [members, positions]);
+  const links = useMemo(() => relationLines(members, positions, ([x]) => x, FORK, focusId), [members, positions, focusId]);
   // Partners are marked by two rings between their names instead of a line.
   const rings = members.flatMap((m) =>
     m.partnerIds
@@ -48,6 +52,10 @@ export default function SimpleTree({
       {showLines && links.parents.length > 0 && <Line points={links.parents} segments color="#00e5ff" lineWidth={2} />}
       {showLines && links.dashed.length > 0 && (
         <Line points={links.dashed} segments dashed dashSize={0.6} gapSize={0.5} color="#00e5ff" lineWidth={2} />
+      )}
+      {showLines && links.focused.length > 0 && <Line points={links.focused} segments color={FOCUS_COLOR} lineWidth={3} />}
+      {showLines && links.focusedDashed.length > 0 && (
+        <Line points={links.focusedDashed} segments dashed dashSize={0.6} gapSize={0.5} color={FOCUS_COLOR} lineWidth={3} />
       )}
       {rings.map(([a, b]) => (
         <Html key={`${a}-${b}`} position={midpoint(positions.get(a)!, positions.get(b)!)} center distanceFactor={NAME_SCALE}>

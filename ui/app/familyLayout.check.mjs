@@ -159,4 +159,44 @@ const noKids = relationLines(
 );
 assert.ok(noKids.dashed.some((p, i) => i % 2 === 0 && p[0] === 0 && p[1] === 5 && noKids.dashed[i + 1][0] === 12 && noKids.dashed[i + 1][1] === 5));
 assert.ok(noKids.parents.some((p, i) => i % 2 === 0 && p[0] === 12 && p[1] === 10 && noKids.parents[i + 1][0] === 12 && noKids.parents[i + 1][1] === 5));
+// With a focused person, exactly the lines to their relatives are focused, and nothing is drawn twice.
+const pairs = (points) => {
+  const out = [];
+  for (let i = 0; i < points.length; i += 2) out.push(`${points[i]}|${points[i + 1]}`);
+  return out;
+};
+const touches = (points, at) => points.some((p) => p === at);
+const family = [
+  { id: 'gm', parentIds: [], partnerIds: ['gp'] },
+  { id: 'gp', parentIds: [], partnerIds: ['gm', 'step'] },
+  { id: 'step', parentIds: [], partnerIds: ['gp'] },
+  { id: 'me', parentIds: ['gm', 'gp'], partnerIds: ['wife', 'ex'] },
+  { id: 'sis', parentIds: ['gm', 'gp'], partnerIds: [] },
+  { id: 'half', parentIds: ['gp', 'step'], partnerIds: [] },
+  { id: 'wife', parentIds: [], partnerIds: ['me'] },
+  { id: 'ex', parentIds: [], partnerIds: ['me'] },
+  { id: 'kid', parentIds: ['me', 'wife'], partnerIds: [] },
+  { id: 'cousin', parentIds: ['other'], partnerIds: [] },
+  { id: 'other', parentIds: [], partnerIds: [] },
+];
+const familyLayout = new Map([
+  ['gm', flat(0, 20)], ['gp', flat(6, 20)], ['step', flat(12, 20)], ['other', flat(20, 20)],
+  ['me', flat(2, 10)], ['sis', flat(5, 10)], ['half', flat(10, 10)], ['wife', flat(-4, 10)], ['ex', flat(-10, 10)], ['cousin', flat(20, 10)],
+  ['kid', flat(-1, 0)],
+]);
+const plain = relationLines(family, familyLayout, ([x]) => x);
+assert.equal(plain.focused.length, 0);
+const mine = relationLines(family, familyLayout, ([x]) => x, 0, 'me');
+const all = (lines) => [...lines.parents, ...lines.partners, ...lines.focused].length;
+assert.equal(all(mine), all(plain));
+for (const id of ['gm', 'gp', 'me', 'sis', 'half', 'wife', 'ex', 'kid']) assert.ok(touches(mine.focused, familyLayout.get(id)), id);
+// The step-parent and the unrelated family stay as they are.
+for (const id of ['step', 'other', 'cousin']) assert.ok(!touches(mine.focused, familyLayout.get(id)), id);
+assert.ok(touches(mine.parents, familyLayout.get('step')));
+// The half-sibling's bar only runs from the shared parent to the stem, not on to the step-parent.
+assert.ok(!pairs(mine.focused).some((pair) => pair.includes('12,15,0')));
+// Focused on the kid, the grandparents' lines stay plain.
+const kids = relationLines(family, familyLayout, ([x]) => x, 0, 'kid');
+assert.ok(touches(kids.focused, familyLayout.get('me')) && touches(kids.focused, familyLayout.get('wife')));
+assert.ok(!touches(kids.focused, familyLayout.get('gm')) && !touches(kids.focused, familyLayout.get('ex')));
 console.log('familyLayout ok');
