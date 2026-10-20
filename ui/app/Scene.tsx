@@ -6,7 +6,7 @@ import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { useAppearance } from './appearance';
-import { useShowLines } from './lines';
+import { useHighlightRelatives, useShowLines } from './lines';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
 import { generationBounds, generations, layerPins } from './generations';
@@ -62,6 +62,8 @@ const ORBIT_SPEED = 0.15;
 const GENERATION_GAP = CARD.height + CARD_GAP;
 // Relation lines run through the canopy; like the scrolls they are drawn over the leaves.
 const ON_TOP = { depthTest: false, renderOrder: 1 };
+// Lines to the relatives of the person whose panel is open.
+const FOCUS_COLOR = '#ff7a45';
 const MIN_DISTANCE = 8;
 const MAX_DISTANCE = 150;
 // camera-controls divides trackpad deltas by 10, so the default speed needs a lot of pinching.
@@ -353,6 +355,7 @@ function Scrolls({
   pins,
   showPins,
   showLines,
+  focusId,
   cardStyle,
   spacing,
   evening,
@@ -367,6 +370,8 @@ function Scrolls({
   pins: Point[];
   showPins: boolean;
   showLines: boolean;
+  // Whose lines to their relatives stand out, or null.
+  focusId: string | null;
   cardStyle: CardStyle;
   // Relation spacing while bundling, otherwise null.
   spacing: number | null;
@@ -411,7 +416,7 @@ function Scrolls({
     [placed, drag],
   );
 
-  const links = useMemo(() => relationLines(members, positions), [members, positions]);
+  const links = useMemo(() => relationLines(members, positions, undefined, 0, focusId), [members, positions, focusId]);
 
   useEffect(() => {
     const target = focus && placed.get(focus.id);
@@ -534,6 +539,9 @@ function Scrolls({
         ))}
       {showLines && links.parents.length > 0 && <Line points={links.parents} segments color="#f5e6c4" lineWidth={3} {...ON_TOP} />}
       {showLines && links.partners.length > 0 && <Line points={links.partners} segments color="#e8b54a" lineWidth={4} {...ON_TOP} />}
+      {showLines && links.focused.length > 0 && (
+        <Line points={links.focused} segments color={FOCUS_COLOR} lineWidth={5} {...ON_TOP} renderOrder={2} />
+      )}
     </>
   );
 }
@@ -542,6 +550,7 @@ export default function Scene({
   familyId,
   members,
   focus,
+  highlight,
   onOpen,
   onPlace,
   debugTools,
@@ -549,6 +558,8 @@ export default function Scene({
   familyId: string | null;
   members: Member[];
   focus: Focus;
+  // The person whose panel is open, whose lines to their relatives can stand out.
+  highlight: string | null;
   onOpen: (id: string) => void;
   onPlace: (id: string, placement: Placement) => void;
   debugTools?: ReactNode;
@@ -557,6 +568,8 @@ export default function Scene({
   const [language, setLanguage] = useLanguage();
   const [appearance] = useAppearance();
   const [showLines, setShowLines] = useShowLines();
+  const [highlightRelatives, setHighlightRelatives] = useHighlightRelatives();
+  const focusId = showLines && highlightRelatives ? highlight : null;
   const experimental = appearance === 'experimental';
   const organic = appearance === 'organic';
   useEffect(() => {
@@ -668,7 +681,7 @@ export default function Scene({
         {experimental ? (
           <>
             <GridFloor />
-            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} onOpen={onOpen} />
+            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} onOpen={onOpen} />
           </>
         ) : (
           <>
@@ -686,6 +699,7 @@ export default function Scene({
               pins={organic ? pins : []}
               showPins={organic && showPins}
               showLines={showLines}
+              focusId={focusId}
               cardStyle={cardStyle}
               spacing={organic && bundle ? spacing : null}
               evening={eveningFactor}
@@ -779,6 +793,15 @@ export default function Scene({
               <label className="debug-check">
                 <input type="checkbox" checked={showLines} onChange={(event) => setShowLines(event.target.checked)} />
                 {t.tools.lines}
+              </label>
+              <label className="debug-check">
+                <input
+                  type="checkbox"
+                  checked={highlightRelatives}
+                  disabled={!showLines}
+                  onChange={(event) => setHighlightRelatives(event.target.checked)}
+                />
+                {t.tools.highlightRelatives}
               </label>
               <fieldset className="organic-only" disabled={experimental}>
                 {experimental && <legend>{t.tools.disabled}</legend>}

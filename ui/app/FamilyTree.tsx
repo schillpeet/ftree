@@ -33,6 +33,7 @@ export default function FamilyTree() {
   const [focus, setFocus] = useState<Focus>(null);
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
+  const [shownId, setShownId] = useState<string | null>(null);
 
   const loadFamilies = useCallback(async () => {
     setIsLoadingFamilies(true);
@@ -119,6 +120,7 @@ export default function FamilyTree() {
         familyId={activeFamilyId}
         members={members ?? []}
         focus={focus}
+        highlight={shownId}
         onOpen={(id) => setProfile({ id })}
         onPlace={(id, placement) => void placeMember(id, placement)}
         debugTools={
@@ -161,6 +163,7 @@ export default function FamilyTree() {
         isListOpen={panel === 'people'}
         onListOpenChange={(open) => setPanel(open ? 'people' : null)}
         onSelect={(id) => setFocus({ id })}
+        onShownChange={setShownId}
         onFamiliesChanged={() => void loadFamilies()}
         onBack={() => setPanel('families')}
       />
