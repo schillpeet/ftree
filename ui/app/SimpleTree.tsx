@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import { Html, Line } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
-import { relationLines } from './familyLayout';
+import { isFormer, relationLines } from './familyLayout';
 import { generations } from './generations';
 import { useT } from './i18n';
 import { isNameless, nameOf, shortFirstName } from './names';
@@ -11,6 +11,8 @@ import type { Point } from './pins';
 import { NAME_GAP, simpleLayout } from './simpleLayout';
 
 const midpoint = (a: Point, b: Point): Point => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+// How far below a name the rings of a widowed couple sit.
+const UNDER_NAME = 1.6;
 
 // The lowest row floats this far above the floor.
 const LIFT = 2;
@@ -41,11 +43,26 @@ export default function SimpleTree({
   const positions = useMemo(() => simpleLayout(members, generations(members)), [members]);
   const links = useMemo(() => relationLines(members, positions, ([x]) => x, FORK, focusId), [members, positions, focusId]);
   // Partners are marked by two rings between their names instead of a line.
+  // A widowed couple's rings sit right under the name of the partner who died: the one with a date of death,
+  // else the one with fewer partners (the survivor may have married again). So they never land on whoever
+  // stands between the two.
+  const byId = new Map(members.map((m) => [m.id, m]));
   const rings = members.flatMap((m) =>
     m.partnerIds
       .filter((id) => id > m.id && positions.has(id))
-      .filter((id) => !m.partnerships.some((p) => p.partnerId === id && p.status === 'separated'))
-      .map((id) => [m.id, id] as const),
+      .flatMap((id) => {
+        const partnership = m.partnerships.find((p) => p.partnerId === id);
+        if (partnership && isFormer(partnership.status)) return [];
+        const [a, b] = [positions.get(m.id)!, positions.get(id)!];
+        const pair = [m, byId.get(id)!];
+        const died = pair.filter((who) => who.deathDate);
+        const fewer = [...pair].sort((x, y) => x.partnerIds.length - y.partnerIds.length);
+        const who =
+          died.length === 1 ? died[0] : fewer[0].partnerIds.length < fewer[1].partnerIds.length ? fewer[0] : null;
+        const deceased = partnership?.status === 'widowed' && who ? positions.get(who.id)! : null;
+        const at: Point = deceased ? [deceased[0], deceased[1] - UNDER_NAME, deceased[2]] : midpoint(a, b);
+        return [{ key: `${m.id}-${id}`, at }];
+      }),
   );
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
@@ -57,8 +74,8 @@ export default function SimpleTree({
       {showLines && links.focusedDashed.length > 0 && (
         <Line points={links.focusedDashed} segments dashed dashSize={0.6} gapSize={0.5} color={FOCUS_COLOR} lineWidth={3} />
       )}
-      {rings.map(([a, b]) => (
-        <Html key={`${a}-${b}`} position={midpoint(positions.get(a)!, positions.get(b)!)} center distanceFactor={NAME_SCALE}>
+      {rings.map(({ key, at }) => (
+        <Html key={key} position={at} center distanceFactor={NAME_SCALE}>
           <span className="simple-rings" aria-hidden>
             ⚭
           </span>

@@ -801,7 +801,7 @@ components:
             type: string
             format: uuid
         partnerships:
-          description: Status and wedding date per partner in partnerIds; the same on both sides.
+          description: Status and dates per partner in partnerIds; the same on both sides.
           type: array
           readOnly: true
           items:
@@ -874,7 +874,7 @@ components:
             $ref: "#/components/schemas/Sibling"
         partnerships:
           description: >-
-            Status and wedding date of partners in partnerIds, stored for both sides; partners left out are
+            Status and dates of partners in partnerIds, stored for both sides; partners left out are
             "together", and when absent, existing details stay unchanged.
           type: array
           nullable: true
@@ -895,8 +895,22 @@ components:
             - together
             - married
             - separated
+            - divorced
+            - widowed
+        since:
+          description: When the couple got together; only kept when the status is together.
+          type: string
+          format: date
+          nullable: true
         marriedOn:
-          description: Wedding date; only kept when the status is married.
+          description: Wedding date; only kept when the status is married, divorced, or widowed.
+          type: string
+          format: date
+          nullable: true
+        endedOn:
+          description: >-
+            When the couple separated or divorced, or the partner died; only kept when the status is separated,
+            divorced, or widowed.
           type: string
           format: date
           nullable: true

@@ -315,9 +315,24 @@ export function PersonView({
   const birthName = birthNameOf(member, t);
   const connectorOf = (id: string) => {
     const partnership = member.partnerships.find((p) => p.partnerId === id);
-    if (partnership?.status === 'separated') return t.relatives.separated;
-    if (partnership?.status !== 'married') return t.relatives.together;
-    return `⚭ ${partnership.marriedOn ? t.profile.marriedSince(formatDate(partnership.marriedOn)!) : t.relatives.married}`;
+    const since = formatDate(partnership?.since);
+    const married = formatDate(partnership?.marriedOn);
+    const ended = formatDate(partnership?.endedOn);
+    switch (partnership?.status) {
+      case 'married':
+        return `⚭ ${married ? t.profile.marriedSince(married) : t.relatives.married}`;
+      case 'separated':
+        return ended ? t.profile.separatedSince(ended) : t.relatives.separated;
+      case 'divorced':
+        return [ended ? t.profile.divorcedSince(ended) : t.relatives.divorced, married && `(⚭ ${married})`].filter(Boolean).join(' ');
+      case 'widowed': {
+        // Without a stored date, the partner's date of death says since when.
+        const died = ended ?? formatDate(members.find((m) => m.id === id)?.deathDate);
+        return [died ? t.profile.widowedSince(died) : t.relatives.widowed, married && `(⚭ ${married})`].filter(Boolean).join(' ');
+      }
+      default:
+        return since ? t.profile.togetherSince(since) : t.relatives.together;
+    }
   };
   const chips = (list: Member[]) =>
     list.map((m) => <RelativeChip key={m.id} member={m} photo={photoOf(m)} onClick={() => onShow(m.id)} />);

@@ -48,12 +48,14 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
   const mates = (id: string) =>
     [...new Set([...byId.get(id)!.partnerIds, ...(coParents.get(id) ?? [])])].filter((m) => byId.has(m) && genOf(m) === genOf(id));
   // Someone with children by several partners (who are not partners of each other), or with a former
-  // partner, keeps the partners beside them: current partners nearest, former ones (status separated)
+  // partner, keeps the partners beside them: current partners nearest, former ones (separated or divorced)
   // outermost. Within each, a partner without shared children counts as the newer, then the one whose
   // latest shared child is the youngest, then the one with fewer children.
+  // Like isFormer in familyLayout.ts, kept here so the layout stays free of imports for its check script.
+  const former = (status: string) => status === 'separated' || status === 'divorced';
   const separated = (a: string, b: string) =>
-    (byId.get(a)!.partnerships?.some((p) => p.partnerId === b && p.status === 'separated') ?? false) ||
-    (byId.get(b)!.partnerships?.some((p) => p.partnerId === a && p.status === 'separated') ?? false);
+    (byId.get(a)!.partnerships?.some((p) => p.partnerId === b && former(p.status)) ?? false) ||
+    (byId.get(b)!.partnerships?.some((p) => p.partnerId === a && former(p.status)) ?? false);
   const sharedKids = (a: string, b: string) => people.filter((c) => c.parentIds.includes(a) && c.parentIds.includes(b));
   const nearestFirst = (hub: string, others: string[]) => {
     const latest = (id: string) => sharedKids(hub, id).map((c) => c.birthDate ?? '').sort().at(-1) ?? '\uffff';
