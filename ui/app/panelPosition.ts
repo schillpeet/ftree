@@ -33,3 +33,25 @@ export function parsePin(saved: string | null): Offset | null {
   }
 }
 
+
+// Air between a panel and one opened beside it, and the least margin to the screen edge.
+export const BESIDE_GAP = 40;
+export const EDGE_MARGIN = 16;
+
+// Where a panel of the given width goes next to another: on the side with more room. When that side is
+// too narrow, the other panel moves over (by shift, at most to the screen edge, and only if shiftable);
+// left is the new panel's left edge, which may still overlap on very narrow screens.
+export function placeBeside(anchor: { left: number; width: number }, width: number, viewport: { width: number }, shiftable: boolean) {
+  const roomLeft = anchor.left;
+  const roomRight = viewport.width - anchor.left - anchor.width;
+  const side: 'left' | 'right' = roomRight >= roomLeft ? 'right' : 'left';
+  const missing = Math.max(0, width + BESIDE_GAP + EDGE_MARGIN - Math.max(roomLeft, roomRight));
+  const movable = shiftable ? Math.max(0, Math.min(roomLeft, roomRight) - EDGE_MARGIN) : 0;
+  const shift = (side === 'right' ? -1 : 1) * Math.min(missing, movable);
+  const anchorLeft = anchor.left + shift;
+  const left =
+    side === 'right'
+      ? Math.min(anchorLeft + anchor.width + BESIDE_GAP, viewport.width - EDGE_MARGIN - width)
+      : Math.max(anchorLeft - BESIDE_GAP - width, EDGE_MARGIN);
+  return { side, shift: shift || 0, left };
+}

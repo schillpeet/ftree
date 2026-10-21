@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useEffectEvent, useMemo, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
+import { useCallback, useEffect, useEffectEvent, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
   archiveFamily,
   createFamilyMember,
@@ -11,50 +11,17 @@ import {
   updateFamilyMember,
   updateFamilyMemberRelatives,
   uploadFamilyMemberPhoto,
-  type CreateMemberRequest,
   type Member,
   type Relatives,
 } from '../lib/api/generated/members';
 import { useLanguage, useT } from './i18n';
 import { initialsOf, nameOf } from './names';
-import { Avatar, PanelShell, PersonView, usePanelPin } from './PersonPanel';
+import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
-import RelativesFields from './RelativesFields';
+import RelativesFields, { type Relation } from './RelativesFields';
+import { EMPTY_FORM, MemberHero, MemberLifeFields, NewMemberPanel, toForm, toJpeg, toRequest, usePhotoPreview, type MemberForm } from './MemberFields';
 import { ChevronLeftIcon, CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
-
-type MemberForm = {
-  firstName: string;
-  lastName: string;
-  birthName: string;
-  birthDate: string;
-  birthPlace: string;
-  deathDate: string;
-  deathPlace: string;
-  note: string;
-};
-
-const EMPTY_FORM: MemberForm = {
-  firstName: '',
-  lastName: '',
-  birthName: '',
-  birthDate: '',
-  birthPlace: '',
-  deathDate: '',
-  deathPlace: '',
-  note: '',
-};
-
-const toForm = (member: Member): MemberForm => ({
-  firstName: member.firstName,
-  lastName: member.lastName,
-  birthName: member.birthName ?? '',
-  birthDate: member.birthDate ?? '',
-  birthPlace: member.birthPlace ?? '',
-  deathDate: member.deathDate ?? '',
-  deathPlace: member.deathPlace ?? '',
-  note: member.note ?? '',
-});
 
 export function formatDate(value?: string | null) {
   if (!value) return null;
@@ -68,23 +35,6 @@ export function photoSrc(member: Member, familyId: string | null) {
     return `${getGetFamilyMemberPhotoUrl(familyId, member.id)}?v=${encodeURIComponent(member.photoUpdatedAt)}`;
   }
   return member.photoUrl ?? null;
-}
-
-// Scales the picked image down to at most 800 px on the longer edge and re-encodes it as JPEG,
-// which keeps uploads well below the BFF's 2 MB limit.
-async function toJpeg(file: File) {
-  const image = await createImageBitmap(file);
-  const scale = Math.min(1, 800 / Math.max(image.width, image.height));
-  const canvas = document.createElement('canvas');
-  canvas.width = Math.round(image.width * scale);
-  canvas.height = Math.round(image.height * scale);
-  const context = canvas.getContext('2d')!;
-  context.fillStyle = '#fff'; // JPEG has no transparency
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(image, 0, 0, canvas.width, canvas.height);
-  return new Promise<Blob>((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('Image encoding failed'))), 'image/jpeg', 0.85),
-  );
 }
 
 // Only shown when it differs from the current surname.
@@ -182,7 +132,6 @@ export default function MembersControls({
   const [editing, setEditing] = useState<Member | null>(null);
   // Picked image, uploaded once the member is saved.
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [isDragging, setIsDragging] = useState(false);
   const [formKey, setFormKey] = useState(0);
   // Latest selection of the relatives fields, saved after the member.
   const relatives = useRef<{ value: Relatives; changed: boolean } | null>(null);
@@ -193,6 +142,15 @@ export default function MembersControls({
   const [showBirthName, setShowBirthName] = useState(false);
   const [tab, setTab] = useState<'data' | 'relations'>('data');
   const [viewError, setViewError] = useState<string | null>(null);
+  // The person being created from the relatives search, and how to assign them once saved.
+  // shift is how far the form panel moved over to make room for its panel, undone when that closes.
+  const [newRelative, setNewRelative] = useState<{
+    name: string;
+    relation: Relation;
+    onCreated: (id: string) => void;
+    key: number;
+    shift: number;
+  } | null>(null);
   const listRef = useRef<HTMLElement>(null);
 
   async function reloadMembers() {
@@ -272,6 +230,15 @@ export default function MembersControls({
       }
     },
   };
+
+  // The "… hinzufügen" button of the relation a new person is created for.
+  const linkFrom = useCallback(() => document.querySelector('.person-panel-origin [data-linked] .person-add'), []);
+
+  function closeNewRelative() {
+    const shift = newRelative?.shift ?? 0;
+    if (shift && !pin) setMoved((current) => ({ x: current.x - shift, y: current.y }));
+    setNewRelative(null);
+  }
   useEffect(() => onShownChange(shownId), [shownId, onShownChange]);
 
   // The list is not modal: a press anywhere else or Escape closes it.
@@ -349,6 +316,7 @@ export default function MembersControls({
     setFormKey((key) => key + 1);
     setIsListOpen(false);
     setFormError(null);
+    closeNewRelative();
     setIsFormOpen(true);
   }
 
@@ -363,6 +331,7 @@ export default function MembersControls({
     if (isSaving) return;
     if (editing && isDirty && !window.confirm(t.discardChanges)) return;
     setIsFormOpen(false);
+    closeNewRelative();
     if (editing) setProfileId(editing.id);
   }
 
@@ -392,18 +361,8 @@ export default function MembersControls({
     setIsSaving(true);
     setFormError(null);
 
-    const request: CreateMemberRequest = {
-      firstName: form.firstName.trim(),
-      lastName: form.lastName.trim(),
-      birthName: form.birthName.trim() || null,
-      birthDate: form.birthDate || null,
-      birthPlace: form.birthPlace.trim() || null,
-      deathDate: form.deathDate || null,
-      deathPlace: form.deathPlace.trim() || null,
-      note: form.note.trim() || null,
-      // No longer editable, but kept for members that still have one.
-      photoUrl: editing?.photoUrl ?? null,
-    };
+    // The photo URL is no longer editable, but kept for members that still have one.
+    const request = toRequest(form, editing?.photoUrl ?? null);
 
     try {
       let saved: Member;
@@ -490,10 +449,7 @@ export default function MembersControls({
     }
   }
 
-  const photoPreview = useMemo(() => (photoFile ? URL.createObjectURL(photoFile) : null), [photoFile]);
-  useEffect(() => () => {
-    if (photoPreview) URL.revokeObjectURL(photoPreview);
-  }, [photoPreview]);
+  const photoPreview = usePhotoPreview(photoFile);
 
   return (
     <div className="members-controls">
@@ -566,6 +522,7 @@ export default function MembersControls({
           closeLabel={t.members.closeForm}
           onClose={dismissForm}
           {...panelPosition}
+          className={`person-panel-form${newRelative ? ' person-panel-origin' : ''}`}
           onDelete={
             editing
               ? async () => {
@@ -575,64 +532,20 @@ export default function MembersControls({
           }
         >
           <form className="person-form" onSubmit={submitMember}>
-            <div className="person-hero person-hero-edit">
-              {/* Dropping an image on the avatar picks it like the file chooser does. */}
-              <label
-                className={`person-photo-drop${isDragging ? ' person-photo-drop-active' : ''}`}
-                title={t.members.dropPhoto}
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsDragging(true);
-                }}
-                onDragLeave={() => setIsDragging(false)}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setIsDragging(false);
-                  const file = event.dataTransfer.files[0];
-                  if (file?.type.startsWith('image/')) setPhotoFile(file);
-                }}
-              >
-                <Avatar member={form} photo={photoPreview ?? (editing ? photoSrc(editing, familyId) : null)} large />
-                <span>{t.members.changePhoto}</span>
-                <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} />
-              </label>
-              <div className="person-name-fields">
-                <label className="person-field">
-                  {t.members.firstName}
-                  <input
-                    autoFocus
-                    autoComplete="given-name"
-                    maxLength={100}
-                    value={form.firstName}
-                    onChange={(event) => updateForm('firstName', event.target.value)}
-                  />
-                </label>
-                <label className="person-field">
-                  {t.members.lastName}
-                  <input
-                    autoComplete="family-name"
-                    maxLength={100}
-                    value={form.lastName}
-                    onChange={(event) => updateForm('lastName', event.target.value)}
-                  />
-                </label>
-                {showBirthName ? (
-                  <label className="person-field">
-                    {t.members.birthName}
-                    <input maxLength={100} value={form.birthName} onChange={(event) => updateForm('birthName', event.target.value)} />
-                  </label>
-                ) : (
-                  <button type="button" className="person-link-button" onClick={() => setShowBirthName(true)}>
-                    + {t.members.addBirthName}
-                  </button>
-                )}
-                {editing?.photoUpdatedAt && !photoFile && (
-                  <button type="button" className="person-link-button person-link-danger" disabled={isSaving} onClick={() => void removePhoto()}>
-                    {t.members.removePhoto}
-                  </button>
-                )}
-              </div>
-            </div>
+            <MemberHero
+              form={form}
+              onChange={updateForm}
+              photo={photoPreview ?? (editing ? photoSrc(editing, familyId) : null)}
+              onPhoto={setPhotoFile}
+              showBirthName={showBirthName}
+              onShowBirthName={() => setShowBirthName(true)}
+            >
+              {editing?.photoUpdatedAt && !photoFile && (
+                <button type="button" className="person-link-button person-link-danger" disabled={isSaving} onClick={() => void removePhoto()}>
+                  {t.members.removePhoto}
+                </button>
+              )}
+            </MemberHero>
             <div className="person-tabs" role="tablist">
               {(['data', 'relations'] as const).map((id) => (
                 <button
@@ -649,28 +562,7 @@ export default function MembersControls({
               ))}
             </div>
             <div className="person-tabpanel" role="tabpanel" id="person-tabpanel-data" aria-labelledby="person-tab-data" hidden={tab !== 'data'}>
-            <div className="person-fields">
-              <label className="person-field">
-                {t.members.birthDate}
-                <input type="date" value={form.birthDate} onChange={(event) => updateForm('birthDate', event.target.value)} />
-              </label>
-              <label className="person-field">
-                {t.members.birthPlace}
-                <input maxLength={200} value={form.birthPlace} onChange={(event) => updateForm('birthPlace', event.target.value)} />
-              </label>
-              <label className="person-field">
-                {t.members.deathDate}
-                <input type="date" value={form.deathDate} onChange={(event) => updateForm('deathDate', event.target.value)} />
-              </label>
-              <label className="person-field">
-                {t.members.deathPlace}
-                <input maxLength={200} value={form.deathPlace} onChange={(event) => updateForm('deathPlace', event.target.value)} />
-              </label>
-            </div>
-            <label className="person-field">
-              {t.members.note}
-              <textarea maxLength={5000} value={form.note} onChange={(event) => updateForm('note', event.target.value)} />
-            </label>
+            <MemberLifeFields form={form} onChange={updateForm} />
             </div>
             <div className="person-tabpanel" role="tabpanel" id="person-tabpanel-relations" aria-labelledby="person-tab-relations" hidden={tab !== 'relations'}>
             {members && (
@@ -685,6 +577,15 @@ export default function MembersControls({
                   relatives.current = { value, changed };
                   setRelativesChanged(changed);
                 }}
+                onCreate={
+                  familyId
+                    ? (name, relation, onCreated) => {
+                        closeNewRelative();
+                        setNewRelative((current) => ({ name, relation, onCreated, key: (current?.key ?? 0) + 1, shift: 0 }));
+                      }
+                    : undefined
+                }
+                linked={newRelative?.relation}
               />
             )}
             </div>
@@ -701,6 +602,31 @@ export default function MembersControls({
             )}
           </form>
         </PanelShell>
+      )}
+
+      {isFormOpen && newRelative && familyId && (
+        <NewMemberPanel
+          // One panel per request, so a second search starts with its own name.
+          key={newRelative.key}
+          familyId={familyId}
+          name={newRelative.name}
+          title={t.relatives.newTitle(newRelative.relation, nameOf(form, t.members.unknown))}
+          anchor={() => document.querySelector('.person-panel-form')}
+          anchorPinned={!!pin}
+          onShiftAnchor={(dx) => {
+            setMoved((current) => ({ x: current.x + dx, y: current.y }));
+            setNewRelative((current) => current && { ...current, shift: current.shift + dx });
+          }}
+          linkFrom={linkFrom}
+          onClose={closeNewRelative}
+          onCreated={(member, photoFailed) => {
+            setMembers((current) => [member, ...(current ?? [])]);
+            onFamiliesChanged();
+            newRelative.onCreated(member.id);
+            closeNewRelative();
+            if (photoFailed) setFormError(t.members.photoFailed);
+          }}
+        />
       )}
 
       {!isFormOpen && profileMember && members && (
