@@ -1528,6 +1528,22 @@ textarea {
 }
 
 /* The header is the handle for dragging the panel; a pinned panel stays put. */
+/* Without a label the header lies over the top of the content, so its actions sit level with the photo;
+   the strip stays the drag handle, and the name keeps clear of the actions. */
+.person-header[data-bare='true'] {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: 16px 16px 0;
+  border-bottom: 0;
+}
+
+.person-panel-bare .person-hero-text {
+  padding-right: 128px;
+}
+
 .person-header[data-draggable='true'] {
   cursor: grab;
   touch-action: none;
@@ -1552,8 +1568,41 @@ textarea {
 
 .person-header-actions {
   display: flex;
-  gap: 2px;
+  align-items: center;
+  gap: 4px;
   margin-left: auto;
+}
+
+/* 18 px icons on 36 px targets; pin and delete stay quiet, edit (the main action) is the brightest. */
+.person-header-actions .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.person-pin,
+.person-delete {
+  color: var(--glass-muted);
+}
+
+.person-pin:hover {
+  color: #fff;
+}
+
+.person-edit {
+  color: #fff;
+}
+
+/* Red only on hover; deleting still asks first. */
+.person-delete:hover {
+  color: var(--glass-danger);
+}
+
+/* Sets close apart from the actions on the person. */
+.person-header-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 8px;
+  background: var(--glass-border);
 }
 
 .person-icon-button {
@@ -1580,38 +1629,6 @@ textarea {
 .person-panel summary:focus-visible {
   outline: 2px solid var(--glass-accent);
   outline-offset: 2px;
-}
-
-.person-menu-anchor {
-  position: relative;
-}
-
-.person-menu {
-  position: absolute;
-  z-index: 1;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 160px;
-  padding: 4px;
-  border: 1px solid var(--glass-border);
-  border-radius: 8px;
-  background: rgba(14, 21, 31, 0.97);
-}
-
-.person-menu button {
-  width: 100%;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--glass-danger);
-  cursor: pointer;
-  font-size: 14px;
-  text-align: left;
-}
-
-.person-menu button:hover {
-  background: var(--glass-hover);
 }
 
 .person-body {

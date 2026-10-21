@@ -634,13 +634,13 @@ export default function MembersControls({
           // Remounted per person, so focus (and so Escape) lands in the panel again.
           key={profileMember.id}
           label={t.profile.title}
+          hideLabel
           closeLabel={t.profile.close}
           autoFocusClose
           onClose={() => setProfileId(null)}
           {...panelPosition}
           onBack={trail.some((id) => members.some((m) => m.id === id)) ? goBack : undefined}
           onEdit={() => openForm(profileMember)}
-          onDelete={() => void removeMember(profileMember, setViewError)}
         >
           <PersonView
             member={profileMember}
