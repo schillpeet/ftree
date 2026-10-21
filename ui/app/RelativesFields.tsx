@@ -23,19 +23,25 @@ const detailsOf = (details: Details, id: string) => details[id] ?? { status: 'to
 const detailsKey = (details: Details, ids: string[]) =>
   ids.map((id) => `${id}:${detailsOf(details, id).status}:${detailsOf(details, id).marriedOn ?? ''}`).sort().join(',');
 
+// The relation groups, also naming what a person created from their search becomes.
+export type Relation = 'parent' | 'partner' | 'child' | 'sibling' | 'halfSibling';
+
 const siblingKey = (s: Sibling) => `${s.id}:${[...s.parentIds].sort().join(',')}`;
 
 // "Add parents" opens a small search instead of a list of everybody; picking someone adds them and closes it.
+// With onCreate, the list ends with an entry that creates the typed name as a new person instead.
 function AddRelative({
   label,
   options,
   disabled,
   onPick,
+  onCreate,
 }: {
   label: string;
   options: Member[];
   disabled?: boolean;
   onPick: (id: string) => void;
+  onCreate?: (name: string) => void;
 }) {
   const t = useT();
   const [isOpen, setIsOpen] = useState(false);
@@ -43,6 +49,11 @@ function AddRelative({
   const results = searchMembers(options, query, 6);
   const pick = (id: string) => {
     onPick(id);
+    setIsOpen(false);
+    setQuery('');
+  };
+  const create = () => {
+    onCreate?.(query.trim());
     setIsOpen(false);
     setQuery('');
   };
@@ -77,12 +88,13 @@ function AddRelative({
           if (event.key === 'Enter') {
             event.preventDefault();
             if (results[0]) pick(results[0].id);
+            else if (onCreate && query.trim() !== '') create();
           }
         }}
       />
       <ul>
         {query.trim() === '' && <li className="person-picker-hint">{t.relatives.typeName}</li>}
-        {query.trim() !== '' && results.length === 0 && <li className="person-picker-hint">{t.relatives.noMatches}</li>}
+        {query.trim() !== '' && results.length === 0 && !onCreate && <li className="person-picker-hint">{t.relatives.noMatches}</li>}
         {results.map((m) => (
           <li key={m.id}>
             <button type="button" onClick={() => pick(m.id)}>
@@ -91,6 +103,14 @@ function AddRelative({
             </button>
           </li>
         ))}
+        {onCreate && query.trim() !== '' && (
+          <li>
+            <button type="button" className="person-picker-create" onClick={create}>
+              <PlusIcon />
+              {t.relatives.createNew(query.trim())}
+            </button>
+          </li>
+        )}
       </ul>
     </div>
   );
@@ -103,11 +123,17 @@ export default function RelativesFields({
   members,
   photoOf,
   onChange,
+  onCreate,
+  linked,
 }: {
   member: Member | null;
   members: Member[];
   photoOf: (member: Member) => string | null | undefined;
   onChange: (relatives: Relatives, changed: boolean) => void;
+  // Creates a person from a search without matches; onCreated assigns them once they are saved.
+  onCreate?: (name: string, relation: Relation, onCreated: (id: string) => void) => void;
+  // The relation a new person is being created for, highlighted until that panel closes.
+  linked?: Relation | null;
 }) {
   const t = useT();
   const fullName = (m: Member) => nameOf(m, t.members.unknown);
@@ -152,6 +178,7 @@ export default function RelativesFields({
 
   // extra renders next to a chip, e.g. the status of a partner or the shared parent of a half-sibling.
   function group(
+    kind: Relation,
     legend: string,
     addLabel: string,
     selected: string[],
@@ -163,7 +190,7 @@ export default function RelativesFields({
     const chosen = others.filter((m) => selected.includes(m.id));
     const options = others.filter((m) => !selected.includes(m.id) && !blocked.includes(m.id));
     return (
-      <section className="person-group" role="group" aria-label={legend}>
+      <section className="person-group" role="group" aria-label={legend} data-relation={kind} data-linked={linked === kind || undefined}>
         <h3>{legend}</h3>
         <div className="person-chips person-chips-edit">
           {chosen.map((m) => (
@@ -178,7 +205,13 @@ export default function RelativesFields({
               {extra?.(m)}
             </span>
           ))}
-          <AddRelative label={addLabel} options={options} disabled={disabled || options.length === 0} onPick={onAdd} />
+          <AddRelative
+            label={addLabel}
+            options={options}
+            disabled={disabled || (options.length === 0 && !onCreate)}
+            onPick={onAdd}
+            onCreate={onCreate && ((name) => onCreate(name, kind, onAdd))}
+          />
         </div>
         {hint && <p className="person-muted">{hint}</p>}
       </section>
@@ -189,6 +222,7 @@ export default function RelativesFields({
   return (
     <div className="person-relatives-edit" role="group" aria-label={t.relatives.heading}>
       {group(
+        'parent',
         t.relatives.parents,
         t.relatives.addParent,
         parentIds,
@@ -197,6 +231,7 @@ export default function RelativesFields({
         (id) => setParentIds((ids) => without(ids, id)),
       )}
       {group(
+        'partner',
         t.relatives.partners,
         t.relatives.addPartner,
         partnerIds,
@@ -232,6 +267,7 @@ export default function RelativesFields({
         },
       )}
       {group(
+        'child',
         t.relatives.children,
         t.relatives.addChild,
         childIds,
@@ -240,6 +276,7 @@ export default function RelativesFields({
         (id) => setChildIds((ids) => without(ids, id)),
       )}
       {group(
+        'sibling',
         t.relatives.siblings,
         t.relatives.addSibling,
         fullIds,
@@ -250,6 +287,7 @@ export default function RelativesFields({
       )}
       {/* Existing half-siblings can always be removed; adding one needs a second parent to leave out. */}
       {group(
+        'halfSibling',
         t.relatives.halfSiblings,
         t.relatives.addHalfSibling,
         halfIds,
@@ -263,7 +301,7 @@ export default function RelativesFields({
         (id) => setShared(id, []),
         {
           hint: parentIds.length === 0 ? t.relatives.parentsFirst : parentIds.length === 1 && t.relatives.twoParentsFirst,
-          disabled: parentIds.length === 0,
+          disabled: parentIds.length < 2,
           extra: (m) =>
             parentIds.length >= 2 && (
               <select

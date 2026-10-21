@@ -123,6 +123,7 @@ export function PanelShell({
   onMove,
   pinned,
   onPinnedChange,
+  className,
   children,
 }: {
   label: string;
@@ -136,6 +137,7 @@ export function PanelShell({
   onMove: (offset: Offset) => void;
   pinned: boolean;
   onPinnedChange: (pinned: boolean) => void;
+  className?: string;
   children: ReactNode;
 }) {
   const t = useT();
@@ -191,7 +193,7 @@ export function PanelShell({
 
   return (
     <aside
-      className="glass person-panel"
+      className={`glass person-panel${className ? ` ${className}` : ''}`}
       aria-label={label}
       ref={panelRef}
       tabIndex={-1}

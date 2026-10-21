@@ -124,6 +124,10 @@ The edit form keeps the avatar (click or drop an image to change the photo) besi
 The name fields on top carry labels ("Vorname", "Nachname") like the other fields and sit centred beside a larger portrait-format photo; on narrow screens the fields wrap below the photo.
 The optional birth name sits with the name fields on top, behind a "+ Geburtsname hinzufügen" link below the surname.
 Removing a relative with × asks for confirmation first.
+As soon as a name is typed into a relation's search, the list ends with a highlighted "+ Neue Person „…“ hinzufügen" entry (Enter picks it when nothing matches); it opens a second, draggable "add member" panel prefilled with the typed name (last word as surname), without a relations tab.
+Saving that panel creates the person right away and adds them to the chosen relation of the form it was opened from, which still has to be saved itself.
+That panel is titled after the relation, for example "Partner von Dennis Behrendt hinzufügen", and opens beside the form on the side with more room, moving an unpinned form over just far enough for both to fit (and back once it closes).
+While it is open, the relation it was requested for is highlighted and a flowing accent line (`ui/app/RelationLink.tsx`) leads from its "… hinzufügen" button to the new panel, following both while they are dragged.
 The relatives section lists parents, partners, children, siblings, and half-siblings; each partner chip has its status and wedding date next to it.
 "Verwerfen" and "Person speichern" stay at the bottom of the panel and appear only for a new person or once something changed; saving shows the person again.
 "Person löschen" sits in the "⋯" menu of the panel header and deletes the person after confirmation.
@@ -187,10 +191,11 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/Scroll.tsx` renders the classic papyrus scroll as camera-facing, clickable HTML in the scene; its look is defined in `globals.css`.
 - `ui/app/HangingCard.tsx` renders the 3D card styles (scroll and wooden board on ropes), which must fit the card footprint in `pins.ts`; `ui/app/cardTextures.ts` draws their surfaces and text on canvases, with `ui/app/cardTextures.check.mjs` as its self-check (`node app/cardTextures.check.mjs` in `ui/`).
 - `ui/app/MembersControls.tsx` contains the members list, the delete actions, and the state and saving of the person panel's edit form (create and edit); `ui/app/RelativesFields.tsx` is the form section that assigns parents, children, partners, and (half-)siblings with chips and a name search.
+- `ui/app/MemberFields.tsx` holds the person form's shared fields (photo and names on top, birth, death, and note) and the panel that creates a new person from the relatives search.
 - `ui/app/MemberSearch.tsx` renders the search square next to the burger menu; it widens to an input with autocomplete over the loaded members, and choosing a result flies the camera to the card and opens the profile.
 - `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
 - `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, pin, "⋯", and close, draggable by the header), its read-only view with the relatives, and the shared relative chip.
-- `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport and reads a stored pin; `ui/app/panelPosition.check.mjs` is its self-check.
+- `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport, reads a stored pin, and places a panel beside another; `ui/app/panelPosition.check.mjs` is its self-check.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the Evolution panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.

@@ -136,6 +136,9 @@ const en = {
     partners: 'Partners',
     siblings: 'Siblings',
     halfSiblings: 'Half-siblings',
+    createNew: (query: string) => `Add new person “${query}”`,
+    newTitle: (relation: 'parent' | 'partner' | 'child' | 'sibling' | 'halfSibling', name: string) =>
+      `Add ${{ parent: 'parent', partner: 'partner', child: 'child', sibling: 'sibling', halfSibling: 'half-sibling' }[relation]} of ${name}`,
     ownAncestor: 'This assignment is not possible. Nobody can be their own ancestor.',
     saveFailed: 'The relationships could not be saved. Is the BFF reachable?',
     parentsFirst: 'Assign parents first',
@@ -331,6 +334,9 @@ const de: typeof en = {
     partners: 'Partner',
     siblings: 'Geschwister',
     halfSiblings: 'Halbgeschwister',
+    createNew: (query) => `Neue Person „${query}“ hinzufügen`,
+    newTitle: (relation, name) =>
+      `${{ parent: 'Elternteil', partner: 'Partner', child: 'Kind', sibling: 'Geschwister', halfSibling: 'Halbgeschwister' }[relation]} von ${name} hinzufügen`,
     ownAncestor: 'Diese Zuordnung ist nicht möglich. Niemand kann sein eigener Vorfahre sein.',
     saveFailed: 'Die Beziehungen konnten nicht gespeichert werden. Ist das BFF erreichbar?',
     parentsFirst: 'Erst Eltern zuweisen',

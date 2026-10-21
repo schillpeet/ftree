@@ -14,3 +14,10 @@ export const shortFirstName = (firstName: string) =>
     .filter(Boolean)
     .map((part, i) => (i === 0 ? part : `${[...part][0]}.`))
     .join(' ');
+
+// A typed search as a new person's name: the last word is the surname, the words before it the first names.
+export function splitName(query: string): Named {
+  const words = query.trim().split(/\s+/).filter(Boolean);
+  if (words.length < 2) return { firstName: words[0] ?? '', lastName: '' };
+  return { firstName: words.slice(0, -1).join(' '), lastName: words.at(-1)! };
+}

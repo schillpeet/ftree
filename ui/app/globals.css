@@ -2071,6 +2071,114 @@ button.person-chip-main:hover {
   padding: 6px 10px;
 }
 
+/* A person being created for a relation: their panel, the relation they are created for, and the line between. */
+.person-panel-new {
+  width: min(480px, calc(100vw - 32px));
+  border-color: rgba(127, 214, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(127, 214, 255, 0.25), 0 0 32px rgba(127, 214, 255, 0.18);
+}
+
+.person-panel-new .person-header-label {
+  color: var(--glass-accent);
+}
+
+.person-panel-new .person-hero-edit {
+  gap: 18px;
+}
+
+.person-panel-new .person-hero-edit .person-name-fields {
+  flex-basis: 260px;
+}
+
+.person-panel-new .person-hero-edit .person-avatar-large {
+  width: 116px;
+  height: 144px;
+  font-size: 34px;
+}
+
+.person-group[data-linked] {
+  margin: -8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(127, 214, 255, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(127, 214, 255, 0.35);
+}
+
+.person-group[data-linked] h3,
+.person-group[data-linked] .person-add {
+  color: var(--glass-accent);
+}
+
+.person-group[data-linked] .person-add {
+  border-color: var(--glass-accent);
+  background: rgba(127, 214, 255, 0.12);
+}
+
+.relation-link {
+  position: fixed;
+  z-index: 8;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.relation-link[data-visible='false'] {
+  display: none;
+}
+
+.relation-link path {
+  fill: none;
+  stroke: var(--glass-accent);
+}
+
+.relation-link-glow {
+  stroke-width: 7;
+  opacity: 0.18;
+}
+
+.relation-link-line {
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  animation: relation-link-flow 0.8s linear infinite;
+}
+
+.relation-link circle {
+  fill: var(--glass-accent);
+}
+
+@keyframes relation-link-flow {
+  to {
+    stroke-dashoffset: -11;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .relation-link-line {
+    animation: none;
+  }
+}
+
+/* Creating the typed name as a new person, set apart from the matches by the accent colour. */
+.person-picker .person-picker-create {
+  justify-content: flex-start;
+  gap: 6px;
+  align-items: center;
+  margin-top: 2px;
+  background: rgba(127, 214, 255, 0.1);
+  color: var(--glass-accent);
+}
+
+.person-picker .person-picker-create:hover {
+  background: rgba(127, 214, 255, 0.18);
+}
+
+.person-picker-create .icon {
+  width: 14px;
+  height: 14px;
+}
+
 /* Only a changed form (or a new person) shows the actions; they stay at the bottom while the form scrolls. */
 .person-footer {
   position: sticky;
