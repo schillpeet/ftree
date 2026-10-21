@@ -32,7 +32,11 @@ Separated partners stand outermost beside the person and the current partner nea
 When a current couple both have former partners, each person's former partners stand on their own outer side, for example `a2 a1 A B b1 b2`, so nobody stands next to someone else's ex.
 When only one of a current couple has former partners, they stand on that person's outer side and the current partner on the other side.
 Separated partners get no ring in the experimental view; their dashed line marks the relationship.
-The line between separated partners is dashed: their bar, and without a shared child a line at the height of the person's own family bar (under their names when they have none), where the former partner drops straight down to it.
+The line between separated partners is dashed: their bar, and without a shared child a line at the height of the person's own family bar (under their names when they have none), where the former partner drops straight down to it, dashed as well.
+Flat trees draw no direct line between childless partners, so a focused former partner is reached only by the dashed line.
+A current partner without shared children drops solid to the person's family bar in the same way, and a dashed line to former partners farther out starts only where that solid line ends.
+A widowed partner without shared children drops solid too, but the line over to the person is dashed, since only the current partner's line runs solid to them.
+Someone with several former partners at one height gets a single dashed line out to the farthest of them, so overlapping dashes never add up to a solid line.
 The children of a separated couple hang straight below the former partner.
 An outer partner with children of their own alone steps out over them, so their line drops straight.
 Parents of a shared child stand side by side in the experimental view even without a stored partnership, so the child hangs centred below both.

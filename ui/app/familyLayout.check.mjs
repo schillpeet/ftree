@@ -135,7 +135,9 @@ const apartPeople = [
 ];
 const dashedLines = relationLines(apartPeople, edge, ([x]) => x, 1.5);
 assert.ok(dashedLines.dashed.length > 0);
-assert.ok(dashedLines.dashed.some((p, i) => i % 2 === 0 && p[0] === 0 && dashedLines.dashed[i + 1][0] === 12));
+// The solid bar to P runs first, so the dashed one to Q starts where it ends instead of lying on top of it.
+assert.ok(dashedLines.dashed.some((p, i) => i % 2 === 0 && p[0] === 6 && dashedLines.dashed[i + 1][0] === 12));
+assert.ok(!dashedLines.dashed.some((p) => p[0] < 6 && p[1] === 5), 'no dashes over the solid bar');
 // No dashes without a separated couple.
 assert.equal(relationLines(apartPeople.map((p) => ({ ...p, partnerships: [] })), edge, ([x]) => x, 1.5).dashed.length, 0);
 // A separated couple without children gets a dashed line under their names.
@@ -157,8 +159,81 @@ const noKids = relationLines(
   ([x]) => x,
   1.5,
 );
-assert.ok(noKids.dashed.some((p, i) => i % 2 === 0 && p[0] === 0 && p[1] === 5 && noKids.dashed[i + 1][0] === 12 && noKids.dashed[i + 1][1] === 5));
-assert.ok(noKids.parents.some((p, i) => i % 2 === 0 && p[0] === 12 && p[1] === 10 && noKids.parents[i + 1][0] === 12 && noKids.parents[i + 1][1] === 5));
+// It starts where the solid bar to the current partner P ends.
+assert.ok(noKids.dashed.some((p, i) => i % 2 === 0 && p[0] === 6 && p[1] === 5 && noKids.dashed[i + 1][0] === 12 && noKids.dashed[i + 1][1] === 5));
+assert.ok(noKids.dashed.some((p, i) => i % 2 === 0 && p[0] === 12 && p[1] === 10 && noKids.dashed[i + 1][0] === 12 && noKids.dashed[i + 1][1] === 5));
+assert.ok(!noKids.parents.some((p) => p[0] === 12), 'the former partner drops dashed, not solid');
+// Focused on the former partner, nothing solid joins the two: flat trees draw no direct partner line.
+{
+  const focusedEx = relationLines(apartPeople.filter((p) => p.id !== 'hq'), edge, ([x]) => x, 1.5, 'Q');
+  assert.ok(!focusedEx.focused.some((p) => p[0] === 12), `solid focused line to Q: ${JSON.stringify(focusedEx.focused)}`);
+  assert.ok(focusedEx.focusedDashed.some((p) => p[0] === 12));
+}
+// Several former partners at one height share one dashed line instead of overlapping ones whose dashes
+// would add up to a solid line: K's exes A and B have a child each, C has none.
+{
+  const exes = ['A', 'B', 'C'];
+  const lines = relationLines(
+    [
+      { id: 'K', parentIds: [], partnerIds: exes, partnerships: exes.map((partnerId) => ({ partnerId, status: 'divorced' })) },
+      ...exes.map((id) => ({ id, parentIds: [], partnerIds: ['K'], partnerships: [{ partnerId: 'K', status: 'separated' }] })),
+      { id: 'ka', parentIds: ['A', 'K'], partnerIds: [] },
+      { id: 'kb', parentIds: ['B', 'K'], partnerIds: [] },
+    ],
+    new Map([['A', flat(0, 10)], ['B', flat(6, 10)], ['C', flat(12, 10)], ['K', flat(18, 10)], ['ka', flat(0, 0)], ['kb', flat(6, 0)]]),
+    ([x]) => x,
+    1.5,
+  );
+  const runs = [];
+  for (let i = 0; i < lines.dashed.length; i += 2) {
+    const [a, b] = [lines.dashed[i], lines.dashed[i + 1]];
+    if (a[1] === b[1]) runs.push([Math.min(a[0], b[0]), Math.max(a[0], b[0]), a[1]]);
+  }
+  for (const r of runs)
+    assert.ok(!runs.some((o) => o !== r && o[2] === r[2] && o[0] < r[1] && r[0] < o[1]), `dashed runs overlap: ${JSON.stringify(runs)}`);
+  assert.ok(runs.some(([from, to]) => from === 0 && to === 18), 'one dashed line from the farthest ex to K');
+}
+// A current partner without shared children drops solid to the person's family bar, and the dashed line
+// to a former partner farther out starts only after it.
+{
+  const lines = relationLines(
+    [
+      { id: 'K', parentIds: [], partnerIds: ['R', 'X'], partnerships: [{ partnerId: 'R', status: 'together' }, { partnerId: 'X', status: 'divorced' }] },
+      { id: 'R', parentIds: [], partnerIds: ['K'], partnerships: [{ partnerId: 'K', status: 'together' }] },
+      { id: 'X', parentIds: [], partnerIds: ['K'], partnerships: [{ partnerId: 'K', status: 'divorced' }] },
+      { id: 'kx', parentIds: ['K', 'X'], partnerIds: [] },
+    ],
+    new Map([['K', flat(0, 10)], ['R', flat(6, 10)], ['X', flat(12, 10)], ['kx', flat(12, 0)]]),
+    ([x]) => x,
+    1.5,
+  );
+  const has = (list, [x1, y1], [x2, y2]) =>
+    list.some((p, i) => i % 2 === 0 && p[0] === x1 && p[1] === y1 && list[i + 1][0] === x2 && list[i + 1][1] === y2);
+  assert.ok(has(lines.parents, [0, 5], [6, 5]) && has(lines.parents, [6, 10], [6, 5]), 'solid to the current partner');
+  assert.ok(has(lines.dashed, [6, 5], [12, 5]), `dashed only beyond the current partner: ${JSON.stringify(lines.dashed)}`);
+}
+// A widowed partner without shared children drops solid, but the line over to the person is dashed beyond
+// the current partner's solid one.
+{
+  const lines = relationLines(
+    [
+      { id: 'K', parentIds: [], partnerIds: ['R', 'W', 'X'], partnerships: [{ partnerId: 'R', status: 'together' }, { partnerId: 'W', status: 'widowed' }, { partnerId: 'X', status: 'divorced' }] },
+      { id: 'R', parentIds: [], partnerIds: ['K'], partnerships: [{ partnerId: 'K', status: 'together' }] },
+      { id: 'W', parentIds: [], partnerIds: ['K'], partnerships: [{ partnerId: 'K', status: 'widowed' }] },
+      { id: 'X', parentIds: [], partnerIds: ['K'], partnerships: [{ partnerId: 'K', status: 'divorced' }] },
+      { id: 'kx', parentIds: ['K', 'X'], partnerIds: [] },
+    ],
+    new Map([['K', flat(0, 10)], ['R', flat(6, 10)], ['W', flat(12, 10)], ['X', flat(18, 10)], ['kx', flat(18, 0)]]),
+    ([x]) => x,
+    1.5,
+  );
+  const has = (list, [x1, y1], [x2, y2]) =>
+    list.some((p, i) => i % 2 === 0 && p[0] === x1 && p[1] === y1 && list[i + 1][0] === x2 && list[i + 1][1] === y2);
+  assert.ok(has(lines.parents, [12, 10], [12, 5]), 'the widowed partner drops solid');
+  assert.ok(has(lines.parents, [0, 5], [6, 5]), 'solid only to the current partner');
+  assert.ok(!lines.parents.some((p, i) => i % 2 === 0 && p[1] === 5 && lines.parents[i + 1][1] === 5 && Math.max(p[0], lines.parents[i + 1][0]) > 6));
+  assert.ok(has(lines.dashed, [6, 5], [18, 5]), `dashed from the current partner on: ${JSON.stringify(lines.dashed)}`);
+}
 // With a focused person, exactly the lines to their relatives are focused, and nothing is drawn twice.
 const pairs = (points) => {
   const out = [];
