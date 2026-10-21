@@ -5,7 +5,7 @@ import type { Member, Partnership, Relatives, Sibling } from '../lib/api/generat
 import { useT } from './i18n';
 import { nameOf } from './names';
 import { searchMembers } from './nameSearch';
-import { dateProblem, today } from './partnerships';
+import { dateProblem, sortPartners, today } from './partnerships';
 import { RelativeChip } from './PersonPanel';
 import { PlusIcon } from './icons';
 
@@ -194,9 +194,14 @@ export default function RelativesFields({
     blocked: string[],
     onAdd: (id: string) => void,
     onRemove: (id: string) => void,
-    { hint, disabled, extra }: { hint?: string | false; disabled?: boolean; extra?: (m: Member) => ReactNode } = {},
+    {
+      hint,
+      disabled,
+      extra,
+      sort = (list) => list,
+    }: { hint?: string | false; disabled?: boolean; extra?: (m: Member) => ReactNode; sort?: (list: Member[]) => Member[] } = {},
   ) {
-    const chosen = others.filter((m) => selected.includes(m.id));
+    const chosen = sort(others.filter((m) => selected.includes(m.id)));
     const options = others.filter((m) => !selected.includes(m.id) && !blocked.includes(m.id));
     return (
       <section className="person-group" role="group" aria-label={legend} data-relation={kind} data-linked={linked === kind || undefined}>
@@ -248,6 +253,9 @@ export default function RelativesFields({
         (id) => setPartnerIds((ids) => [...ids, id]),
         (id) => setPartnerIds((ids) => without(ids, id)),
         {
+          // In the order the profile shows them, by the stored details, so chips do not jump while editing;
+          // partners added here count as together until saved.
+          sort: (list) => sortPartners(list, member?.partnerships ?? []),
           // Selected partners get their status and the dates that go with it.
           extra: (m) => {
             const partnership = detailsOf(details, m.id);
