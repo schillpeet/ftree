@@ -112,7 +112,7 @@ Choosing a suggestion flies the camera to that card (organic view) and opens the
 The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and pencil and trash actions; relatives are shown in the profile.
 A person panel in the middle of the screen (`ui/app/PersonPanel.tsx`) replaces the former profile dialog and member form: it sits below the top bar and has no dimmed backdrop, so the tree and camera stay usable around it.
 The panel can be dragged by its header (a grab cursor shows the handle) and stays open on a press outside it; each newly opened panel starts in the middle again.
-The pin next to the pencil fixes the panel at its current position: it can no longer be dragged, and every panel opens there, also after a reload (remembered per browser in `localStorage`) until it is unpinned.
+The pin in the panel header fixes the panel at its current position: it can no longer be dragged, and every panel opens there, also after a reload (remembered per browser in `localStorage`) until it is unpinned.
 The photo is shown large (112 px) beside the name.
 The panel shows a member's photo (or their initials in its place), name, years and age, birth and death dates with places, the note as a quote, and relatives as chips with avatar, name, and years: parents, then the person next to their partners (with the partnership status), then children, with siblings and half-siblings in collapsed sections.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
@@ -130,7 +130,8 @@ That panel is titled after the relation, for example "Partner von Dennis Behrend
 While it is open, the relation it was requested for is highlighted and a flowing accent line (`ui/app/RelationLink.tsx`) leads from its "… hinzufügen" button to the new panel, following both while they are dragged.
 The relatives section lists parents, partners, children, siblings, and half-siblings; each partner chip has its status and wedding date next to it.
 "Verwerfen" and "Person speichern" stay at the bottom of the panel and appear only for a new person or once something changed; saving shows the person again.
-"Person löschen" sits in the "⋯" menu of the panel header and deletes the person after confirmation.
+The profile panel shows no title: pin and edit, then close after a thin divider, sit in its top-right corner level with the photo; edit is the brightest of them.
+"Person löschen" is a trash can in the header of the edit form only, red on hover, and deletes the person after confirmation.
 The photo URL is no longer editable in the form; an existing one is kept and still shown.
 A photo can also be uploaded in the member form, by choosing a file or dropping an image on the photo field: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the members list.
 The members list closes on Escape or a click outside it; the person panel closes only on Escape (also while the tree has focus) or ×, the edit form first asks before discarding unsaved changes, and the create form keeps its draft.

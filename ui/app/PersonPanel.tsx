@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Member } from '../lib/api/generated/members';
 import { birthNameOf, formatDate, initialsOf } from './MembersControls';
-import { ChevronLeftIcon, CloseIcon, DotsIcon, PencilIcon, PinIcon } from './icons';
+import { ChevronLeftIcon, CloseIcon, PencilIcon, PinIcon, TrashIcon } from './icons';
 import { onStorage, useT } from './i18n';
 import { nameOf } from './names';
 import { clampOffset, parsePin, type Offset } from './panelPosition';
@@ -110,9 +110,11 @@ export function usePanelPin() {
 
 // The one panel for looking at and editing a person; it sits beside the tree, so the tree stays in view.
 // It opens at the top centre (shifted by offset), can be dragged by its header unless pinned, and closes
-// only on Escape or ×.
+// only on Escape or ×. hideLabel leaves the label to screen readers, for a panel whose content says it all;
+// its actions then float in the top-right corner, level with the content.
 export function PanelShell({
   label,
+  hideLabel,
   closeLabel,
   onClose,
   onBack,
@@ -127,6 +129,7 @@ export function PanelShell({
   children,
 }: {
   label: string;
+  hideLabel?: boolean;
   closeLabel: string;
   onClose: () => void;
   onBack?: () => void;
@@ -141,9 +144,8 @@ export function PanelShell({
   children: ReactNode;
 }) {
   const t = useT();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const menuRef = useRef<HTMLSpanElement>(null);
+  const bare = !!hideLabel && !onBack;
   const panelRef = useRef<HTMLElement>(null);
   // Pointer and offset where the current drag started, and where the panel sits without an offset.
   const drag = useRef<{ pointerX: number; pointerY: number; from: Offset; box: { left: number; top: number; width: number } } | null>(null);
@@ -182,32 +184,23 @@ export function PanelShell({
     if (fitted.x !== from.x || fitted.y !== from.y) moveRef.current(fitted);
   }, []);
 
-  useEffect(() => {
-    if (!isMenuOpen) return;
-    function closeOnOutsidePress(event: PointerEvent) {
-      if (!menuRef.current?.contains(event.target as Node)) setIsMenuOpen(false);
-    }
-    document.addEventListener('pointerdown', closeOnOutsidePress);
-    return () => document.removeEventListener('pointerdown', closeOnOutsidePress);
-  }, [isMenuOpen]);
-
   return (
     <aside
-      className={`glass person-panel${className ? ` ${className}` : ''}`}
+      className={`glass person-panel${bare ? ' person-panel-bare' : ''}${className ? ` ${className}` : ''}`}
       aria-label={label}
       ref={panelRef}
       tabIndex={-1}
       style={{ transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` }}
       onKeyDown={(event) => {
         if (event.key !== 'Escape') return;
-        if (isMenuOpen) setIsMenuOpen(false);
-        else if (!event.defaultPrevented) onClose();
+        if (!event.defaultPrevented) onClose();
         // Handled here, so the document listener above leaves it alone.
         event.preventDefault();
       }}
     >
       <header
         className="person-header"
+        data-bare={bare}
         data-draggable={!pinned}
         data-dragging={isDragging}
         onPointerDown={(event) => {
@@ -243,14 +236,10 @@ export function PanelShell({
             <ChevronLeftIcon />
           </button>
         ) : (
-          <span className="person-header-label">{label}</span>
+          !hideLabel && <span className="person-header-label">{label}</span>
         )}
+        {/* Pin (a view setting), edit (the main action), delete; close set apart at the end. */}
         <span className="person-header-actions">
-          {onEdit && (
-            <button type="button" className="person-icon-button" aria-label={t.profile.edit} title={t.profile.edit} onClick={onEdit}>
-              <PencilIcon />
-            </button>
-          )}
           <button
             type="button"
             className="person-icon-button person-pin"
@@ -261,35 +250,37 @@ export function PanelShell({
           >
             <PinIcon />
           </button>
-          {onDelete && (
-            <span className="person-menu-anchor" ref={menuRef}>
-              <button
-                type="button"
-                className="person-icon-button"
-                aria-label={t.profile.more}
-                aria-haspopup="menu"
-                aria-expanded={isMenuOpen}
-                onClick={() => setIsMenuOpen((open) => !open)}
-              >
-                <DotsIcon />
-              </button>
-              {isMenuOpen && (
-                <div className="person-menu" role="menu">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsMenuOpen(false);
-                      onDelete();
-                    }}
-                  >
-                    {t.members.delete}
-                  </button>
-                </div>
-              )}
-            </span>
+          {onEdit && (
+            <button
+              type="button"
+              className="person-icon-button person-edit"
+              aria-label={t.profile.edit}
+              title={t.profile.edit}
+              onClick={onEdit}
+            >
+              <PencilIcon />
+            </button>
           )}
-          <button type="button" className="person-icon-button" aria-label={closeLabel} autoFocus={autoFocusClose} onClick={onClose}>
+          {onDelete && (
+            <button
+              type="button"
+              className="person-icon-button person-delete"
+              aria-label={t.members.delete}
+              title={t.members.delete}
+              onClick={onDelete}
+            >
+              <TrashIcon />
+            </button>
+          )}
+          <span className="person-header-divider" aria-hidden="true" />
+          <button
+            type="button"
+            className="person-icon-button"
+            aria-label={closeLabel}
+            title={closeLabel}
+            autoFocus={autoFocusClose}
+            onClick={onClose}
+          >
             <CloseIcon />
           </button>
         </span>

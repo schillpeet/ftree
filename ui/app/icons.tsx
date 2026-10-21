@@ -134,14 +134,6 @@ export const CopyIcon = () => (
   </Icon>
 );
 
-export const DotsIcon = () => (
-  <Icon>
-    <circle cx="5" cy="12" r="1.2" />
-    <circle cx="12" cy="12" r="1.2" />
-    <circle cx="19" cy="12" r="1.2" />
-  </Icon>
-);
-
 export const PinIcon = () => (
   <Icon>
     <path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7" />
