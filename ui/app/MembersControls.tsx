@@ -17,7 +17,8 @@ import {
 } from '../lib/api/generated/members';
 import { useLanguage, useT } from './i18n';
 import { initialsOf, nameOf } from './names';
-import { Avatar, PanelShell, PersonView } from './PersonPanel';
+import { Avatar, PanelShell, PersonView, usePanelPin } from './PersonPanel';
+import { CENTRE, type Offset } from './panelPosition';
 import RelativesFields from './RelativesFields';
 import { ChevronLeftIcon, CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
@@ -251,6 +252,26 @@ export default function MembersControls({
   // Looked up on every render, so the profile follows edits and disappears with a deleted member.
   const profileMember = profileId ? members?.find((m) => m.id === profileId) : undefined;
   const shownId = (isFormOpen ? editing?.id : profileMember?.id) ?? null;
+
+  // One position for the profile and its edit form, so switching between them keeps the panel in place.
+  // A pinned position is remembered and cannot be dragged; otherwise the next panel opens centred again.
+  const [pin, setPin] = usePanelPin();
+  const [moved, setMoved] = useState<Offset>(CENTRE);
+  const isPanelOpen = isFormOpen || !!profileMember;
+  if (!isPanelOpen && moved !== CENTRE) setMoved(CENTRE);
+  const panelPosition = {
+    offset: pin ?? moved,
+    onMove: (next: Offset) => (pin ? setPin(next) : setMoved(next)),
+    pinned: !!pin,
+    onPinnedChange: (pinned: boolean) => {
+      if (pinned) {
+        setPin(moved);
+      } else {
+        setMoved(pin ?? CENTRE);
+        setPin(null);
+      }
+    },
+  };
   useEffect(() => onShownChange(shownId), [shownId, onShownChange]);
 
   // The list is not modal: a press anywhere else or Escape closes it.
@@ -544,6 +565,7 @@ export default function MembersControls({
           label={editing ? t.members.edit : t.members.add}
           closeLabel={t.members.closeForm}
           onClose={dismissForm}
+          {...panelPosition}
           onDelete={
             editing
               ? async () => {
@@ -689,6 +711,7 @@ export default function MembersControls({
           closeLabel={t.profile.close}
           autoFocusClose
           onClose={() => setProfileId(null)}
+          {...panelPosition}
           onBack={trail.some((id) => members.some((m) => m.id === id)) ? goBack : undefined}
           onEdit={() => openForm(profileMember)}
           onDelete={() => void removeMember(profileMember, setViewError)}

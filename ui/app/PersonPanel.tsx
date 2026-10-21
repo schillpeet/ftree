@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Member } from '../lib/api/generated/members';
 import { birthNameOf, formatDate, initialsOf } from './MembersControls';
-import { ChevronLeftIcon, CloseIcon, DotsIcon, PencilIcon } from './icons';
-import { useT } from './i18n';
+import { ChevronLeftIcon, CloseIcon, DotsIcon, PencilIcon, PinIcon } from './icons';
+import { onStorage, useT } from './i18n';
 import { nameOf } from './names';
+import { clampOffset, parsePin, type Offset } from './panelPosition';
 import { relativesOf } from './relatives';
 
 const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
@@ -88,7 +89,28 @@ export function RelativeChip({
   );
 }
 
+const PIN_KEY = 'ftree.panelPin';
+
+// The pinned panel position, remembered per browser; null while the panel is not pinned.
+// The server render has no localStorage and starts unpinned.
+export function usePanelPin() {
+  const saved = useSyncExternalStore(onStorage, () => localStorage.getItem(PIN_KEY), () => null);
+  const setPin = (next: Offset | null) => {
+    try {
+      if (next) localStorage.setItem(PIN_KEY, JSON.stringify(next));
+      else localStorage.removeItem(PIN_KEY);
+    } catch {
+      return;
+    }
+    // `storage` only fires in other tabs; tell this one too.
+    window.dispatchEvent(new StorageEvent('storage', { key: PIN_KEY }));
+  };
+  return [parsePin(saved), setPin] as const;
+}
+
 // The one panel for looking at and editing a person; it sits beside the tree, so the tree stays in view.
+// It opens at the top centre (shifted by offset), can be dragged by its header unless pinned, and closes
+// only on Escape or ×.
 export function PanelShell({
   label,
   closeLabel,
@@ -97,6 +119,10 @@ export function PanelShell({
   onEdit,
   onDelete,
   autoFocusClose,
+  offset,
+  onMove,
+  pinned,
+  onPinnedChange,
   children,
 }: {
   label: string;
@@ -106,25 +132,52 @@ export function PanelShell({
   onEdit?: () => void;
   onDelete?: () => void;
   autoFocusClose?: boolean;
+  offset: Offset;
+  onMove: (offset: Offset) => void;
+  pinned: boolean;
+  onPinnedChange: (pinned: boolean) => void;
   children: ReactNode;
 }) {
   const t = useT();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const menuRef = useRef<HTMLSpanElement>(null);
   const panelRef = useRef<HTMLElement>(null);
-  // Read through a ref, so the listener below is not re-attached on every render.
+  // Pointer and offset where the current drag started, and where the panel sits without an offset.
+  const drag = useRef<{ pointerX: number; pointerY: number; from: Offset; box: { left: number; top: number; width: number } } | null>(null);
+  // Read through refs, so the listeners below are not re-attached on every render.
   const closeRef = useRef(onClose);
+  const moveRef = useRef(onMove);
+  const offsetRef = useRef(offset);
   useEffect(() => {
     closeRef.current = onClose;
+    moveRef.current = onMove;
+    offsetRef.current = offset;
   });
 
-  // Not modal: a press outside the panel closes it (an edited person asks before discarding changes).
+  // Escape also closes the panel while nothing has focus (e.g. after a click into the tree), but only the
+  // topmost of several open panels; inside a panel its own key handler applies.
   useEffect(() => {
-    function closeOnOutsidePress(event: PointerEvent) {
-      if (!panelRef.current?.contains(event.target as Node)) closeRef.current();
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || event.defaultPrevented) return;
+      const active = document.activeElement;
+      if (active && active !== document.body && active.tagName !== 'CANVAS') return;
+      const panels = document.querySelectorAll('.person-panel');
+      if (panels[panels.length - 1] === panelRef.current) closeRef.current();
     }
-    document.addEventListener('pointerdown', closeOnOutsidePress);
-    return () => document.removeEventListener('pointerdown', closeOnOutsidePress);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => document.removeEventListener('keydown', closeOnEscape);
+  }, []);
+
+  // A remembered position may no longer fit a smaller window; move it back into view.
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    const from = offsetRef.current;
+    const box = { left: rect.left - from.x, top: rect.top - from.y, width: rect.width };
+    const fitted = clampOffset(from, box, { width: window.innerWidth, height: window.innerHeight });
+    if (fitted.x !== from.x || fitted.y !== from.y) moveRef.current(fitted);
   }, []);
 
   useEffect(() => {
@@ -142,13 +195,47 @@ export function PanelShell({
       aria-label={label}
       ref={panelRef}
       tabIndex={-1}
+      style={{ transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` }}
       onKeyDown={(event) => {
         if (event.key !== 'Escape') return;
         if (isMenuOpen) setIsMenuOpen(false);
         else if (!event.defaultPrevented) onClose();
+        // Handled here, so the document listener above leaves it alone.
+        event.preventDefault();
       }}
     >
-      <header className="person-header">
+      <header
+        className="person-header"
+        data-draggable={!pinned}
+        data-dragging={isDragging}
+        onPointerDown={(event) => {
+          if (pinned || event.button !== 0 || (event.target as Element).closest('button')) return;
+          const rect = panelRef.current!.getBoundingClientRect();
+          drag.current = {
+            pointerX: event.clientX,
+            pointerY: event.clientY,
+            from: offset,
+            box: { left: rect.left - offset.x, top: rect.top - offset.y, width: rect.width },
+          };
+          event.currentTarget.setPointerCapture(event.pointerId);
+          event.preventDefault();
+          setIsDragging(true);
+        }}
+        onPointerMove={(event) => {
+          const start = drag.current;
+          if (!start) return;
+          const next = { x: start.from.x + event.clientX - start.pointerX, y: start.from.y + event.clientY - start.pointerY };
+          onMove(clampOffset(next, start.box, { width: window.innerWidth, height: window.innerHeight }));
+        }}
+        onPointerUp={() => {
+          drag.current = null;
+          setIsDragging(false);
+        }}
+        onPointerCancel={() => {
+          drag.current = null;
+          setIsDragging(false);
+        }}
+      >
         {onBack ? (
           <button type="button" className="person-icon-button" aria-label={t.profile.back} onClick={onBack}>
             <ChevronLeftIcon />
@@ -162,6 +249,16 @@ export function PanelShell({
               <PencilIcon />
             </button>
           )}
+          <button
+            type="button"
+            className="person-icon-button person-pin"
+            aria-pressed={pinned}
+            aria-label={pinned ? t.profile.unpin : t.profile.pin}
+            title={pinned ? t.profile.unpin : t.profile.pin}
+            onClick={() => onPinnedChange(!pinned)}
+          >
+            <PinIcon />
+          </button>
           {onDelete && (
             <span className="person-menu-anchor" ref={menuRef}>
               <button
