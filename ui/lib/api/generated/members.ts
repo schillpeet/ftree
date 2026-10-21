@@ -120,16 +120,28 @@ export const PartnershipStatus = {
   together: 'together',
   married: 'married',
   separated: 'separated',
+  divorced: 'divorced',
+  widowed: 'widowed',
 } as const;
 
 export interface Partnership {
   partnerId: string;
   status: PartnershipStatus;
   /**
-     * Wedding date; only kept when the status is married.
+     * When the couple got together; only kept when the status is together.
+     * @nullable
+     */
+  since?: string | null;
+  /**
+     * Wedding date; only kept when the status is married, divorced, or widowed.
      * @nullable
      */
   marriedOn?: string | null;
+  /**
+     * When the couple separated or divorced, or the partner died; only kept when the status is separated, divorced, or widowed.
+     * @nullable
+     */
+  endedOn?: string | null;
 }
 
 export interface Position {
@@ -186,7 +198,7 @@ export interface Member {
   parentIds: string[];
   /** Ids of this member's partners, current or former. Always mutual. */
   partnerIds: string[];
-  /** Status and wedding date per partner in partnerIds; the same on both sides. */
+  /** Status and dates per partner in partnerIds; the same on both sides. */
   readonly partnerships: readonly Partnership[];
   /**
      * Branch point the card hangs from; null when placed freely or not yet placed.
@@ -223,7 +235,7 @@ export interface Relatives {
      */
   siblings?: Sibling[] | null;
   /**
-     * Status and wedding date of partners in partnerIds, stored for both sides; partners left out are "together", and when absent, existing details stay unchanged.
+     * Status and dates of partners in partnerIds, stored for both sides; partners left out are "together", and when absent, existing details stay unchanged.
      * @nullable
      */
   partnerships?: Partnership[] | null;

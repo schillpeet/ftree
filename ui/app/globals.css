@@ -2001,7 +2001,23 @@ button.person-chip-main:hover {
 
 .person-partner-details {
   display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
+}
+
+/* A date with a short caption in front, e.g. "seit". */
+.person-partner-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.person-partner-date input[aria-invalid='true'] {
+  border-color: var(--glass-danger);
+  color: var(--glass-danger);
 }
 
 .person-partner-details select,

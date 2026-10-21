@@ -14,8 +14,10 @@ type Person = {
 // With `focusId`, the segments on the way from that person to everyone their person panel lists
 // (parents, partners, children, siblings, half-siblings) go to `focused` and `focusedDashed` instead.
 const angle = ([x, , z]: Point) => Math.atan2(z, x);
+// Separated and divorced couples are former partners; the lines treat both alike.
+export const isFormer = (status: string) => status === 'separated' || status === 'divorced';
 const separated = (people: Person[], a: string, b: string) =>
-  people.find((p) => p.id === a)?.partnerships?.some((p) => p.partnerId === b && p.status === 'separated') ?? false;
+  people.find((p) => p.id === a)?.partnerships?.some((p) => p.partnerId === b && isFormer(p.status)) ?? false;
 
 export function relationLines(people: Person[], positions: Map<string, Point>, along = angle, fork = 0, focusId: string | null = null) {
   const parents: Point[] = [];

@@ -69,6 +69,7 @@ jobs:
       - run: node app/cardTextures.check.mjs
       - run: node app/nameSearch.check.mjs
       - run: node app/names.check.mjs
+      - run: node app/partnerships.check.mjs
       - run: node app/panelPosition.check.mjs
       - run: pnpm build
 

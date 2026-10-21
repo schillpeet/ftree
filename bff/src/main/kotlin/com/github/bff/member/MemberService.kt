@@ -113,6 +113,7 @@ class MemberService(
         if (partnerships != null && (partnerships.size != relatives.partnerships?.size || !partnerIds.containsAll(partnerships.keys))) {
             return RelativesResult.INVALID
         }
+        if (partnerships?.values?.any { !it.hasPossibleDates() } == true) return RelativesResult.INVALID
         // Listed siblings get exactly their shared parents among the member's; everyone else outside the
         // member's own relatives loses the member's parents.
         val takesSiblingParents = { otherId: UUID -> siblings != null && otherId != id && otherId !in everyone }
@@ -145,16 +146,39 @@ class MemberService(
             partnerIds.forEach { partnerId ->
                 val partnership = partnerships[partnerId]
                 val status = partnership?.status ?: Partnership.StatusEnum.TOGETHER
-                val married = status == Partnership.StatusEnum.MARRIED
+                // Each status keeps only the dates that belong to it.
+                val together = status == Partnership.StatusEnum.TOGETHER
+                val married = status in MARRIED_DATES
+                val ended = status in ENDED_DATES
                 jdbc.update(
-                    "UPDATE member_partners SET status = ?, married_on = ? WHERE (member_id = ? AND partner_id = ?) OR (member_id = ? AND partner_id = ?)",
+                    "UPDATE member_partners SET status = ?, since = ?, married_on = ?, ended_on = ? " +
+                        "WHERE (member_id = ? AND partner_id = ?) OR (member_id = ? AND partner_id = ?)",
                     status.value,
+                    partnership?.since.takeIf { together },
                     partnership?.marriedOn.takeIf { married },
+                    partnership?.endedOn.takeIf { ended },
                     id, partnerId, partnerId, id,
                 )
             }
         }
         return RelativesResult.UPDATED
+    }
+
+    private companion object {
+        // The statuses that keep a wedding date, and those that keep when the partnership ended.
+        val MARRIED_DATES = setOf(Partnership.StatusEnum.MARRIED, Partnership.StatusEnum.DIVORCED, Partnership.StatusEnum.WIDOWED)
+        val ENDED_DATES = setOf(Partnership.StatusEnum.SEPARATED, Partnership.StatusEnum.DIVORCED, Partnership.StatusEnum.WIDOWED)
+    }
+
+    // Dates cannot lie in the future (a day of slack for clients in a later time zone), and a divorce cannot
+    // come before the wedding. Only the dates the status keeps count.
+    private fun Partnership.hasPossibleDates(): Boolean {
+        val latest = LocalDate.now().plusDays(1)
+        val since = since.takeIf { status == Partnership.StatusEnum.TOGETHER }
+        val married = marriedOn.takeIf { status in MARRIED_DATES }
+        val ended = endedOn.takeIf { status in ENDED_DATES }
+        if (listOfNotNull(since, married, ended).any { it.isAfter(latest) }) return false
+        return married == null || ended == null || !ended.isBefore(married)
     }
 
     /** Pins the member's card or places it freely; exactly one of pinId and position must be set. */
@@ -229,11 +253,14 @@ class MemberService(
     // Per member the details of each partner, for the whole family at once.
     private fun partnerships(familyId: UUID): Map<UUID, List<Partnership>> =
         jdbc.query(
-            "SELECT p.member_id, p.partner_id, p.status, p.married_on FROM member_partners p JOIN members m ON m.id = p.member_id WHERE m.family_id = ?",
+            "SELECT p.member_id, p.partner_id, p.status, p.since, p.married_on, p.ended_on " +
+                "FROM member_partners p JOIN members m ON m.id = p.member_id WHERE m.family_id = ?",
             { rs, _ ->
                 rs.getObject(1, UUID::class.java) to
                     Partnership(rs.getObject(2, UUID::class.java), Partnership.StatusEnum.fromValue(rs.getString(3)))
-                        .marriedOn(rs.getObject(4, LocalDate::class.java))
+                        .since(rs.getObject(4, LocalDate::class.java))
+                        .marriedOn(rs.getObject(5, LocalDate::class.java))
+                        .endedOn(rs.getObject(6, LocalDate::class.java))
             },
             familyId,
         ).groupBy({ it.first }, { it.second })

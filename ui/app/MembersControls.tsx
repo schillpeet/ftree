@@ -16,6 +16,7 @@ import {
 } from '../lib/api/generated/members';
 import { useLanguage, useT } from './i18n';
 import { initialsOf, nameOf } from './names';
+import { dateProblem } from './partnerships';
 import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
 import RelativesFields, { type Relation } from './RelativesFields';
@@ -358,6 +359,12 @@ export default function MembersControls({
   async function submitMember(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!familyId) return;
+    // Checked before anything is saved, so a wrong date never leaves the person half saved.
+    const problem = relatives.current?.value.partnerships?.map((p) => dateProblem(p)).find(Boolean);
+    if (problem) {
+      setFormError(t.relatives[problem]);
+      return;
+    }
     setIsSaving(true);
     setFormError(null);
 

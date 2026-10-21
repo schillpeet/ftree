@@ -175,18 +175,24 @@ class FamilyService(
         memberRepository.flush()
         // The links above are inserted with the default status, so the details are copied afterwards.
         val details = jdbc.query(
-            "SELECT p.member_id, p.partner_id, p.status, p.married_on FROM member_partners p JOIN members m ON m.id = p.member_id WHERE m.family_id = ?",
+            "SELECT p.member_id, p.partner_id, p.status, p.since, p.married_on, p.ended_on " +
+                "FROM member_partners p JOIN members m ON m.id = p.member_id WHERE m.family_id = ?",
             { rs, _ ->
                 arrayOf<Any?>(
                     rs.getString(3),
                     rs.getObject(4, LocalDate::class.java),
+                    rs.getObject(5, LocalDate::class.java),
+                    rs.getObject(6, LocalDate::class.java),
                     copyOf.getValue(rs.getObject(1, UUID::class.java)).id,
                     copyOf.getValue(rs.getObject(2, UUID::class.java)).id,
                 )
             },
             id,
         )
-        jdbc.batchUpdate("UPDATE member_partners SET status = ?, married_on = ? WHERE member_id = ? AND partner_id = ?", details)
+        jdbc.batchUpdate(
+            "UPDATE member_partners SET status = ?, since = ?, married_on = ?, ended_on = ? WHERE member_id = ? AND partner_id = ?",
+            details,
+        )
         return FamilyAnonymizeResult.ANONYMIZED(family.toSummary(copies))
     }
 

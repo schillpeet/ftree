@@ -5,6 +5,7 @@ import type { Member, Partnership, Relatives, Sibling } from '../lib/api/generat
 import { useT } from './i18n';
 import { nameOf } from './names';
 import { searchMembers } from './nameSearch';
+import { dateProblem, today } from './partnerships';
 import { RelativeChip } from './PersonPanel';
 import { PlusIcon } from './icons';
 
@@ -19,9 +20,16 @@ function siblingsOf(others: Member[], parentIds: string[], related: string[], ed
 
 // Details per partner id; partners without an entry are only together.
 type Details = Record<string, Omit<Partnership, 'partnerId'>>;
-const detailsOf = (details: Details, id: string) => details[id] ?? { status: 'together' as const, marriedOn: null };
+const detailsOf = (details: Details, id: string): Omit<Partnership, 'partnerId'> =>
+  details[id] ?? { status: 'together', since: null, marriedOn: null, endedOn: null };
 const detailsKey = (details: Details, ids: string[]) =>
-  ids.map((id) => `${id}:${detailsOf(details, id).status}:${detailsOf(details, id).marriedOn ?? ''}`).sort().join(',');
+  ids
+    .map((id) => {
+      const { status, since, marriedOn, endedOn } = detailsOf(details, id);
+      return `${id}:${status}:${since ?? ''}:${marriedOn ?? ''}:${endedOn ?? ''}`;
+    })
+    .sort()
+    .join(',');
 
 // The relation groups, also naming what a person created from their search becomes.
 export type Relation = 'parent' | 'partner' | 'child' | 'sibling' | 'halfSibling';
@@ -154,6 +162,7 @@ export default function RelativesFields({
   const [childIds, setChildIds] = useState(initial.childIds);
   const [partnerIds, setPartnerIds] = useState(initial.partnerIds);
   const [details, setDetails] = useState(initial.details);
+  const now = today();
   const setDetail = (id: string, detail: Partial<Details[string]>) =>
     setDetails((current) => ({ ...current, [id]: { ...detailsOf(current, id), ...detail } }));
   const [siblingEdits, setSiblingEdits] = useState<Record<string, string[]>>({});
@@ -239,28 +248,54 @@ export default function RelativesFields({
         (id) => setPartnerIds((ids) => [...ids, id]),
         (id) => setPartnerIds((ids) => without(ids, id)),
         {
-          // Selected partners get their status and, when married, the wedding date.
+          // Selected partners get their status and the dates that go with it.
           extra: (m) => {
-            const { status, marriedOn } = detailsOf(details, m.id);
+            const partnership = detailsOf(details, m.id);
+            const { status, since, marriedOn, endedOn } = partnership;
+            // Dates cannot lie in the future, and a divorce not before the wedding. Marked here and refused on
+            // saving with a message; no min/max, whose browser check would silently block saving from the other tab.
+            const problem = dateProblem(partnership, now);
+            const date = (
+              caption: string,
+              label: string,
+              value: string | null | undefined,
+              field: 'since' | 'marriedOn' | 'endedOn',
+            ) => (
+              <label className="person-partner-date">
+                <span>{caption}</span>
+                <input
+                  type="date"
+                  aria-label={label}
+                  aria-invalid={!!value && (value > now || (problem === 'divorceBeforeWedding' && field === 'endedOn'))}
+                  value={value ?? ''}
+                  onChange={(event) => setDetail(m.id, { [field]: event.target.value || null })}
+                />
+              </label>
+            );
             return (
               <span className="person-partner-details">
                 <select
                   aria-label={t.relatives.status(fullName(m))}
                   value={status}
-                  onChange={(event) => setDetail(m.id, { status: event.target.value as Partnership['status'] })}
+                  onChange={(event) => {
+                    const next = event.target.value as Partnership['status'];
+                    // Widowed starts from the partner's date of death when none is set yet.
+                    setDetail(m.id, next === 'widowed' && !endedOn ? { status: next, endedOn: m.deathDate ?? null } : { status: next });
+                  }}
                 >
                   <option value="together">{t.relatives.together}</option>
                   <option value="married">{t.relatives.married}</option>
                   <option value="separated">{t.relatives.separated}</option>
+                  <option value="divorced">{t.relatives.divorced}</option>
+                  <option value="widowed">{t.relatives.widowed}</option>
                 </select>
-                {status === 'married' && (
-                  <input
-                    type="date"
-                    aria-label={t.relatives.marriedOn(fullName(m))}
-                    value={marriedOn ?? ''}
-                    onChange={(event) => setDetail(m.id, { marriedOn: event.target.value || null })}
-                  />
-                )}
+                {status === 'together' && date(t.relatives.sinceCaption, t.relatives.since(fullName(m)), since, 'since')}
+                {(status === 'married' || status === 'divorced' || status === 'widowed') &&
+                  date(t.relatives.weddingCaption, t.relatives.marriedOn(fullName(m)), marriedOn, 'marriedOn')}
+                {status === 'separated' && date(t.relatives.sinceCaption, t.relatives.endedOn(fullName(m)), endedOn, 'endedOn')}
+                {status === 'divorced' &&
+                  date(t.relatives.divorceCaption, t.relatives.endedOn(fullName(m)), endedOn, 'endedOn')}
+                {status === 'widowed' && date(t.relatives.deathCaption, t.relatives.endedOn(fullName(m)), endedOn, 'endedOn')}
               </span>
             );
           },

@@ -105,7 +105,8 @@ Each card shows photo (from `photoUrl`), name, birth and death dates, and, excep
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives section lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
 In edit mode each relation shows its people as chips with a × and an "… hinzufügen" button that opens a name search instead of a list of everybody; Enter or a click adds the first or chosen match.
-Each selected partner gets a status, "zusammen" or "verheiratet", and a married couple an optional wedding date; both partners share these details, and the profile shows them next to the partner, for example "verheiratet seit 12.06.1985".
+Each selected partner gets a status, "zusammen", "verheiratet", "getrennt", "geschieden", or "verwitwet", with the dates that go with it: "seit" for together and separated, the wedding date for married, the wedding and divorce date for divorced, and the wedding date and date of death for widowed.
+Both partners share these details, and the profile shows them next to the partner, for example "verheiratet seit 12.06.1985", "zusammen seit 01.02.1983", or "geschieden seit 30.09.1999 (⚭ 12.06.1985)".
 A search square of the same size sits right of the burger menu; a click widens it to a text field.
 Typing shows up to eight matching members of the selected family as autocomplete suggestions (arrow keys and Enter or a click choose one; Escape or a press outside closes the field).
 Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.
@@ -128,7 +129,7 @@ As soon as a name is typed into a relation's search, the list ends with a highli
 Saving that panel creates the person right away and adds them to the chosen relation of the form it was opened from, which still has to be saved itself.
 That panel is titled after the relation, for example "Partner von Dennis Behrendt hinzufügen", and opens beside the form on the side with more room, moving an unpinned form over just far enough for both to fit (and back once it closes).
 While it is open, the relation it was requested for is highlighted and a flowing accent line (`ui/app/RelationLink.tsx`) leads from its "… hinzufügen" button to the new panel, following both while they are dragged.
-The relatives section lists parents, partners, children, siblings, and half-siblings; each partner chip has its status and wedding date next to it.
+The relatives section lists parents, partners, children, siblings, and half-siblings; each partner chip has its status and dates next to it.
 "Verwerfen" and "Person speichern" stay at the bottom of the panel and appear only for a new person or once something changed; saving shows the person again.
 The profile panel shows no title: pin and edit, then close after a thin divider, sit in its top-right corner level with the photo; edit is the brightest of them.
 "Person löschen" is a trash can in the header of the edit form only, red on hover, and deletes the person after confirmation.
@@ -163,8 +164,12 @@ Partners without shared children are joined by a gold line.
 The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
 Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
-Partnership status and wedding date live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
-The status is `together`, `married` (with an optional wedding date), or `separated` (no date), set per partner in the relatives form.
+Partnership status and dates live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
+The status is `together`, `married`, `separated`, `divorced`, or `widowed`, set per partner in the relatives form.
+Each status keeps only its own dates: `since` for together, `marriedOn` for married, `endedOn` for separated, and `marriedOn` with `endedOn` for divorced and widowed (the date of death); the BFF drops the others.
+Divorced partners count as former partners like separated ones, so the trees treat both alike.
+Widowed partners stay married in the trees: solid lines and the ⚭ ring, which sits right under the name of the partner who died (the one with a date of death, else the one with fewer partners); choosing "verwitwet" fills in the partner's date of death, and the profile falls back to it, for example "verwitwet seit 03.04.2010 (⚭ 12.06.1985)".
+Partnership dates cannot lie in the future, and a divorce cannot come before the wedding: the relatives form marks such dates in red and refuses to save with a message, and the BFF rejects them with 400 (allowing one day for clients in a later time zone).
 The GEDCOM import and export do not carry partnership status yet.
 `POST /families/{familyId}/anonymize` copies a family in one transaction into a new named family with the same members, dates, places, notes, links, partnership details, and placement but without photos, leaving the original untouched.
 The copy replaces first names at random and maps each distinct last name (birth names included) consistently to a random last name from fixed lists in `AnonymousNames.kt`, never reusing a name from the original; empty names stay empty.
