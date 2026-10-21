@@ -16,6 +16,8 @@ type Person = {
 const angle = ([x, , z]: Point) => Math.atan2(z, x);
 // Separated and divorced couples are former partners; the lines treat both alike.
 export const isFormer = (status: string) => status === 'separated' || status === 'divorced';
+const widowed = (people: Person[], a: string, b: string) =>
+  people.find((p) => p.id === a)?.partnerships?.some((p) => p.partnerId === b && p.status === 'widowed') ?? false;
 const separated = (people: Person[], a: string, b: string) =>
   people.find((p) => p.id === a)?.partnerships?.some((p) => p.partnerId === b && isFormer(p.status)) ?? false;
 
@@ -69,7 +71,8 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
   for (const p of people) {
     for (const id of p.partnerIds) {
       const haveChildren = families.has([p.id, id].sort().join());
-      if (id > p.id && positions.has(id) && !haveChildren) add(partners, touchesFocus(p.id, id), at(p.id), at(id));
+      // Flat trees mark partners with rings and former ones with dashed lines instead.
+      if (!fork && id > p.id && positions.has(id) && !haveChildren) add(partners, touchesFocus(p.id, id), at(p.id), at(id));
     }
   }
 
@@ -107,23 +110,26 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
         for (const other of parentIds) if (other !== id) sides.add(Math.sign(at(other)[0] - at(id)[0]));
     return sides.has(-1) && sides.has(1);
   };
-  // A separated couple without children: when one of them has a family of their own, a dashed line
-  // runs at that family's bar height to the former partner, who drops straight down to it; else it
-  // joins the two under their names.
+  // A couple without children: when one of them has a family of their own, a line runs at that family's
+  // bar height to the partner, who drops straight down to it: solid for a current partner, dashed for a
+  // former one. A widowed partner drops solid (the marriage did not break up) but is reached by a dashed
+  // line, since only the current partner's line runs solid to the person. Else a former partner is joined
+  // under their names, and a current one only by the rings.
   if (fork)
     for (const p of people)
       for (const id of p.partnerIds) {
-        if (!(id > p.id && positions.has(id) && separated(people, p.id, id) && !families.has([p.id, id].sort().join()))) continue;
+        if (!(id > p.id && positions.has(id) && !families.has([p.id, id].sort().join()))) continue;
         const [a, b] = [at(p.id), at(id)];
         const marked = touchesFocus(p.id, id);
+        const former = separated(people, p.id, id);
         const own = [p.id, id].map((who) => plans.find((plan) => plan.parentIds.includes(who) && plan.parentY === a[1])).find(Boolean);
         const hub = own && [p.id, id].find((who) => own.parentIds.includes(who))!;
         if (own && hub && !bothSides(hub)) {
           const y = own.parentY - own.drop / 2;
           const [from, to] = hub === p.id ? [a, b] : [b, a];
-          add(dashed, marked, level(from, y), level(to, y));
-          add(parents, marked, to, level(to, y));
-        } else {
+          add(former || widowed(people, p.id, id) ? dashed : parents, marked, level(from, y), level(to, y));
+          add(former ? dashed : parents, marked, to, level(to, y));
+        } else if (former) {
           const under = (point: Point): Point => [point[0], point[1] - 2, point[2]];
           add(dashed, marked, a, under(a), under(a), under(b), under(b), b);
         }
@@ -172,5 +178,47 @@ export function relationLines(people: Person[], positions: Map<string, Point>, a
       add(parents, on(id), level(stem, childBar), level(at(id), childBar), level(at(id), childBar), at(id));
     }
   }
-  return { parents, partners, dashed, focused, focusedDashed };
+  // Someone with several former partners gets one dashed line per partner at the same height; drawn on top
+  // of each other their dash patterns would add up to longer dashes or a solid line, so each run is drawn
+  // once, and not where a solid line (e.g. to a current partner) already runs.
+  const runsFocused = mergeRuns(focusedDashed, focused);
+  return { parents, partners, dashed: mergeRuns(dashed, [...focused, ...runsFocused, ...parents]), focused, focusedDashed: runsFocused };
+}
+
+// Joins overlapping horizontal segments (pairs of points) on the same height and depth into one, and leaves
+// out what `covered` (already merged) draws; other segments stay as they are.
+function mergeRuns(segments: Point[], covered: Point[] = []) {
+  const keyOf = ([, y, z]: Point) => `${y.toFixed(4)}:${z.toFixed(4)}`;
+  const runs = new Map<string, { from: number; to: number; y: number; z: number }[]>();
+  const out: Point[] = [];
+  for (let i = 0; i < segments.length; i += 2) {
+    const [a, b] = [segments[i], segments[i + 1]];
+    if (keyOf(a) !== keyOf(b) || a[0] === b[0]) out.push(a, b);
+    else runs.set(keyOf(a), [...(runs.get(keyOf(a)) ?? []), { from: Math.min(a[0], b[0]), to: Math.max(a[0], b[0]), y: a[1], z: a[2] }]);
+  }
+  const holes = new Map<string, [number, number][]>();
+  for (let i = 0; i < covered.length; i += 2) {
+    const [a, b] = [covered[i], covered[i + 1]];
+    if (keyOf(a) === keyOf(b)) holes.set(keyOf(a), [...(holes.get(keyOf(a)) ?? []), [Math.min(a[0], b[0]), Math.max(a[0], b[0])]]);
+  }
+  for (const [key, list] of runs) {
+    list.sort((a, b) => a.from - b.from);
+    const merged: (typeof list)[number][] = [];
+    for (const run of list) {
+      const last = merged.at(-1);
+      if (last && run.from <= last.to + 1e-6) last.to = Math.max(last.to, run.to);
+      else merged.push({ ...run });
+    }
+    for (const { from, to, y, z } of merged) {
+      // What is left of the run outside the covered parts.
+      let start = from;
+      for (const [holeFrom, holeTo] of (holes.get(key) ?? []).sort((a, b) => a[0] - b[0])) {
+        if (holeTo <= start || holeFrom >= to) continue;
+        if (holeFrom > start) out.push([start, y, z], [holeFrom, y, z]);
+        start = Math.max(start, holeTo);
+      }
+      if (start < to - 1e-6) out.push([start, y, z], [to, y, z]);
+    }
+  }
+  return out;
 }
