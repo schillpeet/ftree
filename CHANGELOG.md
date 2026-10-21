@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.15.0](https://github.com/schillpeet/ftree/compare/v0.14.0...v0.15.0) (2026-10-21)
+
+
+### Features
+
+* **ui:** create a new person from the relatives search ([#145](https://github.com/schillpeet/ftree/issues/145)) ([446adaa](https://github.com/schillpeet/ftree/commit/446adaa30eda8e852c47030e218781b48e3557a1))
+* **ui:** let the person panel be moved and pinned ([#143](https://github.com/schillpeet/ftree/issues/143)) ([e7f2fd6](https://github.com/schillpeet/ftree/commit/e7f2fd60ef4c30953f76c7fd8bfa1178f43c661e))
+* **ui:** list partners as a tree, current ones first ([#149](https://github.com/schillpeet/ftree/issues/149)) ([c02adb7](https://github.com/schillpeet/ftree/commit/c02adb780ef13cb349d71eed47478aebac3a64ab))
+* **ui:** move the birth name next to the name fields ([#142](https://github.com/schillpeet/ftree/issues/142)) ([ea11747](https://github.com/schillpeet/ftree/commit/ea117478816c88fe6a36d0d667c7a1f4e8914a85))
+* **ui:** record divorces and partnership dates ([#147](https://github.com/schillpeet/ftree/issues/147)) ([f121f80](https://github.com/schillpeet/ftree/commit/f121f80730b698b60d07679b6a595757cde837cc))
+* **ui:** tidy the person panel header ([#146](https://github.com/schillpeet/ftree/issues/146)) ([71142c2](https://github.com/schillpeet/ftree/commit/71142c21e417928cb885c9b7ee27e786ba324fba))
+
+
+### Bug Fixes
+
+* **ui:** draw one dashed line to former partners ([#148](https://github.com/schillpeet/ftree/issues/148)) ([8386281](https://github.com/schillpeet/ftree/commit/83862817d7a83939d07505de2d140546a5e632da))
+
 ## [0.14.0](https://github.com/schillpeet/ftree/compare/v0.13.0...v0.14.0) (2026-10-20)
 
 
