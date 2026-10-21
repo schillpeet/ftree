@@ -1653,9 +1653,10 @@ textarea {
 }
 
 .person-hero-edit .person-avatar-large {
-  width: 92px;
-  height: 92px;
-  font-size: 30px;
+  width: 136px;
+  height: 168px;
+  border-radius: 14px;
+  font-size: 40px;
 }
 
 .person-facts {
@@ -1823,8 +1824,17 @@ button.person-chip-main:hover {
   gap: 16px;
 }
 
+/* Portrait photo and name fields as one centred block, the photo about as tall as the fields. */
 .person-hero-edit {
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.person-hero-edit .person-name-fields {
+  flex: 0 1 320px;
+  gap: 8px;
 }
 
 .person-name-fields input,
