@@ -120,7 +120,9 @@ GEDCOM export writes a differing birth name as a second NAME with TYPE birth; im
 First and last name may be left empty for a person whose name is unknown (the BFF trims names and stores unknown ones as empty strings); such a person is shown as "Unbekannt" (small and italic on their card) and with "?" as initials.
 Clicking a relative in the panel shows that person and moves the camera to their scroll; a back arrow in the panel header walks back through the people visited this way.
 The pencil in the panel header turns the same panel into the edit form in place; the pencil in the members list opens the panel directly in edit mode.
-The edit form keeps the avatar (click or drop an image to change the photo) beside the name fields on top and splits the rest into two tabs, so nothing needs scrolling: "Persönliche Daten" (an optional birth name behind "Geburtsname hinzufügen", "Geboren am/in" and "Verstorben am/in" in two columns, the note) and "Beziehungen", saved together with the person, so relatives can also be assigned while creating someone.
+The edit form keeps the avatar (click or drop an image to change the photo) beside the name fields on top and splits the rest into two tabs, so nothing needs scrolling: "Persönliche Daten" ("Geboren am/in" and "Verstorben am/in" in two columns, the note) and "Beziehungen", saved together with the person, so relatives can also be assigned while creating someone.
+The name fields on top carry labels ("Vorname", "Nachname") like the other fields and sit centred beside a larger portrait-format photo; on narrow screens the fields wrap below the photo.
+The optional birth name sits with the name fields on top, behind a "+ Geburtsname hinzufügen" link below the surname.
 Removing a relative with × asks for confirmation first.
 The relatives section lists parents, partners, children, siblings, and half-siblings; each partner chip has its status and wedding date next to it.
 "Verwerfen" and "Person speichern" stay at the bottom of the panel and appear only for a new person or once something changed; saving shows the person again.

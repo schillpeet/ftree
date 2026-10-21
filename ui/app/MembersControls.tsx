@@ -597,23 +597,35 @@ export default function MembersControls({
                 <input type="file" accept="image/*" onChange={(event) => setPhotoFile(event.target.files?.[0] ?? null)} />
               </label>
               <div className="person-name-fields">
-                <input
-                  autoFocus
-                  autoComplete="given-name"
-                  maxLength={100}
-                  aria-label={t.members.firstName}
-                  placeholder={t.members.firstName}
-                  value={form.firstName}
-                  onChange={(event) => updateForm('firstName', event.target.value)}
-                />
-                <input
-                  autoComplete="family-name"
-                  maxLength={100}
-                  aria-label={t.members.lastName}
-                  placeholder={t.members.lastName}
-                  value={form.lastName}
-                  onChange={(event) => updateForm('lastName', event.target.value)}
-                />
+                <label className="person-field">
+                  {t.members.firstName}
+                  <input
+                    autoFocus
+                    autoComplete="given-name"
+                    maxLength={100}
+                    value={form.firstName}
+                    onChange={(event) => updateForm('firstName', event.target.value)}
+                  />
+                </label>
+                <label className="person-field">
+                  {t.members.lastName}
+                  <input
+                    autoComplete="family-name"
+                    maxLength={100}
+                    value={form.lastName}
+                    onChange={(event) => updateForm('lastName', event.target.value)}
+                  />
+                </label>
+                {showBirthName ? (
+                  <label className="person-field">
+                    {t.members.birthName}
+                    <input maxLength={100} value={form.birthName} onChange={(event) => updateForm('birthName', event.target.value)} />
+                  </label>
+                ) : (
+                  <button type="button" className="person-link-button" onClick={() => setShowBirthName(true)}>
+                    + {t.members.addBirthName}
+                  </button>
+                )}
                 {editing?.photoUpdatedAt && !photoFile && (
                   <button type="button" className="person-link-button person-link-danger" disabled={isSaving} onClick={() => void removePhoto()}>
                     {t.members.removePhoto}
@@ -637,16 +649,6 @@ export default function MembersControls({
               ))}
             </div>
             <div className="person-tabpanel" role="tabpanel" id="person-tabpanel-data" aria-labelledby="person-tab-data" hidden={tab !== 'data'}>
-            {showBirthName ? (
-              <label className="person-field">
-                {t.members.birthName}
-                <input maxLength={100} value={form.birthName} onChange={(event) => updateForm('birthName', event.target.value)} />
-              </label>
-            ) : (
-              <button type="button" className="person-link-button" onClick={() => setShowBirthName(true)}>
-                {t.members.addBirthName}
-              </button>
-            )}
             <div className="person-fields">
               <label className="person-field">
                 {t.members.birthDate}
