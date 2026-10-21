@@ -172,6 +172,8 @@ const en = {
     more: 'More actions',
     age: (years: number) => `${years} years`,
     noRelatives: 'No relatives assigned yet.',
+    pin: 'Pin the panel here',
+    unpin: 'Unpin the panel',
   },
   random: {
     namePrefix: 'Random family',
@@ -365,6 +367,8 @@ const de: typeof en = {
     more: 'Weitere Aktionen',
     age: (years) => `${years} Jahre`,
     noRelatives: 'Noch keine Verwandten zugewiesen.',
+    pin: 'Position fixieren',
+    unpin: 'Position lösen',
   },
   random: {
     namePrefix: 'Zufallsfamilie',

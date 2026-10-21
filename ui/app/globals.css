@@ -1527,6 +1527,22 @@ textarea {
   border-bottom: 1px solid var(--glass-border);
 }
 
+/* The header is the handle for dragging the panel; a pinned panel stays put. */
+.person-header[data-draggable='true'] {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.person-header[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+.person-pin[aria-pressed='true'] {
+  background: var(--glass-hover);
+  color: var(--glass-accent);
+}
+
 .person-header-label {
   color: var(--glass-muted);
   font-size: 12px;

@@ -110,7 +110,9 @@ A search square of the same size sits right of the burger menu; a click widens i
 Typing shows up to eight matching members of the selected family as autocomplete suggestions (arrow keys and Enter or a click choose one; Escape or a press outside closes the field).
 Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.
 The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and pencil and trash actions; relatives are shown in the profile.
-A person panel in the middle of the screen (`ui/app/PersonPanel.tsx`) replaces the former profile dialog and member form: it sits below the top bar, has no dimmed backdrop, and closes on a press outside it, so the tree and camera stay usable around it.
+A person panel in the middle of the screen (`ui/app/PersonPanel.tsx`) replaces the former profile dialog and member form: it sits below the top bar and has no dimmed backdrop, so the tree and camera stay usable around it.
+The panel can be dragged by its header (a grab cursor shows the handle) and stays open on a press outside it; each newly opened panel starts in the middle again.
+The pin next to the pencil fixes the panel at its current position: it can no longer be dragged, and every panel opens there, also after a reload (remembered per browser in `localStorage`) until it is unpinned.
 The photo is shown large (112 px) beside the name.
 The panel shows a member's photo (or their initials in its place), name, years and age, birth and death dates with places, the note as a quote, and relatives as chips with avatar, name, and years: parents, then the person next to their partners (with the partnership status), then children, with siblings and half-siblings in collapsed sections.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
@@ -125,7 +127,7 @@ The relatives section lists parents, partners, children, siblings, and half-sibl
 "Person löschen" sits in the "⋯" menu of the panel header and deletes the person after confirmation.
 The photo URL is no longer editable in the form; an existing one is kept and still shown.
 A photo can also be uploaded in the member form, by choosing a file or dropping an image on the photo field: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the members list.
-The members list closes on Escape or a click outside it; the person panel closes on Escape, ×, or a press outside it, the edit form first asks before discarding unsaved changes, and the create form keeps its draft.
+The members list closes on Escape or a click outside it; the person panel closes only on Escape (also while the tree has focus) or ×, the edit form first asks before discarding unsaved changes, and the create form keeps its draft.
 
 ### Pins and card placement
 
@@ -185,7 +187,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/MembersControls.tsx` contains the members list, the delete actions, and the state and saving of the person panel's edit form (create and edit); `ui/app/RelativesFields.tsx` is the form section that assigns parents, children, partners, and (half-)siblings with chips and a name search.
 - `ui/app/MemberSearch.tsx` renders the search square next to the burger menu; it widens to an input with autocomplete over the loaded members, and choosing a result flies the camera to the card and opens the profile.
 - `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
-- `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, "⋯", and close), its read-only view with the relatives, and the shared relative chip.
+- `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, pin, "⋯", and close, draggable by the header), its read-only view with the relatives, and the shared relative chip.
+- `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport and reads a stored pin; `ui/app/panelPosition.check.mjs` is its self-check.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the Evolution panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
