@@ -107,6 +107,8 @@ Siblings and half-siblings are not stored separately but derived from shared par
 In edit mode each relation shows its people as chips with a × and an "… hinzufügen" button that opens a name search instead of a list of everybody; Enter or a click adds the first or chosen match.
 Each selected partner gets a status, "zusammen", "verheiratet", "getrennt", "geschieden", or "verwitwet", with the dates that go with it: "seit" for together and separated, the wedding date for married, the wedding and divorce date for divorced, and the wedding date and date of death for widowed.
 Both partners share these details, and the profile shows them next to the partner, for example "verheiratet seit 12.06.1985", "zusammen seit 01.02.1983", or "geschieden seit 30.09.1999 (⚭ 12.06.1985)".
+The profile and the relatives form list partners in one order: current ones first (married before together, the newer first), then former ones (widowed, divorced, separated) by when the relationship ended, the latest first, so the oldest relationship comes last; undated ones follow the dated ones of their group.
+In the profile the current partner stands on the person's row; every other partner gets a row of their own below, reached by a thin line that bends down from the person and carries the status, and a toggle folds the former partners away.
 A search square of the same size sits right of the burger menu; a click widens it to a text field.
 Typing shows up to eight matching members of the selected family as autocomplete suggestions (arrow keys and Enter or a click choose one; Escape or a press outside closes the field).
 Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.

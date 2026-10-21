@@ -1776,6 +1776,98 @@ textarea {
   font-size: 12px;
 }
 
+.person-partners {
+  --branch-line: rgba(255, 255, 255, 0.2);
+  display: grid;
+  justify-items: start;
+}
+
+.person-partner-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Each further partner hangs from a hairline that leaves the person's avatar, bends with a soft corner,
+   and runs under the status to the partner's chip. */
+.person-partner-branches {
+  display: grid;
+  margin: 0 0 0 21px;
+  padding: 0;
+  list-style: none;
+}
+
+.person-partner-branch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding-left: 22px;
+}
+
+.person-partner-branch::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 50%;
+  border-bottom: 1px solid var(--branch-line);
+  border-left: 1px solid var(--branch-line);
+  border-bottom-left-radius: 12px;
+  content: '';
+}
+
+/* The trunk goes on to the partners below. */
+.person-partner-branch:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  bottom: 0;
+  left: 0;
+  border-left: 1px solid var(--branch-line);
+  content: '';
+}
+
+/* Centred, then lifted by half its height, so its underline continues the branch and the text sits on it. */
+.person-branch-status {
+  padding: 0 10px 4px 6px;
+  border-bottom: 1px solid var(--branch-line);
+  color: var(--glass-muted);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+
+.person-partner-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0 0 14px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--glass-muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.person-partner-toggle:hover {
+  background: var(--glass-hover);
+  color: #fff;
+}
+
+.person-partner-toggle .icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+
+.person-partner-toggle[aria-expanded='true'] .icon {
+  transform: rotate(90deg);
+}
+
 .person-chip {
   display: inline-flex;
   align-items: center;

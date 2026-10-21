@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import type { Member } from '../lib/api/generated/members';
 import { birthNameOf, formatDate, initialsOf } from './MembersControls';
-import { ChevronLeftIcon, CloseIcon, PencilIcon, PinIcon, TrashIcon } from './icons';
+import { ChevronIcon, ChevronLeftIcon, CloseIcon, PencilIcon, PinIcon, TrashIcon } from './icons';
 import { onStorage, useT } from './i18n';
 import { nameOf } from './names';
+import { sortPartners } from './partnerships';
 import { clampOffset, parsePin, type Offset } from './panelPosition';
 import { relativesOf } from './relatives';
 
@@ -290,6 +291,66 @@ export function PanelShell({
   );
 }
 
+// The person with their partners: the current partner on the same row, every other partner on a row of
+// their own, reached by a thin line that bends down from the person and carries the status. Former
+// partners can be folded away, so only the current relationship shows.
+function PartnerTree({
+  member,
+  photo,
+  partners,
+  photoOf,
+  onShow,
+  statusOf,
+}: {
+  member: Member;
+  photo: string | null | undefined;
+  partners: Member[];
+  photoOf: (member: Member) => string | null | undefined;
+  onShow: (id: string) => void;
+  statusOf: (id: string) => string;
+}) {
+  const t = useT();
+  const [showFormer, setShowFormer] = useState(true);
+  const ordered = sortPartners(partners, member.partnerships);
+  const isCurrent = (m: Member) => {
+    const status = member.partnerships.find((p) => p.partnerId === m.id)?.status ?? 'together';
+    return status === 'married' || status === 'together';
+  };
+  const inline = ordered[0] && isCurrent(ordered[0]) ? ordered[0] : null;
+  const branches = ordered.filter((m) => m !== inline);
+  const former = branches.filter((m) => !isCurrent(m));
+  const shown = showFormer ? branches : branches.filter(isCurrent);
+  return (
+    <div className="person-partners">
+      <div className="person-partner-row">
+        <RelativeChip member={member} photo={photo} current />
+        {inline && (
+          <>
+            <span className="person-connector">{statusOf(inline.id)}</span>
+            <RelativeChip member={inline} photo={photoOf(inline)} onClick={() => onShow(inline.id)} />
+          </>
+        )}
+      </div>
+      {shown.length > 0 && (
+        <ul className="person-partner-branches">
+          {shown.map((m) => (
+            <li key={m.id} className="person-partner-branch">
+              <span className="person-branch-status">{statusOf(m.id)}</span>
+              <RelativeChip member={m} photo={photoOf(m)} onClick={() => onShow(m.id)} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {former.length > 0 && (
+        <button type="button" className="person-partner-toggle" aria-expanded={showFormer} onClick={() => setShowFormer((open) => !open)}>
+          <ChevronIcon />
+          {showFormer ? t.profile.hideFormer(former.length) : t.profile.showFormer(former.length)}
+        </button>
+      )}
+    </div>
+  );
+}
+
 // Read-only part of the panel: who the person is and how they are related. Clicking a relative shows them instead.
 export function PersonView({
   member,
@@ -385,15 +446,7 @@ export function PersonView({
         {relatives.partners.length > 0 && (
           <section className="person-group" aria-label={t.relatives.partners}>
             <h3>{t.relatives.partners}</h3>
-            <div className="person-chips">
-              <RelativeChip member={member} photo={photo} current />
-              {relatives.partners.map((m) => (
-                <span key={m.id} className="person-partner">
-                  <span className="person-connector">{connectorOf(m.id)}</span>
-                  <RelativeChip member={m} photo={photoOf(m)} onClick={() => onShow(m.id)} />
-                </span>
-              ))}
-            </div>
+            <PartnerTree member={member} photo={photo} partners={relatives.partners} photoOf={photoOf} onShow={onShow} statusOf={connectorOf} />
           </section>
         )}
         {relatives.children.length > 0 && (
