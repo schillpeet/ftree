@@ -1236,6 +1236,11 @@ textarea {
   text-shadow: 0 0 6px #ff4fd8;
 }
 
+.simple-glyph.is-blood {
+  color: #ffb347;
+  text-shadow: 0 0 6px #ffb347;
+}
+
 /* A parent link the lines leave out: a label above the child that opens the parent. */
 .simple-stub {
   padding: 1px 6px;
@@ -1263,6 +1268,12 @@ textarea {
   border-color: #ff4fd8;
   color: #ffd6f6;
   box-shadow: 0 0 8px rgba(255, 79, 216, 0.6);
+}
+
+.simple-stub.is-blood {
+  border-color: #ffb347;
+  color: #ffe9cc;
+  box-shadow: 0 0 8px rgba(255, 179, 71, 0.6);
 }
 
 /* The key to the experimental view's lines and symbols, below the tool boards: wide and low, so the

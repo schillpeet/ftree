@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import type { Member } from '../lib/api/generated/members';
-import { coreFamilyLinks, linkKey } from './experimental/highlight';
+import { bloodLinks, coreFamilyLinks, linkKey } from './experimental/highlight';
 import { buildModel } from './experimental/model';
 import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
@@ -20,6 +20,10 @@ const NAME_SCALE = 50;
 const NAME_SCALE_HEIGHT = 768;
 export const LINE_COLOR = '#00e5ff';
 export const FOCUS_COLOR = '#ff4fd8';
+export const BLOOD_COLOR = '#ffb347';
+// How a line stands out: for the core family, for blood relatives, or not at all.
+type Mark = 'focus' | 'blood' | undefined;
+const MARK_COLOR = { none: LINE_COLOR, focus: FOCUS_COLOR, blood: BLOOD_COLOR };
 const DOT_RADIUS = 0.18;
 // A partnership symbol floats this far above its line.
 const GLYPH_LIFT = 0.5;
@@ -104,6 +108,7 @@ export default function SimpleTree({
   facing,
   showLines,
   focusId,
+  bloodId,
   onOpen,
 }: {
   members: Member[];
@@ -112,6 +117,8 @@ export default function SimpleTree({
   showLines: boolean;
   // Whose lines to their core family stand out, or null.
   focusId: string | null;
+  // Whose lines to their blood relatives stand out, or null.
+  bloodId: string | null;
   onOpen: (id: string) => void;
 }) {
   const t = useT();
@@ -123,24 +130,33 @@ export default function SimpleTree({
     const routes = route(model, at);
     return { positions, routes: { ...routes, segments: hop(soften(routes.segments, routes.junctions), routes.bridges) } };
   }, [members]);
-  // The pairs whose lines stand out: the focused person's core family (`experimental/highlight.ts`).
+  // The pairs whose lines stand out (`experimental/highlight.ts`): the core family over the blood
+  // relatives where both apply.
   const marked = useMemo(() => {
-    const focus = members.find((m) => m.id === focusId);
-    return focus ? coreFamilyLinks(focus, members) : new Set<string>();
-  }, [members, focusId]);
-  const stands = (links: Segment['links']) => links.some(([x, y]) => marked.has(linkKey(x, y)));
-  const lines = (style: Segment['style'], on: boolean) =>
-    routes.segments.filter((s) => s.style === style && stands(s.links) === on).flatMap((s) => [flat(s.a), flat(s.b)]);
+    const of = (id: string | null, links: typeof coreFamilyLinks) => {
+      const focus = members.find((m) => m.id === id);
+      return focus ? links(focus, members) : new Set<string>();
+    };
+    return { focus: of(focusId, coreFamilyLinks), blood: of(bloodId, bloodLinks) };
+  }, [members, focusId, bloodId]);
+  const markOf = (links: Segment['links']) =>
+    (['focus', 'blood'] as const).find((mark) => links.some(([x, y]) => marked[mark].has(linkKey(x, y))));
+  const markClass = (links: Segment['links']) => {
+    const mark = markOf(links);
+    return mark ? ` is-${mark}` : '';
+  };
+  const lines = (style: Segment['style'], mark: Mark) =>
+    routes.segments.filter((s) => s.style === style && markOf(s.links) === mark).flatMap((s) => [flat(s.a), flat(s.b)]);
   const byId = new Map(members.map((m) => [m.id, m]));
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
       {showLines &&
         (['solid', 'dashed', 'dotted'] as const).flatMap((style) =>
-          [false, true].map((on) => {
-            const points = lines(style, on);
+          ([undefined, 'blood', 'focus'] as const).map((mark) => {
+            const points = lines(style, mark);
             return (
               points.length > 0 && (
-                <Line key={`${style}-${on}`} points={points} segments color={on ? FOCUS_COLOR : LINE_COLOR} lineWidth={on ? 3 : 2} {...STYLES[style]} />
+                <Line key={`${style}-${mark}`} points={points} segments color={MARK_COLOR[mark ?? 'none']} lineWidth={mark ? 3 : 2} {...STYLES[style]} />
               )
             );
           }),
@@ -155,7 +171,7 @@ export default function SimpleTree({
       {showLines &&
         routes.glyphs.map(({ at, glyph, people }) => (
           <Html key={people.join()} position={[at[0], at[1] + GLYPH_LIFT, 0]} center distanceFactor={scale}>
-            <span className={`simple-glyph${stands([people]) ? ' is-focus' : ''}`} aria-hidden>
+            <span className={`simple-glyph${markClass([people])}`} aria-hidden>
               {glyph}
             </span>
           </Html>
@@ -163,7 +179,7 @@ export default function SimpleTree({
       {showLines &&
         routes.stubs.map(({ child, parents, at }) => (
           <Html key={`${child}-${parents.join()}`} position={flat(at)} center distanceFactor={scale}>
-            <button className={`simple-stub${stands(parents.map((p) => [p, child])) ? ' is-focus' : ''}`} type="button" onClick={() => onOpen(parents[0])}>
+            <button className={`simple-stub${markClass(parents.map((p) => [p, child]))}`} type="button" onClick={() => onOpen(parents[0])}>
               {t.members.parentsOf(shortFirstName(byId.get(child)?.firstName ?? '') || t.members.unknown)}
             </button>
           </Html>
