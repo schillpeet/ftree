@@ -28,6 +28,17 @@ export interface TestFamilySettings {
   maxChildren: number;
 }
 
+/**
+ * "cover" fills the family card's title area; "original" shows the photo at its natural size, limited by the client.
+ */
+export type PhotoFit = typeof PhotoFit[keyof typeof PhotoFit];
+
+
+export const PhotoFit = {
+  cover: 'cover',
+  original: 'original',
+} as const;
+
 export interface FamilySummary {
   readonly id: string;
   /**
@@ -47,6 +58,11 @@ export interface FamilySummary {
      * @nullable
      */
   readonly photoUpdatedAt?: string | null;
+  photoFit: PhotoFit;
+}
+
+export interface SetFamilyPhotoFitRequest {
+  photoFit: PhotoFit;
 }
 
 export interface CreateFamilyRequest {
@@ -1371,6 +1387,76 @@ export const deleteFamilyPhoto = async (familyId: string, options?: RequestInit)
 
   const data: deleteFamilyPhotoResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteFamilyPhotoResponse
+}
+
+
+
+export type setFamilyPhotoFitResponse200 = {
+  data: FamilySummary
+  status: 200
+}
+
+export type setFamilyPhotoFitResponse400 = {
+  data: void
+  status: 400
+}
+
+export type setFamilyPhotoFitResponse404 = {
+  data: void
+  status: 404
+}
+
+export type setFamilyPhotoFitResponseSuccess = (setFamilyPhotoFitResponse200) & {
+  headers: Headers;
+};
+export type setFamilyPhotoFitResponseError = (setFamilyPhotoFitResponse400 | setFamilyPhotoFitResponse404) & {
+  headers: Headers;
+};
+
+export type setFamilyPhotoFitResponse = (setFamilyPhotoFitResponseSuccess | setFamilyPhotoFitResponseError)
+
+export const getSetFamilyPhotoFitUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/photo-fit`
+}
+
+/**
+ * @summary Set how a family's photo is shown
+ */
+export const setFamilyPhotoFit = async (familyId: string,
+    setFamilyPhotoFitRequest: SetFamilyPhotoFitRequest, options?: RequestInit): Promise<setFamilyPhotoFitResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getSetFamilyPhotoFitUrl(familyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setFamilyPhotoFitRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: setFamilyPhotoFitResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as setFamilyPhotoFitResponse
 }
 
 
