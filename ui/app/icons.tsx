@@ -157,6 +157,13 @@ export const CopyIcon = () => (
   </Icon>
 );
 
+// A bar with a chevron folding toward it; turned upside down (CSS) it unfolds.
+export const FoldIcon = () => (
+  <Icon>
+    <path d="M5 18h14M7 7l5 5 5-5" />
+  </Icon>
+);
+
 export const PinIcon = () => (
   <Icon>
     <path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7" />

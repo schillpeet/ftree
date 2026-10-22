@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore, type PointerEvent as ReactPointerEvent, type ReactNode, type RefObject } from 'react';
 import type { Member } from '../lib/api/generated/members';
 import { birthNameOf, formatDate, initialsOf } from './MembersControls';
 import { ChevronIcon, ChevronLeftIcon, CloseIcon, PencilIcon, PinIcon, TrashIcon } from './icons';
@@ -108,6 +108,62 @@ export function usePanelPin(key = 'ftree.panelPin') {
   return [parsePin(saved), setPin] as const;
 }
 
+// Lets a panel be dragged by its handle (spread the result onto the header) unless pinned; a drag
+// keeps it grabbable (clampOffset), and a remembered position that no longer fits a smaller window
+// moves back into view when the panel mounts.
+export function usePanelDrag(panelRef: RefObject<HTMLElement | null>, offset: Offset, onMove: (offset: Offset) => void, pinned: boolean) {
+  const [isDragging, setIsDragging] = useState(false);
+  // Pointer and offset where the current drag started, and where the panel sits without an offset.
+  const drag = useRef<{ pointerX: number; pointerY: number; from: Offset; box: { left: number; top: number; width: number } } | null>(null);
+  // Read through refs, so the mount effect below sees the first values.
+  const moveRef = useRef(onMove);
+  const offsetRef = useRef(offset);
+  useEffect(() => {
+    moveRef.current = onMove;
+    offsetRef.current = offset;
+  });
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const rect = panel.getBoundingClientRect();
+    const from = offsetRef.current;
+    const box = { left: rect.left - from.x, top: rect.top - from.y, width: rect.width };
+    const fitted = clampOffset(from, box, { width: window.innerWidth, height: window.innerHeight });
+    if (fitted.x !== from.x || fitted.y !== from.y) moveRef.current(fitted);
+  }, [panelRef]);
+
+  const stop = () => {
+    drag.current = null;
+    setIsDragging(false);
+  };
+  return {
+    'data-draggable': !pinned,
+    'data-dragging': isDragging,
+    onPointerDown: (event: ReactPointerEvent<HTMLElement>) => {
+      if (pinned || event.button !== 0 || (event.target as Element).closest('button')) return;
+      const rect = panelRef.current!.getBoundingClientRect();
+      drag.current = {
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        from: offset,
+        box: { left: rect.left - offset.x, top: rect.top - offset.y, width: rect.width },
+      };
+      event.currentTarget.setPointerCapture(event.pointerId);
+      event.preventDefault();
+      setIsDragging(true);
+    },
+    onPointerMove: (event: ReactPointerEvent<HTMLElement>) => {
+      const start = drag.current;
+      if (!start) return;
+      const next = { x: start.from.x + event.clientX - start.pointerX, y: start.from.y + event.clientY - start.pointerY };
+      onMove(clampOffset(next, start.box, { width: window.innerWidth, height: window.innerHeight }));
+    },
+    onPointerUp: stop,
+    onPointerCancel: stop,
+  };
+}
+
 // The one panel for looking at and editing a person; it sits beside the tree, so the tree stays in view.
 // It opens at the top centre (shifted by offset), can be dragged by its header unless pinned, and closes
 // on Escape or ×; with closeOnOutsideClick also on a click (not a drag) outside every panel unless pinned.
@@ -150,19 +206,13 @@ export function PanelShell({
   children: ReactNode;
 }) {
   const t = useT();
-  const [isDragging, setIsDragging] = useState(false);
   const bare = !!hideLabel && !onBack;
   const panelRef = useRef<HTMLElement>(null);
-  // Pointer and offset where the current drag started, and where the panel sits without an offset.
-  const drag = useRef<{ pointerX: number; pointerY: number; from: Offset; box: { left: number; top: number; width: number } } | null>(null);
-  // Read through refs, so the listeners below are not re-attached on every render.
+  const dragHandle = usePanelDrag(panelRef, offset, onMove, pinned);
+  // Read through a ref, so the listeners below are not re-attached on every render.
   const closeRef = useRef(onClose);
-  const moveRef = useRef(onMove);
-  const offsetRef = useRef(offset);
   useEffect(() => {
     closeRef.current = onClose;
-    moveRef.current = onMove;
-    offsetRef.current = offset;
   });
 
   // Escape also closes the panel while nothing has focus (e.g. after a click into the tree), but only the
@@ -200,17 +250,6 @@ export function PanelShell({
     };
   }, [closeOnOutsideClick, pinned]);
 
-  // A remembered position may no longer fit a smaller window; move it back into view.
-  useEffect(() => {
-    const panel = panelRef.current;
-    if (!panel) return;
-    const rect = panel.getBoundingClientRect();
-    const from = offsetRef.current;
-    const box = { left: rect.left - from.x, top: rect.top - from.y, width: rect.width };
-    const fitted = clampOffset(from, box, { width: window.innerWidth, height: window.innerHeight });
-    if (fitted.x !== from.x || fitted.y !== from.y) moveRef.current(fitted);
-  }, []);
-
   return (
     <aside
       className={`glass person-panel${bare ? ' person-panel-bare' : ''}${className ? ` ${className}` : ''}`}
@@ -225,39 +264,7 @@ export function PanelShell({
         event.preventDefault();
       }}
     >
-      <header
-        className="person-header"
-        data-bare={bare}
-        data-draggable={!pinned}
-        data-dragging={isDragging}
-        onPointerDown={(event) => {
-          if (pinned || event.button !== 0 || (event.target as Element).closest('button')) return;
-          const rect = panelRef.current!.getBoundingClientRect();
-          drag.current = {
-            pointerX: event.clientX,
-            pointerY: event.clientY,
-            from: offset,
-            box: { left: rect.left - offset.x, top: rect.top - offset.y, width: rect.width },
-          };
-          event.currentTarget.setPointerCapture(event.pointerId);
-          event.preventDefault();
-          setIsDragging(true);
-        }}
-        onPointerMove={(event) => {
-          const start = drag.current;
-          if (!start) return;
-          const next = { x: start.from.x + event.clientX - start.pointerX, y: start.from.y + event.clientY - start.pointerY };
-          onMove(clampOffset(next, start.box, { width: window.innerWidth, height: window.innerHeight }));
-        }}
-        onPointerUp={() => {
-          drag.current = null;
-          setIsDragging(false);
-        }}
-        onPointerCancel={() => {
-          drag.current = null;
-          setIsDragging(false);
-        }}
-      >
+      <header className="person-header" data-bare={bare} {...dragHandle}>
         {onBack ? (
           <button type="button" className="person-icon-button" aria-label={t.profile.back} onClick={onBack}>
             <ChevronLeftIcon />
