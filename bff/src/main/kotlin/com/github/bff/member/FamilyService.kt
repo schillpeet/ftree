@@ -5,6 +5,7 @@ import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
+import com.github.bff.generated.model.ParentLink.KindEnum
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.TestFamilySettings
@@ -133,6 +134,13 @@ class FamilyService(
             person.partnerIds.mapTo(member.partners) { saved.getValue(ids.getValue(it)) }
         }
         memberRepository.flush()
+        // The links above are inserted as biological, so the other kinds are written afterwards.
+        val kinds = people.flatMap { person ->
+            person.parentKinds.filterValues { it != KindEnum.BIOLOGICAL }.map { (parent, kind) ->
+                arrayOf<Any?>(kind.value, ids.getValue(person.id), ids.getValue(parent))
+            }
+        }
+        jdbc.batchUpdate("UPDATE member_parents SET kind = ? WHERE child_id = ? AND parent_id = ?", kinds)
         return FamilyImportResult.IMPORTED(family.toSummary(saved.values.toList()))
     }
 
@@ -193,6 +201,11 @@ class FamilyService(
             "UPDATE member_partners SET status = ?, since = ?, married_on = ?, ended_on = ? WHERE member_id = ? AND partner_id = ?",
             details,
         )
+        // Likewise the parent links are inserted as biological, so their kinds are copied afterwards.
+        val kinds = parentLinkKinds(id) { child, parent, kind ->
+            arrayOf<Any?>(kind, copyOf.getValue(child).id, copyOf.getValue(parent).id)
+        }
+        jdbc.batchUpdate("UPDATE member_parents SET kind = ? WHERE child_id = ? AND parent_id = ?", kinds)
         return FamilyAnonymizeResult.ANONYMIZED(family.toSummary(copies))
     }
 
@@ -212,6 +225,9 @@ class FamilyService(
 
     fun export(id: UUID): FamilyExport? {
         val family = familyRepository.findById(id).orElse(null) ?: return null
+        val kinds = parentLinkKinds(id) { child, parent, kind -> Triple(child, parent, KindEnum.fromValue(kind)) }
+            .filter { it.third != KindEnum.BIOLOGICAL }
+            .groupBy({ it.first }, { it.second to it.third })
         val people = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id).map { member ->
             GedcomPerson(
                 id = member.id.toString(),
@@ -225,6 +241,7 @@ class FamilyService(
                 parentIds = member.parents.map { it.id.toString() }.toSet(),
                 partnerIds = member.partners.map { it.id.toString() }.toSet(),
                 birthName = member.birthName,
+                parentKinds = kinds[member.id].orEmpty().associate { (parent, kind) -> parent.toString() to kind },
             )
         }
         return FamilyExport(family.name, writeGedcom(people))
@@ -243,6 +260,14 @@ class FamilyService(
         familyRepository.delete(family)
         return true
     }
+
+    // Every parent link of the family's members as (child id, parent id, stored kind).
+    private fun <T> parentLinkKinds(familyId: UUID, row: (child: UUID, parent: UUID, kind: String) -> T): List<T> =
+        jdbc.query(
+            "SELECT p.child_id, p.parent_id, p.kind FROM member_parents p JOIN members m ON m.id = p.child_id WHERE m.family_id = ?",
+            { rs, _ -> row(rs.getObject(1, UUID::class.java), rs.getObject(2, UUID::class.java), rs.getString(3)) },
+            familyId,
+        )
 
     private fun FamilyEntity.toSummary(members: List<MemberEntity>) = FamilySummary().apply {
         id = this@toSummary.id

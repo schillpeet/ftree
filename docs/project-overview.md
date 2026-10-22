@@ -131,6 +131,9 @@ The edit form keeps the avatar (click or drop an image to change the photo) besi
 The name fields on top carry labels ("Vorname", "Nachname") like the other fields and sit centred beside a larger portrait-format photo; on narrow screens the fields wrap below the photo.
 The optional birth name sits with the name fields on top, behind a "+ Geburtsname hinzufügen" link below the surname.
 Removing a relative with × asks for confirmation first.
+Each parent has a kind: "leiblich" (the default), "adoptiert", "Stief", or "Pflege".
+The relatives form shows a select for the kind next to each parent, and removing a parent resets its kind.
+The profile names the kind next to every parent that is not biological.
 As soon as a name is typed into a relation's search, the list ends with a highlighted "+ Neue Person „…“ hinzufügen" entry (Enter picks it when nothing matches); it opens a second, draggable "add member" panel prefilled with the typed name (last word as surname), without a relations tab.
 Saving that panel creates the person right away and adds them to the chosen relation of the form it was opened from, which still has to be saved itself.
 That panel is titled after the relation, for example "Partner von Dennis Behrendt hinzufügen", and opens beside the form on the side with more room, moving an unpinned form over just far enough for both to fit (and back once it closes).
@@ -176,11 +179,18 @@ Each status keeps only its own dates: `since` for together, `marriedOn` for marr
 Divorced partners count as former partners like separated ones, so the trees treat both alike.
 Widowed partners stay married in the trees: solid lines and the ⚭ ring, which sits right under the name of the partner who died (the one with a date of death, else the one with fewer partners); choosing "verwitwet" fills in the partner's date of death, and the profile falls back to it, for example "verwitwet seit 03.04.2010 (⚭ 12.06.1985)".
 Partnership dates cannot lie in the future, and a divorce cannot come before the wedding: the relatives form marks such dates in red and refuses to save with a message, and the BFF rejects them with 400 (allowing one day for clients in a later time zone).
+The kind of each parent/child link (`biological`, `adoptive`, `step`, or `foster`) lives in the `kind` column of `member_parents` (migration V14), which defaults to biological.
+Members return the kinds as read-only `parentLinks` (`parentId` and `kind`).
+The relatives endpoint changes kinds only when its request includes `parentLinks`; then every parent left out of it becomes biological, and without `parentLinks` the kinds stay as they are.
+GEDCOM import reads `PEDI` under `FAMC` (`birth`, `adopted`, and `foster`, case-insensitively; unknown values count as biological).
+GEDCOM export writes `2 PEDI adopted` or `2 PEDI foster` after `1 FAMC`, while step parents get no `PEDI` and come back as biological on re-import.
+A couple is exported as two single-parent families when the `PEDI` written for the child's two links differs, for example when one parent is adopted or fostered and the other is not.
 The GEDCOM import and export do not carry partnership status yet.
 `POST /families/{familyId}/anonymize` copies a family in one transaction into a new named family with the same members, dates, places, notes, links, partnership details, and placement but without photos, leaving the original untouched.
 The copy replaces first names at random and maps each distinct last name (birth names included) consistently to a random last name from fixed lists in `AnonymousNames.kt`, never reusing a name from the original; empty names stay empty.
+Anonymous copies keep the kinds of the parent links.
 The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
-Authentication and a broader family-tree model (relationship types such as adoption, separation dates, uncertain links) are not implemented.
+Authentication and a broader family-tree model (relationship types such as uncertain links) are not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
 The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
@@ -220,7 +230,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/` contains the Next.js app, package manifest, pnpm lockfile/workspace settings, TypeScript, ESLint, and Next.js configuration.
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
-- `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` covers it.
+- `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.
+- `bff/src/test/kotlin/com/github/bff/member/ParentLinkTest.kt` covers storing, reading, and resetting parent link kinds.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF and a Swagger UI container that serves `api/openapi.yaml` at `http://localhost:4010`.
 - `bff/Dockerfile` builds the BFF into a container image from the repository root (`docker build -f bff/Dockerfile .`); the image runs as a non-root user and reads `DB_URL`, `DB_USER`, and `DB_PASSWORD` at runtime.
@@ -258,7 +269,7 @@ Do not assume that a tree is public by default.
 These decisions have not been implemented:
 
 - The broader person and family-tree domain model, including how uncertain or conflicting information is represented.
-- Relationship types beyond parent/child and partners (adoption, separation or divorce dates, uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data deletion behavior.
+- Relationship types beyond parent/child and partners (for example uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data deletion behavior.
 - Data export beyond the per-family GEDCOM export, which leaves out photos and card placement.
 - Remaining BFF API operations, error format, and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.

@@ -3,6 +3,9 @@ package com.github.bff.member
 import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
+import com.github.bff.generated.model.ParentLink
+import com.github.bff.generated.model.ParentLink.KindEnum.BIOLOGICAL
+import com.github.bff.generated.model.ParentLink.KindEnum.STEP
 import com.github.bff.generated.model.Partnership
 import com.github.bff.generated.model.Partnership.StatusEnum.MARRIED
 import com.github.bff.generated.model.Placement
@@ -60,6 +63,27 @@ class AnonymizeFamilyTest {
         assertEquals("" to "", unknown.firstName to unknown.lastName)
         assertTrue(copy.all { it.photoUpdatedAt == null })
         assertEquals(before, memberService.findAll(source))
+    }
+
+    @Test
+    fun `copies parent link kinds`() {
+        val source = familyRepository.save(FamilyEntity(name = "Anonymize test ${UUID.randomUUID()}")).id
+        fun add(first: String, year: Int) =
+            memberService.create(source, CreateMemberRequest(first, "Zander").birthDate(LocalDate.of(year, 1, 1)))!!.id
+        val mother = add("Anna", 1950)
+        val stepfather = add("Bernd", 1951)
+        val child = add("Clara", 1980)
+        memberService.updateRelatives(
+            source, child,
+            Relatives(listOf(mother, stepfather), emptyList(), emptyList()).parentLinks(listOf(ParentLink(stepfather, STEP))),
+        )
+
+        val result = familyService.anonymize(source, AnonymizeFamilyRequest("Anonym ${UUID.randomUUID()}"))
+        val copy = memberService.findAll((result as FamilyAnonymizeResult.ANONYMIZED).summary.id)!!
+
+        val year = copy.associate { it.id to it.birthDate?.year }
+        val copiedChild = copy.single { it.birthDate?.year == 1980 }
+        assertEquals(setOf(1950 to BIOLOGICAL, 1951 to STEP), copiedChild.parentLinks.map { year.getValue(it.parentId) to it.kind }.toSet())
     }
 
     @Test

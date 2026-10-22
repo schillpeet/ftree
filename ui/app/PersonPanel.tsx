@@ -397,6 +397,17 @@ export function PersonView({
   };
   const chips = (list: Member[]) =>
     list.map((m) => <RelativeChip key={m.id} member={m} photo={photoOf(m)} onClick={() => onShow(m.id)} />);
+  // A parent who is not biological carries the kind of the link next to the chip.
+  const parentChips = (list: Member[]) =>
+    list.map((m) => {
+      const kind = member.parentLinks.find((l) => l.parentId === m.id)?.kind ?? 'biological';
+      return (
+        <span key={m.id} className="person-parent">
+          <RelativeChip member={m} photo={photoOf(m)} onClick={() => onShow(m.id)} />
+          {kind !== 'biological' && <span className="person-parent-kind">{t.relatives.parentKinds[kind]}</span>}
+        </span>
+      );
+    });
   const hasRelatives = [relatives.parents, relatives.children, relatives.partners, relatives.siblings, relatives.halfSiblings].some(
     (list) => list.length > 0,
   );
@@ -440,7 +451,7 @@ export function PersonView({
         {relatives.parents.length > 0 && (
           <section className="person-group" aria-label={t.relatives.parents}>
             <h3>{t.relatives.parents}</h3>
-            <div className="person-chips">{chips(relatives.parents)}</div>
+            <div className="person-chips">{parentChips(relatives.parents)}</div>
           </section>
         )}
         {relatives.partners.length > 0 && (
