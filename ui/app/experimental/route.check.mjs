@@ -103,7 +103,7 @@ assert.equal(coupleRoutes.stubs.length, 0);
 }
 
 // A third partner with children nested inside the outer ones cannot be reached without crossing:
-// that union becomes a stub, everything else is drawn.
+// that union's stem crosses the line to the outer partner on a bridge, and no union becomes a stub.
 {
   const model = buildModel([
     person('k', [], ['a', 'b', 'c']),
@@ -117,8 +117,13 @@ assert.equal(coupleRoutes.stubs.length, 0);
   const at = positions({ a: [0, R], k: [9, R], b: [18, R], c: [27, R], ka: [4.5, 0], kb: [13.5, 0], kc: [27, 0] });
   const routes = route(model, at);
   assert.deepEqual(verify(model, at, routes), []);
-  assert.deepEqual(routes.stubs.map((s) => [s.child, s.parents]), [['kb', ['b', 'k']]]);
-  assert.equal(riser(routes, at, 'kb'), undefined);
+  assert.deepEqual(routes.stubs, []);
+  assert.equal(riser(routes, at, 'kb').a[0], 13.5);
+  assert.deepEqual(routes.bridges.map(([x]) => x), [13.5]);
+  assert.equal(routes.bridges[0][1], lineBetween(routes, at, 'k', 'c').a[1]);
+  // Without the bridge it is a crossing again; a bridge where nothing crosses is reported too.
+  assert.ok(verify(model, at, { ...routes, bridges: [] }).some((v) => v.startsWith('crossing')));
+  assert.ok(verify(model, at, { ...routes, bridges: [...routes.bridges, [20, routes.bridges[0][1]]] }).some((v) => v.startsWith('bridge')));
 }
 
 // A single parent with a partner: the child hangs below the parent; a step parent who is nobody's

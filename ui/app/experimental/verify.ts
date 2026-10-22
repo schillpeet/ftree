@@ -30,7 +30,10 @@ export function verify(model: Model, at: Map<string, XY>, routes: Routes): strin
     else if (same(s.a, s.b)) out.push(`angle: ${desc(s)} has no length`);
   const segs = routes.segments.filter((s) => (flat(s) || upright(s)) && !same(s.a, s.b));
 
-  // 2. and 4. No overlap, parallel lines a track apart, no crossing.
+  // 2. and 4. No overlap, parallel lines a track apart, no crossing but on a bridge: a vertical
+  // passing through a horizontal where neither ends and no other segment touches.
+  const bridges = new Map(routes.bridges.map((p) => [key(p), p]));
+  const bridged = new Set<string>();
   for (let i = 0; i < segs.length; i++)
     for (let j = i + 1; j < segs.length; j++) {
       const [s, t] = [segs[i], segs[j]];
@@ -43,9 +46,15 @@ export function verify(model: Model, at: Map<string, XY>, routes: Routes): strin
         if (Math.abs(s.a[0] - t.a[0]) < EPS && shared(range(s, 1), range(t, 1)) > EPS) out.push(`overlap: ${desc(s)} and ${desc(t)} lie on each other`);
       } else {
         const [h, v] = flat(s) ? [s, t] : [t, s];
-        if (strictly(v.a[0], range(h, 0)) && strictly(h.a[1], range(v, 1))) out.push(`crossing: ${desc(h)} crosses ${desc(v)}`);
+        if (!strictly(v.a[0], range(h, 0)) || !strictly(h.a[1], range(v, 1))) continue;
+        const p: XY = [v.a[0], h.a[1]];
+        if (!bridges.has(key(p))) out.push(`crossing: ${desc(h)} crosses ${desc(v)}`);
+        else if (bridged.has(key(p)) || segs.filter((s) => on(p, s)).length !== 2) out.push(`bridge: more than two segments meet at ${fmt(p)}`);
+        else bridged.add(key(p));
       }
     }
+
+  for (const [k, p] of bridges) if (!bridged.has(k)) out.push(`bridge: ${fmt(p)} spans no crossing`);
 
   // 3. No segment into a name, except one ending at that name's own top or bottom attachment point.
   for (const [id, [px, py]] of at) {
