@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.16.0](https://github.com/schillpeet/ftree/compare/v0.15.0...v0.16.0) (2026-10-22)
+
+
+### Features
+
+* **bff:** add family photo ([#157](https://github.com/schillpeet/ftree/issues/157)) ([032f0cf](https://github.com/schillpeet/ftree/commit/032f0cf68bd9ccb4456b8c8c89377d40d4ca89f2))
+* **bff:** add family photo fit ([#160](https://github.com/schillpeet/ftree/issues/160)) ([7ce49f5](https://github.com/schillpeet/ftree/commit/7ce49f54b5fe71781e05b01f5cc5c60435b29c23))
+* **bff:** add parent link kinds ([#151](https://github.com/schillpeet/ftree/issues/151)) ([319fcb9](https://github.com/schillpeet/ftree/commit/319fcb9c06d37047525d946e70751bb398fcdfb5))
+* **repo:** add project logo, favicon, and social preview ([#152](https://github.com/schillpeet/ftree/issues/152)) ([5279b53](https://github.com/schillpeet/ftree/commit/5279b5352cde8c7be79b3296295881664412487b))
+* **ui:** add family card ([#158](https://github.com/schillpeet/ftree/issues/158)) ([1e1c316](https://github.com/schillpeet/ftree/commit/1e1c3169a0aa0019ae90015473828aa19e9ed036))
+* **ui:** balance experimental view spacing and line lengths ([#156](https://github.com/schillpeet/ftree/issues/156)) ([876747d](https://github.com/schillpeet/ftree/commit/876747d38f201036a4a966788ae0f4b670f26491))
+* **ui:** choose family photo fit ([#162](https://github.com/schillpeet/ftree/issues/162)) ([665f230](https://github.com/schillpeet/ftree/commit/665f2307c1f4aa0a921ab4e6b6560ee2d353a215))
+* **ui:** close person card on outside click unless pinned ([#155](https://github.com/schillpeet/ftree/issues/155)) ([aeb6d38](https://github.com/schillpeet/ftree/commit/aeb6d38665b7109fe6c52e24ac909db3d676f6ea))
+* **ui:** route experimental view lines like a circuit diagram ([#154](https://github.com/schillpeet/ftree/issues/154)) ([176ff81](https://github.com/schillpeet/ftree/commit/176ff81dc50029619795b672fd959a0641cbc578))
+* **ui:** simplify burger menu ([#159](https://github.com/schillpeet/ftree/issues/159)) ([faee766](https://github.com/schillpeet/ftree/commit/faee766de4bea39bd33f42762e256ec2d928642c))
+* **ui:** upload family photo ([#161](https://github.com/schillpeet/ftree/issues/161)) ([524ff2e](https://github.com/schillpeet/ftree/commit/524ff2ee161ced66587253fe98b22e29eb5ae977))
+
 ## [0.15.0](https://github.com/schillpeet/ftree/compare/v0.14.0...v0.15.0) (2026-10-21)
 
 
