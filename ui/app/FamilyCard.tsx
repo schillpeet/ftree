@@ -8,9 +8,11 @@ import {
   getExportFamilyUrl,
   getGetFamilyPhotoUrl,
   renameFamily,
+  setFamilyPhotoFit,
   uploadFamilyPhoto,
   type FamilySummary,
   type Member,
+  type PhotoFit,
 } from '../lib/api/generated/members';
 import { generationRows } from './generations';
 import { useT } from './i18n';
@@ -59,6 +61,7 @@ export default function FamilyCard({
   // Picked image (uploaded on save) and whether the stored one is to be removed.
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
+  const [photoFit, setPhotoFit] = useState<PhotoFit>(family.photoFit);
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const preview = usePhotoPreview(photoFile);
@@ -68,11 +71,13 @@ export default function FamilyCard({
     ? `${getGetFamilyPhotoUrl(family.id)}?v=${encodeURIComponent(family.photoUpdatedAt)}`
     : null;
   const photo = mode === 'edit' ? (preview ?? (removePhoto ? null : stored)) : stored;
+  const fit = mode === 'edit' ? photoFit : family.photoFit;
 
   function edit() {
     setName(family.name);
     setPhotoFile(null);
     setRemovePhoto(false);
+    setPhotoFit(family.photoFit);
     setError(null);
     onModeChange('edit');
   }
@@ -83,7 +88,8 @@ export default function FamilyCard({
     setRemovePhoto(false);
   }
 
-  // Renames first, then uploads or removes the photo; a failed step keeps the card in edit mode.
+  // Renames first, then uploads or removes the photo and sets how it is shown; a failed step keeps the
+  // card in edit mode.
   async function save(event: FormEvent) {
     event.preventDefault();
     const next = name.trim();
@@ -100,6 +106,9 @@ export default function FamilyCard({
         if ((await uploadFamilyPhoto(family.id, await toJpeg(photoFile))).status !== 204) return setError(t.familyCard.photoFailed);
       } else if (removePhoto && stored) {
         if ((await deleteFamilyPhoto(family.id)).status !== 204) return setError(t.familyCard.photoFailed);
+      }
+      if (photoFit !== family.photoFit && (await setFamilyPhotoFit(family.id, { photoFit })).status !== 200) {
+        return setError(t.familyCard.fitFailed);
       }
       onModeChange('view');
     } catch {
@@ -182,6 +191,7 @@ export default function FamilyCard({
           {/* Dropping an image on the field picks it like the file chooser does. */}
           <label
             className={`family-card-drop${isDragging ? ' family-card-drop-active' : ''}`}
+            data-fit={photo ? fit : undefined}
             onDragOver={(event) => {
               event.preventDefault();
               setIsDragging(true);
@@ -204,6 +214,21 @@ export default function FamilyCard({
             )}
             <input ref={fileRef} type="file" accept="image/*" onChange={(event) => pickPhoto(event.target.files?.[0])} />
           </label>
+          {photo && (
+            <div className="family-card-fit" role="radiogroup" aria-label={t.familyCard.fit}>
+              {(['cover', 'original'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  role="radio"
+                  aria-checked={photoFit === option}
+                  onClick={() => setPhotoFit(option)}
+                >
+                  {t.familyCard.fits[option]}
+                </button>
+              ))}
+            </div>
+          )}
           <label className="person-field">
             {t.familyCard.name}
             <input value={name} maxLength={100} required autoFocus onChange={(event) => setName(event.target.value)} />
@@ -250,7 +275,7 @@ export default function FamilyCard({
         </form>
       ) : (
         <>
-          <div className="family-card-cover" aria-hidden="true">
+          <div className="family-card-cover" data-fit={photo ? fit : undefined} aria-hidden="true">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {photo && <img src={photo} alt="" />}
           </div>

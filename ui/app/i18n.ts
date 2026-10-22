@@ -93,6 +93,9 @@ const en = {
     changePhoto: 'Change family photo',
     removePhoto: 'Remove family photo',
     photoFailed: 'The family photo could not be saved. Is it an image?',
+    fit: 'Photo display',
+    fits: { cover: 'Fill', original: 'Original size' },
+    fitFailed: 'The photo display could not be saved. Is the BFF reachable?',
     delete: 'Delete family',
   },
   members: {
@@ -312,6 +315,9 @@ const de: typeof en = {
     changePhoto: 'Familienfoto ändern',
     removePhoto: 'Familienfoto entfernen',
     photoFailed: 'Das Familienbild konnte nicht gespeichert werden. Ist es ein Bild?',
+    fit: 'Bilddarstellung',
+    fits: { cover: 'Füllend', original: 'Originalgröße' },
+    fitFailed: 'Die Bilddarstellung konnte nicht gespeichert werden. Ist das BFF erreichbar?',
     delete: 'Familie löschen',
   },
   members: {

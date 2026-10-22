@@ -2284,6 +2284,60 @@ button.dashboard-family:hover {
   object-fit: cover;
 }
 
+/* In original size the photo keeps its own size, centred and capped so the card stays mostly card;
+   small photos are not scaled up. The cover leaves room for the header actions and the emblem. */
+.family-card-cover[data-fit='original'],
+.family-card-drop[data-fit='original'] {
+  display: grid;
+  height: auto;
+  place-items: center;
+  box-sizing: border-box;
+}
+
+.family-card-cover[data-fit='original'] {
+  min-height: 112px;
+  padding: 62px 16px 34px;
+}
+
+.family-card-drop[data-fit='original'] {
+  min-height: 130px;
+  padding: 12px;
+}
+
+.family-card-cover[data-fit='original'] img,
+.family-card-drop[data-fit='original'] img {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 6px;
+}
+
+.family-card-fit {
+  display: flex;
+  justify-self: start;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.family-card-fit button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--glass-muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.family-card-fit button[aria-checked='true'] {
+  background: rgba(127, 214, 255, 0.18);
+  color: var(--glass-accent);
+}
+
 /* Edit mode: drop field, name, tools, then delete apart from cancel and save. The top stays free for
    the floating header actions. */
 .family-card-edit {
