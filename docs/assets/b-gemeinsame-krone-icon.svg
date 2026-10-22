@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="ftree">
+<path d="M58 120 Q60 100 61 84 L67 84 Q68 100 70 120 Z" fill="#7A5235"/>
+<path d="M0 0 C24 -21.599999999999998 24 -51.839999999999996 0 -72 C-24 -51.839999999999996 -24 -21.599999999999998 0 0Z" fill="#2E6A4F" opacity="0.92" transform="translate(64 88) rotate(-42)"/>
+<path d="M0 0 C24 -21.599999999999998 24 -51.839999999999996 0 -72 C-24 -51.839999999999996 -24 -21.599999999999998 0 0Z" fill="#7DB46C" opacity="0.88" transform="translate(64 88) rotate(42)"/>
+<path d="M0 0 C24 -24.0 24 -57.599999999999994 0 -80 C-24 -57.599999999999994 -24 -24.0 0 0Z" fill="#4E9A6A" opacity="0.85" transform="translate(64 88) rotate(0)"/>
+</svg>
