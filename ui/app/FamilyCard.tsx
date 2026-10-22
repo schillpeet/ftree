@@ -32,6 +32,8 @@ export default function FamilyCard({
   onChanged,
   onCreated,
   onArchive,
+  loadError,
+  onRetry,
 }: {
   family: FamilySummary;
   members: Member[] | null;
@@ -45,6 +47,8 @@ export default function FamilyCard({
   onChanged: () => void;
   onCreated: (family: FamilySummary) => void;
   onArchive: (onError: (message: string | null) => void) => Promise<void>;
+  loadError: string | null;
+  onRetry: () => void;
 }) {
   const t = useT();
   const [pin, setPin] = usePanelPin('ftree.familyPanelPin');
@@ -158,7 +162,6 @@ export default function FamilyCard({
             <p className="family-card-stats">
               <span>{t.familyCard.members(members?.length ?? family.memberCount)}</span>
               <span>{t.familyCard.generations(rows.length || family.generationCount)}</span>
-              <span>{t.familyCard.children(family.childCount)}</span>
             </p>
           </>
         )}
@@ -195,7 +198,15 @@ export default function FamilyCard({
         </form>
       ) : (
         <>
-          {!members && <p className="person-muted">{t.members.loading}</p>}
+          {loadError && (
+            <p className="person-error" role="alert">
+              {loadError}{' '}
+              <button type="button" className="person-link-button" onClick={onRetry}>
+                {t.retry}
+              </button>
+            </p>
+          )}
+          {!members && !loadError && <p className="person-muted">{t.members.loading}</p>}
           {members?.length === 0 && <p className="person-muted">{t.familyCard.empty}</p>}
           {rows.map((row, index) => (
             <section className="person-group" key={index}>
