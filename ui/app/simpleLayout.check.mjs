@@ -380,4 +380,54 @@ for (let round = 0; round < 60; round++) {
   // The two in-law families each stand over their married-in child's side.
   assert.equal(Math.sign(px('ole') - px('ida')), Math.sign(px('fay') - px('gus')));
 }
+
+// Siblings by age, seen from a married couple w–h whose two families are both in the tree: each
+// side's siblings stand in blocks away from the couple, the oldest next to it and the youngest
+// outermost, those without a birth date after them by first name. In a block the sibling stands
+// inside, partners outside, current first, then the latest ended. The couple's own children have no
+// sibling to lean on, so the oldest stands left.
+const born = (p, birthDate) => ({ ...p, birthDate });
+const named = (p, firstName) => ({ ...p, firstName });
+const mate = (id, parentIds, partners, birthDate) => ({
+  ...person(id, parentIds, partners.map(([partnerId]) => partnerId)),
+  partnerships: partners.map(([partnerId, status, endedOn]) => ({ partnerId, status, endedOn })),
+  birthDate,
+});
+const byAgePeople = [
+  ...couple('gp1', 'gp2'),
+  ...couple('hp1', 'hp2'),
+  mate('w', ['gp1', 'gp2'], [['h', 'married']], '1959-05-04'),
+  mate('h', ['hp1', 'hp2'], [['w', 'married']]),
+  born(person('s3', ['gp1', 'gp2']), '1962-01-01'),
+  mate('s2', ['gp1', 'gp2'], [['s2p', 'divorced']], '1955-01-01'),
+  mate('s2p', [], [['s2', 'divorced']]),
+  born(person('s1', ['gp1', 'gp2']), '1950-01-01'),
+  mate('v', ['gp1', 'gp2'], [['fg', 'separated'], ['dh', 'widowed', '1992-05-13'], ['lh', 'together']], '1965-01-01'),
+  mate('lh', [], [['v', 'together']]),
+  mate('dh', [], [['v', 'widowed', '1992-05-13']]),
+  mate('fg', [], [['v', 'separated']]),
+  person('o', ['v', 'dh']),
+  person('j', ['v', 'fg']),
+  named(person('u1', ['gp1', 'gp2']), 'Zed'),
+  named(person('u2', ['gp1', 'gp2']), 'Anna'),
+  mate('e', ['hp1', 'hp2'], [['ep', 'married']], '1964-10-16'),
+  mate('ep', [], [['e', 'married']]),
+  person('n', ['hp1', 'hp2']),
+  person('cl', ['e', 'ep']),
+  born(person('wj', ['w', 'h']), '2002-12-26'),
+  born(person('t', ['w', 'h']), '1994-04-26'),
+  born(person('m', ['w', 'h']), '1989-11-08'),
+  born(person('u', ['w', 'h']), '1991-05-30'),
+];
+const byAge = probe(byAgePeople);
+assert.deepEqual(byAge.violations, []);
+assert.ok(byAge.spaced);
+const out = Math.sign(byAge.x('s1') - byAge.x('w'));
+const outward = (...ids) => inOrder((id) => out * byAge.x(id), ...ids);
+assert.ok(outward('h', 'w', 's1', 's2', 's2p', 's3', 'v', 'lh', 'dh', 'fg', 'u2', 'u1'));
+for (const [p, q] of [['w', 's1'], ['s2', 's2p'], ['v', 'lh'], ['lh', 'dh'], ['dh', 'fg']]) assert.ok(Math.abs(byAge.x(q) - byAge.x(p)) >= NAME_GAP);
+assert.ok(outward('n', 'ep', 'e', 'h'));
+assert.ok(inOrder(byAge.x, 'm', 'u', 't', 'wj'));
+// Mirrored input order, same result.
+assert.deepEqual(layout([...byAgePeople].reverse()), layout(byAgePeople));
 console.log('simpleLayout ok');

@@ -41,12 +41,16 @@ A child directly below its union node with siblings on both sides hangs from the
 A child without biological parents in the tree hangs from the union of all its parents, drawn dotted.
 A non-biological parent who is a partner of one of the drawn parents gets no extra line, since the partnership line shows the step relation; any other non-biological parent becomes a stub.
 Parents of a shared child stand side by side in the experimental view even without a stored partnership.
-The person with several partners stands in the middle of their partner group.
+A person with several partners and no parents in the tree stands in the middle of their partner group.
 A partner with shared children stands outermost, at most one per side: the first by the order below goes right, the second left; a former partner with a child of their own counts as one with children.
 Childless partners stand inside between the person and the right outer partner, the current partner nearest.
 Further partners with children stand beyond the right outer one; routing turns their crossing links into stubs.
 The order of partners: current before former, then no shared child before the youngest latest child, then fewer children.
 The child who married into another family stands at the edge of their sibling group facing that family.
+The other siblings stand in blocks by age: the oldest next to that married-in child (or toward a sibling who hangs under their partner's family), the youngest outermost; without such a sibling the oldest stands left.
+Siblings without a birth date stand after those with one, ordered by first name.
+In a sibling's block the sibling stands inside and their partners outside, so a sibling is always nearer to their siblings than their own partner.
+A sibling with several partners has all of them on the outer side, in the profile order (current first, then the latest ended), co-parents without a stored partnership last; children of all but the outermost partner become stubs until crossings can be bridged.
 A deceased person's name is preceded by †.
 `ui/app/experimental/verify.ts` checks drawings in the tests, not at runtime: right angles, no overlaps, no crossings, no four-way points, and a read-back of the parents and partners from the drawing itself.
 CI runs this check on a fixture shaped like a real five-generation family (synthetic people) and on 500 random families (`ui/app/experimental/families.check.mjs`).
