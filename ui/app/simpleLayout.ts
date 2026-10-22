@@ -15,9 +15,9 @@ type Person = {
   birthDate?: string | null;
 };
 
-export const NAME_GAP = 9;
-export const FAMILY_GAP = 2;
-export const ROW_GAP = 6;
+export const NAME_GAP = 6.5;
+export const FAMILY_GAP = 3;
+export const ROW_GAP = 6.8;
 
 // A child unit hanging below its parent via one member; `anchor` marks a child already placed elsewhere.
 type Kid = { unit: string[]; via: string; anchor?: boolean };

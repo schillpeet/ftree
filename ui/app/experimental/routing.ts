@@ -12,7 +12,9 @@ export type Segment = { a: XY; b: XY; style: 'solid' | 'dashed' | 'dotted'; peop
 export type Glyph = { at: XY; glyph: '⚭' | '⚯' | '⚮'; people: [string, string] };
 export type Stub = { child: string; parents: string[]; at: XY };
 export type Routes = { segments: Segment[]; junctions: XY[]; glyphs: Glyph[]; stubs: Stub[] };
-export const NAME_W = 7, NAME_H = 1.6, NAME_CLEAR = 1.1, TRACK = 0.6, MIN_TRACK = 0.3;
+// Name label size as rendered. Partner lines start NAME_CLEAR below a name; sibling bars stay BAR_CLEAR
+// above the children's names, so every child hangs on a visible riser.
+export const NAME_W = 5.6, NAME_H = 2.4, NAME_CLEAR = 1.8, BAR_CLEAR = 2.1, TRACK = 0.6, MIN_TRACK = 0.3;
 
 const EPS = 1e-6;
 const near = (p: number, q: number) => Math.abs(p - q) < EPS;
@@ -173,7 +175,7 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Route
     if (same.length > 1) return (single.length ? single : same).map((q) => q.u);
   }
 
-  const H = ROW_GAP - 2 * NAME_CLEAR;
+  const H = ROW_GAP - NAME_CLEAR - BAR_CLEAR;
   for (const [rk, ids] of rows) {
     const rowY = y(ids[0]);
     const rowLines = [...lines.values()].filter((l) => rowKey(l.y) === rk);
@@ -223,7 +225,7 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Route
       gap = MIN_TRACK;
     }
     for (const l of rowLines) l.Y = rowY - NAME_CLEAR - l.track * gap;
-    for (const b of bars) b.Y = rowY - ROW_GAP + NAME_CLEAR + b.track * gap;
+    for (const b of bars) b.Y = rowY - ROW_GAP + BAR_CLEAR + b.track * gap;
   }
 
   // A single parent's stem below the end of a line with people between (or of a former couple's line
