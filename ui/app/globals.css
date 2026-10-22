@@ -1155,6 +1155,21 @@ textarea {
     max-height: calc(100dvh - 180px);
   }
 
+  .relation-legend {
+    right: 10px;
+    bottom: 10px;
+    width: calc(100vw - 20px);
+  }
+
+  .relation-legend ul {
+    column-gap: 10px;
+  }
+
+  .relation-legend .relation-legend-sample,
+  .relation-legend .relation-legend-stub {
+    width: 28px;
+  }
+
   .random-family-panel {
     top: 116px;
     max-height: calc(100dvh - 126px);
@@ -1248,6 +1263,95 @@ textarea {
   border-color: #ff4fd8;
   color: #ffd6f6;
   box-shadow: 0 0 8px rgba(255, 79, 216, 0.6);
+}
+
+/* The key to the experimental view's lines and symbols, below the tool boards: wide and low, so the
+   tree stays in view, with the lines in the left column and the symbols in the right. */
+.relation-legend {
+  position: fixed;
+  z-index: 4;
+  right: 16px;
+  bottom: 16px;
+  box-sizing: border-box;
+  width: min(640px, calc(100vw - 32px));
+  font: 12px/1.3 Arial, sans-serif;
+}
+
+.relation-legend .person-header {
+  gap: 16px;
+  padding: 4px 6px 4px 14px;
+}
+
+/* Folded, only the header remains, anchored at the same bottom right corner. */
+.relation-legend[data-folded='true'] {
+  width: auto;
+}
+
+.relation-legend[data-folded='true'] .person-header {
+  border-bottom: 0;
+}
+
+/* Quiet like the pin; the shared open-state background would make an unfolded legend look pressed. */
+.relation-legend .relation-legend-fold {
+  color: var(--glass-muted);
+}
+
+.relation-legend .relation-legend-fold:not(:hover) {
+  background: transparent;
+}
+
+.relation-legend .relation-legend-fold:hover {
+  color: #fff;
+}
+
+.relation-legend-fold[aria-expanded='false'] .icon {
+  transform: rotate(180deg);
+}
+
+.relation-legend ul[hidden] {
+  display: none;
+}
+
+.relation-legend ul {
+  display: grid;
+  grid-template-rows: repeat(6, auto);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  list-style: none;
+}
+
+.relation-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.relation-legend-sample {
+  flex: none;
+  width: 40px;
+  height: 14px;
+}
+
+.relation-legend-glyph {
+  color: #e6fdff;
+  font: 14px/14px 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
+  text-align: center;
+  text-shadow: 0 0 6px #00e5ff;
+}
+
+.relation-legend-stub {
+  flex: none;
+  box-sizing: border-box;
+  width: 40px;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  border-radius: 4px;
+  background: rgba(5, 8, 12, 0.85);
+  color: #e6fdff;
+  font-size: 10px;
+  text-align: center;
 }
 
 .simple-name:hover {

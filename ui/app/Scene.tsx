@@ -6,11 +6,12 @@ import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { useAppearance } from './appearance';
-import { useHighlightRelatives, useShowLines } from './lines';
+import { useHighlightRelatives, useShowLegend, useShowLines } from './lines';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
 import { generationBounds, generations, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
+import RelationLegend from './RelationLegend';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
@@ -569,6 +570,7 @@ export default function Scene({
   const [appearance] = useAppearance();
   const [showLines, setShowLines] = useShowLines();
   const [highlightRelatives, setHighlightRelatives] = useHighlightRelatives();
+  const [showLegend, setShowLegend] = useShowLegend();
   const focusId = showLines && highlightRelatives ? highlight : null;
   const experimental = appearance === 'experimental';
   const organic = appearance === 'organic';
@@ -753,6 +755,7 @@ export default function Scene({
           {t.tools.evolution}
         </button>
       </div>
+      {experimental && showLegend && <RelationLegend onClose={() => setShowLegend(false)} />}
       {openTool === 'time' && !experimental && (
         <section className="glass debug-panel" id="time-panel" aria-label={t.tools.clock} ref={toolRef}>
           <div className="debug-panel-body">
@@ -802,6 +805,15 @@ export default function Scene({
                   onChange={(event) => setHighlightRelatives(event.target.checked)}
                 />
                 {t.tools.highlightRelatives}
+              </label>
+              <label className="debug-check" title={experimental ? undefined : t.tools.disabled}>
+                <input
+                  type="checkbox"
+                  checked={showLegend}
+                  disabled={!experimental}
+                  onChange={(event) => setShowLegend(event.target.checked)}
+                />
+                {t.tools.legend}
               </label>
               <fieldset className="organic-only" disabled={experimental}>
                 {experimental && <legend>{t.tools.disabled}</legend>}

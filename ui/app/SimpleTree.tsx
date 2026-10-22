@@ -18,8 +18,8 @@ const LIFT = 2;
 // name is about NAME_W x NAME_H units, which the layout's gaps rely on.
 const NAME_SCALE = 50;
 const NAME_SCALE_HEIGHT = 768;
-const LINE_COLOR = '#00e5ff';
-const FOCUS_COLOR = '#ff4fd8';
+export const LINE_COLOR = '#00e5ff';
+export const FOCUS_COLOR = '#ff4fd8';
 const DOT_RADIUS = 0.18;
 // A partnership symbol floats this far above its line.
 const GLYPH_LIFT = 0.5;
