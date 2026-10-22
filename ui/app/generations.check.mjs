@@ -1,7 +1,7 @@
 // Run with `node app/generations.check.mjs`: generations follow parent and partner links, cards move
 // so children hang a gap below their parents, and dragging is bounded by placed parents and children.
 import assert from 'node:assert/strict';
-import { generationBounds, generations, layerPins } from './generations.ts';
+import { generationBounds, generationRows, generations, layerPins } from './generations.ts';
 
 const person = (id, parentIds = [], partnerIds = []) => ({ id, parentIds, partnerIds });
 
@@ -19,6 +19,14 @@ const family = [
 assert.deepEqual(Object.fromEntries(generations(family)), { kid: 2, mum: 1, dad: 1, granny: 0, aunt: 1, inlaw: 1, loner: 0 });
 // Cycle guard: an ancestor loop terminates.
 assert.equal(generations([person('a', ['b']), person('b', ['a'])]).size, 2);
+
+// Rows: oldest generation first, then by birth date (unknown last) and name; gaps leave no empty row.
+const named = (id, firstName, birthDate, parentIds = []) => ({ ...person(id, parentIds), firstName, lastName: 'X', birthDate });
+assert.deepEqual(
+  generationRows([named('c', 'Cleo', null, ['a']), named('b', 'Bea', '1950-01-01'), named('d', 'Dan', '1980-01-01', ['a']), named('a', 'Al', '1950-01-01')])
+    .map((row) => row.map((p) => p.id)),
+  [['a', 'b'], ['d', 'c']],
+);
 
 // Repair: pins in a column with uneven steps, top-down. The family was auto-assigned to the top
 // pins; the loner sits in between.
