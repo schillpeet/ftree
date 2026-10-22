@@ -31,6 +31,9 @@ const STYLES = {
 
 // Corner radius where a bar turns into a riser or stem.
 const CORNER = 0.12;
+// Half width and height of the hop where a partnership line bridges a crossing vertical.
+const HOP_W = 0.3;
+const HOP_H = 0.25;
 
 const flat = ([x, y]: XY): Point => [x, y, 0];
 
@@ -68,6 +71,30 @@ function soften(segments: Segment[], junctions: XY[]): Segment[] {
   return [...out, ...curves];
 }
 
+// Draws each bridge as a hop: the horizontal line through it leaves a gap around the crossing and
+// arcs over it in a few straight pieces.
+function hop(segments: Segment[], bridges: XY[]): Segment[] {
+  const out: Segment[] = [];
+  for (const seg of segments) {
+    const [x0, x1] = [Math.min(seg.a[0], seg.b[0]), Math.max(seg.a[0], seg.b[0])];
+    const y = seg.a[1];
+    const xs = seg.a[1] === seg.b[1] ? bridges.filter(([bx, by]) => by === y && bx > x0 && bx < x1).map(([bx]) => bx).sort((p, q) => p - q) : [];
+    if (!xs.length) {
+      out.push(seg);
+      continue;
+    }
+    let from = x0;
+    for (const bx of xs) {
+      out.push({ ...seg, a: [from, y], b: [bx - HOP_W, y] });
+      const at = (i: number): XY => [bx - HOP_W * Math.cos((i / 8) * Math.PI), y + HOP_H * Math.sin((i / 8) * Math.PI)];
+      for (let i = 0; i < 8; i++) out.push({ ...seg, a: at(i), b: at(i + 1) });
+      from = bx + HOP_W;
+    }
+    out.push({ ...seg, a: [from, y], b: [x1, y] });
+  }
+  return out;
+}
+
 // The experimental view's family tree: names floating on one row per generation, joined by lines drawn
 // like a circuit diagram (`experimental/routing.ts`), at positions that follow from the relations alone.
 // `facing` turns it toward the camera.
@@ -94,7 +121,7 @@ export default function SimpleTree({
     const positions = simpleLayout(members, model.gen);
     const at = new Map([...positions].map(([id, [x, y]]): [string, XY] => [id, [x, y]]));
     const routes = route(model, at);
-    return { positions, routes: { ...routes, segments: soften(routes.segments, routes.junctions) } };
+    return { positions, routes: { ...routes, segments: hop(soften(routes.segments, routes.junctions), routes.bridges) } };
   }, [members]);
   // The focused person and the relatives the panel lists: a line stands out when it joins them.
   const focused = useMemo(() => {

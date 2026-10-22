@@ -1,7 +1,8 @@
 // Routes the experimental view's relation lines like a circuit diagram: right angles only, every
 // horizontal line on its own track in the channel between two rows, T-junctions with dots, and no
-// crossings. A union that cannot be reached without crossing becomes a stub instead; `verify.ts`
-// proves the result and `route.check.mjs` tests both. Pure, positions in, segments out. Not named
+// crossings. A union whose stem cannot avoid a partnership line crosses it on a bridge (a hop on the
+// partnership line); one that cannot be reached otherwise becomes a stub. `verify.ts` proves the
+// result and `route.check.mjs` tests both. Pure, positions in, segments out. Not named
 // `route.ts`: Next.js would take that for a route handler of `/experimental`.
 import type { Model, Status, Union } from './model.ts';
 import { ROW_GAP } from '../simpleLayout.ts';
@@ -11,10 +12,13 @@ export type XY = [number, number];
 export type Segment = { a: XY; b: XY; style: 'solid' | 'dashed' | 'dotted'; people: string[] };
 export type Glyph = { at: XY; glyph: '⚭' | '⚯' | '⚮'; people: [string, string] };
 export type Stub = { child: string; parents: string[]; at: XY };
-export type Routes = { segments: Segment[]; junctions: XY[]; glyphs: Glyph[]; stubs: Stub[] };
+// bridges: where a union's vertical crosses a partnership line, which hops over it.
+export type Routes = { segments: Segment[]; junctions: XY[]; glyphs: Glyph[]; stubs: Stub[]; bridges: XY[] };
 // Name label size as rendered. Partner lines start NAME_CLEAR below a name; sibling bars stay BAR_CLEAR
 // above the children's names, so every child hangs on a visible riser.
 export const NAME_W = 5.6, NAME_H = 2.4, NAME_CLEAR = 1.8, BAR_CLEAR = 2.1, TRACK = 0.6, MIN_TRACK = 0.3;
+// A bridge keeps this far from a partnership symbol on its line.
+const GLYPH_CLEAR = 1.2;
 
 const EPS = 1e-6;
 const near = (p: number, q: number) => Math.abs(p - q) < EPS;
@@ -35,6 +39,10 @@ type Plan = { u: Union; y: number; nx: number; anchor?: string; line?: Line; kid
 // A sibling bar over [x0, x1] with the children rising from it, on `track` counted from the channel bottom.
 type Bar = { plan: Plan; x0: number; x1: number; kids: string[]; track: number; Y: number };
 type Owned = Segment & { owner?: Union };
+// An ordering of two tracks; dropping it would let `stem`, the union's vertical, cross on a bridge.
+type Edge<T> = { from: T; to: T; us: Union[]; stem?: Union };
+// Why a round failed: the unions to stub one of, or ({ bridge }) the unions to let cross on a bridge.
+type Blame = Union[] | { bridge: Union[] };
 
 export function route(model: Model, at: Map<string, XY>): Routes {
   const childOf = new Set(model.unions.flatMap((u) => u.children));
@@ -42,19 +50,21 @@ export function route(model: Model, at: Map<string, XY>): Routes {
   // In-law (root) families first, then the union with fewer children.
   const prefer = (us: Union[]) =>
     [...us].sort((p, q) => Number(root(q)) - Number(root(p)) || p.children.length - q.children.length || p.id.localeCompare(q.id))[0];
-  // Each round stubs one more union, so this ends.
+  // Each round bridges or stubs one more union, so this ends.
   const stubbed = new Set<string>();
+  const bridged = new Set<string>();
   for (;;) {
-    const result = attempt(model, at, stubbed);
-    if (!Array.isArray(result)) return result;
-    stubbed.add(prefer(result).id);
+    const result = attempt(model, at, stubbed, bridged);
+    if (Array.isArray(result)) stubbed.add(prefer(result).id);
+    else if ('bridge' in result) bridged.add(prefer(result.bridge).id);
+    else return result;
   }
 }
 
 // Places items (lines or bars) on tracks: `to` of each edge lies beyond `from`, and items whose
 // closed x ranges overlap never share a track. Lowest free track, left edge first. Returns the
-// unions whose edges form a cycle instead; a cycle of drops alone is broken and left to `verify`.
-function layer<T extends { x0: number; x1: number; track: number }>(items: T[], edges: { from: T; to: T; us: Union[] }[]) {
+// edges that form a cycle instead; a cycle of drops alone is broken and left to `verify`.
+function layer<T extends { x0: number; x1: number; track: number }>(items: T[], edges: Edge<T>[]) {
   const preds = new Map(items.map((i) => [i, edges.filter((e) => e.to === i && e.from !== i).map((e) => e.from)]));
   const done = new Set<T>();
   const todo = [...items].sort((p, q) => p.x0 - q.x0 || p.x1 - q.x1);
@@ -75,7 +85,7 @@ function layer<T extends { x0: number; x1: number; track: number }>(items: T[], 
     let next = todo.find((i) => !done.has(i) && preds.get(i)!.every((p) => done.has(p)));
     if (!next) {
       const cycle = edges.filter((e) => e.us.length && !done.has(e.from) && !done.has(e.to) && reaches(e.to, e.from));
-      if (cycle.length) return cycle.flatMap((e) => e.us);
+      if (cycle.length) return cycle;
       next = todo.find((i) => !done.has(i))!;
     }
     const item = next;
@@ -97,8 +107,8 @@ function meet(s: Segment, t: Segment): XY | 'overlap' | null {
   return x1 - x0 > EPS || y1 - y0 > EPS ? 'overlap' : [x0, y0];
 }
 
-// One routing round with the given unions stubbed: the routes, or the unions to choose a stub from.
-function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Routes | Union[] {
+// One routing round with the given unions stubbed or bridged: the routes, or what to change.
+function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>, bridged: Set<string>): Routes | Blame {
   const x = (id: string) => at.get(id)![0];
   const y = (id: string) => at.get(id)![1];
   const rows = new Map<number, string[]>();
@@ -182,27 +192,32 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Route
     const rowPlans = plans.filter((p) => rowKey(p.y) === rk);
 
     // Partner tracks. A line passing over a person runs below that person's drop; over a stem it
-    // cannot. It runs above a stem leaving a line in the middle, and an anchor's own union line is its deepest.
+    // crosses on a bridge. It runs above a stem leaving a line in the middle unless that stem may
+    // bridge it, and an anchor's own union line is its deepest.
     const stems = new Map(rowPlans.filter((p) => p.anchor).map((p) => [p.anchor!, p]));
-    const order: { from: Line; to: Line; us: Union[] }[] = [];
+    const order: Edge<Line>[] = [];
     for (const h of rowLines)
       for (const id of ids.filter((id) => inside(x(id), h.x0, h.x1))) {
-        if (stems.has(id)) return [stems.get(id)!.u];
+        const stem = stems.get(id)?.u;
+        if (stem && !bridged.has(stem.id)) return { bridge: [stem] };
         // A cycle of these can only be broken by dropping a union of one of the lines.
         for (const l of linesOf(id)) order.push({ from: l, to: h, us: [...unionsOf(l.a, l.b), ...unionsOf(h.a, h.b)].filter((u) => !stubbed.has(u.id)) });
       }
     for (const p of rowPlans) {
-      if (p.line && !p.anchor)
-        for (const h of rowLines) if (h !== p.line && inside(p.nx, h.x0, h.x1)) order.push({ from: h, to: p.line, us: [p.u] });
+      if (p.line && !p.anchor && !bridged.has(p.u.id))
+        for (const h of rowLines) if (h !== p.line && inside(p.nx, h.x0, h.x1)) order.push({ from: h, to: p.line, us: [p.u], stem: p.u });
       if (p.line && p.anchor) for (const l of linesOf(p.anchor)) if (l !== p.line) order.push({ from: l, to: p.line, us: [p.u] });
     }
     const lineCycle = layer(rowLines, order);
-    if (lineCycle) return lineCycle;
+    if (lineCycle) {
+      const stems = lineCycle.flatMap((e) => (e.stem ? [e.stem] : []));
+      return stems.length ? { bridge: stems } : lineCycle.flatMap((e) => e.us);
+    }
 
     // Bar tracks. A bar over another union's stem runs below that union's bar, over its riser above
     // it; over a vertical running from node to child it cannot.
     const bars = rowPlans.flatMap((p) => p.bars);
-    const stack: { from: Bar; to: Bar; us: Union[] }[] = [];
+    const stack: Edge<Bar>[] = [];
     for (const u of rowPlans)
       for (const b of bars.filter((b) => b.plan !== u)) {
         const us = [u.u, b.plan.u];
@@ -213,7 +228,7 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Route
         for (const c of u.bars) if (c.kids.some((k) => within(x(k), b.x0, b.x1))) stack.push({ from: c, to: b, us });
       }
     const barCycle = layer(bars, stack);
-    if (barCycle) return barCycle;
+    if (barCycle) return barCycle.flatMap((e) => e.us);
 
     // Spacing: TRACK, compressed evenly down to MIN_TRACK; beyond that a bar gives way to a stub.
     const P = Math.max(0, ...rowLines.map((l) => l.track + 1));
@@ -282,7 +297,10 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Route
       for (const k of b.kids) segments.push({ a: [x(k), b.Y], b: [x(k), top(k)], style, people: [...p.u.parents, k], owner: p.u });
     }
   }
-  // Backstop: a union's lines touch nothing but their own node; otherwise that union gives way.
+  // Backstop: a union's lines touch nothing but their own node, except where a bridged union's
+  // vertical crosses a partnership line away from its symbol; otherwise that union gives way.
+  const bridges: XY[] = [];
+  const upright = (s: Segment) => near(s.a[0], s.b[0]);
   for (let i = 0; i < segments.length; i++)
     for (let j = i + 1; j < segments.length; j++) {
       const [s, t] = [segments[i], segments[j]];
@@ -291,6 +309,18 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Route
       if (!m) continue;
       const node = nodes.get((s.owner ?? t.owner)!)!;
       if ((!s.owner || !t.owner) && m !== 'overlap' && near(m[0], node[0]) && near(m[1], node[1])) continue;
+      const [v, h] = upright(s) ? [s, t] : [t, s];
+      const crosses =
+        m !== 'overlap' &&
+        upright(v) &&
+        !upright(h) &&
+        !h.owner &&
+        inside(m[0], Math.min(h.a[0], h.b[0]), Math.max(h.a[0], h.b[0])) &&
+        inside(m[1], Math.min(v.a[1], v.b[1]), Math.max(v.a[1], v.b[1]));
+      if (crosses && v.owner && bridged.has(v.owner.id) && !glyphs.some((g) => near(g.at[1], m[1]) && Math.abs(g.at[0] - m[0]) < GLYPH_CLEAR)) {
+        bridges.push(m);
+        continue;
+      }
       return [s.owner, t.owner].filter((u) => u !== undefined);
     }
 
@@ -316,5 +346,5 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>): Route
   for (const u of stubs) for (const c of u.children) addStub(c, u.parents);
   for (const h of model.hidden) if (h.reason === 'stub') addStub(h.child, [h.parent]);
 
-  return { segments: segments.map(({ a, b, style, people }) => ({ a, b, style, people })), junctions, glyphs, stubs: stubList };
+  return { segments: segments.map(({ a, b, style, people }) => ({ a, b, style, people })), junctions, glyphs, stubs: stubList, bridges };
 }

@@ -30,7 +30,8 @@ Sibling bars in the experimental view stay a short distance above the children's
 Experimental-view names scale with the window height like the rest of the scene, so the spacing between them is the same in any window size.
 Parallel tracks keep at least 0.3 apart; the channel's tracks are compressed evenly when they do not fit at the usual 0.6.
 Every point where three lines meet gets a dot, and no point joins four lines except the one described below.
-No line crosses another one; a link that cannot be drawn without crossing becomes a stub instead.
+No line crosses another one, except where a union's vertical line must cross a partnership line: the partnership line then hops over it on a small bridge.
+A link that cannot be drawn without crossing, or only with a crossing other than such a bridge, becomes a stub instead.
 A stub is a small label "▲ Eltern von <Vorname>" above the child that opens the first parent's profile.
 Partners are joined by a line on its own track with a symbol on it: ⚭ for married and widowed, ⚯ for together, ⚮ for divorced, none for separated.
 The line of separated and divorced partners is dashed, the others are solid, including widowed ones.
@@ -44,15 +45,15 @@ Parents of a shared child stand side by side in the experimental view even witho
 A person with several partners and no parents in the tree stands in the middle of their partner group.
 A partner with shared children stands outermost, at most one per side: the first by the order below goes right, the second left; a former partner with a child of their own counts as one with children.
 Childless partners stand inside between the person and the right outer partner, the current partner nearest.
-Further partners with children stand beyond the right outer one; routing turns their crossing links into stubs.
+Further partners with children stand beyond the right outer one; routing bridges the lines their links cross.
 The order of partners: current before former, then no shared child before the youngest latest child, then fewer children.
 The child who married into another family stands at the edge of their sibling group facing that family.
 The other siblings stand in blocks by age: the oldest next to that married-in child (or toward a sibling who hangs under their partner's family), the youngest outermost; without such a sibling the oldest stands left.
 Siblings without a birth date stand after those with one, ordered by first name.
 In a sibling's block the sibling stands inside and their partners outside, so a sibling is always nearer to their siblings than their own partner.
-A sibling with several partners has all of them on the outer side, in the profile order (current first, then the latest ended), co-parents without a stored partnership last; children of all but the outermost partner become stubs until crossings can be bridged.
+A sibling with several partners has all of them on the outer side, in the profile order (current first, then the latest ended), co-parents without a stored partnership last; the lines to the children of all but the outermost partner cross the outer partnership lines on bridges.
 A deceased person's name is preceded by †.
-`ui/app/experimental/verify.ts` checks drawings in the tests, not at runtime: right angles, no overlaps, no crossings, no four-way points, and a read-back of the parents and partners from the drawing itself.
+`ui/app/experimental/verify.ts` checks drawings in the tests, not at runtime: right angles, no overlaps, no crossings but on recorded bridges, no four-way points, and a read-back of the parents and partners from the drawing itself.
 CI runs this check on a fixture shaped like a real five-generation family (synthetic people) and on 500 random families (`ui/app/experimental/families.check.mjs`).
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
 Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.
@@ -224,7 +225,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/FamilyTree.tsx` also renders the dashboard and the families board.
 - `ui/app/Dashboard.tsx` renders the burger menu and the family name that opens the family card (`ui/app/FamilyCard.tsx`, rendered by `MembersControls`); `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
 - `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
-- `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's relatives; `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.
+- `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, bridges, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's relatives; `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.
 - `ui/app/experimental/model.ts` derives unions, partnerships, and generations for the experimental view (`model.check.mjs`); `routing.ts` routes the circuit-diagram lines (`route.check.mjs`); `verify.ts` and `families.check.mjs` prove them on fixtures and random families (`node app/experimental/families.check.mjs` in `ui/`).
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).

@@ -176,12 +176,11 @@ assert.ok(inOrder(s7.x, 'd', 'a', 'b', 'c'));
 assert.equal(s7.x('ac2005'), s7.x('c'));
 assert.equal(s7.x('ad1995'), (s7.x('a') + s7.x('d')) / 2);
 // A third partner with children goes beyond the right outer one; that line passes over b's union,
-// so routing stubs one of the two (its choice), and draws the rest.
+// whose stem crosses it on a bridge, so everything is drawn.
 const s8 = probe(hubPeople(['b', 'c', 'd'], [['ab2010', 'a', 'b'], ['ac2000', 'a', 'c'], ['ad1990', 'a', 'd']]));
 assert.deepEqual(s8.violations, []);
 assert.ok(inOrder(s8.x, 'c', 'a', 'b', 'd'));
-assert.equal(s8.stubs.length, 1);
-assert.ok(['ab2010', 'ad1990'].includes(s8.stubs[0]));
+assert.deepEqual(s8.stubs, []);
 
 // Status beats guessing: a separated partner sorts after a current one, so it stands left even when
 // its child is the younger.
@@ -259,7 +258,7 @@ assert.equal(aside.x('e'), aside.x('x'));
 // A current couple whose members both have former partners with children. The hub with the most
 // partners (ca, by id on a tie) orders its own: a1 and a2 have children, so they stand outermost,
 // cb inside on the right with its own partners beyond it (childless first). cb's union with b2 then
-// sits under ca's line to a1, so routing stubs it.
+// sits under ca's line to a1, so its stem crosses that line on a bridge.
 const exes = (id, partnerId) => ({ id, partnerships: [{ partnerId, status: 'separated' }] });
 const togetherWith = (id, partnerId) => ({ id, partnerships: [{ partnerId, status: 'together' }] });
 const sides = drawn([
@@ -272,7 +271,7 @@ const sides = drawn([
   person('ka1', ['ca', 'a1']),
   person('ka2', ['ca', 'a2']),
   person('kb2', ['cb', 'b2']),
-], ['kb2']);
+]);
 assert.ok(inOrder(sides.x, 'a2', 'ca', 'cb', 'b1', 'b2', 'a1'));
 for (const [p, q] of [['a2', 'ca'], ['ca', 'cb'], ['cb', 'b1'], ['b1', 'b2'], ['b2', 'a1']]) assert.equal(sides.x(q) - sides.x(p), NAME_GAP);
 assert.equal(sides.x('ka2'), sides.x('a2'));
