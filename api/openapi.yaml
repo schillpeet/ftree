@@ -342,6 +342,85 @@ paths:
                 type: string
         "404":
           description: Family not found.
+  /families/{familyId}/photo:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getFamilyPhoto
+      tags:
+        - Families
+      summary: Get a family's uploaded photo
+      description: Cached for a year; clients add photoUpdatedAt to the URL so a new photo gets a new URL.
+      responses:
+        "200":
+          description: The photo with its stored content type.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                example: private, max-age=31536000
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Family or photo not found.
+    put:
+      operationId: uploadFamilyPhoto
+      tags:
+        - Families
+      summary: Upload or replace a family's photo
+      description: The raw image bytes, at most 2 MB, as JPEG, PNG, or WebP.
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/webp:
+            schema:
+              type: string
+              format: binary
+      responses:
+        "204":
+          description: Photo stored.
+        "400":
+          description: The body is empty.
+        "404":
+          description: Family not found.
+        "413":
+          description: The photo is larger than 2 MB.
+        "415":
+          description: The content type is not JPEG, PNG, or WebP.
+    delete:
+      operationId: deleteFamilyPhoto
+      tags:
+        - Families
+      summary: Remove a family's uploaded photo
+      responses:
+        "204":
+          description: Photo removed.
+        "404":
+          description: Family or photo not found.
   /families/{familyId}/members:
     parameters:
       - name: familyId
@@ -631,6 +710,12 @@ components:
           nullable: true
           allOf:
             - $ref: "#/components/schemas/TestFamilySettings"
+        photoUpdatedAt:
+          description: When the uploaded family photo last changed; null when the family has none.
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
     TestFamilySettings:
       type: object
       required:

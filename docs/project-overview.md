@@ -24,6 +24,9 @@ The experimental view centres every couple over its first and last child, packs 
 In-law families (a partner's parents at the top of the tree) are placed right next to the family their child married into, centred over their own children; a sibling group has two edges for them, left and right.
 A third in-law family in the same sibling group becomes a stub instead of a crossing line.
 The experimental view draws its lines like a circuit diagram (`ui/app/experimental/routing.ts`): only right angles, and every horizontal line on a track of its own in the channel between two rows, so lines never overlap.
+Spacing in the experimental view follows the measured size of a name label: siblings and partners stand close together, and families get a clearly wider gap.
+Sibling bars in the experimental view stay a short distance above the children's names, so every child hangs on a visible line, and the outer corners of the lines are subtly rounded.
+Experimental-view names scale with the window height like the rest of the scene, so the spacing between them is the same in any window size.
 Parallel tracks keep at least 0.3 apart; the channel's tracks are compressed evenly when they do not fit at the usual 0.6.
 Every point where three lines meet gets a dot, and no point joins four lines except the one described below.
 No line crosses another one; a link that cannot be drawn without crossing becomes a stub instead.
@@ -181,6 +184,7 @@ Partners without shared children are joined by a gold line.
 The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
 Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
+Families can have one photo (JPEG, PNG, or WebP up to 2 MB) via `GET`, `PUT`, and `DELETE /families/{familyId}/photo`, stored in its own `family_photos` table; family summaries carry `photoUpdatedAt` for the same year-long private cache, and deleting a family removes its photo.
 Partnership status and dates live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
 The status is `together`, `married`, `separated`, `divorced`, or `widowed`, set per partner in the relatives form.
 Each status keeps only its own dates: `since` for together, `marriedOn` for married, `endedOn` for separated, and `marriedOn` with `endedOn` for divorced and widowed (the date of death); the BFF drops the others.

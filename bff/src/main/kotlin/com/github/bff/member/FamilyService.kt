@@ -13,6 +13,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
+import java.time.OffsetDateTime
 import java.util.UUID
 import kotlin.math.roundToInt
 
@@ -23,10 +24,12 @@ class FamilyService(
     private val memberRepository: MemberRepository,
     private val jdbc: JdbcTemplate,
 ) {
-    fun findAll(): List<FamilySummary> =
-        familyRepository.findAllByOrderByPositionAsc().map { family ->
-            family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id))
+    fun findAll(): List<FamilySummary> {
+        val photos = photoTimes()
+        return familyRepository.findAllByOrderByPositionAsc().map { family ->
+            family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id), photos[family.id])
         }
+    }
 
     // Accepts only a permutation of every family id, so no family can be dropped from the list.
     @Transactional
@@ -220,7 +223,7 @@ class FamilyService(
         family.name = name
         familyRepository.flush()
         val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
-        return FamilyRenameResult.RENAMED(family.toSummary(members))
+        return FamilyRenameResult.RENAMED(family.toSummary(members, photoTimes()[id]))
     }
 
     fun export(id: UUID): FamilyExport? {
@@ -261,6 +264,42 @@ class FamilyService(
         return true
     }
 
+    /** Stores or replaces the family's photo; only JPEG, PNG, and WebP up to MAX_PHOTO_BYTES. */
+    @Transactional
+    fun updatePhoto(id: UUID, contentType: String?, data: ByteArray): PhotoResult {
+        val type = contentType?.substringBefore(';')?.trim()?.lowercase()
+        if (type !in PHOTO_TYPES) return PhotoResult.UNSUPPORTED_TYPE
+        if (data.isEmpty()) return PhotoResult.INVALID
+        if (data.size > MAX_PHOTO_BYTES) return PhotoResult.TOO_LARGE
+        if (!familyRepository.existsById(id)) return PhotoResult.NOT_FOUND
+        jdbc.update(
+            """
+            INSERT INTO family_photos (family_id, content_type, data, updated_at) VALUES (?, ?, ?, now())
+            ON CONFLICT (family_id) DO UPDATE
+                SET content_type = excluded.content_type, data = excluded.data, updated_at = excluded.updated_at
+            """,
+            id, type, data,
+        )
+        return PhotoResult.UPDATED
+    }
+
+    fun findPhoto(id: UUID): Photo? =
+        jdbc.query(
+            "SELECT content_type, data FROM family_photos WHERE family_id = ?",
+            { rs, _ -> Photo(rs.getString(1), rs.getBytes(2)) },
+            id,
+        ).firstOrNull()
+
+    @Transactional
+    fun deletePhoto(id: UUID): Boolean = jdbc.update("DELETE FROM family_photos WHERE family_id = ?", id) > 0
+
+    // One query for all families instead of one per family; never loads the bytes.
+    private fun photoTimes(): Map<UUID, OffsetDateTime> =
+        jdbc.query(
+            "SELECT family_id, updated_at FROM family_photos",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getObject(2, OffsetDateTime::class.java) },
+        ).toMap()
+
     // Every parent link of the family's members as (child id, parent id, stored kind).
     private fun <T> parentLinkKinds(familyId: UUID, row: (child: UUID, parent: UUID, kind: String) -> T): List<T> =
         jdbc.query(
@@ -269,7 +308,7 @@ class FamilyService(
             familyId,
         )
 
-    private fun FamilyEntity.toSummary(members: List<MemberEntity>) = FamilySummary().apply {
+    private fun FamilyEntity.toSummary(members: List<MemberEntity>, photoUpdatedAt: OffsetDateTime? = null) = FamilySummary().apply {
         id = this@toSummary.id
         name = this@toSummary.name
         memberCount = members.size
@@ -283,6 +322,7 @@ class FamilyService(
                 this@toSummary.maxChildren ?: 3,
             )
         }
+        this.photoUpdatedAt = photoUpdatedAt
     }
 
     private fun memberGenerations(members: List<MemberEntity>): Int {
