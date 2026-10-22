@@ -3,26 +3,33 @@
 import { useMemo } from 'react';
 import { Html, Line } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
-import { isFormer, relationLines } from './familyLayout';
-import { generations } from './generations';
+import { buildModel } from './experimental/model';
+import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
 import { isNameless, nameOf, shortFirstName } from './names';
 import type { Point } from './pins';
-import { NAME_GAP, simpleLayout } from './simpleLayout';
-
-const midpoint = (a: Point, b: Point): Point => [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
-// How far below a name the rings of a widowed couple sit.
-const UNDER_NAME = 1.6;
+import { relativesOf } from './relatives';
+import { simpleLayout } from './simpleLayout';
 
 // The lowest row floats this far above the floor.
 const LIFT = 2;
 const NAME_SCALE = 50;
-// Someone with children by several partners forks this far toward each partner.
-const FORK = NAME_GAP / 4;
+const LINE_COLOR = '#00e5ff';
 const FOCUS_COLOR = '#ff4fd8';
+const DOT_RADIUS = 0.18;
+// A partnership symbol floats this far above its line.
+const GLYPH_LIFT = 0.5;
+const STYLES = {
+  solid: {},
+  dashed: { dashed: true, dashSize: 0.6, gapSize: 0.5 },
+  dotted: { dashed: true, dashSize: 0.12, gapSize: 0.25 },
+} as const;
 
-// The experimental view's family tree: names floating on one row per generation, joined by plain
-// lines and rings, at positions that follow from the relations alone. `facing` turns it toward the camera.
+const flat = ([x, y]: XY): Point => [x, y, 0];
+
+// The experimental view's family tree: names floating on one row per generation, joined by lines drawn
+// like a circuit diagram (`experimental/routing.ts`), at positions that follow from the relations alone.
+// `facing` turns it toward the camera.
 export default function SimpleTree({
   members,
   base,
@@ -40,52 +47,73 @@ export default function SimpleTree({
   onOpen: (id: string) => void;
 }) {
   const t = useT();
-  const positions = useMemo(() => simpleLayout(members, generations(members)), [members]);
-  const links = useMemo(() => relationLines(members, positions, ([x]) => x, FORK, focusId), [members, positions, focusId]);
-  // Partners are marked by two rings between their names instead of a line.
-  // A widowed couple's rings sit right under the name of the partner who died: the one with a date of death,
-  // else the one with fewer partners (the survivor may have married again). So they never land on whoever
-  // stands between the two.
+  const { positions, routes } = useMemo(() => {
+    const model = buildModel(members);
+    const positions = simpleLayout(members, model.gen);
+    const at = new Map([...positions].map(([id, [x, y]]): [string, XY] => [id, [x, y]]));
+    return { positions, routes: route(model, at) };
+  }, [members]);
+  // The focused person and the relatives the panel lists: a line stands out when it joins them.
+  const focused = useMemo(() => {
+    const focus = members.find((m) => m.id === focusId);
+    if (!focus) return null;
+    const r = relativesOf(focus, members);
+    return { id: focus.id, relatives: new Set([...r.parents, ...r.children, ...r.partners, ...r.siblings, ...r.halfSiblings].map((m) => m.id)) };
+  }, [members, focusId]);
+  const stands = (people: string[]) => focused != null && people.includes(focused.id) && people.some((id) => focused.relatives.has(id));
+  const lines = (style: Segment['style'], marked: boolean) =>
+    routes.segments.filter((s) => s.style === style && stands(s.people) === marked).flatMap((s) => [flat(s.a), flat(s.b)]);
   const byId = new Map(members.map((m) => [m.id, m]));
-  const rings = members.flatMap((m) =>
-    m.partnerIds
-      .filter((id) => id > m.id && positions.has(id))
-      .flatMap((id) => {
-        const partnership = m.partnerships.find((p) => p.partnerId === id);
-        if (partnership && isFormer(partnership.status)) return [];
-        const [a, b] = [positions.get(m.id)!, positions.get(id)!];
-        const pair = [m, byId.get(id)!];
-        const died = pair.filter((who) => who.deathDate);
-        const fewer = [...pair].sort((x, y) => x.partnerIds.length - y.partnerIds.length);
-        const who =
-          died.length === 1 ? died[0] : fewer[0].partnerIds.length < fewer[1].partnerIds.length ? fewer[0] : null;
-        const deceased = partnership?.status === 'widowed' && who ? positions.get(who.id)! : null;
-        const at: Point = deceased ? [deceased[0], deceased[1] - UNDER_NAME, deceased[2]] : midpoint(a, b);
-        return [{ key: `${m.id}-${id}`, at }];
-      }),
-  );
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
-      {showLines && links.parents.length > 0 && <Line points={links.parents} segments color="#00e5ff" lineWidth={2} />}
-      {showLines && links.dashed.length > 0 && (
-        <Line points={links.dashed} segments dashed dashSize={0.6} gapSize={0.5} color="#00e5ff" lineWidth={2} />
-      )}
-      {showLines && links.focused.length > 0 && <Line points={links.focused} segments color={FOCUS_COLOR} lineWidth={3} />}
-      {showLines && links.focusedDashed.length > 0 && (
-        <Line points={links.focusedDashed} segments dashed dashSize={0.6} gapSize={0.5} color={FOCUS_COLOR} lineWidth={3} />
-      )}
-      {rings.map(({ key, at }) => (
-        <Html key={key} position={at} center distanceFactor={NAME_SCALE}>
-          <span className="simple-rings" aria-hidden>
-            ⚭
-          </span>
-        </Html>
-      ))}
+      {showLines &&
+        (['solid', 'dashed', 'dotted'] as const).flatMap((style) =>
+          [false, true].map((marked) => {
+            const points = lines(style, marked);
+            return (
+              points.length > 0 && (
+                <Line key={`${style}-${marked}`} points={points} segments color={marked ? FOCUS_COLOR : LINE_COLOR} lineWidth={marked ? 3 : 2} {...STYLES[style]} />
+              )
+            );
+          }),
+        )}
+      {showLines &&
+        routes.junctions.map((at) => (
+          <mesh key={at.join()} position={flat(at)}>
+            <circleGeometry args={[DOT_RADIUS, 12]} />
+            <meshBasicMaterial color={LINE_COLOR} toneMapped={false} />
+          </mesh>
+        ))}
+      {showLines &&
+        routes.glyphs.map(({ at, glyph, people }) => (
+          <Html key={people.join()} position={[at[0], at[1] + GLYPH_LIFT, 0]} center distanceFactor={NAME_SCALE}>
+            <span className={`simple-glyph${stands(people) ? ' is-focus' : ''}`} aria-hidden>
+              {glyph}
+            </span>
+          </Html>
+        ))}
+      {showLines &&
+        routes.stubs.map(({ child, parents, at }) => (
+          <Html key={`${child}-${parents.join()}`} position={flat(at)} center distanceFactor={NAME_SCALE}>
+            <button className="simple-stub" type="button" onClick={() => onOpen(parents[0])}>
+              {t.members.parentsOf(shortFirstName(byId.get(child)?.firstName ?? '') || t.members.unknown)}
+            </button>
+          </Html>
+        ))}
       {members.map((member) => (
         // Labels scale with the distance like the rest of the scene, so the gaps between them hold.
         <Html key={member.id} position={positions.get(member.id)} center distanceFactor={NAME_SCALE}>
           <button className="simple-name" type="button" title={nameOf(member, t.members.unknown)} onClick={() => onOpen(member.id)}>
-            {isNameless(member) ? t.members.unknown : <>{shortFirstName(member.firstName)}<br />{member.lastName}</>}
+            {isNameless(member) ? (
+              t.members.unknown
+            ) : (
+              <>
+                {member.deathDate ? '† ' : ''}
+                {shortFirstName(member.firstName)}
+                <br />
+                {member.lastName}
+              </>
+            )}
           </button>
         </Html>
       ))}
