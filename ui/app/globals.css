@@ -1243,6 +1243,13 @@ textarea {
   outline-offset: 2px;
 }
 
+/* A stub on the focused person's line of descent: the highlight continues at the parents it opens. */
+.simple-stub.is-focus {
+  border-color: #ff4fd8;
+  color: #ffd6f6;
+  box-shadow: 0 0 8px rgba(255, 79, 216, 0.6);
+}
+
 .simple-name:hover {
   background: rgba(0, 229, 255, 0.12);
 }

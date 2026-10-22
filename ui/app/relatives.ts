@@ -17,3 +17,19 @@ export function relativesOf<T extends Person>(member: T, members: T[]) {
     halfSiblings: sharing.filter((m) => !sameParents(m)),
   };
 }
+
+// Everyone the member descends from, through parents' parents up to the oldest generation in the
+// list. Parents missing from the list end the line there; a loop in the data cannot hang it.
+export function ancestorsOf<T extends Person>(member: T, members: T[]) {
+  const byId = new Map(members.map((m) => [m.id, m]));
+  const found = new Set<string>();
+  const queue = [...member.parentIds];
+  while (queue.length) {
+    const id = queue.pop()!;
+    const parent = byId.get(id);
+    if (found.has(id) || !parent) continue;
+    found.add(id);
+    queue.push(...parent.parentIds);
+  }
+  return found;
+}
