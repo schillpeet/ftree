@@ -644,6 +644,7 @@ export default function MembersControls({
           hideLabel
           closeLabel={t.profile.close}
           autoFocusClose
+          closeOnOutsideClick
           onClose={() => setProfileId(null)}
           {...panelPosition}
           onBack={trail.some((id) => members.some((m) => m.id === id)) ? goBack : undefined}
