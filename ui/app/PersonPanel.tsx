@@ -9,6 +9,7 @@ import { nameOf } from './names';
 import { sortPartners } from './partnerships';
 import { clampOffset, parsePin, type Offset } from './panelPosition';
 import { relativesOf } from './relatives';
+import { CLICK_TOLERANCE } from './Scroll';
 
 const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
 
@@ -111,8 +112,9 @@ export function usePanelPin() {
 
 // The one panel for looking at and editing a person; it sits beside the tree, so the tree stays in view.
 // It opens at the top centre (shifted by offset), can be dragged by its header unless pinned, and closes
-// only on Escape or ×. hideLabel leaves the label to screen readers, for a panel whose content says it all;
-// its actions then float in the top-right corner, level with the content.
+// on Escape or ×; with closeOnOutsideClick also on a click (not a drag) outside every panel unless pinned.
+// hideLabel leaves the label to screen readers, for a panel whose content says it all; its actions then
+// float in the top-right corner, level with the content.
 export function PanelShell({
   label,
   hideLabel,
@@ -122,6 +124,7 @@ export function PanelShell({
   onEdit,
   onDelete,
   autoFocusClose,
+  closeOnOutsideClick,
   offset,
   onMove,
   pinned,
@@ -137,6 +140,7 @@ export function PanelShell({
   onEdit?: () => void;
   onDelete?: () => void;
   autoFocusClose?: boolean;
+  closeOnOutsideClick?: boolean;
   offset: Offset;
   onMove: (offset: Offset) => void;
   pinned: boolean;
@@ -173,6 +177,27 @@ export function PanelShell({
     document.addEventListener('keydown', closeOnEscape);
     return () => document.removeEventListener('keydown', closeOnEscape);
   }, []);
+
+  useEffect(() => {
+    if (!closeOnOutsideClick || pinned) return;
+    let start: { x: number; y: number } | null = null;
+    const outside = (event: PointerEvent) => !(event.target as Element).closest?.('.person-panel');
+    function down(event: PointerEvent) {
+      start = event.button === 0 && outside(event) ? { x: event.clientX, y: event.clientY } : null;
+    }
+    function up(event: PointerEvent) {
+      if (start && outside(event) && Math.hypot(event.clientX - start.x, event.clientY - start.y) <= CLICK_TOLERANCE) {
+        closeRef.current();
+      }
+      start = null;
+    }
+    document.addEventListener('pointerdown', down, true);
+    document.addEventListener('pointerup', up, true);
+    return () => {
+      document.removeEventListener('pointerdown', down, true);
+      document.removeEventListener('pointerup', up, true);
+    };
+  }, [closeOnOutsideClick, pinned]);
 
   // A remembered position may no longer fit a smaller window; move it back into view.
   useEffect(() => {
