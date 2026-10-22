@@ -9,13 +9,14 @@ The repository is currently an early visual prototype, not a working family-tree
 
 ### Scene and camera
 
-The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a members list with edit and delete actions and a form for creating and editing members.
+The home route displays a full-screen Three.js scene with one procedurally generated tree in a meadow under a sky that follows the current time of day, plus a family card listing the members and a form for creating and editing members.
 Selecting a member in the list moves the camera to their card (for the scrolls in the tree and the wooden boards close up from the side the card faces, below the crown) and opens their profile; clicking a scroll (or pressing Enter on it) opens that member's profile, while a drag that starts on a scroll still orbits the camera.
 The zoom slider in the Evolution panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
 Below the zoom slider, "Front" flies the camera back to the start view in front of the tree and "Above" shows the tree from a bird's-eye view.
 "Orbit" circles the camera slowly around the tree until it is switched off, another view is chosen, or the user moves the camera.
 The UI is available in English (default) and German; the language button next to "Time" switches between them, and the choice is remembered per browser in `localStorage`.
 The burger menu's "Appearance" board switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
+The burger menu's entries are "Familien", "Mitglied hinzufügen", "Darstellung", and "Momentaufnahme", with a people, an add-person, a palette, and a camera icon.
 The burger menu's "Momentaufnahme" ("Snapshot") entry downloads the current view as `ftree-<family>-<yyyy-mm-dd>.png`, showing only the scene and the family name, without any controls.
 The experimental view is a dark floor with a glowing grid and no cards yet; it is the starting point for a simpler family tree, and organic-only controls (time, pins, light orbs, card style, crown, bundling) are greyed out there.
 In the experimental view, the selected family appears as a flat family tree facing the start camera: one row per generation, partners side by side, and children hanging from a bar below their parents; a click on a floating name opens the profile.
@@ -90,19 +91,19 @@ A `default` family is selected first on a fresh install; custom people created f
 The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
 The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
-The family selector displays compact people/children/generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control; any family, including `default`, can be deleted after confirmation.
-While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
-A pencil icon next to the selected family's name renames it via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
+The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation.
+While `default` is shown and has people, the family card's edit mode offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
+The family card's edit mode renames the family via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The original `/members` endpoints remain available for the default family.
 "GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.
 The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names stay empty.
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
-Each family in the selector has a download link that exports it as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
-A copy icon next to the selected family's name ("Anonyme Kopie") asks for a name ("<name> (anonym)" by default) and creates a copy of the family with random names, for example to show the tree's structure in a snapshot without personal names.
+The family card's download button exports the family as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
+"Anonyme Kopie" in the family card's edit mode asks for a name ("<name> (anonym)" by default) and creates a copy of the family with random names, for example to show the tree's structure in a snapshot without personal names.
 Families in the selector's "Alle Familien" list can be reordered by drag and drop; the order is saved via `PUT /families/order` (which must list every family exactly once), new families are appended at the end, and a failed save restores the previous order.
 Clicking the family name at the top centre opens the family card of the shown family, or the families board while no family is shown.
-The family card lists the family's members by generation, the oldest first and each generation by birth date, with counts of members, generations, and children; clicking a member opens their person card.
+The family card lists the family's members by generation, the oldest first and each generation by birth date, with counts of members and generations; clicking a member opens their person card.
 The family card behaves like the person card: it can be dragged, pinned to a position of its own (`ftree.familyPanelPin`), and closes on ×, Escape, or a click outside unless pinned.
 The family card's header downloads the family as GEDCOM, and its pencil switches it to edit mode for renaming, "Anonyme Kopie", "Familie archivieren" (only for `default`), and deleting the family after confirmation.
 
@@ -112,11 +113,11 @@ Every member appears in the scene as a card whose look the "Kartenstil" select p
 "Rolle im Baum" (the default) is a 3D papyrus scroll hanging from its pin on two ropes, facing away from the trunk, swinging gently, and written on both sides.
 "Rolle, lesbar" is the same scroll turned toward the camera and glowing slightly for legibility.
 "Holzschild" is a swinging wooden board with burnt-in name and dates and the photo in a medallion beside them.
-These three are lit by the sun, cast shadows, are hidden by leaves in front of them, and cannot take keyboard focus (the members list is the keyboard path); a photo that cannot be loaded with CORS headers is left out.
+These three are lit by the sun, cast shadows, are hidden by leaves in front of them, and cannot take keyboard focus (the family card is the keyboard path); a photo that cannot be loaded with CORS headers is left out.
 "Papyrus (klassisch)" is the earlier camera-facing HTML scroll, drawn over the scene and focusable.
 At night the scroll and board cards glow softly (their emissive faces brighten) so their names stay readable, lit by the little orbs above them.
 Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
-Each member can be assigned any number of parents, children, and partners (current or former; always mutual) from the members list.
+Each member can be assigned any number of parents, children, and partners (current or former; always mutual) in the member form.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives section lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; without parents both lists are disabled with the hint "Erst Eltern zuweisen" (half-siblings need at least two parents).
 In edit mode each relation shows its people as chips with a × and an "… hinzufügen" button that opens a name search instead of a list of everybody; Enter or a click adds the first or chosen match.
 Each selected partner gets a status, "zusammen", "verheiratet", "getrennt", "geschieden", or "verwitwet", with the dates that go with it: "seit" for together and separated, the wedding date for married, the wedding and divorce date for divorced, and the wedding date and date of death for widowed.
@@ -126,17 +127,17 @@ In the profile the current partner stands on the person's row; every other partn
 A search square of the same size sits right of the burger menu; a click widens it to a text field.
 Typing shows up to eight matching members of the selected family as autocomplete suggestions (arrow keys and Enter or a click choose one; Escape or a press outside closes the field).
 Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.
-The members list ("Mitglieder" in the burger menu) shows the family name, then a "Mitglied hinzufügen" button, then one compact row per person with avatar, name, years, and pencil and trash actions; relatives are shown in the profile.
+"Mitglied hinzufügen" in the burger menu opens the form for a new person in the shown family; the members themselves are listed in the family card, and relatives are shown in the profile.
 A person panel in the middle of the screen (`ui/app/PersonPanel.tsx`) replaces the former profile dialog and member form: it sits below the top bar and has no dimmed backdrop, so the tree and camera stay usable around it.
 The panel can be dragged by its header (a grab cursor shows the handle); each newly opened panel starts in the middle again.
 The pin in the panel header fixes the panel at its current position: it can no longer be dragged, and every panel opens there, also after a reload (remembered per browser in `localStorage`) until it is unpinned.
 The photo is shown large (112 px) beside the name.
 The panel shows a member's photo (or their initials in its place), name, years and age, birth and death dates with places, the note as a quote, and relatives as chips with avatar, name, and years: parents, then the person next to their partners (with the partnership status), then children, with siblings and half-siblings in collapsed sections.
-Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile and members list when it differs from the surname.
+Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile when it differs from the surname.
 GEDCOM export writes a differing birth name as a second NAME with TYPE birth; import also reads TYPE maiden, a NAME of TYPE married as the current name, and `_MARNM`.
 First and last name may be left empty for a person whose name is unknown (the BFF trims names and stores unknown ones as empty strings); such a person is shown as "Unbekannt" (small and italic on their card) and with "?" as initials.
 Clicking a relative in the panel shows that person and moves the camera to their scroll; a back arrow in the panel header walks back through the people visited this way.
-The pencil in the panel header turns the same panel into the edit form in place; the pencil in the members list opens the panel directly in edit mode.
+The pencil in the panel header turns the same panel into the edit form in place.
 The edit form keeps the avatar (click or drop an image to change the photo) beside the name fields on top and splits the rest into two tabs, so nothing needs scrolling: "Persönliche Daten" ("Geboren am/in" and "Verstorben am/in" in two columns, the note) and "Beziehungen", saved together with the person, so relatives can also be assigned while creating someone.
 The name fields on top carry labels ("Vorname", "Nachname") like the other fields and sit centred beside a larger portrait-format photo; on narrow screens the fields wrap below the photo.
 The optional birth name sits with the name fields on top, behind a "+ Geburtsname hinzufügen" link below the surname.
@@ -153,8 +154,8 @@ The relatives section lists parents, partners, children, siblings, and half-sibl
 The profile panel shows no title: pin and edit, then close after a thin divider, sit in its top-right corner level with the photo; edit is the brightest of them.
 "Person löschen" is a trash can in the header of the edit form only, red on hover, and deletes the person after confirmation.
 The photo URL is no longer editable in the form; an existing one is kept and still shown.
-A photo can also be uploaded in the member form, by choosing a file or dropping an image on the photo field: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the members list.
-The members list closes on Escape or a click outside it; the person panel closes on Escape (also while the tree has focus) or ×, the edit form first asks before discarding unsaved changes, and the create form keeps its draft.
+A photo can also be uploaded in the member form, by choosing a file or dropping an image on the photo field: the browser scales it down to at most 800 px on the longer edge and saves it as JPEG after the member is saved, "Foto entfernen" deletes it again, and an uploaded photo is shown instead of `photoUrl` on the scroll and as the avatar in the profile and family card.
+The person panel closes on Escape (also while the tree has focus) or ×, the edit form first asks before discarding unsaved changes, and the create form keeps its draft.
 The profile panel also closes on a click outside every panel (a drag that orbits the tree does not count) unless it is pinned; the edit and create forms stay open.
 
 ### Pins and card placement
@@ -213,7 +214,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 
 - `ui/app/page.tsx` renders the home scene.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the random family board into the scene's debug panel.
-- `ui/app/FamilyTree.tsx` also renders the dashboard, the members list board, and the families board.
+- `ui/app/FamilyTree.tsx` also renders the dashboard and the families board.
 - `ui/app/Dashboard.tsx` renders the burger menu and the family name that opens the family card (`ui/app/FamilyCard.tsx`, rendered by `MembersControls`); `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
 - `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's relatives; `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.

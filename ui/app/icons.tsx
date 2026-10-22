@@ -48,10 +48,10 @@ export const UsersIcon = () => (
   </Icon>
 );
 
-export const PersonIcon = () => (
+export const UserPlusIcon = () => (
   <Icon>
-    <circle cx="12" cy="8" r="3.5" />
-    <path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6" />
+    <circle cx="11" cy="8" r="3.5" />
+    <path d="M4 20c0-3.6 3.1-6 7-6 1.2 0 2.3.2 3.2.7M18 15v6M15 18h6" />
   </Icon>
 );
 
@@ -76,10 +76,19 @@ export const EvolutionIcon = () => (
   </Icon>
 );
 
-export const AppearanceIcon = () => (
+export const PaletteIcon = () => (
   <Icon>
-    <rect x="4" y="4" width="16" height="16" rx="2" />
-    <path d="M4 12h16M12 4v16" />
+    <path d="M12 21a9 9 0 0 1 0-18c5 0 9 3.6 9 8 0 2.2-1.9 4-4.5 4h-2.5a2 2 0 0 0-1 3.75A1.3 1.3 0 0 1 12 21z" />
+    <circle cx="7.5" cy="10.5" r="1" />
+    <circle cx="12" cy="7.5" r="1" />
+    <circle cx="16.5" cy="10.5" r="1" />
+  </Icon>
+);
+
+export const CameraIcon = () => (
+  <Icon>
+    <path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" />
+    <circle cx="12" cy="13" r="3" />
   </Icon>
 );
 

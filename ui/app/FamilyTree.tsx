@@ -32,6 +32,8 @@ export default function FamilyTree() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [panel, setPanel] = useState<DashboardPanel | null>(null);
   const [familyCard, setFamilyCard] = useState<FamilyCardMode | null>(null);
+  // A new object per "Add member" in the menu.
+  const [addRequest, setAddRequest] = useState<object | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
@@ -89,6 +91,7 @@ export default function FamilyTree() {
     setFocus(null);
     setProfile(null);
     setFamilyCard(null);
+    setAddRequest(null);
     setActiveFamilyId(familyId);
   }
 
@@ -145,6 +148,11 @@ export default function FamilyTree() {
           setPanel(null);
         }}
         onPanel={(next) => setPanel((current) => (current === next ? null : next))}
+        onAddMember={() => {
+          setIsMenuOpen(false);
+          setPanel(null);
+          setAddRequest({});
+        }}
         onFamilyClick={() => {
           if (activeFamilyId) return setFamilyCard((current) => current ?? 'view');
           setIsMenuOpen(true);
@@ -163,7 +171,6 @@ export default function FamilyTree() {
       <MembersControls
         key={activeFamilyId ?? 'no-family'}
         familyId={activeFamilyId}
-        familyName={activeFamily?.name ?? null}
         family={activeFamily}
         familyCard={familyCard}
         onFamilyCardChange={setFamilyCard}
@@ -172,12 +179,10 @@ export default function FamilyTree() {
         members={members}
         setMembers={setMembers}
         profile={profile}
-        isListOpen={panel === 'people'}
-        onListOpenChange={(open) => setPanel(open ? 'people' : null)}
+        addRequest={addRequest}
         onSelect={(id) => setFocus({ id })}
         onShownChange={setShownId}
         onFamiliesChanged={() => void loadFamilies()}
-        onBack={() => setPanel('families')}
       />
       <FamiliesPanel
         families={families}
@@ -189,7 +194,12 @@ export default function FamilyTree() {
         onClose={() => setPanel(null)}
         onRetry={() => void loadFamilies()}
         onSelect={selectFamily}
-        onChosen={() => setPanel('people')}
+        onOpen={(id) => {
+          selectFamily(id);
+          setPanel(null);
+          setIsMenuOpen(false);
+          setFamilyCard('view');
+        }}
         onToggleVisibility={toggleFamilyVisibility}
         onImported={addFamily}
       />

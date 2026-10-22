@@ -22,7 +22,6 @@ import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
 import RelativesFields, { type Relation } from './RelativesFields';
 import { EMPTY_FORM, MemberHero, MemberLifeFields, NewMemberPanel, toForm, toJpeg, toRequest, usePhotoPreview, type MemberForm } from './MemberFields';
-import { ChevronLeftIcon, CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
 import FamilyCard, { type FamilyCardMode } from './FamilyCard';
 
@@ -46,56 +45,9 @@ export const birthNameOf = (member: Member, t: ReturnType<typeof useT>) =>
 
 export { initialsOf };
 
-const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
-
-function MemberDetails({
-  member,
-  familyId,
-  onSelect,
-  onEdit,
-  onDelete,
-}: {
-  member: Member;
-  familyId: string | null;
-  onSelect: () => void;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const t = useT();
-  const name = nameOf(member, t.members.unknown);
-  const years = member.birthDate ? `${yearOf(member.birthDate)} – ${yearOf(member.deathDate)}`.trim() : yearOf(member.deathDate) && `† ${yearOf(member.deathDate)}`;
-  const photo = photoSrc(member, familyId);
-  const details = [birthNameOf(member, t), years].filter(Boolean).join(' · ');
-
-  return (
-    <li className="member-row">
-      {photo ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img className="member-avatar" src={photo} alt="" />
-      ) : (
-        <span className="member-avatar" aria-hidden="true">
-          {initialsOf(member)}
-        </span>
-      )}
-      <div className="member-row-text">
-        <button type="button" className="member-name" title={t.members.showInTree} onClick={onSelect}>
-          {name}
-        </button>
-        {details && <span>{details}</span>}
-      </div>
-      <button type="button" className="icon-button" aria-label={t.members.editNamed(name)} onClick={onEdit}>
-        <PencilIcon />
-      </button>
-      <button type="button" className="icon-button icon-button-danger" aria-label={t.members.deleteNamed(name)} onClick={onDelete}>
-        <TrashIcon />
-      </button>
-    </li>
-  );
-}
 
 export default function MembersControls({
   familyId,
-  familyName,
   family,
   familyCard,
   onFamilyCardChange,
@@ -104,15 +56,12 @@ export default function MembersControls({
   members,
   setMembers,
   profile,
-  isListOpen,
-  onListOpenChange: setIsListOpen,
+  addRequest,
   onSelect,
   onShownChange,
   onFamiliesChanged,
-  onBack,
 }: {
   familyId: string | null;
-  familyName: string | null;
   family: FamilySummary | undefined;
   // The family card of this family, open to view or edit, or null.
   familyCard: FamilyCardMode | null;
@@ -124,19 +73,16 @@ export default function MembersControls({
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
   // Member whose profile was requested from their scroll in the scene.
   profile: Focus;
-  isListOpen: boolean;
-  onListOpenChange: (open: boolean) => void;
+  // A new object per "Add member" in the menu, which opens the form for a new person.
+  addRequest: object | null;
   onSelect: (id: string) => void;
   // The person whose panel is open (viewed or edited), or null.
   onShownChange: (id: string | null) => void;
   onFamiliesChanged: () => void;
-  // Returns to the family overview when the list was opened from the families panel.
-  onBack?: () => void;
 }) {
   const t = useT();
   const [language] = useLanguage();
   const [isFormOpen, setIsFormOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -163,11 +109,9 @@ export default function MembersControls({
     key: number;
     shift: number;
   } | null>(null);
-  const listRef = useRef<HTMLElement>(null);
 
   async function reloadMembers() {
     if (!familyId) return;
-    setIsLoading(true);
     setRequestError(null);
     try {
       const response = await getFamilyMembers(familyId);
@@ -177,8 +121,6 @@ export default function MembersControls({
       setMembers(response.data);
     } catch {
       setRequestError(t.members.loadFailed);
-    } finally {
-      setIsLoading(false);
     }
   }
 
@@ -199,8 +141,6 @@ export default function MembersControls({
         setMembers(response.data);
       } catch {
         if (current) onLoadFailed();
-      } finally {
-        if (current) setIsLoading(false);
       }
     }
     void loadFamilyMembers();
@@ -208,6 +148,11 @@ export default function MembersControls({
       current = false;
     };
   }, [familyId, setMembers]);
+
+  const onAddRequest = useEffectEvent(() => openForm());
+  useEffect(() => {
+    if (addRequest) onAddRequest();
+  }, [addRequest]);
 
   // Only a new profile request opens the profile (adjusted during render instead of in an effect).
   const [requestedProfile, setRequestedProfile] = useState(profile);
@@ -252,25 +197,6 @@ export default function MembersControls({
     setNewRelative(null);
   }
   useEffect(() => onShownChange(shownId), [shownId, onShownChange]);
-
-  // The list is not modal: a press anywhere else or Escape closes it.
-  useEffect(() => {
-    if (!isListOpen) return;
-    function closeOnOutsidePress(event: PointerEvent) {
-      const target = event.target as Node;
-      // The menu switches boards itself.
-      if (!listRef.current?.contains(target) && !(target as Element).closest?.('.dashboard-menu')) setIsListOpen(false);
-    }
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setIsListOpen(false);
-    }
-    document.addEventListener('pointerdown', closeOnOutsidePress);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePress);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [isListOpen, setIsListOpen]);
 
   async function archive(onError: (message: string | null) => void = setRequestError) {
     if (!familyId) return;
@@ -326,7 +252,6 @@ export default function MembersControls({
     setShowBirthName(!!member?.birthName);
     setTab('data');
     setFormKey((key) => key + 1);
-    setIsListOpen(false);
     setFormError(null);
     closeNewRelative();
     setIsFormOpen(true);
@@ -471,67 +396,6 @@ export default function MembersControls({
 
   return (
     <div className="members-controls">
-      {isListOpen && (
-        <section className="glass dashboard-board members-panel" id="members-panel" aria-label={t.members.list} ref={listRef}>
-          <header className="dashboard-board-header">
-            {onBack && (
-              <button type="button" aria-label={t.members.back} onClick={onBack}>
-                <ChevronLeftIcon />
-              </button>
-            )}
-            <UsersIcon />
-            <h2>{familyName ?? t.members.title}</h2>
-            <button type="button" aria-label={t.members.closeList} onClick={() => setIsListOpen(false)}>
-              <CloseIcon />
-            </button>
-          </header>
-          <div className="members-panel-body" aria-live="polite">
-            <button type="button" className="member-add" disabled={!familyId} onClick={() => openForm()}>
-              <PlusIcon />
-              {t.members.add}
-            </button>
-            {familyId && isLoading && <p className="members-loading">{t.members.loading}</p>}
-            {requestError && !isLoading && (
-              <div className="members-error" role="alert">
-                <p>{requestError}</p>
-                <button type="button" onClick={() => void reloadMembers()}>{t.retry}</button>
-              </div>
-            )}
-            {!familyId && (
-              <p className="members-empty">{t.members.noFamily}</p>
-            )}
-            {!isLoading && !requestError && familyId && members?.length === 0 && (
-              <p className="members-empty">{t.members.empty}</p>
-            )}
-            {!isLoading && !requestError && members && members.length > 0 && (
-              <ul className="member-list">
-                {members.map((member) => (
-                  <MemberDetails
-                    key={member.id}
-                    member={member}
-                    familyId={familyId}
-                    onEdit={() => openForm(member)}
-                    onSelect={() => {
-                      setIsListOpen(false);
-                      setProfileId(member.id);
-                      setTrail([]);
-                      setViewError(null);
-                      onSelect(member.id);
-                    }}
-                    onDelete={() => void removeMember(member)}
-                  />
-                ))}
-              </ul>
-            )}
-            {isDefaultFamily && !isLoading && !!members?.length && (
-              <div className="members-archive">
-                <button type="button" onClick={() => void archive()}>{t.members.archive}</button>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
       {isFormOpen && (
         <PanelShell
           // One panel per opened form, so focus starts in the first field again.
@@ -666,6 +530,8 @@ export default function MembersControls({
           onChanged={onFamiliesChanged}
           onCreated={onFamilyCreated}
           onArchive={archive}
+          loadError={requestError}
+          onRetry={() => void reloadMembers()}
         />
       )}
 

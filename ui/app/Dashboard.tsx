@@ -5,9 +5,9 @@ import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance } from './appearance';
 import { useT } from './i18n';
-import { AppearanceIcon, BurgerIcon, ChevronIcon, CloseIcon, DownloadIcon, PersonIcon, UsersIcon } from './icons';
+import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, PaletteIcon, UserPlusIcon, UsersIcon } from './icons';
 
-export type DashboardPanel = 'families' | 'people' | 'appearance';
+export type DashboardPanel = 'families' | 'appearance';
 
 // Top-left burger menu and the centred family name, which opens the family card; the boards it opens are rendered by
 // `FamiliesPanel` and `MembersControls` (the small appearance board lives here), the right-hand
@@ -19,6 +19,7 @@ export default function Dashboard({
   activeFamilyId,
   onToggle,
   onPanel,
+  onAddMember,
   onFamilyClick,
 }: {
   isOpen: boolean;
@@ -27,6 +28,7 @@ export default function Dashboard({
   activeFamilyId: string | null;
   onToggle: () => void;
   onPanel: (panel: DashboardPanel) => void;
+  onAddMember: () => void;
   // Opens the family card, or the families board while no family is shown.
   onFamilyClick: () => void;
 }) {
@@ -53,11 +55,13 @@ export default function Dashboard({
     };
   }, [isOpen, panel, onToggle]);
 
-  const items: { id: DashboardPanel; label: string; icon: ReactNode }[] = [
-    { id: 'families', label: t.menu.families, icon: <UsersIcon /> },
-    { id: 'people', label: t.menu.people, icon: <PersonIcon /> },
-    { id: 'appearance', label: t.menu.appearance, icon: <AppearanceIcon /> },
-  ];
+  const boardItem = (id: DashboardPanel, label: string, icon: ReactNode) => (
+    <button key={id} type="button" className="dashboard-nav-item" aria-expanded={panel === id} onClick={() => onPanel(id)}>
+      {icon}
+      <span>{label}</span>
+      <ChevronIcon />
+    </button>
+  );
 
   // Pictures the page as it looks without the menu, keeping only the scene (canvas and its HTML
   // labels) and the family name; the canvas needs `preserveDrawingBuffer` to be readable.
@@ -94,21 +98,14 @@ export default function Dashboard({
         </button>
         {isOpen && (
           <nav className="glass dashboard-nav" id="dashboard-nav" aria-label={t.menu.label}>
-            {items.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                className="dashboard-nav-item"
-                aria-expanded={panel === item.id}
-                onClick={() => onPanel(item.id)}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-                <ChevronIcon />
-              </button>
-            ))}
+            {boardItem('families', t.menu.families, <UsersIcon />)}
+            <button type="button" className="dashboard-nav-item" disabled={!activeFamily} onClick={onAddMember}>
+              <UserPlusIcon />
+              <span>{t.members.add}</span>
+            </button>
+            {boardItem('appearance', t.menu.appearance, <PaletteIcon />)}
             <button type="button" className="dashboard-nav-item" onClick={() => void takeSnapshot()}>
-              <DownloadIcon />
+              <CameraIcon />
               <span>{t.menu.snapshot}</span>
             </button>
           </nav>
@@ -116,7 +113,7 @@ export default function Dashboard({
         {isOpen && panel === 'appearance' && (
           <section className="glass dashboard-board" id="appearance-panel" aria-label={t.appearance.title}>
             <header className="dashboard-board-header">
-              <AppearanceIcon />
+              <PaletteIcon />
               <h2>{t.appearance.title}</h2>
               <button type="button" aria-label={t.appearance.close} onClick={() => onPanel('appearance')}>
                 <CloseIcon />
