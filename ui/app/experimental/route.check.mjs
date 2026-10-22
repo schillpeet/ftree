@@ -3,8 +3,9 @@
 // `verify` proves it and reads the relations back from the drawing.
 import assert from 'node:assert/strict';
 import { buildModel } from './model.ts';
-import { route } from './routing.ts';
+import { NAME_H, route } from './routing.ts';
 import { verify } from './verify.ts';
+import { ROW_GAP as R } from '../simpleLayout.ts';
 
 const person = (id, parentIds = [], partnerIds = [], extra = {}) => ({ id, parentIds, partnerIds, ...extra });
 const partner = (id, partnerId, status, parentIds = []) =>
@@ -18,7 +19,7 @@ const glyphOf = (routes, p, q) => routes.glyphs.find((g) => g.people.includes(p)
 // The vertical ending on top of a person's name.
 const riser = (routes, at, id) => {
   const [x, y] = at.get(id);
-  return routes.segments.find((s) => [s.a, s.b].some(([px, py]) => px === x && Math.abs(py - (y + 0.8)) < 1e-9));
+  return routes.segments.find((s) => [s.a, s.b].some(([px, py]) => px === x && Math.abs(py - (y + NAME_H / 2)) < 1e-9));
 };
 
 // A married couple with two children: one ⚭, a dot where the stem leaves the line and one where it meets the bar.
@@ -28,7 +29,7 @@ const couple = buildModel([
   person('c', ['a', 'b']),
   person('d', ['a', 'b']),
 ]);
-const coupleAt = positions({ a: [0, 6], b: [9, 6], c: [0, 0], d: [9, 0] });
+const coupleAt = positions({ a: [0, R], b: [9, R], c: [0, 0], d: [9, 0] });
 const coupleRoutes = route(couple, coupleAt);
 assert.deepEqual(verify(couple, coupleAt, coupleRoutes), []);
 assert.equal(coupleRoutes.glyphs.length, 1);
@@ -40,7 +41,7 @@ assert.equal(coupleRoutes.stubs.length, 0);
 {
   const people = (parentIds) => [partner('p', 'q', 'married'), partner('q', 'p', 'married'), person('c', parentIds), person('d', parentIds)];
   const [both, single] = [buildModel(people(['p', 'q'])), buildModel(people(['p']))];
-  const at = positions({ p: [0, 6], q: [9, 6], c: [0, 0], d: [9, 0] });
+  const at = positions({ p: [0, R], q: [9, R], c: [0, 0], d: [9, 0] });
   assert.deepEqual(verify(single, at, route(single, at)), []);
   assert.ok(verify(single, at, route(both, at)).some((v) => v.startsWith('read-back')));
   assert.ok(verify(both, at, route(single, at)).some((v) => v.startsWith('read-back')));
@@ -50,11 +51,11 @@ assert.equal(coupleRoutes.stubs.length, 0);
 // middle child meet it, besides the dot at the stem top.
 {
   const model = buildModel([person('a', [], ['b']), person('b', [], ['a']), person('x', ['a', 'b']), person('y', ['a', 'b']), person('z', ['a', 'b'])]);
-  const at = positions({ a: [0, 6], b: [9, 6], x: [-4.5, 0], y: [4.5, 0], z: [13.5, 0] });
+  const at = positions({ a: [0, R], b: [9, R], x: [-4.5, 0], y: [4.5, 0], z: [13.5, 0] });
   const routes = route(model, at);
   assert.deepEqual(verify(model, at, routes), []);
   assert.equal(routes.junctions.length, 2);
-  const bars = routes.segments.filter((s) => horizontal(s) && s.a[1] < 3);
+  const bars = routes.segments.filter((s) => horizontal(s) && s.a[1] < R / 2);
   assert.equal(bars.length, 1);
 }
 
@@ -63,7 +64,7 @@ assert.equal(coupleRoutes.stubs.length, 0);
 // ambiguous for a single parent.
 {
   const model = buildModel([person('k', [], ['r', 'h']), person('r', [], ['k']), person('h', [], ['k']), person('m', ['k', 'h']), person('n', ['h'])]);
-  const at = positions({ k: [0, 6], r: [9, 6], h: [18, 6], m: [18, 0], n: [27, 0] });
+  const at = positions({ k: [0, R], r: [9, R], h: [18, R], m: [18, 0], n: [27, 0] });
   const routes = route(model, at);
   assert.deepEqual(verify(model, at, routes), []);
   assert.deepEqual(routes.stubs, []);
@@ -88,7 +89,7 @@ assert.equal(coupleRoutes.stubs.length, 0);
     person('b', ['s', 'k']),
     person('m', ['k', 'h']),
   ]);
-  const at = positions({ s: [0, 6], k: [9, 6], r: [18, 6], h: [27, 6], b: [0, 0], m: [27, 0] });
+  const at = positions({ s: [0, R], k: [9, R], r: [18, R], h: [27, R], b: [0, 0], m: [27, 0] });
   const routes = route(model, at);
   assert.deepEqual(verify(model, at, routes), []);
   assert.equal(routes.stubs.length, 0);
@@ -113,7 +114,7 @@ assert.equal(coupleRoutes.stubs.length, 0);
     person('kb', ['b', 'k']),
     person('kc', ['c', 'k']),
   ]);
-  const at = positions({ a: [0, 6], k: [9, 6], b: [18, 6], c: [27, 6], ka: [4.5, 0], kb: [13.5, 0], kc: [27, 0] });
+  const at = positions({ a: [0, R], k: [9, R], b: [18, R], c: [27, R], ka: [4.5, 0], kb: [13.5, 0], kc: [27, 0] });
   const routes = route(model, at);
   assert.deepEqual(verify(model, at, routes), []);
   assert.deepEqual(routes.stubs.map((s) => [s.child, s.parents]), [['kb', ['b', 'k']]]);
@@ -132,7 +133,7 @@ assert.equal(coupleRoutes.stubs.length, 0);
     person('v'),
     person('w', ['u', 'v'], [], { parentLinks: [{ parentId: 'u', kind: 'adoptive' }, { parentId: 'v', kind: 'adoptive' }] }),
   ]);
-  const at = positions({ p: [0, 6], q: [9, 6], x: [18, 6], u: [36, 6], v: [45, 6], c: [0, 0], w: [40.5, 0] });
+  const at = positions({ p: [0, R], q: [9, R], x: [18, R], u: [36, R], v: [45, R], c: [0, 0], w: [40.5, 0] });
   const routes = route(model, at);
   assert.deepEqual(verify(model, at, routes), []);
   assert.deepEqual(routes.stubs.map((s) => [s.child, s.parents]), [['c', ['x']]]);
@@ -155,15 +156,15 @@ assert.equal(coupleRoutes.stubs.length, 0);
   reports(broken(add([20, 2], [21, 3])), 'angle');
   reports(broken(add([1, bar.a[1]], [12, bar.a[1]])), 'overlap');
   reports(broken(add([0, bar.a[1] + 0.1], [9, bar.a[1] + 0.1])), 'spacing');
-  reports(broken(add([-5, 6], [5, 6])), 'name');
-  reports(broken(add([-5, 6.2], [-1, 6.2])), 'name');
+  reports(broken(add([-5, R], [5, R])), 'name');
+  reports(broken(add([-5, R + 0.2], [-1, R + 0.2])), 'name');
   reports(broken(add([3, (top + bottom) / 2], [6, (top + bottom) / 2])), 'crossing');
   reports(broken((routes) => {
     add([4.5, bottom], [4.5, bottom - 0.2])(routes);
     add([4.5, bottom], [4.5, bottom - 0.3])(routes);
   }), 'four-way');
   reports(broken((routes) => routes.junctions.pop()), 'dot');
-  reports(broken(add([100, 5.5], [101, 5.5])), 'channel');
+  reports(broken(add([100, R - 0.5], [101, R - 0.5])), 'channel');
   reports(broken((routes) => (routes.segments = routes.segments.filter((s) => s !== riser(routes, coupleAt, 'd')))), 'read-back');
   reports(broken((routes) => (routes.glyphs[0].glyph = '⚮')), 'read-back');
   reports(broken((routes) => routes.stubs.push({ child: 'c', parents: ['a', 'b'], at: [0, 1.3] })), 'read-back');

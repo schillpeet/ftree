@@ -24,6 +24,9 @@ The experimental view centres every couple over its first and last child, packs 
 In-law families (a partner's parents at the top of the tree) are placed right next to the family their child married into, centred over their own children; a sibling group has two edges for them, left and right.
 A third in-law family in the same sibling group becomes a stub instead of a crossing line.
 The experimental view draws its lines like a circuit diagram (`ui/app/experimental/routing.ts`): only right angles, and every horizontal line on a track of its own in the channel between two rows, so lines never overlap.
+Spacing in the experimental view follows the measured size of a name label: siblings and partners stand close together, and families get a clearly wider gap.
+Sibling bars in the experimental view stay a short distance above the children's names, so every child hangs on a visible line, and the outer corners of the lines are subtly rounded.
+Experimental-view names scale with the window height like the rest of the scene, so the spacing between them is the same in any window size.
 Parallel tracks keep at least 0.3 apart; the channel's tracks are compressed evenly when they do not fit at the usual 0.6.
 Every point where three lines meet gets a dot, and no point joins four lines except the one described below.
 No line crosses another one; a link that cannot be drawn without crossing becomes a stub instead.

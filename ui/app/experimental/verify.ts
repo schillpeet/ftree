@@ -3,7 +3,7 @@
 // it. Returns one human-readable line per violation, each starting with its kind; [] is valid.
 import type { Model } from './model.ts';
 import type { Routes, Segment, XY } from './routing.ts';
-import { MIN_TRACK, NAME_CLEAR, NAME_H, NAME_W } from './routing.ts';
+import { BAR_CLEAR, MIN_TRACK, NAME_CLEAR, NAME_H, NAME_W } from './routing.ts';
 import { ROW_GAP } from '../simpleLayout.ts';
 
 const EPS = 1e-6;
@@ -81,7 +81,7 @@ export function verify(model: Model, at: Map<string, XY>, routes: Routes): strin
   // Horizontal lines stay inside a channel between two rows.
   const rows = [...new Set([...at.values()].map(([, y]) => y))];
   for (const s of segs.filter(flat))
-    if (!rows.some((y) => s.a[1] <= y - NAME_CLEAR + EPS && s.a[1] >= y - ROW_GAP + NAME_CLEAR - EPS))
+    if (!rows.some((y) => s.a[1] <= y - NAME_CLEAR + EPS && s.a[1] >= y - ROW_GAP + BAR_CLEAR - EPS))
       out.push(`channel: ${desc(s)} lies outside every channel`);
 
   out.push(...readBack(model, at, routes, segs));
