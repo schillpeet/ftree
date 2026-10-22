@@ -1,5 +1,6 @@
 package com.github.bff.member
 
+import com.github.bff.generated.model.ParentLink.KindEnum
 import java.time.DateTimeException
 import java.time.LocalDate
 
@@ -16,6 +17,8 @@ internal data class GedcomPerson(
     val parentIds: Set<String> = emptySet(),
     val partnerIds: Set<String> = emptySet(),
     val birthName: String? = null,
+    /** Kind of the link to each parent in [parentIds]; a parent missing here is biological. */
+    val parentKinds: Map<String, KindEnum> = emptyMap(),
 )
 
 private class GedcomLine(val level: Int, val xref: String?, val tag: String, val value: String) {
@@ -86,6 +89,18 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
         }
     }
 
+    // PEDI sits under the child's FAMC line and describes the link to that FAM's spouses.
+    val parentKinds = individuals.mapValues { (_, person) ->
+        val kinds = mutableMapOf<String, KindEnum>()
+        person.all("FAMC").forEach { famc ->
+            val kind = pedigreeKind(famc.child("PEDI")?.value) ?: return@forEach
+            val family = byXref[famc.value.trim()]?.takeIf { it.tag == "FAM" } ?: return@forEach
+            family.children.filter { it.tag == "HUSB" || it.tag == "WIFE" }.map { it.value.trim() }
+                .filter { it in parents.getValue(person.xref!!) }.forEach { kinds[it] = kind }
+        }
+        kinds.toMap()
+    }
+
     return individuals.map { (xref, person) ->
         // The current name is a NAME of TYPE married, else the first one not marked as birth name. The birth name
         // comes from a NAME of TYPE birth/maiden, or is the surname a _MARNM or a married NAME replaces.
@@ -124,8 +139,23 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
             parentIds = parents.getValue(xref),
             partnerIds = partners.getValue(xref),
             birthName = birthName,
+            parentKinds = parentKinds.getValue(xref),
         )
     }
+}
+
+/** The PEDI value written for a link kind; null for biological and step links, which are written without PEDI. */
+private fun pedigreeValue(kind: KindEnum?): String? = when (kind) {
+    KindEnum.ADOPTIVE -> "adopted"
+    KindEnum.FOSTER -> "foster"
+    else -> null
+}
+
+/** The non-biological kind of a PEDI value (any casing); null for birth, unknown, or missing values. */
+private fun pedigreeKind(value: String?) = when (value?.trim()?.lowercase()) {
+    "adopted" -> KindEnum.ADOPTIVE
+    "foster" -> KindEnum.FOSTER
+    else -> null
 }
 
 private fun exactDate(value: String): LocalDate? {
@@ -153,7 +183,9 @@ internal fun writeGedcom(people: List<GedcomPerson>): String {
     }
     people.forEach { child ->
         val parents = child.parentIds.filter { it in index && it != child.id }
-        val couple = parents.size == 2 && people[index.getValue(parents[0])].partnerIds.contains(parents[1])
+        // A couple shares a FAM only when the PEDI written for the child's links to both is the same (PEDI is per FAMC).
+        val couple = parents.size == 2 && people[index.getValue(parents[0])].partnerIds.contains(parents[1]) &&
+            pedigreeValue(child.parentKinds[parents[0]]) == pedigreeValue(child.parentKinds[parents[1]])
         if (parents.size == 1 || couple) {
             family(parents).add(child.id)
         } else {
@@ -192,7 +224,12 @@ internal fun writeGedcom(people: List<GedcomPerson>): String {
         event("DEAT", person.deathDate, person.deathPlace)
         person.note?.let { text(1, "NOTE", it) }
         families.forEach { (spouses, children) ->
-            if (person.id in children) lines += "1 FAMC ${familyXrefs[spouses]}"
+            if (person.id in children) {
+                lines += "1 FAMC ${familyXrefs[spouses]}"
+                // Biological and step links are written without PEDI; step has no 5.5.1 value.
+                pedigreeValue(spouses.firstOrNull { it in person.parentIds }?.let(person.parentKinds::get))
+                    ?.let { lines += "2 PEDI $it" }
+            }
             if (person.id in spouses) lines += "1 FAMS ${familyXrefs[spouses]}"
         }
     }

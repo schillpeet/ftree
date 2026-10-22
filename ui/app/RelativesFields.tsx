@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, type ReactNode } from 'react';
-import type { Member, Partnership, Relatives, Sibling } from '../lib/api/generated/members';
+import type { Member, ParentLink, Partnership, Relatives, Sibling } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { nameOf } from './names';
 import { searchMembers } from './nameSearch';
@@ -33,6 +33,14 @@ const detailsKey = (details: Details, ids: string[]) =>
 
 // The relation groups, also naming what a person created from their search becomes.
 export type Relation = 'parent' | 'partner' | 'child' | 'sibling' | 'halfSibling';
+
+// The kind of each parent link by parent id; parents without an entry are biological.
+type Kinds = Record<string, ParentLink['kind']>;
+const kindsKey = (kinds: Kinds, ids: string[]) =>
+  ids
+    .map((id) => `${id}:${kinds[id] ?? 'biological'}`)
+    .sort()
+    .join(',');
 
 const siblingKey = (s: Sibling) => `${s.id}:${[...s.parentIds].sort().join(',')}`;
 
@@ -155,6 +163,7 @@ export default function RelativesFields({
       childIds,
       partnerIds,
       siblings: siblingsOf(others, parentIds, [...parentIds, ...childIds, ...partnerIds], {}),
+      kinds: Object.fromEntries((member?.parentLinks ?? []).map(({ parentId, kind }) => [parentId, kind])) as Kinds,
       details: Object.fromEntries((member?.partnerships ?? []).map(({ partnerId, ...rest }) => [partnerId, rest])) as Details,
     };
   });
@@ -162,6 +171,7 @@ export default function RelativesFields({
   const [childIds, setChildIds] = useState(initial.childIds);
   const [partnerIds, setPartnerIds] = useState(initial.partnerIds);
   const [details, setDetails] = useState(initial.details);
+  const [kinds, setKinds] = useState(initial.kinds);
   const now = today();
   const setDetail = (id: string, detail: Partial<Details[string]>) =>
     setDetails((current) => ({ ...current, [id]: { ...detailsOf(current, id), ...detail } }));
@@ -180,10 +190,12 @@ export default function RelativesFields({
     differs(childIds, initial.childIds) ||
     differs(partnerIds, initial.partnerIds) ||
     differs(siblings.map(siblingKey), initial.siblings.map(siblingKey)) ||
-    detailsKey(details, partnerIds) !== detailsKey(initial.details, partnerIds);
+    detailsKey(details, partnerIds) !== detailsKey(initial.details, partnerIds) ||
+    kindsKey(kinds, parentIds) !== kindsKey(initial.kinds, parentIds);
   const partnerships = partnerIds.map((partnerId) => ({ partnerId, ...detailsOf(details, partnerId) }));
   // The form reads the latest selection on submit and dismiss; a ref there avoids re-rendering it.
-  useEffect(() => onChange({ parentIds, childIds, partnerIds, siblings, partnerships }, changed));
+  const parentLinks = parentIds.map((parentId) => ({ parentId, kind: kinds[parentId] ?? 'biological' }));
+  useEffect(() => onChange({ parentIds, childIds, partnerIds, siblings, partnerships, parentLinks }, changed));
 
   // extra renders next to a chip, e.g. the status of a partner or the shared parent of a half-sibling.
   function group(
@@ -242,7 +254,29 @@ export default function RelativesFields({
         parentIds,
         [...childIds, ...partnerIds, ...siblingIds],
         (id) => setParentIds((ids) => [...ids, id]),
-        (id) => setParentIds((ids) => without(ids, id)),
+        (id) => {
+          setParentIds((ids) => without(ids, id));
+          // A parent added again starts as biological.
+          setKinds((current) => Object.fromEntries(Object.entries(current).filter(([parentId]) => parentId !== id)));
+        },
+        {
+          // Each selected parent gets the kind of the link, biological unless changed.
+          extra: (m) => (
+            <span className="person-partner-details">
+              <select
+                aria-label={t.relatives.parentKind(fullName(m))}
+                value={kinds[m.id] ?? 'biological'}
+                onChange={(event) => setKinds((current) => ({ ...current, [m.id]: event.target.value as ParentLink['kind'] }))}
+              >
+                {(Object.keys(t.relatives.parentKinds) as ParentLink['kind'][]).map((kind) => (
+                  <option key={kind} value={kind}>
+                    {t.relatives.parentKinds[kind]}
+                  </option>
+                ))}
+              </select>
+            </span>
+          ),
+        },
       )}
       {group(
         'partner',

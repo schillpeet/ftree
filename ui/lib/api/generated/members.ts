@@ -113,6 +113,21 @@ export interface ImportFamilyRequest {
   gedcom: string;
 }
 
+export type ParentLinkKind = typeof ParentLinkKind[keyof typeof ParentLinkKind];
+
+
+export const ParentLinkKind = {
+  biological: 'biological',
+  adoptive: 'adoptive',
+  step: 'step',
+  foster: 'foster',
+} as const;
+
+export interface ParentLink {
+  parentId: string;
+  kind: ParentLinkKind;
+}
+
 export type PartnershipStatus = typeof PartnershipStatus[keyof typeof PartnershipStatus];
 
 
@@ -196,6 +211,8 @@ export interface Member {
   readonly photoUpdatedAt?: string | null;
   /** Ids of this member's parents. Children are the members listing this id. */
   parentIds: string[];
+  /** Kind per parent in parentIds. */
+  readonly parentLinks: readonly ParentLink[];
   /** Ids of this member's partners, current or former. Always mutual. */
   partnerIds: string[];
   /** Status and dates per partner in partnerIds; the same on both sides. */
@@ -227,6 +244,11 @@ export interface Sibling {
 
 export interface Relatives {
   parentIds: string[];
+  /**
+     * Kinds of the parents in parentIds; parents left out are "biological", and when absent, existing kinds stay unchanged.
+     * @nullable
+     */
+  parentLinks?: ParentLink[] | null;
   childIds: string[];
   partnerIds: string[];
   /**
@@ -543,7 +565,7 @@ export const getUpdateMemberRelativesUrl = (id: string,) => {
 }
 
 /**
- * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual. Siblings are not stored but derived from shared parents. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor.
+ * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual. Parent links carry a kind (biological, adoptive, step, or foster); parents without one are biological, and when parentLinks is absent, stored kinds stay unchanged. Siblings are not stored but derived from shared parents. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor.
  * @summary Replace relatives of a member in the default family
  */
 export const updateMemberRelatives = async (id: string,
@@ -1436,7 +1458,7 @@ export const getUpdateFamilyMemberRelativesUrl = (familyId: string,
 }
 
 /**
- * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual, so the partners list this member too. Siblings are not stored but derived from shared parents: each listed sibling gets exactly the given parents of this member, and other members outside these sets lose the parents they share with this member. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor.
+ * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual, so the partners list this member too. Parent links carry a kind (biological, adoptive, step, or foster); parents without one are biological, and when parentLinks is absent, stored kinds stay unchanged. Siblings are not stored but derived from shared parents: each listed sibling gets exactly the given parents of this member, and other members outside these sets lose the parents they share with this member. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor.
  * @summary Replace a family member's parents, children, partners, and siblings
  */
 export const updateFamilyMemberRelatives = async (familyId: string,

@@ -2,6 +2,7 @@ package com.github.bff.member
 
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
+import com.github.bff.generated.model.ParentLink
 import com.github.bff.generated.model.Partnership
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Position
@@ -50,8 +51,9 @@ class MemberService(
         if (!familyRepository.existsById(familyId)) return null
         val photos = photoTimes(familyId)
         val partnerships = partnerships(familyId)
+        val parentLinks = parentLinks(familyId)
         return memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId)
-            .map { it.toResponse(photos[it.id], partnerships[it.id].orEmpty()) }
+            .map { it.toResponse(photos[it.id], partnerships[it.id].orEmpty(), parentLinks[it.id].orEmpty()) }
     }
 
     @Transactional
@@ -70,7 +72,7 @@ class MemberService(
                 note = request.note,
                 photoUrl = request.photoUrl?.toString(),
             ),
-        ).toResponse(null, emptyList())
+        ).toResponse(null, emptyList(), emptyList())
     }
 
     /** Replaces the member's fields but keeps its parent/child links; null when it is not in the family. */
@@ -86,7 +88,11 @@ class MemberService(
         entity.deathPlace = request.deathPlace
         entity.note = request.note
         entity.photoUrl = request.photoUrl?.toString()
-        return entity.toResponse(photoTimes(familyId)[id], partnerships(familyId)[id].orEmpty())
+        return entity.toResponse(
+            photoTimes(familyId)[id],
+            partnerships(familyId)[id].orEmpty(),
+            parentLinks(familyId)[id].orEmpty(),
+        )
     }
 
     @Transactional
@@ -114,6 +120,10 @@ class MemberService(
             return RelativesResult.INVALID
         }
         if (partnerships?.values?.any { !it.hasPossibleDates() } == true) return RelativesResult.INVALID
+        val parentKinds = relatives.parentLinks?.associate { it.parentId to it.kind }
+        if (parentKinds != null && (parentKinds.size != relatives.parentLinks?.size || !parentIds.containsAll(parentKinds.keys))) {
+            return RelativesResult.INVALID
+        }
         // Listed siblings get exactly their shared parents among the member's; everyone else outside the
         // member's own relatives loses the member's parents.
         val takesSiblingParents = { otherId: UUID -> siblings != null && otherId != id && otherId !in everyone }
@@ -129,7 +139,6 @@ class MemberService(
         }
         if (hasCycle(parentsOf)) return RelativesResult.INVALID
 
-        member.parents = parentIds.map(all::getValue).toMutableSet()
         all.values.forEach { other ->
             if (other.id in childIds) other.parents.add(member) else other.parents.remove(member)
             if (takesSiblingParents(other.id)) {
@@ -138,11 +147,24 @@ class MemberService(
             }
             if (other.id in partnerIds) other.partners.add(member) else other.partners.remove(member)
         }
+        // Changed in place, so the rows of kept parents and their kinds stay.
+        member.parents.removeIf { it.id !in parentIds }
+        member.parents.addAll(parentIds.map(all::getValue))
         // Changed in place, so the rows of kept partners and their details stay.
         member.partners.removeIf { it.id !in partnerIds }
         member.partners.addAll(partnerIds.map(all::getValue))
+        // The details below are written with JDBC, which needs the link rows to exist.
+        memberRepository.flush()
+        if (parentKinds != null) {
+            parentIds.forEach { parentId ->
+                jdbc.update(
+                    "UPDATE member_parents SET kind = ? WHERE child_id = ? AND parent_id = ?",
+                    (parentKinds[parentId] ?: ParentLink.KindEnum.BIOLOGICAL).value,
+                    id, parentId,
+                )
+            }
+        }
         if (partnerships != null) {
-            memberRepository.flush()
             partnerIds.forEach { partnerId ->
                 val partnership = partnerships[partnerId]
                 val status = partnership?.status ?: Partnership.StatusEnum.TOGETHER
@@ -265,7 +287,22 @@ class MemberService(
             familyId,
         ).groupBy({ it.first }, { it.second })
 
-    private fun MemberEntity.toResponse(photoUpdatedAt: OffsetDateTime?, partnerships: List<Partnership>) = Member().apply {
+    // Per child the kind of each parent link, for the whole family at once.
+    private fun parentLinks(familyId: UUID): Map<UUID, List<ParentLink>> =
+        jdbc.query(
+            "SELECT p.child_id, p.parent_id, p.kind FROM member_parents p JOIN members m ON m.id = p.child_id WHERE m.family_id = ?",
+            { rs, _ ->
+                rs.getObject(1, UUID::class.java) to
+                    ParentLink(rs.getObject(2, UUID::class.java), ParentLink.KindEnum.fromValue(rs.getString(3)))
+            },
+            familyId,
+        ).groupBy({ it.first }, { it.second })
+
+    private fun MemberEntity.toResponse(
+        photoUpdatedAt: OffsetDateTime?,
+        partnerships: List<Partnership>,
+        parentLinks: List<ParentLink>,
+    ) = Member().apply {
         id = this@toResponse.id
         firstName = this@toResponse.firstName
         lastName = this@toResponse.lastName
@@ -278,6 +315,7 @@ class MemberService(
         photoUrl = this@toResponse.photoUrl?.let(URI::create)
         this.photoUpdatedAt = photoUpdatedAt
         parentIds = this@toResponse.parents.map { it.id }
+        this.parentLinks = parentLinks
         partnerIds = this@toResponse.partners.map { it.id }
         this.partnerships = partnerships
         pinId = this@toResponse.pinId

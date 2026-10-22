@@ -104,6 +104,8 @@ paths:
       summary: Replace relatives of a member in the default family
       description: >-
         Replaces all three sets, and the siblings when they are sent. Partnerships are mutual.
+        Parent links carry a kind (biological, adoptive, step, or foster); parents without one are
+        biological, and when parentLinks is absent, stored kinds stay unchanged.
         Siblings are not stored but derived from shared parents. Rejects unknown members, the
         member itself, a member in more than one set, siblings sharing no or other parents, and
         links that would make someone their own ancestor.
@@ -454,7 +456,9 @@ paths:
       summary: Replace a family member's parents, children, partners, and siblings
       description: >-
         Replaces all three sets, and the siblings when they are sent. Partnerships are mutual,
-        so the partners list this member too. Siblings are not stored but derived from shared
+        so the partners list this member too. Parent links carry a kind (biological, adoptive, step,
+        or foster); parents without one are biological, and when parentLinks is absent, stored kinds
+        stay unchanged. Siblings are not stored but derived from shared
         parents: each listed sibling gets exactly the given parents of this member, and other
         members outside these sets lose the parents they share with this member. Rejects unknown members,
         the member itself, a member in more than one set, siblings sharing no or other parents,
@@ -738,6 +742,7 @@ components:
         - firstName
         - lastName
         - parentIds
+        - parentLinks
         - partnerIds
         - partnerships
       properties:
@@ -794,6 +799,12 @@ components:
           items:
             type: string
             format: uuid
+        parentLinks:
+          description: Kind per parent in parentIds.
+          type: array
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/ParentLink"
         partnerIds:
           description: Ids of this member's partners, current or former. Always mutual.
           type: array
@@ -855,6 +866,14 @@ components:
           items:
             type: string
             format: uuid
+        parentLinks:
+          description: >-
+            Kinds of the parents in parentIds; parents left out are "biological", and when absent,
+            existing kinds stay unchanged.
+          type: array
+          nullable: true
+          items:
+            $ref: "#/components/schemas/ParentLink"
         childIds:
           type: array
           items:
@@ -880,6 +899,22 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/Partnership"
+    ParentLink:
+      type: object
+      required:
+        - parentId
+        - kind
+      properties:
+        parentId:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - biological
+            - adoptive
+            - step
+            - foster
     Partnership:
       type: object
       required:

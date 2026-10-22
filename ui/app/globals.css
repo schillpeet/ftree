@@ -2120,6 +2120,20 @@ button.person-chip-main:hover {
   font-size: 13px;
 }
 
+.person-parent {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.person-parent-kind {
+  color: var(--glass-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
 .person-shared-parent {
   width: auto;
   min-height: 30px;
