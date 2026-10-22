@@ -4,12 +4,12 @@ import { useMemo } from 'react';
 import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import type { Member } from '../lib/api/generated/members';
+import { bloodLinks, coreFamilyLinks, linkKey } from './experimental/highlight';
 import { buildModel } from './experimental/model';
 import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
 import { isNameless, nameOf, shortFirstName } from './names';
 import type { Point } from './pins';
-import { ancestorsOf, relativesOf } from './relatives';
 import { simpleLayout } from './simpleLayout';
 
 // The lowest row floats this far above the floor.
@@ -20,6 +20,10 @@ const NAME_SCALE = 50;
 const NAME_SCALE_HEIGHT = 768;
 export const LINE_COLOR = '#00e5ff';
 export const FOCUS_COLOR = '#ff4fd8';
+export const BLOOD_COLOR = '#ffb347';
+// How a line stands out: for the core family, for blood relatives, or not at all.
+type Mark = 'focus' | 'blood' | undefined;
+const MARK_COLOR = { none: LINE_COLOR, focus: FOCUS_COLOR, blood: BLOOD_COLOR };
 const DOT_RADIUS = 0.18;
 // A partnership symbol floats this far above its line.
 const GLYPH_LIFT = 0.5;
@@ -66,7 +70,7 @@ function soften(segments: Segment[], junctions: XY[]): Segment[] {
     // A quadratic curve with the corner as control point, in a few straight pieces.
     const at = (t: number): XY => [0, 1].map((i) => (1 - t) ** 2 * from[i] + 2 * (1 - t) * t * corner[i] + t ** 2 * to[i]) as XY;
     // Each half of the curve belongs to the segment it continues, so focus marks it the same way.
-    for (let i = 0; i < 6; i++) curves.push({ a: at(i / 6), b: at((i + 1) / 6), style: (i < 3 ? p : q).seg.style, people: (i < 3 ? p : q).seg.people });
+    for (let i = 0; i < 6; i++) curves.push({ a: at(i / 6), b: at((i + 1) / 6), style: (i < 3 ? p : q).seg.style, links: (i < 3 ? p : q).seg.links });
   }
   return [...out, ...curves];
 }
@@ -104,14 +108,17 @@ export default function SimpleTree({
   facing,
   showLines,
   focusId,
+  bloodId,
   onOpen,
 }: {
   members: Member[];
   base: number;
   facing: number;
   showLines: boolean;
-  // Whose lines to their relatives stand out, or null.
+  // Whose lines to their core family stand out, or null.
   focusId: string | null;
+  // Whose lines to their blood relatives stand out, or null.
+  bloodId: string | null;
   onOpen: (id: string) => void;
 }) {
   const t = useT();
@@ -123,40 +130,33 @@ export default function SimpleTree({
     const routes = route(model, at);
     return { positions, routes: { ...routes, segments: hop(soften(routes.segments, routes.junctions), routes.bridges) } };
   }, [members]);
-  // The focused person, the relatives the panel lists, and everyone they descend from: a line stands
-  // out when it joins the person to a relative, or anyone on that line of descent to a parent.
-  const focused = useMemo(() => {
-    const focus = members.find((m) => m.id === focusId);
-    if (!focus) return null;
-    const r = relativesOf(focus, members);
-    const ancestors = ancestorsOf(focus, members);
-    const parentsOf = new Map(members.map((m) => [m.id, m.parentIds]));
-    return {
-      id: focus.id,
-      relatives: new Set([...r.parents, ...r.children, ...r.partners, ...r.siblings, ...r.halfSiblings].map((m) => m.id)),
-      ancestors,
-      // Whether `parents` holds a parent of someone on the line of descent, the person included.
-      descends: (child: string, parents: string[]) =>
-        (child === focus.id || ancestors.has(child)) && parents.some((id) => parentsOf.get(child)?.includes(id)),
+  // The pairs whose lines stand out (`experimental/highlight.ts`): the core family over the blood
+  // relatives where both apply.
+  const marked = useMemo(() => {
+    const of = (id: string | null, links: typeof coreFamilyLinks) => {
+      const focus = members.find((m) => m.id === id);
+      return focus ? links(focus, members) : new Set<string>();
     };
-  }, [members, focusId]);
-  const stands = (people: string[]) =>
-    focused != null &&
-    ((people.includes(focused.id) && people.some((id) => focused.relatives.has(id))) || people.some((id) => focused.descends(id, people)));
-  // A partnership symbol also stands out between two ancestors, such as the parents or grandparents.
-  const glyphStands = (people: string[]) => stands(people) || (focused != null && people.every((id) => focused.ancestors.has(id)));
-  const lines = (style: Segment['style'], marked: boolean) =>
-    routes.segments.filter((s) => s.style === style && stands(s.people) === marked).flatMap((s) => [flat(s.a), flat(s.b)]);
+    return { focus: of(focusId, coreFamilyLinks), blood: of(bloodId, bloodLinks) };
+  }, [members, focusId, bloodId]);
+  const markOf = (links: Segment['links']) =>
+    (['focus', 'blood'] as const).find((mark) => links.some(([x, y]) => marked[mark].has(linkKey(x, y))));
+  const markClass = (links: Segment['links']) => {
+    const mark = markOf(links);
+    return mark ? ` is-${mark}` : '';
+  };
+  const lines = (style: Segment['style'], mark: Mark) =>
+    routes.segments.filter((s) => s.style === style && markOf(s.links) === mark).flatMap((s) => [flat(s.a), flat(s.b)]);
   const byId = new Map(members.map((m) => [m.id, m]));
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
       {showLines &&
         (['solid', 'dashed', 'dotted'] as const).flatMap((style) =>
-          [false, true].map((marked) => {
-            const points = lines(style, marked);
+          ([undefined, 'blood', 'focus'] as const).map((mark) => {
+            const points = lines(style, mark);
             return (
               points.length > 0 && (
-                <Line key={`${style}-${marked}`} points={points} segments color={marked ? FOCUS_COLOR : LINE_COLOR} lineWidth={marked ? 3 : 2} {...STYLES[style]} />
+                <Line key={`${style}-${mark}`} points={points} segments color={MARK_COLOR[mark ?? 'none']} lineWidth={mark ? 3 : 2} {...STYLES[style]} />
               )
             );
           }),
@@ -171,7 +171,7 @@ export default function SimpleTree({
       {showLines &&
         routes.glyphs.map(({ at, glyph, people }) => (
           <Html key={people.join()} position={[at[0], at[1] + GLYPH_LIFT, 0]} center distanceFactor={scale}>
-            <span className={`simple-glyph${glyphStands(people) ? ' is-focus' : ''}`} aria-hidden>
+            <span className={`simple-glyph${markClass([people])}`} aria-hidden>
               {glyph}
             </span>
           </Html>
@@ -179,7 +179,7 @@ export default function SimpleTree({
       {showLines &&
         routes.stubs.map(({ child, parents, at }) => (
           <Html key={`${child}-${parents.join()}`} position={flat(at)} center distanceFactor={scale}>
-            <button className={`simple-stub${focused?.descends(child, parents) ? ' is-focus' : ''}`} type="button" onClick={() => onOpen(parents[0])}>
+            <button className={`simple-stub${markClass(parents.map((p) => [p, child]))}`} type="button" onClick={() => onOpen(parents[0])}>
               {t.members.parentsOf(shortFirstName(byId.get(child)?.firstName ?? '') || t.members.unknown)}
             </button>
           </Html>

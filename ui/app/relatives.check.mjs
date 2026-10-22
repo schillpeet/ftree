@@ -1,7 +1,7 @@
 // Run with `node app/relatives.check.mjs`: parents, children, and partners follow the stored links,
 // siblings share all parents, half-siblings only some.
 import assert from 'node:assert/strict';
-import { ancestorsOf, relativesOf } from './relatives.ts';
+import { ancestorsOf, bloodRelativesOf, relativesOf } from './relatives.ts';
 
 const person = (id, parentIds = [], partnerIds = []) => ({ id, parentIds, partnerIds });
 const ids = (relatives) => Object.fromEntries(Object.entries(relatives).map(([key, list]) => [key, list.map((m) => m.id)]));
@@ -55,4 +55,22 @@ const ancestors = (id) => [...ancestorsOf(tree.find((m) => m.id === id), tree)].
 assert.deepEqual(ancestors('me'), ['dad', 'gran', 'grandpa', 'great', 'mum']);
 assert.deepEqual(ancestors('great'), []);
 assert.deepEqual(ancestors('loop-a'), ['loop-a', 'loop-b']);
+
+// Blood relatives: biological ancestors and all their biological descendants, through half-siblings
+// and cousins; partners, their own children, and adopted children stay out.
+const blood = [
+  person('gran', [], ['grandpa']),
+  person('grandpa', [], ['gran']),
+  person('aunt', ['gran', 'grandpa'], ['in-law']),
+  person('in-law', [], ['aunt']),
+  person('cousin', ['aunt', 'in-law']),
+  person('in-law-kid', ['in-law']),
+  { ...person('adopted', ['aunt']), parentLinks: [{ parentId: 'aunt', kind: 'adoptive' }] },
+  person('mum', ['gran', 'grandpa'], ['dad']),
+  person('dad', [], ['mum']),
+  person('me', ['mum', 'dad']),
+  person('half', ['dad']),
+  person('kid', ['me']),
+];
+assert.deepEqual([...bloodRelativesOf(blood.find((m) => m.id === 'me'), blood)].sort(), ['aunt', 'cousin', 'dad', 'gran', 'grandpa', 'half', 'kid', 'me', 'mum']);
 console.log('relatives ok');

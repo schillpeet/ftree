@@ -33,3 +33,31 @@ export function ancestorsOf<T extends Person>(member: T, members: T[]) {
   }
   return found;
 }
+
+// A member's parents by blood: links without a kind count as biological, as in the experimental view.
+type Linked = Person & { parentLinks?: readonly { parentId: string; kind: string }[] };
+export const biologicalParentsOf = (member: Linked) =>
+  member.parentIds.filter((id) => (member.parentLinks?.find((l) => l.parentId === id)?.kind ?? 'biological') === 'biological');
+
+// Everyone the member is related to by blood, the member included: their biological ancestors and
+// every biological descendant of those (siblings, half-siblings, aunts, cousins, nieces, children …).
+// Partners, step, adoptive, and foster relatives stay out.
+export function bloodRelativesOf<T extends Linked>(member: T, members: T[]) {
+  const byId = new Map([...members, member].map((m) => [m.id, m]));
+  const ancestors = new Set([member.id]);
+  for (const queue = [member.id]; queue.length; )
+    for (const id of biologicalParentsOf(byId.get(queue.pop()!)!))
+      if (byId.has(id) && !ancestors.has(id)) {
+        ancestors.add(id);
+        queue.push(id);
+      }
+  const found = new Set(ancestors);
+  const childrenOf = (id: string) => members.filter((m) => biologicalParentsOf(m).includes(id));
+  for (const queue = [...ancestors]; queue.length; )
+    for (const child of childrenOf(queue.pop()!))
+      if (!found.has(child.id)) {
+        found.add(child.id);
+        queue.push(child.id);
+      }
+  return found;
+}

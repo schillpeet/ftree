@@ -74,9 +74,14 @@ export function verify(model: Model, at: Map<string, XY>, routes: Routes): strin
   // 4. No point joins four segments, except the one dot where a union's stem and the line to its child
   // right below the node meet the bar; exactly the points joining three or four that way have a dot.
   const degree = (p: XY) => segs.reduce((n, s) => n + (isEnd(p, s) ? 1 : on(p, s) ? 2 : 0), 0);
-  // A bar passing through, a vertical ending at the point from above and one from below.
+  // A bar passing through (or split there into a piece to each side), a vertical ending at the point
+  // from above and one from below.
+  const across = (p: XY) => {
+    const ends = segs.filter((s) => isEnd(p, s) && s.a[1] === s.b[1]);
+    return ends.length === 2 && ends.some((s) => Math.min(s.a[0], s.b[0]) < p[0] - EPS) && ends.some((s) => Math.max(s.a[0], s.b[0]) > p[0] + EPS);
+  };
   const plus = (p: XY) =>
-    segs.filter((s) => !isEnd(p, s) && on(p, s) && s.a[1] === s.b[1]).length === 1 &&
+    segs.filter((s) => !isEnd(p, s) && on(p, s) && s.a[1] === s.b[1]).length + Number(across(p)) === 1 &&
     segs.filter((s) => isEnd(p, s) && s.a[0] === s.b[0] && Math.max(s.a[1], s.b[1]) > p[1] + EPS).length === 1 &&
     segs.filter((s) => isEnd(p, s) && s.a[0] === s.b[0] && Math.min(s.a[1], s.b[1]) < p[1] - EPS).length === 1;
   const dots = new Set(routes.junctions.map(key));
