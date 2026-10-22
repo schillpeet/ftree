@@ -8,8 +8,10 @@ import type { Model, Status, Union } from './model.ts';
 import { ROW_GAP } from '../simpleLayout.ts';
 
 export type XY = [number, number];
-// people: the persons this line connects (for focus).
-export type Segment = { a: XY; b: XY; style: 'solid' | 'dashed' | 'dotted'; people: string[] };
+// A parent and a child, or two partners.
+export type Link = [string, string];
+// links: the pairs whose drawn connection runs along this piece (for focus).
+export type Segment = { a: XY; b: XY; style: 'solid' | 'dashed' | 'dotted'; links: Link[] };
 export type Glyph = { at: XY; glyph: '⚭' | '⚯' | '⚮'; people: [string, string] };
 export type Stub = { child: string; parents: string[]; at: XY };
 // bridges: where a union's vertical crosses a partnership line, which hops over it.
@@ -257,21 +259,28 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>, bridge
   const kidsOf = (l: Line) => planOf.get(pairKey(l.a, l.b))?.kids ?? [];
   const segments: Owned[] = [];
   const glyphs: Glyph[] = [];
-  // Drops: each person with partners runs down to their deepest line, split where a line joins.
+  // Drops: each person with partners runs down to their deepest line, split where a line joins. A
+  // single parent's stem leaves below the deepest line, so every piece also leads to those children.
   for (const id of at.keys()) {
     const own = linesOf(id).sort((p, q) => q.Y - p.Y);
+    const alone = plans.filter((p) => !p.line && p.anchor === id).flatMap((p) => p.kids);
     own.forEach((l, i) => {
       const served = own.slice(i);
       segments.push({
         a: [x(id), i ? own[i - 1].Y : y(id) - NAME_H / 2],
         b: [x(id), l.Y],
         style: served.some((s) => lineStyle(s.status) === 'solid') ? 'solid' : 'dashed',
-        people: [...new Set([id, ...served.flatMap((s) => [s.a, s.b, ...kidsOf(s)])])],
+        links: [...served.flatMap((s): Link[] => [[s.a, s.b], ...kidsOf(s).map((k): Link => [id, k])]), ...alone.map((k): Link => [id, k])],
       });
     });
   }
   for (const l of lines.values()) {
-    segments.push({ a: [l.x0, l.Y], b: [l.x1, l.Y], style: lineStyle(l.status), people: [l.a, l.b, ...kidsOf(l)] });
+    // Split at the node of the couple's children: each half leads from its partner to them.
+    const nx = planOf.get(pairKey(l.a, l.b))?.nx;
+    const halves: [number, number, string][] = nx === undefined ? [[l.x0, l.x1, '']] : [[l.x0, nx, l.a], [nx, l.x1, l.b]];
+    for (const [x0, x1, from] of halves)
+      if (x1 - x0 > EPS)
+        segments.push({ a: [x0, l.Y], b: [x1, l.Y], style: lineStyle(l.status), links: [[l.a, l.b], ...(from ? kidsOf(l).map((k): Link => [from, k]) : [])] });
     const glyph = l.status && GLYPH[l.status];
     if (!glyph) continue;
     // In the middle between adjacent partners, else in the gap next to the outer partner.
@@ -284,17 +293,23 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>, bridge
   const nodes = new Map<Union, XY>();
   for (const p of plans) {
     const style = p.u.dotted ? 'dotted' : 'solid';
-    const family = [...p.u.parents, ...p.kids];
+    const to = (kids: string[]) => p.u.parents.flatMap((parent) => kids.map((k): Link => [parent, k]));
     const deepest = p.anchor && Math.min(...linesOf(p.anchor).map((l) => l.Y));
     const nodeY = p.line ? p.line.Y : linesOf(p.anchor!).length ? (deepest as number) : p.y - NAME_H / 2;
     const top = (id: string) => y(id) + NAME_H / 2;
     nodes.set(p.u, [p.nx, nodeY]);
     const center = p.through ? p.kids.find((k) => near(x(k), p.nx))! : undefined;
-    if (center) segments.push({ a: [p.nx, nodeY], b: [p.nx, top(center)], style, people: family, owner: p.u });
-    else segments.push({ a: [p.nx, nodeY], b: [p.nx, p.bars[0].Y], style, people: family, owner: p.u });
+    if (center) segments.push({ a: [p.nx, nodeY], b: [p.nx, top(center)], style, links: to(p.kids), owner: p.u });
+    else segments.push({ a: [p.nx, nodeY], b: [p.nx, p.bars[0].Y], style, links: to(p.kids), owner: p.u });
     for (const b of p.bars) {
-      segments.push({ a: [b.x0, b.Y], b: [b.x1, b.Y], style, people: family, owner: p.u });
-      for (const k of b.kids) segments.push({ a: [x(k), b.Y], b: [x(k), top(k)], style, people: [...p.u.parents, k], owner: p.u });
+      // Split at the stem and at every riser: a piece leads to the children beyond it, seen from the stem.
+      const cuts = [...new Set([b.x0, p.nx, ...b.kids.map(x), b.x1])].sort((m, n) => m - n);
+      for (const [i, x0] of cuts.slice(0, -1).entries()) {
+        const x1 = cuts[i + 1];
+        const beyond = b.kids.filter((k) => (x0 < p.nx - EPS ? x(k) < x1 - EPS : x(k) > x0 + EPS));
+        if (x1 - x0 > EPS) segments.push({ a: [x0, b.Y], b: [x1, b.Y], style, links: to(beyond), owner: p.u });
+      }
+      for (const k of b.kids) segments.push({ a: [x(k), b.Y], b: [x(k), top(k)], style, links: to([k]), owner: p.u });
     }
   }
   // Backstop: a union's lines touch nothing but their own node, except where a bridged union's
@@ -346,5 +361,5 @@ function attempt(model: Model, at: Map<string, XY>, stubbed: Set<string>, bridge
   for (const u of stubs) for (const c of u.children) addStub(c, u.parents);
   for (const h of model.hidden) if (h.reason === 'stub') addStub(h.child, [h.parent]);
 
-  return { segments: segments.map(({ a, b, style, people }) => ({ a, b, style, people })), junctions, glyphs, stubs: stubList, bridges };
+  return { segments: segments.map(({ a, b, style, links }) => ({ a, b, style, links })), junctions, glyphs, stubs: stubList, bridges };
 }

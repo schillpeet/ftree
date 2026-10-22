@@ -75,6 +75,7 @@ jobs:
       - run: node app/experimental/model.check.mjs
       - run: node app/experimental/route.check.mjs
       - run: node app/experimental/families.check.mjs
+      - run: node app/experimental/highlight.check.mjs
       - run: pnpm build
 
   bff:

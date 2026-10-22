@@ -13,8 +13,16 @@ const partner = (id, partnerId, status, parentIds = []) =>
 const positions = (entries) => new Map(Object.entries(entries));
 const horizontal = (s) => s.a[1] === s.b[1];
 const span = (s) => [Math.min(s.a[0], s.b[0]), Math.max(s.a[0], s.b[0])];
-const lineBetween = (routes, at, p, q) =>
-  routes.segments.find((s) => horizontal(s) && span(s)[0] === Math.min(at.get(p)[0], at.get(q)[0]) && span(s)[1] === Math.max(at.get(p)[0], at.get(q)[0]));
+// The partnership line between p and q, joined from its pieces (it is split where a stem leaves it).
+const lineBetween = (routes, at, p, q) => {
+  const [lo, hi] = [Math.min(at.get(p)[0], at.get(q)[0]), Math.max(at.get(p)[0], at.get(q)[0])];
+  const inside = routes.segments.filter((s) => horizontal(s) && span(s)[0] >= lo && span(s)[1] <= hi);
+  for (const y of new Set(inside.map((s) => s.a[1]))) {
+    const pieces = inside.filter((s) => s.a[1] === y).sort((s, t) => span(s)[0] - span(t)[0]);
+    if (span(pieces[0])[0] === lo && pieces.every((s, i) => i === 0 || span(s)[0] === span(pieces[i - 1])[1]) && span(pieces.at(-1))[1] === hi)
+      return { a: [lo, y], b: [hi, y], style: pieces[0].style, pieces };
+  }
+};
 const glyphOf = (routes, p, q) => routes.glyphs.find((g) => g.people.includes(p) && g.people.includes(q));
 // The vertical ending on top of a person's name.
 const riser = (routes, at, id) => {
@@ -56,7 +64,7 @@ assert.equal(coupleRoutes.stubs.length, 0);
   assert.deepEqual(verify(model, at, routes), []);
   assert.equal(routes.junctions.length, 2);
   const bars = routes.segments.filter((s) => horizontal(s) && s.a[1] < R / 2);
-  assert.equal(bars.length, 1);
+  assert.equal(new Set(bars.map((s) => s.a[1])).size, 1);
 }
 
 // k R h: the couple (k, h) hangs straight below h, the outer partner. A child of h alone joins their
