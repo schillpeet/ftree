@@ -92,7 +92,7 @@ The random family board creates a named family set with up to 250 generated memb
 The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
 The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation.
-While `default` is shown and has people, the family card's edit mode offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
+The UI offers no archiving; the BFF's `POST /families/{familyId}/archive` stays available.
 The family card's edit mode renames the family via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The original `/members` endpoints remain available for the default family.
@@ -100,12 +100,13 @@ The original `/members` endpoints remain available for the default family.
 The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names stay empty.
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
 The family card's download button exports the family as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
-"Anonyme Kopie" in the family card's edit mode asks for a name ("<name> (anonym)" by default) and creates a copy of the family with random names, for example to show the tree's structure in a snapshot without personal names.
+"Anonymisierte Kopie" in the family card's edit mode asks for a name ("<name> (anonym)" by default) and creates a copy of the family with random names, for example to show the tree's structure in a snapshot without personal names.
 Families in the selector's "Alle Familien" list can be reordered by drag and drop; the order is saved via `PUT /families/order` (which must list every family exactly once), new families are appended at the end, and a failed save restores the previous order.
 Clicking the family name at the top centre opens the family card of the shown family, or the families board while no family is shown.
 The family card lists the family's members by generation, the oldest first and each generation by birth date, with counts of members and generations; clicking a member opens their person card.
 The family card behaves like the person card: it can be dragged, pinned to a position of its own (`ftree.familyPanelPin`), and closes on ×, Escape, or a click outside unless pinned.
-The family card's header downloads the family as GEDCOM, and its pencil switches it to edit mode for renaming, "Anonyme Kopie", "Familie archivieren" (only for `default`), and deleting the family after confirmation.
+The family card's header downloads the family as GEDCOM, and its pencil switches it to edit mode: a dashed photo field ("Foto ablegen" while empty), the name, "Familienfoto hinzufügen" or "Familienfoto ändern" and "Familienfoto entfernen", "Anonymisierte Kopie" in a row of its own, and below a line "Familie löschen" (after confirmation) apart from "Abbrechen" and "Speichern".
+The family photo fills the family card's cover; in edit mode the photo field takes a new photo by choosing a file or dropping an image, which the browser scales to at most 800 px as JPEG and uploads on save, and "Familienfoto entfernen" deletes it on save.
 
 ### Members and relatives
 

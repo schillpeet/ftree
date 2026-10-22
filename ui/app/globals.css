@@ -2226,6 +2226,7 @@ button.dashboard-family:hover {
 }
 
 .family-card-emblem {
+  position: relative;
   display: grid;
   width: 56px;
   height: 56px;
@@ -2265,5 +2266,126 @@ button.dashboard-family:hover {
 .family-card-tools {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 18px;
+  gap: 8px;
+}
+
+/* The family photo fills the cover. */
+.family-card-cover {
+  position: relative;
+  overflow: hidden;
+}
+
+.family-card-cover img,
+.family-card-drop img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Edit mode: drop field, name, tools, then delete apart from cancel and save. The top stays free for
+   the floating header actions. */
+.family-card-edit {
+  display: grid;
+  gap: 16px;
+  padding-top: 30px;
+}
+
+.family-card-drop {
+  position: relative;
+  display: grid;
+  height: 130px;
+  overflow: hidden;
+  place-items: center;
+  border: 1.5px dashed rgba(127, 214, 255, 0.5);
+  border-radius: 10px;
+  color: var(--glass-accent);
+  cursor: pointer;
+}
+
+.family-card-drop-active,
+.family-card-drop:focus-within {
+  border-color: var(--glass-accent);
+  background: rgba(127, 214, 255, 0.08);
+}
+
+.family-card-drop-hint {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* The field replaces the native picker's look; the input stays for keyboard and click. */
+.family-card-drop input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.family-card-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.family-card-button:hover {
+  background: var(--glass-hover);
+}
+
+.family-card-button .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.family-card-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.family-card-danger {
+  border-color: rgba(255, 143, 122, 0.45);
+  color: var(--glass-danger);
+}
+
+.family-card-primary {
+  border-color: var(--glass-accent);
+  background: var(--glass-accent);
+  color: #0b141d;
+}
+
+.family-card-primary:hover {
+  background: #a6e3ff;
+}
+
+.family-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.family-card-actions .family-card-danger {
+  margin-right: auto;
+}
+
+/* On a photo the floating header actions need a backdrop to stay readable. */
+.family-card .person-header-actions {
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(12, 18, 27, 0.66);
 }

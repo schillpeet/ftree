@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useEffectEvent, useRef, useState, type Dispatch, type FormEvent, type SetStateAction } from 'react';
 import {
-  archiveFamily,
   createFamilyMember,
   deleteFamilyMember,
   deleteFamilyMemberPhoto,
@@ -15,7 +14,7 @@ import {
   type Member,
   type Relatives,
 } from '../lib/api/generated/members';
-import { useLanguage, useT } from './i18n';
+import { useT } from './i18n';
 import { initialsOf, nameOf } from './names';
 import { dateProblem } from './partnerships';
 import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
@@ -52,7 +51,6 @@ export default function MembersControls({
   familyCard,
   onFamilyCardChange,
   onFamilyCreated,
-  isDefaultFamily,
   members,
   setMembers,
   profile,
@@ -67,8 +65,6 @@ export default function MembersControls({
   familyCard: FamilyCardMode | null;
   onFamilyCardChange: (mode: FamilyCardMode | null) => void;
   onFamilyCreated: (family: FamilySummary) => void;
-  // Only the default family is archived: its people move to a new family and it starts empty.
-  isDefaultFamily: boolean;
   members: Member[] | null;
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
   // Member whose profile was requested from their scroll in the scene.
@@ -81,7 +77,6 @@ export default function MembersControls({
   onFamiliesChanged: () => void;
 }) {
   const t = useT();
-  const [language] = useLanguage();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -197,28 +192,6 @@ export default function MembersControls({
     setNewRelative(null);
   }
   useEffect(() => onShownChange(shownId), [shownId, onShownChange]);
-
-  async function archive(onError: (message: string | null) => void = setRequestError) {
-    if (!familyId) return;
-    const name = window.prompt(
-      t.members.archiveName,
-      t.members.archiveDefault(new Date().toLocaleDateString(language)),
-    )?.trim();
-    if (!name) return;
-    onError(null);
-    try {
-      const response = await archiveFamily(familyId, { name });
-      if (response.status === 409) {
-        onError(t.familyExists(name));
-        return;
-      }
-      if (response.status !== 201) throw new Error('Unexpected archive response');
-      setMembers([]);
-      onFamiliesChanged();
-    } catch {
-      onError(t.members.archiveFailed);
-    }
-  }
 
   // Resolves whether the member is gone; onError shows a failure where it was requested.
   async function removeMember(member: Member, onError = setRequestError) {
@@ -516,7 +489,6 @@ export default function MembersControls({
         <FamilyCard
           family={family}
           members={members}
-          isDefault={isDefaultFamily}
           mode={familyCard}
           onModeChange={onFamilyCardChange}
           onClose={() => onFamilyCardChange(null)}
@@ -529,7 +501,6 @@ export default function MembersControls({
           }}
           onChanged={onFamiliesChanged}
           onCreated={onFamilyCreated}
-          onArchive={archive}
           loadError={requestError}
           onRetry={() => void reloadMembers()}
         />

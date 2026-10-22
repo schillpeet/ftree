@@ -136,6 +136,20 @@ export const UploadIcon = () => (
   </Icon>
 );
 
+export const PhotoIcon = () => (
+  <Icon>
+    <rect x="3" y="3" width="18" height="18" rx="3" />
+    <path d="M15 8h.01M3 16l5-5c.9-.9 2.1-.9 3 0l5 5M14 14l1-1c.9-.9 2.1-.9 3 0l3 3" />
+  </Icon>
+);
+
+export const PhotoOffIcon = () => (
+  <Icon>
+    <path d="M15 8h.01M7 3h11a3 3 0 0 1 3 3v11M20.1 20.1A3 3 0 0 1 18 21H6a3 3 0 0 1-3-3V6c0-.8.3-1.6.9-2.2" />
+    <path d="M3 16l5-5c.9-.9 2.1-.9 3 0l5 5M16.3 12.3c.6-.1 1.2.2 1.7.7l3 3M3 3l18 18" />
+  </Icon>
+);
+
 export const CopyIcon = () => (
   <Icon>
     <rect x="8" y="8" width="12" height="12" rx="2" />
