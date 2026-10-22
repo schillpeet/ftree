@@ -1395,13 +1395,39 @@ textarea {
   cursor: pointer;
 }
 
-.simple-rings {
+.simple-glyph {
   display: block;
-  margin: 0 8px;
   color: #e6fdff;
   font: 14px/1 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
   text-shadow: 0 0 6px #00e5ff;
   pointer-events: none;
+}
+
+.simple-glyph.is-focus {
+  color: #ff4fd8;
+  text-shadow: 0 0 6px #ff4fd8;
+}
+
+/* A parent link the lines leave out: a label above the child that opens the parent. */
+.simple-stub {
+  padding: 1px 6px;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  border-radius: 4px;
+  background: rgba(5, 8, 12, 0.85);
+  color: #e6fdff;
+  font: 11px/1.2 Arial, sans-serif;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Opaque, so the label stays readable where it sits over a line. */
+.simple-stub:hover {
+  background: #0c2a33;
+}
+
+.simple-stub:focus-visible {
+  outline: 2px solid #00e5ff;
+  outline-offset: 2px;
 }
 
 .simple-name:hover {

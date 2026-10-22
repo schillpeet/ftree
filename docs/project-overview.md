@@ -19,30 +19,33 @@ The burger menu's "Appearance" board switches between the organic tree (default)
 The burger menu's "Momentaufnahme" ("Snapshot") entry downloads the current view as `ftree-<family>-<yyyy-mm-dd>.png`, showing only the scene and the family name, without any controls.
 The experimental view is a dark floor with a glowing grid and no cards yet; it is the starting point for a simpler family tree, and organic-only controls (time, pins, light orbs, card style, crown, bundling) are greyed out there.
 In the experimental view, the selected family appears as a flat family tree facing the start camera: one row per generation, partners side by side, and children hanging from a bar below their parents; a click on a floating name opens the profile.
-Positions in the experimental view follow from the stored relations alone (`ui/app/simpleLayout.ts`), so the same family always looks the same and nothing can be dragged there.
+Positions in the experimental view follow from the stored relations alone (`ui/app/simpleLayout.ts`, models in `ui/app/experimental/model.ts`), so the same family always looks the same and nothing can be dragged there.
 The experimental view centres every couple over its first and last child, packs families as tightly as their shapes allow, and keeps their lines from crossing.
-In-law families (a partner's parents at the top of the tree) are placed right next to the family their child married into and centred over their own children too; deeper in-law families can still get a one-sided bar.
-Partners in the experimental view are marked by a small ⚭ (two rings) between their names instead of a line.
-Someone with children by several partners forks halfway down in the experimental view, one branch toward each partner, so every couple gets a bar of its own.
-A partner's parents (in-laws) are placed after the family their child married into, so the married-in partner's family stands right above them and no line crosses the other family's lines.
-Someone with children by at least two partners stands at the edge of their group in the experimental view, with the partners beside them, the newest nearest (no shared child, else the youngest latest child, else fewer children).
-Children of the nearest partner hang centred under that couple's bar, and children of a farther partner hang under that partner.
-The bars to all partners of someone at the edge run at one height, and the person drops straight down to them.
-Separated partners stand outermost beside the person and the current partner nearest; without a stored status, the guess from the children's birth dates applies.
-When a current couple both have former partners, each person's former partners stand on their own outer side, for example `a2 a1 A B b1 b2`, so nobody stands next to someone else's ex.
-When only one of a current couple has former partners, they stand on that person's outer side and the current partner on the other side.
-Separated partners get no ring in the experimental view; their dashed line marks the relationship.
-The line between separated partners is dashed: their bar, and without a shared child a line at the height of the person's own family bar (under their names when they have none), where the former partner drops straight down to it, dashed as well.
-Flat trees draw no direct line between childless partners, so a focused former partner is reached only by the dashed line.
-A current partner without shared children drops solid to the person's family bar in the same way, and a dashed line to former partners farther out starts only where that solid line ends.
-A widowed partner without shared children drops solid too, but the line over to the person is dashed, since only the current partner's line runs solid to them.
-Someone with several former partners at one height gets a single dashed line out to the farthest of them, so overlapping dashes never add up to a solid line.
-The children of a separated couple hang straight below the former partner.
-An outer partner with children of their own alone steps out over them, so their line drops straight.
-Parents of a shared child stand side by side in the experimental view even without a stored partnership, so the child hangs centred below both.
-A child of only one of several co-parents hangs with the children of that parent's nearest couple in the experimental view, from the same child bar.
-A child of only one former partner hangs straight below that partner in the experimental view, on the same side as the partner, so its line does not cross the children of another couple.
-The child who married into another family stands last in their sibling group, at the edge facing that family.
+In-law families (a partner's parents at the top of the tree) are placed right next to the family their child married into, centred over their own children; a sibling group has two edges for them, left and right.
+A third in-law family in the same sibling group becomes a stub instead of a crossing line.
+The experimental view draws its lines like a circuit diagram (`ui/app/experimental/routing.ts`): only right angles, and every horizontal line on a track of its own in the channel between two rows, so lines never overlap.
+Parallel tracks keep at least 0.3 apart; the channel's tracks are compressed evenly when they do not fit at the usual 0.6.
+Every point where three lines meet gets a dot, and no point joins four lines except the one described below.
+No line crosses another one; a link that cannot be drawn without crossing becomes a stub instead.
+A stub is a small label "▲ Eltern von <Vorname>" above the child that opens the first parent's profile.
+Partners are joined by a line on its own track with a symbol on it: ⚭ for married and widowed, ⚯ for together, ⚮ for divorced, none for separated.
+The line of separated and divorced partners is dashed, the others are solid, including widowed ones.
+A child hangs from the union of its biological parents; a union node sits in the middle of the line between adjacent partners and straight below the outer partner (the one with fewer partners) when someone stands between them.
+The children of separated or divorced partners always hang straight below the former partner, even when the two stand side by side.
+A child of only one parent hangs with the children of that parent's current couple (nearest by birth date), so it stands among its siblings; without such a couple it hangs below that parent, and if that would read like a child of the parent's partnership, it becomes a stub.
+A child directly below its union node with siblings on both sides hangs from the same bar, and the stem, bar, and the line to that child meet in a single dot; this is the only point where four lines meet.
+A child without biological parents in the tree hangs from the union of all its parents, drawn dotted.
+A non-biological parent who is a partner of one of the drawn parents gets no extra line, since the partnership line shows the step relation; any other non-biological parent becomes a stub.
+Parents of a shared child stand side by side in the experimental view even without a stored partnership.
+The person with several partners stands in the middle of their partner group.
+A partner with shared children stands outermost, at most one per side: the first by the order below goes right, the second left; a former partner with a child of their own counts as one with children.
+Childless partners stand inside between the person and the right outer partner, the current partner nearest.
+Further partners with children stand beyond the right outer one; routing turns their crossing links into stubs.
+The order of partners: current before former, then no shared child before the youngest latest child, then fewer children.
+The child who married into another family stands at the edge of their sibling group facing that family.
+A deceased person's name is preceded by †.
+`ui/app/experimental/verify.ts` checks drawings in the tests, not at runtime: right angles, no overlaps, no crossings, no four-way points, and a read-back of the parents and partners from the drawing itself.
+CI runs this check on a fixture shaped like a real five-generation family (synthetic people) and on 500 random families (`ui/app/experimental/families.check.mjs`).
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
 Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.
 Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a person and their partners hang in the middle of it, and their children's branch leaves the trunk right below them, so parents always hang directly above their children.
@@ -177,7 +180,7 @@ Partnership status and dates live in `member_partners` on both rows of a pair; m
 The status is `together`, `married`, `separated`, `divorced`, or `widowed`, set per partner in the relatives form.
 Each status keeps only its own dates: `since` for together, `marriedOn` for married, `endedOn` for separated, and `marriedOn` with `endedOn` for divorced and widowed (the date of death); the BFF drops the others.
 Divorced partners count as former partners like separated ones, so the trees treat both alike.
-Widowed partners stay married in the trees: solid lines and the ⚭ ring, which sits right under the name of the partner who died (the one with a date of death, else the one with fewer partners); choosing "verwitwet" fills in the partner's date of death, and the profile falls back to it, for example "verwitwet seit 03.04.2010 (⚭ 12.06.1985)".
+Widowed partners stay married in the trees: solid lines and the ⚭ symbol (in the organic trees, the ring sits right under the name of the partner who died: the one with a date of death, else the one with fewer partners); choosing "verwitwet" fills in the partner's date of death, and the profile falls back to it, for example "verwitwet seit 03.04.2010 (⚭ 12.06.1985)".
 Partnership dates cannot lie in the future, and a divorce cannot come before the wedding: the relatives form marks such dates in red and refuses to save with a message, and the BFF rejects them with 400 (allowing one day for clients in a later time zone).
 The kind of each parent/child link (`biological`, `adoptive`, `step`, or `foster`) lives in the `kind` column of `member_parents` (migration V14), which defaults to biological.
 Members return the kinds as read-only `parentLinks` (`parentId` and `kind`).
@@ -204,6 +207,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/FamilyTree.tsx` also renders the dashboard, the members list board, and the families board.
 - `ui/app/Dashboard.tsx` renders the burger menu and the family dropdown; `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
 - `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
+- `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's relatives; `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.
+- `ui/app/experimental/model.ts` derives unions, partnerships, and generations for the experimental view (`model.check.mjs`); `routing.ts` routes the circuit-diagram lines (`route.check.mjs`); `verify.ts` and `families.check.mjs` prove them on fixtures and random families (`node app/experimental/families.check.mjs` in `ui/`).
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).
 - `ui/app/generations.ts` derives generations, moves cards between free pins (lifting ancestors when needed) so children hang below their parents, and bounds where a dragged card may drop; `ui/app/generations.check.mjs` is its self-check (`node app/generations.check.mjs` in `ui/`).
