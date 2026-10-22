@@ -22,6 +22,9 @@ class FamilyEntity(
     var generationCount: Int? = null,
     var minChildren: Int? = null,
     var maxChildren: Int? = null,
+    // "cover" or "original"; every new family starts with "cover".
+    @Column(nullable = false, length = 10)
+    var photoFit: String = "cover",
     // The database assigns new families the next position, so they are listed last.
     @Generated
     @Column(nullable = false, insertable = false)
