@@ -107,6 +107,7 @@ The family card lists the family's members by generation, the oldest first and e
 The family card behaves like the person card: it can be dragged, pinned to a position of its own (`ftree.familyPanelPin`), and closes on ×, Escape, or a click outside unless pinned.
 The family card's header downloads the family as GEDCOM, and its pencil switches it to edit mode: a dashed photo field ("Foto ablegen" while empty), the name, "Familienfoto hinzufügen" or "Familienfoto ändern" and "Familienfoto entfernen", "Anonymisierte Kopie" in a row of its own, and below a line "Familie löschen" (after confirmation) apart from "Abbrechen" and "Speichern".
 The family photo fills the family card's cover; in edit mode the photo field takes a new photo by choosing a file or dropping an image, which the browser scales to at most 800 px as JPEG and uploads on save, and "Familienfoto entfernen" deletes it on save.
+In edit mode a switch under the photo field chooses "Füllend" (the photo fills the cover) or "Originalgröße" (the photo keeps its own size, centred, at most 240 px high and as wide as the card, never scaled up); it is saved per family via `PUT /families/{familyId}/photo-fit`.
 
 ### Members and relatives
 
