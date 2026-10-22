@@ -1,29 +1,32 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import {
   anonymizeFamily,
   deleteFamily,
+  deleteFamilyPhoto,
   getExportFamilyUrl,
+  getGetFamilyPhotoUrl,
   renameFamily,
+  uploadFamilyPhoto,
   type FamilySummary,
   type Member,
 } from '../lib/api/generated/members';
 import { generationRows } from './generations';
 import { useT } from './i18n';
-import { DownloadIcon, UsersIcon } from './icons';
+import { CopyIcon, DownloadIcon, PhotoIcon, PhotoOffIcon, TrashIcon, UploadIcon, UsersIcon } from './icons';
 import { PanelShell, RelativeChip, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
+import { toJpeg, usePhotoPreview } from './MemberFields';
 
 export type FamilyCardMode = 'view' | 'edit';
 
 // Overview of the shown family: its members by generation, the oldest first. Behaves like the person
 // panel (drag, pin, closes on a click outside unless pinned) with a position of its own, and edits
-// the family in place: name, anonymized copy, archive (default only), delete.
+// the family in place: photo, name, anonymized copy, delete.
 export default function FamilyCard({
   family,
   members,
-  isDefault,
   mode,
   onModeChange,
   onClose,
@@ -31,13 +34,11 @@ export default function FamilyCard({
   onOpenMember,
   onChanged,
   onCreated,
-  onArchive,
   loadError,
   onRetry,
 }: {
   family: FamilySummary;
   members: Member[] | null;
-  isDefault: boolean;
   mode: FamilyCardMode;
   onModeChange: (mode: FamilyCardMode) => void;
   onClose: () => void;
@@ -46,7 +47,6 @@ export default function FamilyCard({
   // The family was renamed or deleted; reload the families.
   onChanged: () => void;
   onCreated: (family: FamilySummary) => void;
-  onArchive: (onError: (message: string | null) => void) => Promise<void>;
   loadError: string | null;
   onRetry: () => void;
 }) {
@@ -56,31 +56,57 @@ export default function FamilyCard({
   const [name, setName] = useState(family.name);
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Picked image (uploaded on save) and whether the stored one is to be removed.
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [removePhoto, setRemovePhoto] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const preview = usePhotoPreview(photoFile);
   const rows = generationRows(members ?? []);
+  // The upload time makes a new photo a new (uncached) URL.
+  const stored = family.photoUpdatedAt
+    ? `${getGetFamilyPhotoUrl(family.id)}?v=${encodeURIComponent(family.photoUpdatedAt)}`
+    : null;
+  const photo = mode === 'edit' ? (preview ?? (removePhoto ? null : stored)) : stored;
 
   function edit() {
     setName(family.name);
+    setPhotoFile(null);
+    setRemovePhoto(false);
     setError(null);
     onModeChange('edit');
   }
 
+  function pickPhoto(file: File | null | undefined) {
+    if (!file?.type.startsWith('image/')) return;
+    setPhotoFile(file);
+    setRemovePhoto(false);
+  }
+
+  // Renames first, then uploads or removes the photo; a failed step keeps the card in edit mode.
   async function save(event: FormEvent) {
     event.preventDefault();
     const next = name.trim();
-    if (!next || next === family.name) return onModeChange('view');
     setIsBusy(true);
     setError(null);
     try {
-      const response = await renameFamily(family.id, { name: next });
-      if (response.status === 409) return setError(t.familyExists(next));
-      if (response.status === 404) return setError(t.families.gone);
-      if (response.status !== 200) throw new Error(`HTTP ${response.status}`);
-      onChanged();
+      if (next && next !== family.name) {
+        const response = await renameFamily(family.id, { name: next });
+        if (response.status === 409) return setError(t.familyExists(next));
+        if (response.status === 404) return setError(t.families.gone);
+        if (response.status !== 200) return setError(t.families.renameFailed);
+      }
+      if (photoFile) {
+        if ((await uploadFamilyPhoto(family.id, await toJpeg(photoFile))).status !== 204) return setError(t.familyCard.photoFailed);
+      } else if (removePhoto && stored) {
+        if ((await deleteFamilyPhoto(family.id)).status !== 204) return setError(t.familyCard.photoFailed);
+      }
       onModeChange('view');
     } catch {
-      setError(t.families.renameFailed);
+      setError(t.familyCard.photoFailed);
     } finally {
       setIsBusy(false);
+      onChanged();
     }
   }
 
@@ -151,53 +177,93 @@ export default function FamilyCard({
       }
       className="family-card"
     >
-      <div className="family-card-cover" aria-hidden="true" />
-      <div className="family-card-hero">
-        <span className="family-card-emblem" aria-hidden="true">
-          <UsersIcon />
-        </span>
-        {mode === 'view' && (
-          <>
-            <h2 className="person-name">{family.name}</h2>
-            <p className="family-card-stats">
-              <span>{t.familyCard.members(members?.length ?? family.memberCount)}</span>
-              <span>{t.familyCard.generations(rows.length || family.generationCount)}</span>
-            </p>
-          </>
-        )}
-      </div>
-
       {mode === 'edit' ? (
-        <form className="person-form" onSubmit={save}>
+        <form className="family-card-edit" onSubmit={save}>
+          {/* Dropping an image on the field picks it like the file chooser does. */}
+          <label
+            className={`family-card-drop${isDragging ? ' family-card-drop-active' : ''}`}
+            onDragOver={(event) => {
+              event.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={(event) => {
+              event.preventDefault();
+              setIsDragging(false);
+              pickPhoto(event.dataTransfer.files[0]);
+            }}
+          >
+            {photo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photo} alt="" />
+            ) : (
+              <span className="family-card-drop-hint">
+                <UploadIcon />
+                {t.familyCard.dropPhoto}
+              </span>
+            )}
+            <input ref={fileRef} type="file" accept="image/*" onChange={(event) => pickPhoto(event.target.files?.[0])} />
+          </label>
           <label className="person-field">
             {t.familyCard.name}
             <input value={name} maxLength={100} required autoFocus onChange={(event) => setName(event.target.value)} />
           </label>
           <div className="family-card-tools">
-            <button type="button" className="person-link-button" disabled={isBusy} onClick={() => void anonymize()}>
-              {t.families.anonymize}
+            <button type="button" className="family-card-button" disabled={isBusy} onClick={() => fileRef.current?.click()}>
+              <PhotoIcon />
+              {photo ? t.familyCard.changePhoto : t.familyCard.addPhoto}
             </button>
-            {isDefault && !!members?.length && (
-              <button type="button" className="person-link-button" disabled={isBusy} onClick={() => void onArchive(setError)}>
-                {t.members.archive}
+            {photo && (
+              <button
+                type="button"
+                className="family-card-button"
+                disabled={isBusy}
+                onClick={() => {
+                  setPhotoFile(null);
+                  setRemovePhoto(true);
+                }}
+              >
+                <PhotoOffIcon />
+                {t.familyCard.removePhoto}
               </button>
             )}
-            <button type="button" className="person-link-button person-link-danger" disabled={isBusy} onClick={() => void remove()}>
-              {t.familyCard.delete}
+          </div>
+          <div className="family-card-tools">
+            <button type="button" className="family-card-button" disabled={isBusy} onClick={() => void anonymize()}>
+              <CopyIcon />
+              {t.families.anonymize}
             </button>
           </div>
           {error && <p className="person-error" role="alert">{error}</p>}
-          <div className="person-footer">
-            <button type="button" disabled={isBusy} onClick={() => onModeChange('view')}>
+          <div className="family-card-actions">
+            <button type="button" className="family-card-button family-card-danger" disabled={isBusy} onClick={() => void remove()}>
+              <TrashIcon />
+              {t.familyCard.delete}
+            </button>
+            <button type="button" className="family-card-button" disabled={isBusy} onClick={() => onModeChange('view')}>
               {t.familyCard.cancel}
             </button>
-            <button type="submit" className="person-primary" disabled={isBusy}>
+            <button type="submit" className="family-card-button family-card-primary" disabled={isBusy}>
               {isBusy ? t.saving : t.familyCard.save}
             </button>
           </div>
         </form>
       ) : (
         <>
+          <div className="family-card-cover" aria-hidden="true">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {photo && <img src={photo} alt="" />}
+          </div>
+          <div className="family-card-hero">
+            <span className="family-card-emblem" aria-hidden="true">
+              <UsersIcon />
+            </span>
+            <h2 className="person-name">{family.name}</h2>
+            <p className="family-card-stats">
+              <span>{t.familyCard.members(members?.length ?? family.memberCount)}</span>
+              <span>{t.familyCard.generations(rows.length || family.generationCount)}</span>
+            </p>
+          </div>
           {loadError && (
             <p className="person-error" role="alert">
               {loadError}{' '}

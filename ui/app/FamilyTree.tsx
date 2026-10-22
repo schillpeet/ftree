@@ -175,7 +175,6 @@ export default function FamilyTree() {
         familyCard={familyCard}
         onFamilyCardChange={setFamilyCard}
         onFamilyCreated={addFamily}
-        isDefaultFamily={activeFamily?.name.toLocaleLowerCase() === 'default'}
         members={members}
         setMembers={setMembers}
         profile={profile}
