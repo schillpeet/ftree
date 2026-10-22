@@ -274,6 +274,7 @@ pnpm manages only the UI, so its lockfile and workspace settings live in `ui/`; 
 Keep this structure rather than nesting a second Git repository.
 GitHub Actions runs CI for both applications, and release-please creates version tags and GitHub releases for the repository as a whole; container images are published to GHCR for each release, but deployment is not configured yet.
 Revisit further package or repository splits only when separate ownership, access control, or release lifecycles make them useful.
+Logo variants live in `docs/assets/`; the f-monogram (`d-f-monogramm-*.svg`) is the current logo, `ui/app/icon.svg` is its icon used as the favicon, and `social-preview.png` (rendered from `social-preview.svg` with `rsvg-convert`) is the GitHub social preview.
 
 ## Versioning and Releases
 

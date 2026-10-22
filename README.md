@@ -1,12 +1,16 @@
-# 🌳 ftree
+<h1 align="center">
+  <img src="docs/assets/d-f-monogramm-logo.svg" alt="ftree" width="320">
+</h1>
 
-[![CI](https://github.com/schillpeet/ftree/actions/workflows/ci.yml/badge.svg)](https://github.com/schillpeet/ftree/actions/workflows/ci.yml)
-[![Version](https://img.shields.io/github/v/tag/schillpeet/ftree?sort=semver&label=version)](https://github.com/schillpeet/ftree/tags)
-[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+<p align="center"><strong>A shared family tree that families build and maintain together.</strong></p>
 
-**A shared family tree that families build and maintain together.**
+<p align="center">
+  <a href="https://github.com/schillpeet/ftree/actions/workflows/ci.yml"><img src="https://github.com/schillpeet/ftree/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://github.com/schillpeet/ftree/tags"><img src="https://img.shields.io/github/v/tag/schillpeet/ftree?sort=semver&label=version" alt="Version"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+</p>
 
-> **Early prototype.** Today, ftree shows a procedurally generated 3D tree in a meadow and lets you create, edit, list, and delete family members. Accounts, sharing, and family relationships are still to come.
+> **Early prototype.** Today, ftree shows a procedurally generated 3D tree in a meadow and lets you manage families, their members, and parent/child and partner links. Accounts and sharing are still to come.
 
 ![ftree preview with a demo family](https://github.com/schillpeet/ftree/releases/latest/download/preview.png)
 
@@ -40,6 +44,7 @@ If a required port is already occupied, `start.sh` reports the process and exits
 | [`api/openapi.yaml`](api/openapi.yaml)     | API contract that both sides generate their code from       |
 | [`docker-compose.yml`](docker-compose.yml) | Local PostgreSQL and Swagger UI used during development     |
 | [`docs/`](docs/project-overview.md)        | Architecture, current state, and open decisions             |
+| [`docs/assets/`](docs/assets)              | Logo variants and the GitHub social preview image           |
 
 ## Development
 
