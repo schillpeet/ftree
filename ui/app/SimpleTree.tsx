@@ -9,7 +9,7 @@ import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
 import { isNameless, nameOf, shortFirstName } from './names';
 import type { Point } from './pins';
-import { relativesOf } from './relatives';
+import { ancestorsOf, relativesOf } from './relatives';
 import { simpleLayout } from './simpleLayout';
 
 // The lowest row floats this far above the floor.
@@ -123,14 +123,28 @@ export default function SimpleTree({
     const routes = route(model, at);
     return { positions, routes: { ...routes, segments: hop(soften(routes.segments, routes.junctions), routes.bridges) } };
   }, [members]);
-  // The focused person and the relatives the panel lists: a line stands out when it joins them.
+  // The focused person, the relatives the panel lists, and everyone they descend from: a line stands
+  // out when it joins the person to a relative, or anyone on that line of descent to a parent.
   const focused = useMemo(() => {
     const focus = members.find((m) => m.id === focusId);
     if (!focus) return null;
     const r = relativesOf(focus, members);
-    return { id: focus.id, relatives: new Set([...r.parents, ...r.children, ...r.partners, ...r.siblings, ...r.halfSiblings].map((m) => m.id)) };
+    const ancestors = ancestorsOf(focus, members);
+    const parentsOf = new Map(members.map((m) => [m.id, m.parentIds]));
+    return {
+      id: focus.id,
+      relatives: new Set([...r.parents, ...r.children, ...r.partners, ...r.siblings, ...r.halfSiblings].map((m) => m.id)),
+      ancestors,
+      // Whether `parents` holds a parent of someone on the line of descent, the person included.
+      descends: (child: string, parents: string[]) =>
+        (child === focus.id || ancestors.has(child)) && parents.some((id) => parentsOf.get(child)?.includes(id)),
+    };
   }, [members, focusId]);
-  const stands = (people: string[]) => focused != null && people.includes(focused.id) && people.some((id) => focused.relatives.has(id));
+  const stands = (people: string[]) =>
+    focused != null &&
+    ((people.includes(focused.id) && people.some((id) => focused.relatives.has(id))) || people.some((id) => focused.descends(id, people)));
+  // A partnership symbol also stands out between two ancestors, such as the parents or grandparents.
+  const glyphStands = (people: string[]) => stands(people) || (focused != null && people.every((id) => focused.ancestors.has(id)));
   const lines = (style: Segment['style'], marked: boolean) =>
     routes.segments.filter((s) => s.style === style && stands(s.people) === marked).flatMap((s) => [flat(s.a), flat(s.b)]);
   const byId = new Map(members.map((m) => [m.id, m]));
@@ -157,7 +171,7 @@ export default function SimpleTree({
       {showLines &&
         routes.glyphs.map(({ at, glyph, people }) => (
           <Html key={people.join()} position={[at[0], at[1] + GLYPH_LIFT, 0]} center distanceFactor={scale}>
-            <span className={`simple-glyph${stands(people) ? ' is-focus' : ''}`} aria-hidden>
+            <span className={`simple-glyph${glyphStands(people) ? ' is-focus' : ''}`} aria-hidden>
               {glyph}
             </span>
           </Html>
@@ -165,7 +179,7 @@ export default function SimpleTree({
       {showLines &&
         routes.stubs.map(({ child, parents, at }) => (
           <Html key={`${child}-${parents.join()}`} position={flat(at)} center distanceFactor={scale}>
-            <button className="simple-stub" type="button" onClick={() => onOpen(parents[0])}>
+            <button className={`simple-stub${focused?.descends(child, parents) ? ' is-focus' : ''}`} type="button" onClick={() => onOpen(parents[0])}>
               {t.members.parentsOf(shortFirstName(byId.get(child)?.firstName ?? '') || t.members.unknown)}
             </button>
           </Html>

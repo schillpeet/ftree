@@ -1,7 +1,7 @@
 // Run with `node app/relatives.check.mjs`: parents, children, and partners follow the stored links,
 // siblings share all parents, half-siblings only some.
 import assert from 'node:assert/strict';
-import { relativesOf } from './relatives.ts';
+import { ancestorsOf, relativesOf } from './relatives.ts';
 
 const person = (id, parentIds = [], partnerIds = []) => ({ id, parentIds, partnerIds });
 const ids = (relatives) => Object.fromEntries(Object.entries(relatives).map(([key, list]) => [key, list.map((m) => m.id)]));
@@ -39,4 +39,20 @@ assert.deepEqual(ids(relativesOf(find('dad'), members)), {
   siblings: [],
   halfSiblings: [],
 });
+// Ancestors run through every parent's parents; someone reached twice (cousins marrying) counts
+// once, a parent missing from the list ends that line, and a loop in the data cannot hang it.
+const tree = [
+  person('great'),
+  person('gran', ['great']),
+  person('grandpa'),
+  person('mum', ['gran', 'grandpa']),
+  person('dad', ['great', 'missing']),
+  person('me', ['mum', 'dad']),
+  person('loop-a', ['loop-b']),
+  person('loop-b', ['loop-a']),
+];
+const ancestors = (id) => [...ancestorsOf(tree.find((m) => m.id === id), tree)].sort();
+assert.deepEqual(ancestors('me'), ['dad', 'gran', 'grandpa', 'great', 'mum']);
+assert.deepEqual(ancestors('great'), []);
+assert.deepEqual(ancestors('loop-a'), ['loop-a', 'loop-b']);
 console.log('relatives ok');
