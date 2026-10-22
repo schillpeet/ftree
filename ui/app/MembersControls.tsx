@@ -11,6 +11,7 @@ import {
   updateFamilyMember,
   updateFamilyMemberRelatives,
   uploadFamilyMemberPhoto,
+  type FamilySummary,
   type Member,
   type Relatives,
 } from '../lib/api/generated/members';
@@ -23,6 +24,7 @@ import RelativesFields, { type Relation } from './RelativesFields';
 import { EMPTY_FORM, MemberHero, MemberLifeFields, NewMemberPanel, toForm, toJpeg, toRequest, usePhotoPreview, type MemberForm } from './MemberFields';
 import { ChevronLeftIcon, CloseIcon, PencilIcon, PlusIcon, TrashIcon, UsersIcon } from './icons';
 import type { Focus } from './Scene';
+import FamilyCard, { type FamilyCardMode } from './FamilyCard';
 
 export function formatDate(value?: string | null) {
   if (!value) return null;
@@ -94,6 +96,10 @@ function MemberDetails({
 export default function MembersControls({
   familyId,
   familyName,
+  family,
+  familyCard,
+  onFamilyCardChange,
+  onFamilyCreated,
   isDefaultFamily,
   members,
   setMembers,
@@ -107,6 +113,11 @@ export default function MembersControls({
 }: {
   familyId: string | null;
   familyName: string | null;
+  family: FamilySummary | undefined;
+  // The family card of this family, open to view or edit, or null.
+  familyCard: FamilyCardMode | null;
+  onFamilyCardChange: (mode: FamilyCardMode | null) => void;
+  onFamilyCreated: (family: FamilySummary) => void;
   // Only the default family is archived: its people move to a new family and it starts empty.
   isDefaultFamily: boolean;
   members: Member[] | null;
@@ -261,25 +272,25 @@ export default function MembersControls({
     };
   }, [isListOpen, setIsListOpen]);
 
-  async function archive() {
+  async function archive(onError: (message: string | null) => void = setRequestError) {
     if (!familyId) return;
     const name = window.prompt(
       t.members.archiveName,
       t.members.archiveDefault(new Date().toLocaleDateString(language)),
     )?.trim();
     if (!name) return;
-    setRequestError(null);
+    onError(null);
     try {
       const response = await archiveFamily(familyId, { name });
       if (response.status === 409) {
-        setRequestError(t.familyExists(name));
+        onError(t.familyExists(name));
         return;
       }
       if (response.status !== 201) throw new Error('Unexpected archive response');
       setMembers([]);
       onFamiliesChanged();
     } catch {
-      setRequestError(t.members.archiveFailed);
+      onError(t.members.archiveFailed);
     }
   }
 
@@ -633,6 +644,28 @@ export default function MembersControls({
             closeNewRelative();
             if (photoFailed) setFormError(t.members.photoFailed);
           }}
+        />
+      )}
+
+      {/* Before the person panel, so a person opened from the card shows on top of it. */}
+      {familyCard && family && (
+        <FamilyCard
+          family={family}
+          members={members}
+          isDefault={isDefaultFamily}
+          mode={familyCard}
+          onModeChange={onFamilyCardChange}
+          onClose={() => onFamilyCardChange(null)}
+          photoOf={(m) => photoSrc(m, familyId)}
+          onOpenMember={(id) => {
+            setProfileId(id);
+            setTrail([]);
+            setViewError(null);
+            onSelect(id);
+          }}
+          onChanged={onFamiliesChanged}
+          onCreated={onFamilyCreated}
+          onArchive={archive}
         />
       )}
 

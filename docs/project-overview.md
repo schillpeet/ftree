@@ -89,7 +89,7 @@ The preview is not saved, and cards cannot be dragged while it is on.
 A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
 The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
 The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
-A dropdown at the top centre shows the selected family and switches it, with "Keine Familie" hiding the tree.
+The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
 The family selector displays compact people/children/generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control; any family, including `default`, can be deleted after confirmation.
 While `default` is shown and has people, the members list offers "Familie archivieren": after asking for a name it moves all of its people, links, and placements into a new family of that name, which then appears in the family selector next to the generated sets, and leaves `default` empty for the next family.
 A pencil icon next to the selected family's name renames it via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
@@ -101,6 +101,10 @@ Imported members get no placement, so they are shown on the free pins like other
 Each family in the selector has a download link that exports it as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
 A copy icon next to the selected family's name ("Anonyme Kopie") asks for a name ("<name> (anonym)" by default) and creates a copy of the family with random names, for example to show the tree's structure in a snapshot without personal names.
 Families in the selector's "Alle Familien" list can be reordered by drag and drop; the order is saved via `PUT /families/order` (which must list every family exactly once), new families are appended at the end, and a failed save restores the previous order.
+Clicking the family name at the top centre opens the family card of the shown family, or the families board while no family is shown.
+The family card lists the family's members by generation, the oldest first and each generation by birth date, with counts of members, generations, and children; clicking a member opens their person card.
+The family card behaves like the person card: it can be dragged, pinned to a position of its own (`ftree.familyPanelPin`), and closes on ×, Escape, or a click outside unless pinned.
+The family card's header downloads the family as GEDCOM, and its pencil switches it to edit mode for renaming, "Anonyme Kopie", "Familie archivieren" (only for `default`), and deleting the family after confirmation.
 
 ### Members and relatives
 
@@ -210,13 +214,13 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/page.tsx` renders the home scene.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the random family board into the scene's debug panel.
 - `ui/app/FamilyTree.tsx` also renders the dashboard, the members list board, and the families board.
-- `ui/app/Dashboard.tsx` renders the burger menu and the family dropdown; `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
+- `ui/app/Dashboard.tsx` renders the burger menu and the family name that opens the family card (`ui/app/FamilyCard.tsx`, rendered by `MembersControls`); `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
 - `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's relatives; `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.
 - `ui/app/experimental/model.ts` derives unions, partnerships, and generations for the experimental view (`model.check.mjs`); `routing.ts` routes the circuit-diagram lines (`route.check.mjs`); `verify.ts` and `families.check.mjs` prove them on fixtures and random families (`node app/experimental/families.check.mjs` in `ui/`).
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).
-- `ui/app/generations.ts` derives generations, moves cards between free pins (lifting ancestors when needed) so children hang below their parents, and bounds where a dragged card may drop; `ui/app/generations.check.mjs` is its self-check (`node app/generations.check.mjs` in `ui/`).
+- `ui/app/generations.ts` derives generations, groups members into generation rows for the family card, moves cards between free pins (lifting ancestors when needed) so children hang below their parents, and bounds where a dragged card may drop; `ui/app/generations.check.mjs` is its self-check (`node app/generations.check.mjs` in `ui/`).
 - `ui/app/pins.ts` holds the card footprint, the pin spacing rule and selection, and the drop rule (dock, spring back, or place freely); `ui/app/pins.check.mjs` is its self-check (`node app/pins.check.mjs` in `ui/`).
 - `ui/app/sky.ts` computes the sun's position from date and location, the fallback location, and the daylight and starlight fades; `ui/app/sky.check.mjs` is its self-check (`node app/sky.check.mjs` in `ui/`).
 - `ui/app/moon.ts` paints the moon's face and halo on canvases.

@@ -10,6 +10,7 @@ import {
 } from '../lib/api/generated/members';
 import Dashboard, { type DashboardPanel } from './Dashboard';
 import FamiliesPanel from './FamiliesPanel';
+import type { FamilyCardMode } from './FamilyCard';
 import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
@@ -30,6 +31,7 @@ export default function FamilyTree() {
   const [openBoard, setOpenBoard] = useState<'random-family' | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [panel, setPanel] = useState<DashboardPanel | null>(null);
+  const [familyCard, setFamilyCard] = useState<FamilyCardMode | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
@@ -86,6 +88,7 @@ export default function FamilyTree() {
     setMembers(null);
     setFocus(null);
     setProfile(null);
+    setFamilyCard(null);
     setActiveFamilyId(familyId);
   }
 
@@ -142,6 +145,11 @@ export default function FamilyTree() {
           setPanel(null);
         }}
         onPanel={(next) => setPanel((current) => (current === next ? null : next))}
+        onFamilyClick={() => {
+          if (activeFamilyId) return setFamilyCard((current) => current ?? 'view');
+          setIsMenuOpen(true);
+          setPanel('families');
+        }}
       />
       <MemberSearch
         members={members ?? []}
@@ -156,6 +164,10 @@ export default function FamilyTree() {
         key={activeFamilyId ?? 'no-family'}
         familyId={activeFamilyId}
         familyName={activeFamily?.name ?? null}
+        family={activeFamily}
+        familyCard={familyCard}
+        onFamilyCardChange={setFamilyCard}
+        onFamilyCreated={addFamily}
         isDefaultFamily={activeFamily?.name.toLocaleLowerCase() === 'default'}
         members={members}
         setMembers={setMembers}

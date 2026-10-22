@@ -91,21 +91,19 @@ export function RelativeChip({
   );
 }
 
-const PIN_KEY = 'ftree.panelPin';
-
-// The pinned panel position, remembered per browser; null while the panel is not pinned.
-// The server render has no localStorage and starts unpinned.
-export function usePanelPin() {
-  const saved = useSyncExternalStore(onStorage, () => localStorage.getItem(PIN_KEY), () => null);
+// The pinned panel position, remembered per browser (one key per kind of panel); null while the
+// panel is not pinned. The server render has no localStorage and starts unpinned.
+export function usePanelPin(key = 'ftree.panelPin') {
+  const saved = useSyncExternalStore(onStorage, () => localStorage.getItem(key), () => null);
   const setPin = (next: Offset | null) => {
     try {
-      if (next) localStorage.setItem(PIN_KEY, JSON.stringify(next));
-      else localStorage.removeItem(PIN_KEY);
+      if (next) localStorage.setItem(key, JSON.stringify(next));
+      else localStorage.removeItem(key);
     } catch {
       return;
     }
     // `storage` only fires in other tabs; tell this one too.
-    window.dispatchEvent(new StorageEvent('storage', { key: PIN_KEY }));
+    window.dispatchEvent(new StorageEvent('storage', { key }));
   };
   return [parsePin(saved), setPin] as const;
 }
@@ -123,6 +121,7 @@ export function PanelShell({
   onBack,
   onEdit,
   onDelete,
+  actions,
   autoFocusClose,
   closeOnOutsideClick,
   offset,
@@ -139,6 +138,8 @@ export function PanelShell({
   onBack?: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
+  // Further actions, after edit and delete.
+  actions?: ReactNode;
   autoFocusClose?: boolean;
   closeOnOutsideClick?: boolean;
   offset: Offset;
@@ -298,6 +299,7 @@ export function PanelShell({
               <TrashIcon />
             </button>
           )}
+          {actions}
           <span className="person-header-divider" aria-hidden="true" />
           <button
             type="button"

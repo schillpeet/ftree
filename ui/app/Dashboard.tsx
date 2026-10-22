@@ -9,7 +9,7 @@ import { AppearanceIcon, BurgerIcon, ChevronIcon, CloseIcon, DownloadIcon, Perso
 
 export type DashboardPanel = 'families' | 'people' | 'appearance';
 
-// Top-left burger menu and the centred family switcher; the boards it opens are rendered by
+// Top-left burger menu and the centred family name, which opens the family card; the boards it opens are rendered by
 // `FamiliesPanel` and `MembersControls` (the small appearance board lives here), the right-hand
 // buttons by `Scene`.
 export default function Dashboard({
@@ -19,6 +19,7 @@ export default function Dashboard({
   activeFamilyId,
   onToggle,
   onPanel,
+  onFamilyClick,
 }: {
   isOpen: boolean;
   panel: DashboardPanel | null;
@@ -26,6 +27,8 @@ export default function Dashboard({
   activeFamilyId: string | null;
   onToggle: () => void;
   onPanel: (panel: DashboardPanel) => void;
+  // Opens the family card, or the families board while no family is shown.
+  onFamilyClick: () => void;
 }) {
   const t = useT();
   const [appearance, setAppearance] = useAppearance();
@@ -135,12 +138,17 @@ export default function Dashboard({
           </section>
         )}
       </div>
-      <div className="glass dashboard-family">
+      <button
+        type="button"
+        className="glass dashboard-family"
+        title={activeFamily ? t.familyCard.open(activeFamily.name) : t.menu.families}
+        onClick={onFamilyClick}
+      >
         <UsersIcon />
         <span className="dashboard-family-name">
           {activeFamily?.name ?? t.menu.noFamily}
         </span>
-      </div>
+      </button>
     </>
   );
 }

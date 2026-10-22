@@ -30,6 +30,16 @@ export function generations(people: Person[]) {
   return g;
 }
 
+// Members grouped by generation, the oldest first; within one by birth date (unknown last), then name.
+export function generationRows<T extends Person & { firstName: string; lastName: string; birthDate?: string | null }>(people: T[]) {
+  const gen = generations(people);
+  const rows: T[][] = [];
+  for (const p of people) (rows[gen.get(p.id)!] ??= []).push(p);
+  const born = (p: T) => p.birthDate || '\uffff';
+  const name = (p: T) => `${p.firstName} ${p.lastName}`;
+  return rows.filter(Boolean).map((row) => row.sort((a, b) => born(a).localeCompare(born(b)) || name(a).localeCompare(name(b))));
+}
+
 // Moves cards so each hangs at least `gap` below its pinned parents. Earlier generations go first;
 // a card keeps its pin if it fits there. Otherwise it takes the nearest free pin that fits, else
 // the nearest free pin that is at least lower than the parents, else it stays. A card with pinned

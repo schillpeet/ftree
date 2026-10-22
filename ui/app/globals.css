@@ -2385,3 +2385,72 @@ button.person-chip-main:hover {
     max-height: calc(100dvh - 74px);
   }
 }
+
+/* Family name at the top centre: a button that opens the family card. */
+button.dashboard-family {
+  color: #fff;
+  cursor: pointer;
+}
+
+button.dashboard-family:hover {
+  background: rgba(30, 40, 54, 0.8);
+}
+
+/* Family card: a person panel with a cover across its top, the header actions floating on it. */
+.family-card-cover {
+  height: 112px;
+  margin: -16px -16px -22px;
+  border-bottom: 1px solid var(--glass-border);
+  background:
+    radial-gradient(circle at 18% 120%, rgba(127, 214, 255, 0.28), transparent 55%),
+    radial-gradient(circle at 85% -20%, rgba(255, 255, 255, 0.1), transparent 50%),
+    rgba(127, 214, 255, 0.06);
+}
+
+.family-card-hero {
+  display: grid;
+  gap: 10px;
+}
+
+.family-card-emblem {
+  display: grid;
+  width: 56px;
+  height: 56px;
+  margin-top: -28px;
+  place-items: center;
+  border: 2px solid rgba(14, 21, 31, 0.97);
+  border-radius: 14px;
+  background: #24384b;
+  color: var(--glass-accent);
+}
+
+.family-card-emblem .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.family-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.family-card-stats span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(127, 214, 255, 0.12);
+  color: var(--glass-accent);
+  font-size: 12px;
+}
+
+.family-card-generation {
+  display: flex;
+  justify-content: space-between;
+}
+
+.family-card-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
