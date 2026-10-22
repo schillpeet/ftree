@@ -421,6 +421,36 @@ paths:
           description: Photo removed.
         "404":
           description: Family or photo not found.
+  /families/{familyId}/photo-fit:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: setFamilyPhotoFit
+      tags:
+        - Families
+      summary: Set how a family's photo is shown
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetFamilyPhotoFitRequest"
+      responses:
+        "200":
+          description: Photo fit stored.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The photo fit is missing or unknown.
+        "404":
+          description: Family not found.
   /families/{familyId}/members:
     parameters:
       - name: familyId
@@ -688,6 +718,7 @@ components:
         - childCount
         - generationCount
         - testSettings
+        - photoFit
       properties:
         id:
           type: string
@@ -716,6 +747,23 @@ components:
           format: date-time
           nullable: true
           readOnly: true
+        photoFit:
+          $ref: "#/components/schemas/PhotoFit"
+    PhotoFit:
+      description: >-
+        "cover" fills the family card's title area; "original" shows the photo at its natural size,
+        limited by the client.
+      type: string
+      enum:
+        - cover
+        - original
+    SetFamilyPhotoFitRequest:
+      type: object
+      required:
+        - photoFit
+      properties:
+        photoFit:
+          $ref: "#/components/schemas/PhotoFit"
     TestFamilySettings:
       type: object
       required:

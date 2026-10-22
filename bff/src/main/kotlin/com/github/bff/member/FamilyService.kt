@@ -6,6 +6,7 @@ import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.ParentLink.KindEnum
+import com.github.bff.generated.model.PhotoFit
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.TestFamilySettings
@@ -226,6 +227,14 @@ class FamilyService(
         return FamilyRenameResult.RENAMED(family.toSummary(members, photoTimes()[id]))
     }
 
+    @Transactional
+    fun setPhotoFit(id: UUID, fit: PhotoFit): FamilySummary? {
+        val family = familyRepository.findById(id).orElse(null) ?: return null
+        family.photoFit = fit.value
+        familyRepository.flush()
+        return family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id), photoTimes()[id])
+    }
+
     fun export(id: UUID): FamilyExport? {
         val family = familyRepository.findById(id).orElse(null) ?: return null
         val kinds = parentLinkKinds(id) { child, parent, kind -> Triple(child, parent, KindEnum.fromValue(kind)) }
@@ -323,6 +332,7 @@ class FamilyService(
             )
         }
         this.photoUpdatedAt = photoUpdatedAt
+        photoFit = PhotoFit.fromValue(this@toSummary.photoFit)
     }
 
     private fun memberGenerations(members: List<MemberEntity>): Int {

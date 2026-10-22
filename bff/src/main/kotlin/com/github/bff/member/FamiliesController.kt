@@ -8,6 +8,7 @@ import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
+import com.github.bff.generated.model.SetFamilyPhotoFitRequest
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -94,6 +95,9 @@ class FamiliesController(
 
     override fun deleteFamilyPhoto(familyId: UUID): ResponseEntity<Void> =
         if (familyService.deletePhoto(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+
+    override fun setFamilyPhotoFit(familyId: UUID, setFamilyPhotoFitRequest: SetFamilyPhotoFitRequest): ResponseEntity<FamilySummary> =
+        familyService.setPhotoFit(familyId, setFamilyPhotoFitRequest.photoFit)?.let { ResponseEntity.ok(it) } ?: ResponseEntity.notFound().build()
 
     override fun renameFamily(familyId: UUID, renameFamilyRequest: RenameFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.rename(familyId, renameFamilyRequest)) {
