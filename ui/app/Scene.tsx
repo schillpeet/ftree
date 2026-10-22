@@ -6,7 +6,7 @@ import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { useAppearance } from './appearance';
-import { useHighlightRelatives, useShowLegend, useShowLines } from './lines';
+import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
 import { arrangePins, relationDistance } from './arrange';
 import { relationLines } from './familyLayout';
 import { generationBounds, generations, layerPins } from './generations';
@@ -569,10 +569,12 @@ export default function Scene({
   const [language, setLanguage] = useLanguage();
   const [appearance] = useAppearance();
   const [showLines, setShowLines] = useShowLines();
-  const [highlightRelatives, setHighlightRelatives] = useHighlightRelatives();
+  const [highlightCoreFamily, setHighlightCoreFamily] = useHighlightCoreFamily();
+  const [highlightBlood, setHighlightBlood] = useHighlightBlood();
   const [showLegend, setShowLegend] = useShowLegend();
-  const focusId = showLines && highlightRelatives ? highlight : null;
+  const focusId = showLines && highlightCoreFamily ? highlight : null;
   const experimental = appearance === 'experimental';
+  const bloodId = showLines && highlightBlood && experimental ? highlight : null;
   const organic = appearance === 'organic';
   useEffect(() => {
     document.documentElement.lang = language;
@@ -683,7 +685,7 @@ export default function Scene({
         {experimental ? (
           <>
             <GridFloor />
-            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} onOpen={onOpen} />
+            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} bloodId={bloodId} onOpen={onOpen} />
           </>
         ) : (
           <>
@@ -793,28 +795,6 @@ export default function Scene({
                   {t.tools.orbit}
                 </button>
               </div>
-              <label className="debug-check">
-                <input type="checkbox" checked={showLines} onChange={(event) => setShowLines(event.target.checked)} />
-                {t.tools.lines}
-              </label>
-              <label className="debug-check">
-                <input
-                  type="checkbox"
-                  checked={highlightRelatives}
-                  disabled={!showLines}
-                  onChange={(event) => setHighlightRelatives(event.target.checked)}
-                />
-                {t.tools.highlightRelatives}
-              </label>
-              <label className="debug-check" title={experimental ? undefined : t.tools.disabled}>
-                <input
-                  type="checkbox"
-                  checked={showLegend}
-                  disabled={!experimental}
-                  onChange={(event) => setShowLegend(event.target.checked)}
-                />
-                {t.tools.legend}
-              </label>
               <fieldset className="organic-only" disabled={experimental}>
                 {experimental && <legend>{t.tools.disabled}</legend>}
                 <label className="debug-check pin-toggle">
@@ -834,6 +814,40 @@ export default function Scene({
                   </select>
                 </label>
               </fieldset>
+              <label className="debug-check" title={experimental ? undefined : t.tools.disabled}>
+                <input
+                  type="checkbox"
+                  checked={showLegend}
+                  disabled={!experimental}
+                  onChange={(event) => setShowLegend(event.target.checked)}
+                />
+                {t.tools.legend}
+              </label>
+            </section>
+            <section>
+              <h2>{t.tools.lines}</h2>
+              <label className="debug-check">
+                <input type="checkbox" checked={showLines} onChange={(event) => setShowLines(event.target.checked)} />
+                {t.tools.showLines}
+              </label>
+              <label className="debug-check">
+                <input
+                  type="checkbox"
+                  checked={highlightCoreFamily}
+                  disabled={!showLines}
+                  onChange={(event) => setHighlightCoreFamily(event.target.checked)}
+                />
+                {t.tools.coreFamily}
+              </label>
+              <label className="debug-check" title={experimental ? undefined : t.tools.disabled}>
+                <input
+                  type="checkbox"
+                  checked={highlightBlood}
+                  disabled={!showLines || !experimental}
+                  onChange={(event) => setHighlightBlood(event.target.checked)}
+                />
+                {t.tools.bloodRelatives}
+              </label>
             </section>
             {process.env.NODE_ENV !== 'production' && (
               <section>

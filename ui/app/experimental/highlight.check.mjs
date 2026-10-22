@@ -1,7 +1,7 @@
 // Run with `node app/experimental/highlight.check.mjs`: the highlighted pairs, and that the routed
 // lines light up only on the way between them.
 import assert from 'node:assert/strict';
-import { coreFamilyLinks, linkKey } from './highlight.ts';
+import { bloodLinks, coreFamilyLinks, linkKey } from './highlight.ts';
 import { buildModel } from './model.ts';
 import { route } from './routing.ts';
 import { ROW_GAP as R } from '../simpleLayout.ts';
@@ -42,5 +42,9 @@ assert.deepEqual(pairs(coreFamilyLinks(find('me'), family)), ['f-half', 'f-m', '
   // Neither the aunt's nor the uncle's riser lights up.
   assert.ok(!lit.some((s) => s.a[0] === s.b[0] && (s.a[0] === 0 || s.a[0] === 9) && s.a[1] < 1.5 * R && s.b[1] < 1.5 * R));
 }
+
+// Blood relatives: the grandparents' lines to all their children and the half-sibling's line from
+// the shared parent, and the partnerships between ancestors.
+assert.deepEqual(pairs(bloodLinks(find('me'), family)), ['aunt-g', 'aunt-h', 'f-half', 'f-m', 'f-me', 'f-sis', 'g-h', 'g-m', 'g-uncle', 'h-m', 'h-uncle', 'm-me', 'm-sis']);
 
 console.log('highlight checks passed');

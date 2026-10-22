@@ -6,7 +6,7 @@ import { useT } from './i18n';
 import { useLegendFolded } from './lines';
 import { CENTRE, type Offset } from './panelPosition';
 import { usePanelDrag, usePanelPin } from './PersonPanel';
-import { FOCUS_COLOR, LINE_COLOR } from './SimpleTree';
+import { BLOOD_COLOR, FOCUS_COLOR, LINE_COLOR } from './SimpleTree';
 
 // A short stretch of line as the experimental view draws it, with an optional mark in the middle.
 function Sample({ color = LINE_COLOR, dash, children }: { color?: string; dash?: string; children?: ReactNode }) {
@@ -59,6 +59,7 @@ export default function RelationLegend({ onClose }: { onClose: () => void }) {
       t.legend.bridge,
     ],
     [<Sample key="focus" color={FOCUS_COLOR} />, t.legend.focus],
+    [<Sample key="blood" color={BLOOD_COLOR} />, t.legend.blood],
     [glyph('⚭'), t.legend.married],
     [glyph('⚯'), t.legend.together],
     [glyph('⚮'), t.legend.divorced],
