@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.17.0](https://github.com/schillpeet/ftree/compare/v0.16.0...v0.17.0) (2026-10-22)
+
+
+### Features
+
+* **ui:** add relationship legend to experimental view ([#167](https://github.com/schillpeet/ftree/issues/167)) ([2435706](https://github.com/schillpeet/ftree/commit/24357065b1e6a6be7e6dc55d94673edf0cbaec60))
+* **ui:** bridge crossing lines in experimental view ([#165](https://github.com/schillpeet/ftree/issues/165)) ([44672c6](https://github.com/schillpeet/ftree/commit/44672c6d3f69bd33cfb64439f54f29f0088c7c76))
+* **ui:** highlight ancestors up to the oldest generation in experimental view ([#166](https://github.com/schillpeet/ftree/issues/166)) ([f0c9b10](https://github.com/schillpeet/ftree/commit/f0c9b10904b18defc496ea93a1d62f564c1b6f3b))
+* **ui:** order siblings by age in experimental view ([#163](https://github.com/schillpeet/ftree/issues/163)) ([b08964c](https://github.com/schillpeet/ftree/commit/b08964c447e04bbd367a1b3f671c5138c49b0979))
+
+
+### Bug Fixes
+
+* **ui:** highlight only the line of descent in experimental view ([#168](https://github.com/schillpeet/ftree/issues/168)) ([814cc48](https://github.com/schillpeet/ftree/commit/814cc48aadf018cc9af1396d9793fe95ce130f4a))
+
 ## [0.16.0](https://github.com/schillpeet/ftree/compare/v0.15.0...v0.16.0) (2026-10-22)
 
 
