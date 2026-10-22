@@ -5,12 +5,15 @@
 // rules, so `experimental/routing.ts` rarely needs a crossing or a stub.
 import type { Point } from './pins';
 import { buildModel } from './experimental/model.ts';
+import { sortPartners } from './partnerships.ts';
 
+type Partnership = Parameters<typeof sortPartners>[1][number];
 type Person = {
   id: string;
+  firstName?: string;
   parentIds: string[];
   partnerIds: string[];
-  partnerships?: readonly { partnerId: string; status: string }[];
+  partnerships?: readonly { partnerId: string; status: string; since?: string | null; marriedOn?: string | null; endedOn?: string | null }[];
   parentLinks?: readonly { parentId: string; kind: string }[];
   birthDate?: string | null;
 };
@@ -32,7 +35,8 @@ const pairKey = (x: string, y: string) => (x < y ? `${x}\n${y}` : `${y}\n${x}`);
 // Tidy tree over units of partners: each union's children are centred under its node and packed
 // left to right as closely as their contours allow, and families never overlap.
 // A sibling group has two edges: a child whose partner's parents are in-laws stands at an edge, and
-// that in-law family stands on the same side over its child. Further in-law links and loops (cousins
+// that in-law family stands on the same side over its child. The other siblings follow by age from
+// there, each as a block with their partners outside. Further in-law links and loops (cousins
 // marrying) are left to routing, which turns them into stubs.
 // ponytail: a partner graph with a cycle (beyond co-parents of one child) is ordered along a spanning
 // tree, so its extra lines can interleave and cross; stub or reorder them if that shows up.
@@ -121,6 +125,25 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
         count(a) - count(b) ||
         a.localeCompare(b),
     );
+  };
+  // Siblings by age: the oldest first, those without a birth date last by first name, then by id.
+  const born = (id: string) => byId.get(id)!.birthDate || '\uffff';
+  const byAge = (a: string, b: string) =>
+    born(a).localeCompare(born(b)) || (byId.get(a)!.firstName ?? '').localeCompare(byId.get(b)!.firstName ?? '') || a.localeCompare(b);
+  // A sibling's block, from the sibling outward: its partners in profile order (current first, then
+  // the latest ended), co-parents without a stored partnership last, each followed by that partner's
+  // own other partners.
+  const outwardBlock = (via: string) => {
+    const seen = new Set([via]);
+    const block = (id: string): string[] => {
+      const others = mates(id).filter((m) => !seen.has(m));
+      for (const m of others) seen.add(m);
+      const details = (byId.get(id)!.partnerships ?? []) as readonly Partnership[];
+      const stored = others.filter((m) => details.some((p) => p.partnerId === m));
+      const order = [...sortPartners(stored.map((m) => ({ id: m })), details).map((p) => p.id), ...others.filter((m) => !stored.includes(m))];
+      return [id, ...order.flatMap(block)];
+    };
+    return block(via);
   };
   // Partner group order. The person with the most partners stands in the middle: the first partner
   // with shared children (by nearestFirst) outermost on the right, the second outermost on the left,
@@ -222,6 +245,8 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     return acc;
   };
 
+  // Per sibling group (its parent ids, sorted), the side where a sibling hanging elsewhere stands.
+  const hints = new Map<string, number>();
   const inLaw = ({ unit: child, via }: Kid) => child.some((id) => id !== via && parentsOf(id).length > 0);
   // `anchor` is a child that already hangs elsewhere (this is an in-law family): it stands at the edge
   // of its siblings facing the tree (`edge` -1 left, 1 right), so the couple stands over it.
@@ -239,6 +264,9 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
     const middle = centres.reduce((a, b) => a + b, 0) / centres.length;
     const singles = centres.length ? keys.filter((key) => !key.includes(',')).map((key) => (nodeX([key], own) >= middle ? 1 : -1)) : [];
     const edgeOf = new Map<Kid, number>();
+    // The side a sibling group leans to (-1 left, 1 right, 0 neither): its one taken edge, else a
+    // sibling hanging elsewhere.
+    const leanOf = new Map<Kid, number>();
     const groups = keys.map((key) => {
       const members = kids.filter((kid) => keyOf(kid.via) === key).sort((a, b) => a.via.localeCompare(b.via));
       // A sibling group's two edges: the anchor on its side; the last child with in-laws on the right,
@@ -257,19 +285,25 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
           taken.add(edge);
         }
       const edge = (kid: Kid) => edgeOf.get(kid) ?? 0;
-      members.sort((a, b) => edge(a) - edge(b));
+      // The others by age: the oldest next to the side the group leans to, else the oldest left.
+      const lean = taken.size === 1 ? [...taken][0] : taken.size ? 0 : (hints.get(key) ?? 0);
+      for (const kid of members) leanOf.set(kid, lean);
+      members.sort((a, b) => edge(a) - edge(b) || (lean > 0 ? -1 : 1) * byAge(a.via, b.via));
       return { key, members };
     });
-    // Married-in partners stand outside: beyond an edge child on that edge's side, left of the row's
-    // first child, otherwise right. A larger partner group is mirrored only to turn a partner with
-    // in-laws toward their edge.
+    // Married-in partners stand outside: beyond an edge child on that edge's side, away from the side
+    // the group leans to, else left of the row's first child and right otherwise. A sibling with
+    // several partners stands inside with all of them beyond it; a larger group with in-laws is
+    // mirrored only to turn a partner with in-laws toward their edge.
     const row = groups.flatMap(({ members }) => members);
     row.forEach((kid, i) => {
       const { unit: child, via } = kid;
       if (kid.anchor || child.length < 2) return;
       const inLaws = child.flatMap((id, at) => (id !== via && parentsOf(id).length ? [at] : []));
-      if (child.length > 2 && !(edgeOf.has(kid) && inLaws.length)) return;
-      const outside = edgeOf.get(kid) ?? (i === 0 && row.length > 1 ? -1 : 1);
+      if (child.length > 2 && !inLaws.length) child.splice(0, child.length, ...outwardBlock(via));
+      else if (child.length > 2 && !edgeOf.has(kid)) return;
+      const lean = leanOf.get(kid)!;
+      const outside = edgeOf.get(kid) ?? (lean ? -lean : i === 0 && row.length > 1 ? -1 : 1);
       const toward = inLaws.length ? inLaws : child.flatMap((id, at) => (id !== via ? [at] : []));
       const leftOfVia = toward.reduce((a, b) => a + b, 0) / toward.length < child.indexOf(via);
       if ((outside < 0) !== leftOfVia) child.reverse();
@@ -326,49 +360,64 @@ export function simpleLayout(people: Person[], gen: Map<string, number>) {
   };
   const childIdsOf = (unit: string[]) => people.filter((p) => parentsOf(p.id).some((id) => unit.includes(id))).map((p) => p.id);
   const ownChild = (unit: string[], id: string) => childrenOf.get(unit)!.some(({ unit: child }) => child.includes(id));
-  for (const left = [...roots]; left.length; ) {
-    const next = left.findIndex((r) => childIdsOf(r).some((id) => tree.xs.has(id)));
-    // Otherwise a root that owns all its children goes first, so a root with a child hanging under
-    // another family waits for that family and can then stand over the child's side.
-    const primary = left.findIndex((r) => !childIdsOf(r).some((id) => !ownChild(r, id)));
-    const [root] = left.splice(next >= 0 ? next : Math.max(primary, 0), 1);
-    const anchor = childIdsOf(root).find((id) => tree.xs.has(id) && !ownChild(root, id));
-    const mates = anchor ? unitOf.get(anchor)!.filter((id) => id !== anchor && tree.xs.has(id)).map((id) => tree.xs.get(id)!) : [];
-    const side = anchor && mates.length && mates.every((x) => x > tree.xs.get(anchor)!) ? -1 : 1;
-    const shape = layout(root, anchor ? { id: anchor, edge: -side } : undefined);
-    if (anchor) {
-      const by = tree.xs.get(anchor)! - shape.xs.get(anchor)!;
-      shape.xs.delete(anchor);
-      const moved = (id: string, x: number, spread: number) => x + by + side * (root.includes(id) ? spread / 2 : spread);
-      const clash = (spread: number) =>
-        [...shape.xs].some(([id, x]) =>
-          [...tree.xs].some(([other, ox]) => genOf(other) === genOf(id) && Math.abs(ox - moved(id, x, spread)) < NAME_GAP + FAMILY_GAP),
-        );
-      let spread = 0;
-      while (spread < 60 && clash(spread)) spread += 1;
-      if (!clash(spread)) {
-        for (const [id, x] of shape.xs) tree.xs.set(id, moved(id, x, spread));
-        recontour();
-        continue;
+  const placeRoots = () => {
+    tree.xs.clear();
+    tree.contour.clear();
+    for (const left = [...roots]; left.length; ) {
+      const next = left.findIndex((r) => childIdsOf(r).some((id) => tree.xs.has(id)));
+      // Otherwise a root that owns all its children goes first, so a root with a child hanging under
+      // another family waits for that family and can then stand over the child's side.
+      const primary = left.findIndex((r) => !childIdsOf(r).some((id) => !ownChild(r, id)));
+      const [root] = left.splice(next >= 0 ? next : Math.max(primary, 0), 1);
+      const anchor = childIdsOf(root).find((id) => tree.xs.has(id) && !ownChild(root, id));
+      const mates = anchor ? unitOf.get(anchor)!.filter((id) => id !== anchor && tree.xs.has(id)).map((id) => tree.xs.get(id)!) : [];
+      const side = anchor && mates.length && mates.every((x) => x > tree.xs.get(anchor)!) ? -1 : 1;
+      const shape = layout(root, anchor ? { id: anchor, edge: -side } : undefined);
+      if (anchor) {
+        const by = tree.xs.get(anchor)! - shape.xs.get(anchor)!;
+        shape.xs.delete(anchor);
+        const moved = (id: string, x: number, spread: number) => x + by + side * (root.includes(id) ? spread / 2 : spread);
+        const clash = (spread: number) =>
+          [...shape.xs].some(([id, x]) =>
+            [...tree.xs].some(([other, ox]) => genOf(other) === genOf(id) && Math.abs(ox - moved(id, x, spread)) < NAME_GAP + FAMILY_GAP),
+          );
+        let spread = 0;
+        while (spread < 60 && clash(spread)) spread += 1;
+        if (!clash(spread)) {
+          for (const [id, x] of shape.xs) tree.xs.set(id, moved(id, x, spread));
+          recontour();
+          continue;
+        }
       }
+      pack(tree, shape, Infinity, false, side > 0 ? -Infinity : Infinity, side);
+      if (next < 0) continue;
+      const ends = childIdsOf(root).map((id) => tree.xs.get(id)!);
+      const g = genOf(root[0]);
+      const [l, r] = [tree.xs.get(root[0])!, tree.xs.get(root.at(-1)!)!];
+      const centre = (l + r) / 2;
+      const target = (Math.min(...ends) + Math.max(...ends)) / 2;
+      const row = [...tree.xs].filter(([id, x]) => genOf(id) === g && !root.includes(id) && (side > 0 ? x < l : x > r)).map(([, x]) => x);
+      const by =
+        side > 0
+          ? Math.max(target - centre, Math.max(...row) + NAME_GAP + FAMILY_GAP - l)
+          : Math.min(target - centre, Math.min(...row) - NAME_GAP - FAMILY_GAP - r);
+      for (const id of root) tree.xs.set(id, tree.xs.get(id)! + by);
+      const below = [...shape.xs.keys()].filter((id) => !root.includes(id));
+      for (const id of below) tree.xs.set(id, tree.xs.get(id)! + 2 * (centre + by - target));
+      recontour();
     }
-    pack(tree, shape, Infinity, false, side > 0 ? -Infinity : Infinity, side);
-    if (next < 0) continue;
-    const ends = childIdsOf(root).map((id) => tree.xs.get(id)!);
-    const g = genOf(root[0]);
-    const [l, r] = [tree.xs.get(root[0])!, tree.xs.get(root.at(-1)!)!];
-    const centre = (l + r) / 2;
-    const target = (Math.min(...ends) + Math.max(...ends)) / 2;
-    const row = [...tree.xs].filter(([id, x]) => genOf(id) === g && !root.includes(id) && (side > 0 ? x < l : x > r)).map(([, x]) => x);
-    const by =
-      side > 0
-        ? Math.max(target - centre, Math.max(...row) + NAME_GAP + FAMILY_GAP - l)
-        : Math.min(target - centre, Math.min(...row) - NAME_GAP - FAMILY_GAP - r);
-    for (const id of root) tree.xs.set(id, tree.xs.get(id)! + by);
-    const below = [...shape.xs.keys()].filter((id) => !root.includes(id));
-    for (const id of below) tree.xs.set(id, tree.xs.get(id)! + 2 * (centre + by - target));
-    recontour();
+  };
+  placeRoots();
+  // A sibling group whose married sibling hangs under the partner's family leans toward that sibling,
+  // as toward a taken edge; that side is known only once placed, so the roots are placed again.
+  const hanging = new Set([...childrenOf.values()].flat().map((kid) => kid.via));
+  const mean = (ids: string[]) => ids.reduce((sum, id) => sum + tree.xs.get(id)!, 0) / ids.length;
+  for (const { parents, children } of model.unions) {
+    const here = children.filter((id) => hanging.has(id) && tree.xs.has(id));
+    const away = children.filter((id) => !hanging.has(id) && tree.xs.has(id));
+    if (here.length && away.length) hints.set([...parents].sort().join(), Math.sign(mean(away) - mean(here)));
   }
+  if (hints.size) placeRoots();
   const xs = [...tree.xs.values()];
   const middle = xs.length ? (Math.min(...xs) + Math.max(...xs)) / 2 : 0;
   const last = Math.max(0, ...level.values());

@@ -89,7 +89,9 @@ const checkDrawn = (name, list, stubs) => {
 };
 
 // The child of rp1 alone would read as a child of rp1 and rp2, whose child hangs under the ex-partner.
-checkDrawn('fixture A', fixtureA(), ['rps']);
+// a2 stands inside with all partners beyond it, current first, so the line to the outer s2 passes
+// over h2's union and m2 gets a stub.
+checkDrawn('fixture A', fixtureA(), ['m2', 'rps']);
 
 // The partner who married in at the right edge has parents too: their couple stands over that partner.
 {
@@ -101,7 +103,7 @@ checkDrawn('fixture A', fixtureA(), ['rps']);
   list.find((p) => p.id === 'w4').parentIds = ['xp', 'xq'];
   const { violations, stubs, at } = draw(list);
   assert.deepEqual(violations, [], 'fixture A with parents of w4');
-  assert.deepEqual(stubs, ['rps'], 'fixture A with parents of w4: stubs');
+  assert.deepEqual(stubs.sort(), ['m2', 'rps'], 'fixture A with parents of w4: stubs');
   const centre = (at.get('xp')[0] + at.get('xq')[0]) / 2;
   assert.equal(centre, at.get('w4')[0], 'the parents of w4 stand directly above w4');
 }
@@ -122,7 +124,7 @@ checkDrawn('fixture A', fixtureA(), ['rps']);
   list.find((p) => p.id === 'y3').parentIds = ['yp', 'yq'];
   const { violations, stubs } = draw(list);
   assert.deepEqual(violations, [], 'fixture A with three in-law families');
-  assert.deepEqual(stubs.sort(), ['rps', 'w1'], 'exactly one of the three in-law families is stubbed');
+  assert.deepEqual(stubs.sort(), ['m2', 'rps', 'w1'], 'exactly one of the three in-law families is stubbed');
 }
 
 // A former couple with a shared child and a child of only one of them: the single parent's child would
