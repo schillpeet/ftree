@@ -8,16 +8,25 @@ import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
+import jakarta.servlet.http.HttpServletRequest
+import org.springframework.core.io.ByteArrayResource
+import org.springframework.core.io.Resource
+import org.springframework.http.CacheControl
 import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
+import java.time.Duration
 import java.util.UUID
 
 @RestController
-class FamiliesController(private val familyService: FamilyService) : FamiliesApi {
+class FamiliesController(
+    private val familyService: FamilyService,
+    // Request-scoped proxy; the generated interface does not pass the body's Content-Type.
+    private val request: HttpServletRequest,
+) : FamiliesApi {
     override fun getFamilies(): ResponseEntity<List<FamilySummary>> = ResponseEntity.ok(familyService.findAll())
 
     override fun createFamily(createFamilyRequest: CreateFamilyRequest): ResponseEntity<FamilySummary> =
@@ -64,6 +73,27 @@ class FamiliesController(private val familyService: FamilyService) : FamiliesApi
 
     override fun deleteFamily(familyId: UUID): ResponseEntity<Void> =
         if (familyService.delete(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+
+    override fun uploadFamilyPhoto(familyId: UUID, body: Resource): ResponseEntity<Void> =
+        when (familyService.updatePhoto(familyId, request.contentType, body.contentAsByteArray)) {
+            PhotoResult.UPDATED -> ResponseEntity.noContent().build()
+            PhotoResult.INVALID -> ResponseEntity.badRequest().build()
+            PhotoResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            PhotoResult.TOO_LARGE -> ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build()
+            PhotoResult.UNSUPPORTED_TYPE -> ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build()
+        }
+
+    override fun getFamilyPhoto(familyId: UUID): ResponseEntity<Resource> =
+        familyService.findPhoto(familyId)?.let { photo ->
+            ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(photo.contentType))
+                .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePrivate())
+                .header("X-Content-Type-Options", "nosniff")
+                .body<Resource>(ByteArrayResource(photo.data))
+        } ?: ResponseEntity.notFound().build()
+
+    override fun deleteFamilyPhoto(familyId: UUID): ResponseEntity<Void> =
+        if (familyService.deletePhoto(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
 
     override fun renameFamily(familyId: UUID, renameFamilyRequest: RenameFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.rename(familyId, renameFamilyRequest)) {

@@ -250,10 +250,10 @@ class MemberService(
         return PhotoResult.UPDATED
     }
 
-    fun findPhoto(familyId: UUID, id: UUID): MemberPhoto? =
+    fun findPhoto(familyId: UUID, id: UUID): Photo? =
         jdbc.query(
             "SELECT p.content_type, p.data FROM member_photos p JOIN members m ON m.id = p.member_id WHERE p.member_id = ? AND m.family_id = ?",
-            { rs, _ -> MemberPhoto(rs.getString(1), rs.getBytes(2)) },
+            { rs, _ -> Photo(rs.getString(1), rs.getBytes(2)) },
             id, familyId,
         ).firstOrNull()
 
@@ -329,7 +329,7 @@ enum class PlacementResult { UPDATED, INVALID, NOT_FOUND, PIN_TAKEN }
 
 enum class PhotoResult { UPDATED, INVALID, NOT_FOUND, TOO_LARGE, UNSUPPORTED_TYPE }
 
-class MemberPhoto(val contentType: String, val data: ByteArray)
+class Photo(val contentType: String, val data: ByteArray)
 
 internal const val MAX_PHOTO_BYTES = 2 * 1024 * 1024
 internal val PHOTO_TYPES = setOf("image/jpeg", "image/png", "image/webp")
