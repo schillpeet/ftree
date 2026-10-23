@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.19.0](https://github.com/schillpeet/ftree/compare/v0.18.0...v0.19.0) (2026-10-23)
+
+
+### Features
+
+* **ui:** show logo and version at the bottom of the screen ([#173](https://github.com/schillpeet/ftree/issues/173)) ([553852f](https://github.com/schillpeet/ftree/commit/553852f803755ebe0e2542cd72cd2340608152f8))
+
 ## [0.18.0](https://github.com/schillpeet/ftree/compare/v0.17.0...v0.18.0) (2026-10-23)
 
 
