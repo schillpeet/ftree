@@ -4,7 +4,33 @@
 PostgreSQL is not part of the chart; the BFF reads `db.url`, `db.user`, and the `password` key of the Secret named in `db.existingSecret`.
 Always install the release as `ftree`: the UI image proxies `/api` to `http://ftree-bff:8080`, so the BFF Service must be named `ftree-bff`.
 Set `bff.corsAllowedOrigins` to the origin the browser opens the UI on (for example `http://localhost:8088` behind a port-forward); the proxy forwards the browser's `Origin`, so the BFF otherwise rejects every write with `403 Invalid CORS request`.
-[CHEATSHEET.md](CHEATSHEET.md) lists the Helm, kubectl, and kind commands for testing the chart locally.
+Running ftree in a cluster (Flux manifests, the kubectl, kind, Helm, and Flux cheatsheet, and the plan for a local kind cluster) lives in the private [`schillpeet/ftree-infra`](https://github.com/schillpeet/ftree-infra) repository.
+
+## Develop the chart
+
+Check the chart without a cluster:
+
+| Command | What it does |
+| --- | --- |
+| `helm lint deploy/ftree` | Checks chart structure and that templates render to valid YAML; does not check Kubernetes fields |
+| `helm template ftree deploy/ftree` | Renders the manifests that would be installed, without installing |
+| `helm template ftree deploy/ftree -s templates/ui.yaml` | Renders a single template |
+| `helm template ftree deploy/ftree \| kubectl apply --dry-run=server -f -` | Lets a cluster validate the manifests without applying them; catches missing required fields |
+| `helm package deploy/ftree --version 0.0.1 --app-version 0.0.1 --destination /tmp` | Packs the chart into a `.tgz`, as the release workflow does |
+
+To try unreleased changes in kind, build the images, load them into the cluster (it cannot see local images), and install the chart from this checkout.
+The database and the `ftree-db` Secret must exist first (see the cheatsheet in `ftree-infra`).
+
+```bash
+podman build -t localhost/ftree-ui:dev -f ui/Dockerfile ui
+podman build -t localhost/ftree-bff:dev -f bff/Dockerfile .
+podman save localhost/ftree-ui:dev localhost/ftree-bff:dev -o /tmp/ftree-images.tar
+kind load image-archive /tmp/ftree-images.tar --name ftree
+helm install ftree deploy/ftree --set ui.image.repository=localhost/ftree-ui --set ui.image.tag=dev --set ui.image.pullPolicy=Never --set bff.image.repository=localhost/ftree-bff --set bff.image.tag=dev --set bff.image.pullPolicy=Never --set bff.corsAllowedOrigins=http://localhost:8088
+```
+
+With Docker instead of Podman, use `docker build` and `docker save` with the same arguments.
+If Flux manages the `ftree` release in that cluster, run `flux suspend helmrelease ftree` first and `helm upgrade` instead of `helm install`.
 
 ## Work in progress
 
@@ -26,7 +52,7 @@ Each published release pushes it to `oci://ghcr.io/schillpeet/charts/ftree` with
 
 ### Next phases
 
-1. Flux in a local kind cluster: bootstrap the private `schillpeet/ftree-infra` repository, add a HelmRepository and HelmRelease (`metadata.name: ftree`, semver range), and let Flux roll out new releases.
+1. Flux in a local kind cluster: started in `schillpeet/ftree-infra` (Flux bootstrap, HelmRepository, and HelmRelease `ftree` with a semver range); its README has the step-by-step plan.
 2. Terraform in `ftree-infra`: state in Hetzner Object Storage, a CAX21 server with k3s via cloud-init, a firewall, and a Cloudflare Tunnel, DNS record, and Access application; then a workflow that plans on pull requests and applies after review.
 3. Production: point Flux at the Hetzner cluster, run PostgreSQL with CloudNativePG, encrypt Secrets with SOPS and age, run `cloudflared` in the cluster, and set up backups with a tested restore.
 
