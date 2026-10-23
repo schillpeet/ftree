@@ -1,0 +1,18 @@
+# GHCR packages are private until made public
+imagePullSecrets: []
+ui:
+  image: { repository: ghcr.io/schillpeet/ftree-ui, tag: "", pullPolicy: IfNotPresent }
+  resources:
+    requests: { memory: 256Mi }
+    limits: { memory: 256Mi }
+bff:
+  image: { repository: ghcr.io/schillpeet/ftree-bff, tag: "", pullPolicy: IfNotPresent }
+  corsAllowedOrigins: ""
+  resources:
+    requests: { memory: 512Mi }
+    limits: { memory: 512Mi }
+db:
+  url: "jdbc:postgresql://ftree-db:5432/appdb"
+  user: "app"
+  # Name of an existing Secret whose "password" key holds the database password.
+  existingSecret: "ftree-db"

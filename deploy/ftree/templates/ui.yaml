@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels: {{- include "ftree.labels" (dict "ctx" . "component" "ui") | nindent 4 }}
+  name: {{ include "ftree.fullname" . }}-ui
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {{- include "ftree.selectorLabels" (dict "ctx" . "component" "ui") | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "ftree.labels" (dict "ctx" . "component" "ui") | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: ui
+          image: "{{ .Values.ui.image.repository }}:{{ .Values.ui.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.ui.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+          resources: {{- toYaml .Values.ui.resources | nindent 12 }}
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels: {{- include "ftree.labels" (dict "ctx" . "component" "ui") | nindent 4 }}
+  name: {{ include "ftree.fullname" . }}-ui
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
+  selector: {{- include "ftree.selectorLabels" (dict "ctx" . "component" "ui") | nindent 4 }}

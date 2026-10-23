@@ -1,0 +1,8 @@
+apiVersion: v2
+name: ftree
+description: ftree UI and BFF
+type: application
+
+# version and appVersion are placeholders; the release workflow sets both with helm package --version/--app-version.
+version: 0.0.0
+appVersion: "0.0.0"
