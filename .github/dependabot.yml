@@ -28,3 +28,8 @@ updates:
       interval: weekly
     commit-message:
       prefix: "deps(repo)"
+    groups:
+      # init and analyze must run the same CodeQL version, or the analyze post step fails.
+      codeql-action:
+        patterns:
+          - github/codeql-action*
