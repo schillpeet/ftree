@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/schillpeet/ftree/compare/v0.17.0...v0.18.0) (2026-10-23)
+
+
+### Features
+
+* **repo:** add helm chart ([#139](https://github.com/schillpeet/ftree/issues/139)) ([029622c](https://github.com/schillpeet/ftree/commit/029622c464c38cc71371c7575cc8cfc133db6bf2))
+
 ## [0.17.0](https://github.com/schillpeet/ftree/compare/v0.16.0...v0.17.0) (2026-10-22)
 
 
