@@ -18,6 +18,7 @@
   - `test`: adding or changing tests
   - `build`: build system or external dependency changes
   - `ci`: CI configuration changes
+  - `deps`: dependency updates by Dependabot only; they appear as one changelog line per release and trigger at least a patch release
     If a change introduces new functionality, always use `feat`. Scopes remain `ui`, `bff`, `db`, and `repo`.
 - Start every new task by creating a branch from `main` before changing any files. Name it after the planned commit as `<type>/<scope>-<message-in-kebab-case>`, for example `feat(ui): add person detail panel` → `feat/ui-add-person-detail-panel`.
 - Pull requests are squash-merged, so the PR title becomes the commit on `main` and is what release-please parses. Commits inside a PR do not produce separate release notes after squash-merge. Give every independently releasable feature or fix its own PR with a title that accurately describes it (`feat(...)` for a feature, `fix(...)` for a bug fix); do not bundle independent features into one PR or rely on their branch commits to appear in the changelog. Push the branch and open the PR, then verify its exact title follows the lowercase convention and that the PR-title check passes before merging. Configure the PR-title check as a required GitHub status check so invalid titles cannot be merged.

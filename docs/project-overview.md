@@ -329,7 +329,10 @@ The UI version is the `version` field in `ui/package.json`, which release-please
 CI checks out the full history for the BFF so tags are available.
 
 release-please (`.github/workflows/release-please.yml`, `release-please-config.json`, `.release-please-manifest.json`) opens or updates a release PR after each merge to `main`.
-Commit types decide the next version: `fix` bumps the patch version, `feat` the minor version, and breaking changes also bump the minor version while in `0.x`; other types do not trigger a release.
+Commit types decide the next version: `fix` bumps the patch version, `feat` the minor version, and breaking changes also bump the minor version while in `0.x`; other types except `deps` do not trigger a release.
+Dependabot titles its pull requests `deps(ui)`, `deps(bff)`, or `deps(repo)` (`.github/dependabot.yml`), and `release-please-config.json` lists the `deps` type as a visible "Dependencies" changelog section, so Dependabot merges alone bump the patch version.
+After release-please has updated the release PR, `release-please.yml` runs `.github/scripts/collapse-dependency-notes.mjs` on the release branch's `CHANGELOG.md` and on the PR body, which collapses all Dependabot entries of the upcoming release into the single line "update dependencies with dependabot" with links to their PRs.
+The GitHub release notes are taken from the release PR body, so they show the same single line.
 Merging the release PR updates `CHANGELOG.md` and creates the tag and GitHub release.
 Each published release triggers `.github/workflows/readme-preview.yml`, which starts the stack with the fictional demo family from `docs/preview/demo.ged` and attaches a `preview.png` screenshot to the release; the README embeds the latest release's preview, and the workflow can be run manually for an existing tag.
 Release PRs are titled `chore(repo): release X.Y.Z` (`pull-request-title-pattern`) so they pass the PR-title check, and are created with the fine-grained personal access token in the `RELEASE_PLEASE_TOKEN` secret (this repository only; Contents and Pull requests read/write), because PRs opened with `GITHUB_TOKEN` do not trigger workflows and their required checks would never run.
