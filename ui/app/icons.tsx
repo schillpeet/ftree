@@ -169,3 +169,14 @@ export const PinIcon = () => (
     <path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7" />
   </Icon>
 );
+
+// The f-monogram from app/icon.svg (the favicon), in its own colours.
+export const LogoIcon = () => (
+  <svg className="logo-icon" viewBox="0 0 128 128" aria-label="ftree" role="img">
+    <path d="M56 118 L56 48 C56 26 72 16 92 22" fill="none" stroke="#2E6A4F" strokeWidth="14" strokeLinecap="round" />
+    <line x1="36" y1="64" x2="80" y2="64" stroke="#2E6A4F" strokeWidth="10" strokeLinecap="round" />
+    <circle cx="36" cy="64" r="9" fill="#7DB46C" />
+    <circle cx="82" cy="64" r="9" fill="#7DB46C" />
+    <path d="M0 0 C12 -10.2 12 -24.48 0 -34 C-12 -24.48 -12 -10.2 0 0Z" fill="#D9A93A" transform="translate(92 22) rotate(62)" />
+  </svg>
+);

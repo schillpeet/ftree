@@ -4,7 +4,14 @@
   "packages": {
     ".": {
       "release-type": "simple",
-      "bump-minor-pre-major": true
+      "bump-minor-pre-major": true,
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "ui/package.json",
+          "jsonpath": "$.version"
+        }
+      ]
     }
   },
   "pull-request-title-pattern": "chore(repo): release ${version}"

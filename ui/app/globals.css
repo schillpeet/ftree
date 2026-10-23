@@ -2565,3 +2565,25 @@ button.dashboard-family:hover {
   border-radius: 10px;
   background: rgba(12, 18, 27, 0.66);
 }
+
+/* Logo and released version, centred at the bottom; clicks pass through to the scene. */
+.app-version {
+  position: fixed;
+  z-index: 3;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 4px 6px;
+  color: var(--glass-muted);
+  font-size: 12px;
+  line-height: 1;
+  pointer-events: none;
+}
+
+.logo-icon {
+  width: 20px;
+  height: 20px;
+}

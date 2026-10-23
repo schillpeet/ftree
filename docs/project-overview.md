@@ -60,6 +60,7 @@ Each card hangs under its own twig with leaves only on top and at the tip, and e
 Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a person and their partners hang in the middle of it, and their children's branch leaves the trunk right below them, so parents always hang directly above their children.
 The family is centred on the front of the tree; when the wedges do not fit around the trunk, all tiers reach further out.
 The tiered tree is rebuilt when the family's generations change; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
+The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 
 ### Sky and time of day
 
@@ -323,7 +324,8 @@ Logo variants live in `docs/assets/`; the f-monogram (`d-f-monogramm-*.svg`) is 
 ## Versioning and Releases
 
 The repository is versioned as a whole with Semantic Versioning tags (`vX.Y.Z`) on `main`.
-No file holds the version: `bff/build.gradle.kts` derives it with `git describe --tags` (for example `0.1.0` on a tag, `0.1.0-3-g<sha>` after it, `0.0.0-dev` without Git history), and `ui/package.json` has no version field.
+`bff/build.gradle.kts` derives the BFF version with `git describe --tags` (for example `0.1.0` on a tag, `0.1.0-3-g<sha>` after it, `0.0.0-dev` without Git history).
+The UI version is the `version` field in `ui/package.json`, which release-please bumps in the release PR (`extra-files` in `release-please-config.json`), because the UI image is built without Git history.
 CI checks out the full history for the BFF so tags are available.
 
 release-please (`.github/workflows/release-please.yml`, `release-please-config.json`, `.release-please-manifest.json`) opens or updates a release PR after each merge to `main`.
