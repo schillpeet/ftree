@@ -52,6 +52,6 @@ jobs:
         run: ./gradlew --no-daemon build -x test
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@b31ef66637df4fc5b5e4a89d0cc94f8eeb46a04d # v3.39.0
+        uses: github/codeql-action/analyze@ce5e7eeac396d720fe2d802714996c8ce561e311 # v3.39.0
         with:
           category: "/language:${{ matrix.language }}"
