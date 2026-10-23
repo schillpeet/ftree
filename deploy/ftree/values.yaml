@@ -2,7 +2,9 @@
 imagePullSecrets: []
 ui:
   image: { repository: ghcr.io/schillpeet/ftree-ui, tag: "", pullPolicy: IfNotPresent }
-  resources: {}
+  resources:
+    requests: { memory: 256Mi }
+    limits: { memory: 256Mi }
 bff:
   image: { repository: ghcr.io/schillpeet/ftree-bff, tag: "", pullPolicy: IfNotPresent }
   corsAllowedOrigins: ""

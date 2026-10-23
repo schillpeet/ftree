@@ -3,6 +3,7 @@
 `deploy/ftree/` is the Helm chart that installs the ftree UI and BFF into Kubernetes.
 PostgreSQL is not part of the chart; the BFF reads `db.url`, `db.user`, and the `password` key of the Secret named in `db.existingSecret`.
 Always install the release as `ftree`: the UI image proxies `/api` to `http://ftree-bff:8080`, so the BFF Service must be named `ftree-bff`.
+Set `bff.corsAllowedOrigins` to the origin the browser opens the UI on (for example `http://localhost:8088` behind a port-forward); the proxy forwards the browser's `Origin`, so the BFF otherwise rejects every write with `403 Invalid CORS request`.
 
 ## Work in progress
 
@@ -12,9 +13,9 @@ The chart is being built step by step (see the plan below) and is not published 
 
 - [x] Scaffold: `Chart.yaml` (version placeholders set by the release workflow), `values.yaml`, `templates/_helpers.tpl` (labels take `(dict "ctx" . "component" "ui|bff")`)
 - [x] `templates/bff.yaml`: Deployment and ClusterIP Service `ftree-bff` on port 8080, DB password from `secretKeyRef`, TCP probes, non-root
-- [ ] `templates/ui.yaml`: copy `bff.yaml`, then `component: ui`, port 3000, no `env`, `httpGet /` probes, about `256Mi` memory in `values.yaml`
-- [ ] Check with `helm lint deploy/ftree` and `helm template ftree deploy/ftree`
-- [ ] Try it in kind: create the cluster, load the images, add a throwaway PostgreSQL and the `ftree-db` Secret, `helm install`, `kubectl port-forward svc/ftree-ui 8088:3000`
+- [x] `templates/ui.yaml`: copy `bff.yaml`, then `component: ui`, port 3000, no `env`, `httpGet /` probes, about `256Mi` memory in `values.yaml`
+- [x] Check with `helm lint deploy/ftree` and `helm template ftree deploy/ftree`
+- [x] Try it in kind: create the cluster, load the images, add a throwaway PostgreSQL and the `ftree-db` Secret, `helm install`, `kubectl port-forward svc/ftree-ui 8088:3000`
 
 ### Next phases
 
