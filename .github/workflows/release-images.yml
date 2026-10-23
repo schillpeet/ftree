@@ -1,6 +1,6 @@
 name: Release images
 
-# Builds the UI and BFF container images for each published release and pushes them to GHCR.
+# Builds the UI and BFF container images and the Helm chart for each published release and pushes them to GHCR.
 # Images are arm64 only, matching the Hetzner CAX servers they are meant for.
 on:
   release:
@@ -48,3 +48,23 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+
+  # Publishes the Helm chart with the release version as chart and app version, so it points at the images above.
+  # Manual runs have no release version and skip it.
+  chart:
+    if: github.event_name == 'release'
+    needs: image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # Helm is preinstalled on GitHub-hosted Ubuntu runners.
+      - env:
+          TAG: ${{ github.event.release.tag_name }}
+          ACTOR: ${{ github.actor }}
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          version="${TAG#v}"
+          echo "$TOKEN" | helm registry login ghcr.io --username "$ACTOR" --password-stdin
+          helm package deploy/ftree --version "$version" --app-version "$version"
+          helm push "ftree-$version.tgz" "oci://ghcr.io/$OWNER/charts"
