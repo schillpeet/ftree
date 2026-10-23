@@ -19,7 +19,7 @@ jobs:
             exit 1
           fi
 
-          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|build|ci)\((ui|bff|db|repo)\)!?:\ [a-z0-9] ]]; then
+          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|build|ci|deps)\((ui|bff|db|repo)\)!?:\ [a-z0-9] ]]; then
             echo "Use <type>(<scope>): <lowercase message>, for example: feat(ui): add family visibility toggle."
             exit 1
           fi

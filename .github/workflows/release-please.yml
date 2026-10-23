@@ -8,11 +8,51 @@ permissions:
   contents: write
   pull-requests: write
 
+# The collapse steps push to the release branch, so two runs must not interleave.
+concurrency:
+  group: release-please
+
 jobs:
   release-please:
     runs-on: ubuntu-latest
     steps:
       - uses: googleapis/release-please-action@45996ed1f6d02564a971a2fa1b5860e934307cf7 # v5.0.0
+        id: release
         with:
           # PRs opened with GITHUB_TOKEN do not trigger workflows, so required checks would never run.
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      # release-please lists every Dependabot update (`deps` commits) under "Dependencies"; collapse them
+      # into one line in CHANGELOG.md and in the PR body, from which the GitHub release notes are taken.
+      # release-please rebuilds the release branch on every push to main, so this runs again each time.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.release.outputs.pr
+        with:
+          ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+
+      - name: Collapse dependency updates in the changelog
+        if: steps.release.outputs.pr
+        env:
+          BRANCH: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+        run: |
+          node .github/scripts/collapse-dependency-notes.mjs CHANGELOG.md
+          if ! git diff --quiet CHANGELOG.md; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -am "chore(repo): collapse dependency updates in changelog"
+            git push origin "HEAD:$BRANCH"
+          fi
+
+      - name: Collapse dependency updates in the release pull request
+        if: steps.release.outputs.pr
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr).number }}
+        run: |
+          gh pr view "$PR_NUMBER" --json body --jq .body > "$RUNNER_TEMP/body.md"
+          cp "$RUNNER_TEMP/body.md" "$RUNNER_TEMP/original.md"
+          node .github/scripts/collapse-dependency-notes.mjs "$RUNNER_TEMP/body.md"
+          if ! cmp -s "$RUNNER_TEMP/body.md" "$RUNNER_TEMP/original.md"; then
+            gh pr edit "$PR_NUMBER" --body-file "$RUNNER_TEMP/body.md"
+          fi

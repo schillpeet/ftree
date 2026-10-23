@@ -5,15 +5,15 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "build(ui)"
-      prefix-development: "build(ui)"
+      prefix: "deps(ui)"
+      prefix-development: "deps(ui)"
 
   - package-ecosystem: gradle
     directory: /bff
     schedule:
       interval: weekly
     commit-message:
-      prefix: "build(bff)"
+      prefix: "deps(bff)"
     groups:
       # The Kotlin plugins share one compiler and must be on the same version.
       kotlin:
@@ -27,4 +27,4 @@ updates:
     schedule:
       interval: weekly
     commit-message:
-      prefix: "ci(repo)"
+      prefix: "deps(repo)"
