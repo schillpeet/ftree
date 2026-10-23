@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
+import packageJson from "./package.json";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+
+  // release-please bumps the version in package.json; it is baked into the bundle at build time.
+  env: { APP_VERSION: packageJson.version },
 
   async rewrites() {
     return [
