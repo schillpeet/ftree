@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.20.0](https://github.com/schillpeet/ftree/compare/v0.19.0...v0.20.0) (2026-10-23)
+
+
+### Features
+
+* **repo:** show dependabot updates as one changelog entry ([#180](https://github.com/schillpeet/ftree/issues/180)) ([df90241](https://github.com/schillpeet/ftree/commit/df902410a5956d4306fef2f7eea76433e6a9d8ca))
+
+
+### Dependencies
+
+* update dependencies with dependabot ([#182](https://github.com/schillpeet/ftree/issues/182), [#184](https://github.com/schillpeet/ftree/issues/184), [#185](https://github.com/schillpeet/ftree/issues/185), [#187](https://github.com/schillpeet/ftree/issues/187), [#190](https://github.com/schillpeet/ftree/issues/190))
+
 ## [0.19.0](https://github.com/schillpeet/ftree/compare/v0.18.0...v0.19.0) (2026-10-23)
 
 
