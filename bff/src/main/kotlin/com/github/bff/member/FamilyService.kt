@@ -65,6 +65,7 @@ class FamilyService(
         val family = familyRepository.saveAndFlush(
             FamilyEntity(
                 name = name,
+                slug = newSlug(name),
                 totalUsers = totalUsers,
                 generationCount = generationCount,
                 minChildren = minChildren,
@@ -95,7 +96,7 @@ class FamilyService(
         val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         if (name.isEmpty() || name.length > 100 || members.isEmpty()) return FamilyArchiveResult.INVALID
         if (familyRepository.existsByNameIgnoreCase(name)) return FamilyArchiveResult.NAME_TAKEN
-        val archived = familyRepository.saveAndFlush(FamilyEntity(name = name))
+        val archived = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name)))
         members.forEach { it.family = archived }
         memberRepository.flush()
         return FamilyArchiveResult.ARCHIVED(archived.toSummary(members))
@@ -114,7 +115,7 @@ class FamilyService(
         }
         if (familyRepository.existsByNameIgnoreCase(name)) return FamilyImportResult.NAME_TAKEN
 
-        val family = familyRepository.saveAndFlush(FamilyEntity(name = name))
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name)))
         val saved = memberRepository.saveAll(
             people.map { person ->
                 MemberEntity(
@@ -159,7 +160,7 @@ class FamilyService(
 
         val originals = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         val names = AnonymousNames(originals)
-        val family = familyRepository.saveAndFlush(FamilyEntity(name = name))
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name)))
         val copies = memberRepository.saveAll(
             originals.map { member ->
                 MemberEntity(
@@ -317,9 +318,12 @@ class FamilyService(
             familyId,
         )
 
+    private fun newSlug(name: String) = uniqueSlug(name, familyRepository::existsBySlug)
+
     private fun FamilyEntity.toSummary(members: List<MemberEntity>, photoUpdatedAt: OffsetDateTime? = null) = FamilySummary().apply {
         id = this@toSummary.id
         name = this@toSummary.name
+        slug = this@toSummary.slug
         memberCount = members.size
         childCount = members.count { it.parents.isNotEmpty() }
         generationCount = memberGenerations(members)

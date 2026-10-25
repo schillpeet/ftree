@@ -16,6 +16,9 @@ class FamilyEntity(
     var id: UUID = UUID.randomUUID(),
     @Column(nullable = false, length = 100)
     var name: String,
+    // Names the family in the access file; set once from the name and kept on rename. FamilyService picks a free one.
+    @Column(nullable = false, updatable = false, length = MAX_SLUG_LENGTH)
+    var slug: String = slugOf(name),
     @Column(nullable = false, updatable = false)
     var createdAt: Instant = Instant.now(),
     var totalUsers: Int? = null,

@@ -12,4 +12,6 @@ interface FamilyRepository : JpaRepository<FamilyEntity, UUID> {
     fun findByNameIgnoreCase(name: String): FamilyEntity?
 
     fun existsByNameIgnoreCase(name: String): Boolean
+
+    fun existsBySlug(slug: String): Boolean
 }

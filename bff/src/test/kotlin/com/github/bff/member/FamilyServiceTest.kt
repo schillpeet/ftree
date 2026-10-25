@@ -262,6 +262,20 @@ class FamilyServiceTest {
         assertTrue(familyService.rename(family.id, RenameFamilyRequest(family.name)) is FamilyRenameResult.RENAMED)
     }
 
+    @Test
+    fun `gives every family a unique slug that survives a rename`() {
+        val name = "Slug test ${UUID.randomUUID()}"
+        val first = (familyService.create(request(name)) as FamilyCreationResult.CREATED).summary
+        familyService.rename(first.id, RenameFamilyRequest("Renamed ${UUID.randomUUID()}"))
+        val second = (familyService.create(request(name.uppercase().replace(' ', '_'))) as FamilyCreationResult.CREATED).summary
+        familyRepository.flush()
+
+        assertEquals(slugOf(name), first.slug)
+        assertEquals("${slugOf(name)}-2", second.slug)
+        assertEquals(first.slug, familyService.findAll().single { it.id == first.id }.slug)
+        assertTrue(familyRepository.findAll().all { it.slug.matches(Regex("^[a-z0-9]+(-[a-z0-9]+)*$")) })
+    }
+
     private fun request(name: String = "Family test ${UUID.randomUUID()}") = CreateFamilyRequest(
         name,
         12,

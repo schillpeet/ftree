@@ -108,6 +108,7 @@ The top centre shows the selected family's name, or "Keine Familie" while the tr
 The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation.
 The UI offers no archiving; the BFF's `POST /families/{familyId}/archive` stays available.
 The family card's edit mode renames the family via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
+Every family has a slug (lowercase ASCII words joined by `-`, at most 60 characters) that is made from its name when it is created, gets `-2`, `-3`, … when taken, and stays when the family is renamed; it names the family in the planned access file, and admins see it on the family card.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The original `/members` endpoints remain available for the default family.
 "GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.

@@ -296,6 +296,9 @@ export default function FamilyCard({
             <p className="family-card-stats">
               <span>{t.familyCard.members(members?.length ?? family.memberCount)}</span>
               <span>{t.familyCard.generations(rows.length || family.generationCount)}</span>
+              <Can permission="family.manage">
+                <span title={t.familyCard.slug}>{family.slug}</span>
+              </Can>
             </p>
           </div>
           {loadError && (
