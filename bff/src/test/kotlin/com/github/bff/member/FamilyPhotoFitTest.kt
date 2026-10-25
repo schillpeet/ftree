@@ -2,7 +2,7 @@ package com.github.bff.member
 
 import com.github.bff.auth.CurrentUser
 import com.github.bff.auth.CurrentUserAuthentication
-import com.github.bff.auth.Role
+import com.github.bff.auth.Access
 import com.github.bff.generated.model.CreateFamilyRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -37,7 +37,7 @@ class FamilyPhotoFitTest {
         mvc = MockMvcBuilders.webAppContextSetup(context).build()
         // Without the security filters, an admin in the context lets the visibility filter show test families.
         SecurityContextHolder.getContext().authentication =
-            CurrentUserAuthentication(CurrentUser("admin@example.com", Role.ADMIN, verified = true))
+            CurrentUserAuthentication(CurrentUser("admin@example.com", Access(admin = true), verified = true))
     }
 
     @AfterTest

@@ -6,7 +6,6 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import com.github.bff.generated.model.Permission as ApiPermission
-import com.github.bff.generated.model.Role as ApiRole
 
 @RestController
 class MeController : MeApi {
@@ -15,7 +14,7 @@ class MeController : MeApi {
         return ResponseEntity.ok(
             Me(
                 user.email,
-                ApiRole.fromValue(user.role.name.lowercase()),
+                user.access.admin,
                 Permission.entries.filter { it in user.permissions }.map { ApiPermission.fromValue(it.key) },
                 user.verified,
             ),

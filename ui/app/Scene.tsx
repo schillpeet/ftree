@@ -570,7 +570,8 @@ export default function Scene({
   const t = useT();
   const [language, setLanguage] = useLanguage();
   const [appearance] = useAppearance();
-  const devTools = useCan('dev.tools');
+  // Evolution: view, lines, and the legend, for every role; the admin tools in it come as `debugTools`.
+  const evolution = useCan('tree.appearance');
   const [showLines, setShowLines] = useShowLines();
   const [highlightCoreFamily, setHighlightCoreFamily] = useHighlightCoreFamily();
   const [highlightBlood, setHighlightBlood] = useHighlightBlood();
@@ -749,7 +750,7 @@ export default function Scene({
           <LanguageIcon />
           {t.language.short}
         </button>
-        {devTools && (
+        {evolution && (
           <button
             className="glass glass-button"
             type="button"
@@ -783,13 +784,15 @@ export default function Scene({
           </div>
         </section>
       )}
-      {openTool === 'evolution' && devTools && (
+      {openTool === 'evolution' && evolution && (
         <section className="glass debug-panel" id="evolution-panel" aria-label={t.tools.evolution} ref={toolRef}>
           <div className="debug-panel-body">
-            <section>
-              <h2>{t.tools.data}</h2>
-              {debugTools}
-            </section>
+            {debugTools && (
+              <section>
+                <h2>{t.tools.data}</h2>
+                {debugTools}
+              </section>
+            )}
             <section>
               <h2>{t.tools.view}</h2>
               <ZoomScale controls={controls} />
