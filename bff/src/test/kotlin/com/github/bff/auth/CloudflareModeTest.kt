@@ -21,19 +21,20 @@ class CloudflareModeTest {
     private fun me(token: String) = mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token) }
 
     @Test
-    fun `me returns the verified user with the role from the email`() {
+    fun `me returns the verified user and whether the email belongs to an admin`() {
         me(token(email = " Admin@Example.com")).andExpect {
             status { isOk() }
             jsonPath("$.email") { value("Admin@Example.com") }
-            jsonPath("$.role") { value("admin") }
+            jsonPath("$.admin") { value(true) }
             jsonPath("$.verified") { value(true) }
-            jsonPath("$.permissions.length()") { value(7) }
+            jsonPath("$.permissions.length()") { value(8) }
         }
-        me(token(email = "editor@example.com")).andExpect { jsonPath("$.role") { value("editor") } }
-        me(token(email = "someone@example.com")).andExpect {
-            jsonPath("$.role") { value("visitor") }
-            jsonPath("$.permissions.length()") { value(1) }
-            jsonPath("$.permissions[0]") { value("tree.view") }
+        listOf("editor@example.com", "someone@example.com").forEach { email ->
+            me(token(email = email)).andExpect {
+                jsonPath("$.admin") { value(false) }
+                jsonPath("$.permissions.length()") { value(1) }
+                jsonPath("$.permissions[0]") { value("tree.appearance") }
+            }
         }
     }
 

@@ -1,8 +1,6 @@
 package com.github.bff.auth
 
-import org.springframework.stereotype.Component
-
-@Component
+// The app.roles lists, used while no access file is set.
 class RoleResolver(properties: RoleProperties) {
     private val admins = properties.admins.normalized()
     private val editors = properties.editors.normalized()
@@ -16,6 +14,6 @@ class RoleResolver(properties: RoleProperties) {
         }
 }
 
-private fun String.normalized() = trim().lowercase()
+private fun String.normalized() = normalizedEmail()
 
 private fun List<String>.normalized() = map { it.normalized() }.filter { it.isNotEmpty() }.toSet()

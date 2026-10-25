@@ -1,0 +1,10 @@
+{{- if .Values.bff.access }}
+# Who may see which family; the BFF mounts it as /config/access.yaml.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels: {{- include "ftree.labels" (dict "ctx" . "component" "bff") | nindent 4 }}
+  name: {{ include "ftree.fullname" . }}-bff-access
+data:
+  access.yaml: {{ .Values.bff.access | quote }}
+{{- end }}

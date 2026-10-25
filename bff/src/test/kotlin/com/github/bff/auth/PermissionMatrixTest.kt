@@ -42,7 +42,7 @@ class PermissionMatrixTest {
 
     private fun endpoints(family: UUID, member: UUID = UUID.randomUUID()) = listOf(
         Endpoint(GET, "/me", null),
-        Endpoint(GET, "/families", TREE_VIEW),
+        Endpoint(GET, "/families", null),
         Endpoint(GET, "/families/$family/members", TREE_VIEW),
         Endpoint(GET, "/families/$family/photo", TREE_VIEW),
         Endpoint(GET, "/families/$family/members/$member/photo", TREE_VIEW),
@@ -90,13 +90,18 @@ class PermissionMatrixTest {
 
     @Test
     fun `every endpoint requires the permission from the role concept`() {
-        val users = mapOf("visitor@example.com" to Role.VISITOR, "editor@example.com" to Role.EDITOR, "admin@example.com" to Role.ADMIN)
-        val mismatches = users.flatMap { (email, role) ->
+        // With the app.roles lists, non-admins have their role in the first family, the visible one.
+        val users = mapOf(
+            "visitor@example.com" to Role.VISITOR.permissions + Access.NONE.permissions,
+            "editor@example.com" to Role.EDITOR.permissions + Access.NONE.permissions,
+            "admin@example.com" to Permission.entries.toSet(),
+        )
+        val mismatches = users.flatMap { (email, permissions) ->
             endpoints(visibleFamily()).mapNotNull { endpoint ->
                 val status = status(endpoint, email)
-                val allowed = endpoint.permission == null || endpoint.permission in role.permissions
+                val allowed = endpoint.permission == null || endpoint.permission in permissions
                 val ok = if (allowed) status != 401 && status != 403 else status == 403
-                if (ok) null else "$role ${endpoint.method} ${endpoint.path}: $status, expected ${if (allowed) "allowed" else "403"}"
+                if (ok) null else "$email ${endpoint.method} ${endpoint.path}: $status, expected ${if (allowed) "allowed" else "403"}"
             }
         }
         assertEquals(emptyList(), mismatches)

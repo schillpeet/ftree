@@ -5,15 +5,16 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 
 // verified: Cloudflare Access confirmed the email (false in dev mode).
-data class CurrentUser(val email: String, val role: Role, val verified: Boolean) {
-    val permissions: Set<Permission> get() = role.permissions
+data class CurrentUser(val email: String, val access: Access, val verified: Boolean) {
+    // Permissions outside any family; FamilyVisibility adds the role in a family.
+    val permissions: Set<Permission> get() = access.permissions
 
     companion object {
         fun current(): CurrentUser? = SecurityContextHolder.getContext().authentication?.principal as? CurrentUser
     }
 }
 
-// Grants the role's permissions as authorities, e.g. hasAuthority("member.edit").
+// Grants the permissions outside any family as authorities, e.g. hasAuthority("member.edit").
 class CurrentUserAuthentication(private val user: CurrentUser) :
     AbstractAuthenticationToken(user.permissions.map { SimpleGrantedAuthority(it.key) }) {
     init {

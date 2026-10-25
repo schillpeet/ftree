@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 
 import { EyeIcon, EyeOffIcon, PencilIcon, UploadIcon, UsersIcon, CloseIcon } from './icons';
 import { importFamily, reorderFamilies, type FamilySummary } from '../lib/api/generated/members';
 import { useT } from './i18n';
+import { useCan } from './Permissions';
 
 export default function FamiliesPanel({
   families,
@@ -34,6 +35,8 @@ export default function FamiliesPanel({
   onImported: (family: FamilySummary) => void;
 }) {
   const t = useT();
+  // Everyone may switch between their families; only admins import and reorder them.
+  const manage = useCan('family.manage');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -119,23 +122,25 @@ export default function FamiliesPanel({
         </button>
       </header>
       <div className="families-panel-body">
-        <div className="family-set-import">
-          <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
-            <UploadIcon />
-            {isImporting ? t.families.importing : t.families.import}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".ged"
-            hidden
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              event.target.value = '';
-              if (file) void importGedcom(file);
-            }}
-          />
-        </div>
+        {manage && (
+          <div className="family-set-import">
+            <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
+              <UploadIcon />
+              {isImporting ? t.families.importing : t.families.import}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".ged"
+              hidden
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                event.target.value = '';
+                if (file) void importGedcom(file);
+              }}
+            />
+          </div>
+        )}
         {isLoading && <p className="members-loading">{t.families.loading}</p>}
         {error && (
           <div className="members-error" role="alert">
@@ -156,14 +161,15 @@ export default function FamiliesPanel({
                 <li
                   className="family-set-item"
                   key={family.id}
-                  title={t.families.dragHint}
-                  draggable
+                  title={manage ? t.families.dragHint : undefined}
+                  draggable={manage}
                   data-drop={
                     draggedIndex >= 0 && dropTargetId === family.id && draggedId !== family.id
                       ? draggedIndex < index ? 'after' : 'before'
                       : undefined
                   }
                   onDragStart={(event) => {
+                    if (!manage) return;
                     event.dataTransfer.effectAllowed = 'move';
                     event.dataTransfer.setData('text/plain', family.id);
                     setDraggedId(family.id);

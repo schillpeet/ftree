@@ -20,7 +20,7 @@ paths:
       tags:
         - Me
       summary: Get the signed-in user
-      description: Returns the caller's email, role, and the permissions the role grants.
+      description: Returns the caller's email, whether they are an admin, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
       responses:
         "200":
           description: The signed-in user.
@@ -731,18 +731,19 @@ components:
       type: object
       required:
         - email
-        - role
+        - admin
         - permissions
         - verified
       properties:
         email:
           type: string
           description: The email address the user signed in with.
-        role:
-          $ref: "#/components/schemas/Role"
+        admin:
+          type: boolean
+          description: True for admins, who are admins in every family.
         permissions:
           type: array
-          description: The permissions the role grants.
+          description: The permissions outside any family; admins have every permission.
           items:
             $ref: "#/components/schemas/Permission"
         verified:
@@ -750,7 +751,7 @@ components:
           description: True when Cloudflare Access confirmed the email; false in local dev mode.
     Role:
       type: string
-      description: Users not listed as admin or editor are visitors.
+      description: A user's role in one family.
       enum:
         - admin
         - editor
@@ -763,6 +764,7 @@ components:
         - family.edit
         - family.export
         - member.delete
+        - tree.appearance
         - family.manage
         - dev.tools
     FamilySummary:
@@ -776,6 +778,8 @@ components:
         - generationCount
         - testSettings
         - photoFit
+        - role
+        - permissions
       properties:
         id:
           type: string
@@ -812,6 +816,14 @@ components:
           readOnly: true
         photoFit:
           $ref: "#/components/schemas/PhotoFit"
+        role:
+          $ref: "#/components/schemas/Role"
+        permissions:
+          type: array
+          description: The caller's permissions in this family, from their role in it.
+          readOnly: true
+          items:
+            $ref: "#/components/schemas/Permission"
     PhotoFit:
       description: >-
         "cover" fills the family card's title area; "original" shows the photo at its natural size,
