@@ -3,12 +3,16 @@ package com.github.bff.auth
 import com.github.bff.parseOrigins
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.config.Customizer.withDefaults
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
+import org.springframework.security.oauth2.jwt.JwtDecoder
+import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
+import org.springframework.security.oauth2.server.resource.web.HeaderBearerTokenResolver
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter
 
@@ -36,15 +40,31 @@ class SecurityConfiguration(
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
             .authorizeHttpRequests { it.anyRequest().permitAll() }
-        if (authProperties.mode == AuthMode.DEV) {
-            val email = authProperties.devEmail
-            log.warn("Auth mode is dev: every request runs as {} without verification. Never use this in production.", email)
-            http.addFilterBefore(
-                DevAuthenticationFilter(CurrentUser(email, roleResolver.resolve(email), verified = false)),
-                AnonymousAuthenticationFilter::class.java,
-            )
+        when (authProperties.mode) {
+            AuthMode.CLOUDFLARE -> http.oauth2ResourceServer {
+                // HeaderBearerTokenResolver reads the raw header; DefaultBearerTokenResolver would require "Bearer ".
+                it.bearerTokenResolver(HeaderBearerTokenResolver(CLOUDFLARE_ACCESS_JWT_HEADER))
+                it.jwt { jwt -> jwt.jwtAuthenticationConverter(CloudflareAccessAuthenticationConverter(roleResolver)) }
+            }
+            AuthMode.DEV -> {
+                val email = authProperties.devEmail
+                log.warn("Auth mode is dev: every request runs as {} without verification. Never use this in production.", email)
+                http.addFilterBefore(
+                    DevAuthenticationFilter(CurrentUser(email, roleResolver.resolve(email), verified = false)),
+                    AnonymousAuthenticationFilter::class.java,
+                )
+            }
         }
         return http.build()
+    }
+
+    // Fetches Cloudflare's signing keys on first use, so startup needs no network access.
+    @Bean
+    @ConditionalOnProperty(name = ["app.auth.mode"], havingValue = "cloudflare", matchIfMissing = true)
+    fun jwtDecoder(): JwtDecoder {
+        val settings = authProperties.cloudflareSettings()
+        return NimbusJwtDecoder.withJwkSetUri(settings.jwkSetUri).build()
+            .apply { setJwtValidator(cloudflareJwtValidator(settings)) }
     }
 
     private companion object {
