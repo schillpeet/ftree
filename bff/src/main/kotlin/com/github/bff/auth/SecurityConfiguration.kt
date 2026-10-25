@@ -19,9 +19,10 @@ class SecurityConfiguration(
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            // CSRF protection is off because the BFF has no session or cookie of its own: every request carries the
-            // Cloudflare Access JWT in a header, which another site cannot make the browser send. The Access cookie is
-            // SameSite=Lax, and the UI proxies the API on its own origin.
+            // CSRF protection is off: the BFF keeps no session and issues no cookie. Cloudflare Access does turn its
+            // CF_Authorization cookie into the JWT header, so cross-site requests are stopped elsewhere: every POST
+            // needs a JSON body, which a cross-site form cannot send (DevModeTest checks the 415), PUT and DELETE
+            // need a CORS preflight that only the allowed origins pass, and the Access cookie is SameSite=Lax.
             .csrf { it.disable() }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .cors(withDefaults())

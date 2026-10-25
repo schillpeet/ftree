@@ -38,4 +38,15 @@ class DevModeTest {
             content = """{"name":"Csrf test ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
         }.andExpect { status { isCreated() } }
     }
+
+    // Without CSRF tokens, this is what stops a cross-site form, which can only send text/plain or form encodings.
+    @Test
+    fun `post rejects bodies a cross-site form can send`() {
+        listOf(MediaType.TEXT_PLAIN, MediaType.APPLICATION_FORM_URLENCODED).forEach { type ->
+            mockMvc.post("/families") {
+                contentType = type
+                content = """{"name":"Csrf test ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
+            }.andExpect { status { isUnsupportedMediaType() } }
+        }
+    }
 }
