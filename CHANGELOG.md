@@ -16,7 +16,7 @@
 
 ### Dependencies
 
-* **ui:** bump orval to 8.45.0 for patched undici ([#196](https://github.com/schillpeet/ftree/issues/196)) ([b13f66a](https://github.com/schillpeet/ftree/commit/b13f66a32505a0fca352348b7fb6cd17184329a8))
+* update dependencies with dependabot ([#196](https://github.com/schillpeet/ftree/issues/196))
 
 ## [0.20.0](https://github.com/schillpeet/ftree/compare/v0.19.0...v0.20.0) (2026-10-25)
 
