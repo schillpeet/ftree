@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.20.0](https://github.com/schillpeet/ftree/compare/v0.19.0...v0.20.0) (2026-10-25)
+
+
+### Features
+
+* **bff:** add roles, permissions and /me ([#191](https://github.com/schillpeet/ftree/issues/191)) ([61c1200](https://github.com/schillpeet/ftree/commit/61c1200eb06aee1f1277d966b954179d49336b7a))
+* **bff:** enforce permissions ([#193](https://github.com/schillpeet/ftree/issues/193)) ([36d13f6](https://github.com/schillpeet/ftree/commit/36d13f69b8f5c315c4a584c303daf35e6cbf32d9))
+* **bff:** verify cloudflare access jwt ([#192](https://github.com/schillpeet/ftree/issues/192)) ([b8b6645](https://github.com/schillpeet/ftree/commit/b8b664555136720677aa369a2eec5ebb5ad36e5a))
+* **repo:** pass auth and role settings to the bff ([#194](https://github.com/schillpeet/ftree/issues/194)) ([35060da](https://github.com/schillpeet/ftree/commit/35060dab780ff24d8166bca9ec2c7e4de10ac116))
+* **repo:** show dependabot updates as one changelog entry ([#180](https://github.com/schillpeet/ftree/issues/180)) ([df90241](https://github.com/schillpeet/ftree/commit/df902410a5956d4306fef2f7eea76433e6a9d8ca))
+* **ui:** show menus and controls by permission ([#195](https://github.com/schillpeet/ftree/issues/195)) ([e40b4fa](https://github.com/schillpeet/ftree/commit/e40b4fa9b4eb76cddc682f0f8ae39009d5e2334a))
+
+
+### Dependencies
+
+* **ui:** bump @react-three/fiber from 9.8.1 to 9.8.2 in /ui ([#187](https://github.com/schillpeet/ftree/issues/187)) ([1ca8bfd](https://github.com/schillpeet/ftree/commit/1ca8bfd28cdaa5ab706131f1e85ae95a5f16b2f9))
+* **ui:** bump eslint-config-next from 16.4.0 to 16.4.2 in /ui ([#182](https://github.com/schillpeet/ftree/issues/182)) ([78e92d5](https://github.com/schillpeet/ftree/commit/78e92d57c60a439d8eaa71606f07669866050f02))
+* **ui:** bump orval from 8.42.0 to 8.43.0 in /ui ([#184](https://github.com/schillpeet/ftree/issues/184)) ([035cd5e](https://github.com/schillpeet/ftree/commit/035cd5e9b2bc2ffea0afd0cb1693fdd6eefd32ce))
+* **ui:** bump react from 19.3.0 to 19.3.1 in /ui ([#185](https://github.com/schillpeet/ftree/issues/185)) ([6b45ae2](https://github.com/schillpeet/ftree/commit/6b45ae2d88f842be2c6a495ad1f1df2b8da580df))
+* **ui:** bump react-dom from 19.3.0 to 19.3.1 in /ui ([#190](https://github.com/schillpeet/ftree/issues/190)) ([846af0b](https://github.com/schillpeet/ftree/commit/846af0b0b71601307f708ba85a3124f623bc7c4f))
+
 ## [0.19.0](https://github.com/schillpeet/ftree/compare/v0.18.0...v0.19.0) (2026-10-23)
 
 
