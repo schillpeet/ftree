@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.23.0](https://github.com/schillpeet/ftree/compare/v0.22.0...v0.23.0) (2026-10-25)
+
+
+### Features
+
+* **ui:** add a new family button to the families board ([#207](https://github.com/schillpeet/ftree/issues/207)) ([c6e4ceb](https://github.com/schillpeet/ftree/commit/c6e4cebb4246aaca57cbb5e2797718bf5a9c6528))
+* **ui:** move the random family generator into the families board ([#206](https://github.com/schillpeet/ftree/issues/206)) ([fa42911](https://github.com/schillpeet/ftree/commit/fa42911cf3c4a6c1bb747a80211a8f4c00efc845))
+* **ui:** show the legend folded by default ([#205](https://github.com/schillpeet/ftree/issues/205)) ([a038c22](https://github.com/schillpeet/ftree/commit/a038c22f70a1ad2413eb6f51d9bcc32b3ec27ccd))
+
 ## [0.22.0](https://github.com/schillpeet/ftree/compare/v0.21.0...v0.22.0) (2026-10-25)
 
 
