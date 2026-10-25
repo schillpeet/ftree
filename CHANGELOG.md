@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.20.0](https://github.com/schillpeet/ftree/compare/v0.19.0...v0.20.0) (2026-10-25)
+
+
+### Features
+
+* **bff:** add roles, permissions and /me ([#191](https://github.com/schillpeet/ftree/issues/191)) ([61c1200](https://github.com/schillpeet/ftree/commit/61c1200eb06aee1f1277d966b954179d49336b7a))
+* **bff:** enforce permissions ([#193](https://github.com/schillpeet/ftree/issues/193)) ([36d13f6](https://github.com/schillpeet/ftree/commit/36d13f69b8f5c315c4a584c303daf35e6cbf32d9))
+* **bff:** verify cloudflare access jwt ([#192](https://github.com/schillpeet/ftree/issues/192)) ([b8b6645](https://github.com/schillpeet/ftree/commit/b8b664555136720677aa369a2eec5ebb5ad36e5a))
+* **repo:** pass auth and role settings to the bff ([#194](https://github.com/schillpeet/ftree/issues/194)) ([35060da](https://github.com/schillpeet/ftree/commit/35060dab780ff24d8166bca9ec2c7e4de10ac116))
+* **repo:** show dependabot updates as one changelog entry ([#180](https://github.com/schillpeet/ftree/issues/180)) ([df90241](https://github.com/schillpeet/ftree/commit/df902410a5956d4306fef2f7eea76433e6a9d8ca))
+* **ui:** show menus and controls by permission ([#195](https://github.com/schillpeet/ftree/issues/195)) ([e40b4fa](https://github.com/schillpeet/ftree/commit/e40b4fa9b4eb76cddc682f0f8ae39009d5e2334a))
+
+
+### Dependencies
+
+* update dependencies with dependabot ([#182](https://github.com/schillpeet/ftree/issues/182), [#184](https://github.com/schillpeet/ftree/issues/184), [#185](https://github.com/schillpeet/ftree/issues/185), [#187](https://github.com/schillpeet/ftree/issues/187), [#190](https://github.com/schillpeet/ftree/issues/190))
+
 ## [0.19.0](https://github.com/schillpeet/ftree/compare/v0.18.0...v0.19.0) (2026-10-23)
 
 
