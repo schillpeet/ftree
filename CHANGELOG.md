@@ -15,11 +15,7 @@
 
 ### Dependencies
 
-* **ui:** bump @react-three/fiber from 9.8.1 to 9.8.2 in /ui ([#187](https://github.com/schillpeet/ftree/issues/187)) ([1ca8bfd](https://github.com/schillpeet/ftree/commit/1ca8bfd28cdaa5ab706131f1e85ae95a5f16b2f9))
-* **ui:** bump eslint-config-next from 16.4.0 to 16.4.2 in /ui ([#182](https://github.com/schillpeet/ftree/issues/182)) ([78e92d5](https://github.com/schillpeet/ftree/commit/78e92d57c60a439d8eaa71606f07669866050f02))
-* **ui:** bump orval from 8.42.0 to 8.43.0 in /ui ([#184](https://github.com/schillpeet/ftree/issues/184)) ([035cd5e](https://github.com/schillpeet/ftree/commit/035cd5e9b2bc2ffea0afd0cb1693fdd6eefd32ce))
-* **ui:** bump react from 19.3.0 to 19.3.1 in /ui ([#185](https://github.com/schillpeet/ftree/issues/185)) ([6b45ae2](https://github.com/schillpeet/ftree/commit/6b45ae2d88f842be2c6a495ad1f1df2b8da580df))
-* **ui:** bump react-dom from 19.3.0 to 19.3.1 in /ui ([#190](https://github.com/schillpeet/ftree/issues/190)) ([846af0b](https://github.com/schillpeet/ftree/commit/846af0b0b71601307f708ba85a3124f623bc7c4f))
+* update dependencies with dependabot ([#182](https://github.com/schillpeet/ftree/issues/182), [#184](https://github.com/schillpeet/ftree/issues/184), [#185](https://github.com/schillpeet/ftree/issues/185), [#187](https://github.com/schillpeet/ftree/issues/187), [#190](https://github.com/schillpeet/ftree/issues/190))
 
 ## [0.19.0](https://github.com/schillpeet/ftree/compare/v0.18.0...v0.19.0) (2026-10-23)
 
