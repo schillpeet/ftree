@@ -5,6 +5,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.transaction.annotation.Transactional
@@ -39,7 +40,7 @@ class DevModeTest {
         }.andExpect { status { isCreated() } }
     }
 
-    // Without CSRF tokens, this is what stops a cross-site form, which can only send text/plain or form encodings.
+    // A second line of defence: a cross-site form can only send text/plain or form encodings.
     @Test
     fun `post rejects bodies a cross-site form can send`() {
         listOf(MediaType.TEXT_PLAIN, MediaType.APPLICATION_FORM_URLENCODED).forEach { type ->
@@ -47,6 +48,29 @@ class DevModeTest {
                 contentType = type
                 content = """{"name":"Csrf test ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
             }.andExpect { status { isUnsupportedMediaType() } }
+        }
+    }
+
+    @Test
+    fun `writes from other sites are forbidden, same-origin writes pass`() {
+        val body = """{"name":"Csrf test ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
+        mockMvc.post("/families") {
+            contentType = MediaType.APPLICATION_JSON
+            content = body
+            header("Sec-Fetch-Site", "cross-site")
+            header("Origin", "https://evil.example")
+        }.andExpect { status { isForbidden() } }
+        mockMvc.delete("/families/${UUID.randomUUID()}") {
+            header("Origin", "https://evil.example")
+        }.andExpect { status { isForbidden() } }
+        mockMvc.post("/families") {
+            contentType = MediaType.APPLICATION_JSON
+            content = body
+            header("Sec-Fetch-Site", "same-origin")
+            header("Origin", "http://localhost:3000")
+        }.andExpect {
+            status { isCreated() }
+            header { doesNotExist("Set-Cookie") }
         }
     }
 }

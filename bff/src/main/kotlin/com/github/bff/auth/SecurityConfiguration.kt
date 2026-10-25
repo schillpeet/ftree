@@ -1,6 +1,8 @@
 package com.github.bff.auth
 
+import com.github.bff.parseOrigins
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -15,15 +17,20 @@ import org.springframework.security.web.authentication.AnonymousAuthenticationFi
 class SecurityConfiguration(
     private val authProperties: AuthProperties,
     private val roleResolver: RoleResolver,
+    @Value("\${app.cors.allowed-origins:http://localhost:3000}")
+    private val allowedOrigins: String,
 ) {
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            // CSRF protection is off: the BFF keeps no session and issues no cookie. Cloudflare Access does turn its
-            // CF_Authorization cookie into the JWT header, so cross-site requests are stopped elsewhere: every POST
-            // needs a JSON body, which a cross-site form cannot send (DevModeTest checks the 415), PUT and DELETE
-            // need a CORS preflight that only the allowed origins pass, and the Access cookie is SameSite=Lax.
-            .csrf { it.disable() }
+            // Cloudflare Access turns its CF_Authorization cookie into the JWT header, so the browser authenticates
+            // requests that other sites start. Instead of tokens, which the UI would have to send, Spring's CSRF
+            // protection applies only to writes that Fetch Metadata or Origin mark as coming from another site, and
+            // rejects them with 403, because the BFF never issues a token.
+            .csrf {
+                it.requireCsrfProtectionMatcher(CrossSiteRequestMatcher(parseOrigins(allowedOrigins)))
+                it.csrfTokenRepository(NoCsrfTokenRepository)
+            }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .cors(withDefaults())
             .formLogin { it.disable() }
