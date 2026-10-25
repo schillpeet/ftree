@@ -9,10 +9,13 @@ import org.yaml.snakeyaml.constructor.SafeConstructor
 //   people:
 //     - email: admin@example.com
 //       admin: true
+//     - email: developer@example.com
+//       developer: true         # sees the trees they create, plus any listed under trees
 //     - email: someone@example.com
 //       trees:
-//         schiller: editor      # a family slug and editor or visitor
+//         schiller: editor      # exactly one family slug and editor or visitor
 //
+// Editors and visitors belong to exactly one tree, since only admins and developers can switch between trees.
 // Any mistake fails with a message naming the entry, so the BFF does not start with a half-read file.
 fun parseAccessFile(text: String): Map<String, Access> {
     val root = Yaml(SafeConstructor(LoaderOptions())).load<Any?>(text)
@@ -22,25 +25,33 @@ fun parseAccessFile(text: String): Map<String, Access> {
     people.forEachIndexed { index, entry ->
         val where = "people[$index]"
         if (entry !is Map<*, *>) invalid("$where must be a map")
-        val unknown = entry.keys - setOf("email", "admin", "trees")
+        val unknown = entry.keys - setOf("email", "admin", "developer", "trees")
         if (unknown.isNotEmpty()) invalid("$where has unknown keys $unknown")
         val email = (entry["email"] as? String)?.normalizedEmail()
         if (email.isNullOrEmpty() || '@' !in email) invalid("$where needs an email")
-        val admin = when (val value = entry["admin"]) {
-            null -> false
-            is Boolean -> value
-            else -> invalid("$where: admin must be true or false")
-        }
+        val admin = flag(entry, "admin", where)
+        val developer = flag(entry, "developer", where)
         val families = when (val value = entry["trees"]) {
             null -> emptyMap()
             is Map<*, *> -> value.entries.associate { (slug, role) -> familyRole("$where ($email)", slug, role) }
             else -> invalid("$where: trees must map family slugs to editor or visitor")
         }
+        if (admin && developer) invalid("$where ($email): an admin is already everything a developer is; set only admin")
         if (admin && families.isNotEmpty()) invalid("$where ($email): an admin sees every tree, so list no trees")
-        if (result.put(email, Access(admin, families)) != null) invalid("$email is listed twice")
+        if (!admin && !developer && families.size != 1) {
+            invalid("$where ($email): editors and visitors need exactly one tree, not ${families.size}")
+        }
+        if (result.put(email, Access(admin, families, developer = developer)) != null) invalid("$email is listed twice")
     }
     return result
 }
+
+private fun flag(entry: Map<*, *>, key: String, where: String): Boolean =
+    when (val value = entry[key]) {
+        null -> false
+        is Boolean -> value
+        else -> invalid("$where: $key must be true or false")
+    }
 
 private fun familyRole(where: String, slug: Any?, role: Any?): Pair<String, Role> {
     if (slug !is String || !SLUG.matches(slug)) invalid("$where: \"$slug\" is not a family slug")

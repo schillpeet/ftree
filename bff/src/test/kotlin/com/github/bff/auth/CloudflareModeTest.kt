@@ -27,7 +27,7 @@ class CloudflareModeTest {
             jsonPath("$.email") { value("Admin@Example.com") }
             jsonPath("$.admin") { value(true) }
             jsonPath("$.verified") { value(true) }
-            jsonPath("$.permissions.length()") { value(8) }
+            jsonPath("$.permissions.length()") { value(10) }
         }
         listOf("editor@example.com", "someone@example.com").forEach { email ->
             me(token(email = email)).andExpect {

@@ -14,7 +14,9 @@ export const Permission = {
   familyedit: 'family.edit',
   familyexport: 'family.export',
   memberdelete: 'member.delete',
+  familydelete: 'family.delete',
   treeappearance: 'tree.appearance',
+  familycreate: 'family.create',
   familymanage: 'family.manage',
   devtools: 'dev.tools',
 } as const;
@@ -24,6 +26,8 @@ export interface Me {
   email: string;
   /** True for admins, who are admins in every family. */
   admin: boolean;
+  /** True for developers, who may create families and are developers in the families they created. */
+  developer: boolean;
   /** The permissions outside any family; admins have every permission. */
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
@@ -38,6 +42,7 @@ export type Role = typeof Role[keyof typeof Role];
 
 export const Role = {
   admin: 'admin',
+  developer: 'developer',
   editor: 'editor',
   visitor: 'visitor',
 } as const;
@@ -398,7 +403,7 @@ export const getGetMeUrl = () => {
 }
 
 /**
- * Returns the caller's email, whether they are an admin, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
+ * Returns the caller's email, whether they are an admin or a developer, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
  * @summary Get the signed-in user
  */
 export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {

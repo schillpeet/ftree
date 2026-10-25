@@ -35,7 +35,8 @@ export default function FamiliesPanel({
   onImported: (family: FamilySummary) => void;
 }) {
   const t = useT();
-  // Everyone may switch between their families; only admins import and reorder them.
+  // Admins and developers import families; only admins reorder them.
+  const canImport = useCan('family.create');
   const manage = useCan('family.manage');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -122,7 +123,7 @@ export default function FamiliesPanel({
         </button>
       </header>
       <div className="families-panel-body">
-        {manage && (
+        {canImport && (
           <div className="family-set-import">
             <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
               <UploadIcon />

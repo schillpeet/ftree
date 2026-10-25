@@ -107,7 +107,7 @@ export default function Dashboard({
         {isOpen && (
           <nav className="glass dashboard-nav" id="dashboard-nav" aria-label={t.menu.label}>
             {boardItem('profile', t.menu.profile, <UserIcon />)}
-            {boardItem('families', t.menu.families, <UsersIcon />)}
+            <Can permission="family.create">{boardItem('families', t.menu.families, <UsersIcon />)}</Can>
             <Can permission="member.edit">
               <button type="button" className="dashboard-nav-item" disabled={!activeFamily} onClick={onAddMember}>
                 <UserPlusIcon />
@@ -137,7 +137,15 @@ export default function Dashboard({
                   <dt>{t.account.email}</dt>
                   <dd>{me.email}</dd>
                   <dt>{t.account.role}</dt>
-                  <dd>{me.admin ? t.account.roles.admin : activeFamily ? t.account.roles[activeFamily.role] : t.account.noFamily}</dd>
+                  <dd>
+                    {me.admin
+                      ? t.account.roles.admin
+                      : me.developer
+                        ? t.account.roles.developer
+                        : activeFamily
+                          ? t.account.roles[activeFamily.role]
+                          : t.account.noFamily}
+                  </dd>
                   <dt>{t.account.verification}</dt>
                   <dd>{me.verified ? t.account.verified : t.account.unverified}</dd>
                 </dl>

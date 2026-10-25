@@ -3,6 +3,7 @@ package com.github.bff.member
 import com.github.bff.auth.CurrentUser
 import com.github.bff.auth.Permission
 import com.github.bff.auth.Role
+import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.FamilySummary
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -14,16 +15,17 @@ import java.util.UUID
 import com.github.bff.generated.model.Permission as ApiPermission
 import com.github.bff.generated.model.Role as ApiRole
 
-// The user's role in a family. Admins are admins in every family, test families included. Everyone else has the role
-// the access file gives them for the family's slug (or, with the app.roles lists, in the first family without test
-// settings); test families and every other family look as if they did not exist.
+// The user's role in a family. Admins are admins in every family, test families included, and developers are
+// developers in the families they created. Everyone else has the role the access file gives them for the family's
+// slug (or, with the app.roles lists, in the first family without test settings); other test families and every
+// other family look as if they did not exist.
 @Component
 class FamilyVisibility(private val familyRepository: FamilyRepository) {
     fun roleIn(familyId: UUID, user: CurrentUser? = CurrentUser.current()): Role? {
         user ?: return null
         if (user.access.admin) return Role.ADMIN
         val family = familyRepository.findById(familyId).orElse(null) ?: return null
-        return roleIn(family.id, family.slug, family.totalUsers != null, user)
+        return roleIn(family, user)
     }
 
     fun isVisible(familyId: UUID): Boolean = roleIn(familyId) != null
@@ -35,20 +37,22 @@ class FamilyVisibility(private val familyRepository: FamilyRepository) {
     // The visible families, each with the user's role and permissions in it.
     fun visible(families: List<FamilySummary>): List<FamilySummary> {
         val user = CurrentUser.current() ?: return emptyList()
+        val entities = familyRepository.findAllById(families.map { it.id }).associateBy { it.id }
         return families.mapNotNull { family ->
-            roleIn(family.id, family.slug, family.testSettings != null, user)?.let { family.withRole(it) }
+            entities[family.id]?.let { roleIn(it, user) }?.let { family.withRole(it) }
         }
     }
 
     // One family returned by a write, which only someone with a role in it can make.
     fun withCallerRole(family: FamilySummary): FamilySummary = family.withRole(roleIn(family.id) ?: Role.VISITOR)
 
-    private fun roleIn(id: UUID, slug: String, isTest: Boolean, user: CurrentUser): Role? {
+    private fun roleIn(family: FamilyEntity, user: CurrentUser): Role? {
         val access = user.access
         return when {
             access.admin -> Role.ADMIN
-            isTest -> null
-            else -> access.families[slug] ?: access.firstFamily?.takeIf { id == firstFamilyId() }
+            access.developer && family.createdBy != null && family.createdBy == user.email.normalizedEmail() -> Role.DEVELOPER
+            family.totalUsers != null -> null
+            else -> access.families[family.slug] ?: access.firstFamily?.takeIf { family.id == firstFamilyId() }
         }
     }
 
