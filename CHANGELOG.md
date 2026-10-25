@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.22.0](https://github.com/schillpeet/ftree/compare/v0.21.0...v0.22.0) (2026-10-25)
+
+
+### Features
+
+* **bff:** add a developer role that creates its own trees ([#203](https://github.com/schillpeet/ftree/issues/203)) ([0fdda47](https://github.com/schillpeet/ftree/commit/0fdda47b294f7479aac73e05b5967c0a63521afb))
+
 ## [0.21.0](https://github.com/schillpeet/ftree/compare/v0.20.0...v0.21.0) (2026-10-25)
 
 
