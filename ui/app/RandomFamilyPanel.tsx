@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import { useMemo, useState, type FormEvent } from 'react';
 import { createFamily, type FamilySummary } from '../lib/api/generated/members';
+import { CloseIcon, DiceIcon } from './icons';
 import { useT } from './i18n';
 import { planTestFamily } from './testFamilyPlan';
 
@@ -16,18 +17,17 @@ function suggestedFamilyName(families: FamilySummary[] | null, prefix: string) {
   return `${prefix} ${number}`;
 }
 
+// The test family generator in the families board: a button that unfolds its form below it. The board closes
+// it together with itself, on Escape or a press outside.
 export default function RandomFamilyPanel({
   families,
-  isOpen,
-  onToggle,
   onCreated,
 }: {
   families: FamilySummary[] | null;
-  isOpen: boolean;
-  onToggle: () => void;
   onCreated: (family: FamilySummary) => void;
 }) {
   const t = useT();
+  const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState<string | null>(null);
   const [totalUsers, setTotalUsers] = useState(12);
   const [generationCount, setGenerationCount] = useState(3);
@@ -36,31 +36,12 @@ export default function RandomFamilyPanel({
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const buttonRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
 
   const plan = useMemo(
     () => planTestFamily(totalUsers, generationCount, minChildren, maxChildren),
     [totalUsers, generationCount, minChildren, maxChildren],
   );
   const familyName = name ?? suggestedFamilyName(families, t.random.namePrefix);
-
-  useEffect(() => {
-    if (!isOpen || isGenerating) return;
-    function closeOnOutsidePress(event: PointerEvent) {
-      const target = event.target as Node;
-      if (!panelRef.current?.contains(target) && !buttonRef.current?.contains(target)) onToggle();
-    }
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') onToggle();
-    }
-    document.addEventListener('pointerdown', closeOnOutsidePress);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePress);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [isOpen, isGenerating, onToggle]);
 
   async function generateFamily(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -98,28 +79,22 @@ export default function RandomFamilyPanel({
   return (
     <div className="random-family-control">
       <button
-        className="debug-button"
         type="button"
         disabled={isGenerating}
         aria-expanded={isOpen}
         aria-controls="random-family-panel"
-        ref={buttonRef}
-        onClick={onToggle}
+        onClick={() => setIsOpen(!isOpen)}
       >
+        <DiceIcon />
         {t.random.generate}
       </button>
 
       {isOpen && (
-        <section className="random-family-panel" id="random-family-panel" aria-label={t.random.title} ref={panelRef}>
-          <header className="members-panel-header">
-            <h2>{t.random.title}</h2>
-            <button
-              type="button"
-              aria-label={t.random.close}
-              disabled={isGenerating}
-              onClick={onToggle}
-            >
-              ×
+        <section className="random-family-panel" id="random-family-panel" aria-label={t.random.title}>
+          <header className="random-family-header">
+            <h3>{t.random.title}</h3>
+            <button type="button" aria-label={t.random.close} disabled={isGenerating} onClick={() => setIsOpen(false)}>
+              <CloseIcon />
             </button>
           </header>
           <form className="random-family-form" onSubmit={generateFamily}>

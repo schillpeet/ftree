@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactNode, type RefObject } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
@@ -556,7 +556,6 @@ export default function Scene({
   highlight,
   onOpen,
   onPlace,
-  debugTools,
 }: {
   familyId: string | null;
   members: Member[];
@@ -565,12 +564,11 @@ export default function Scene({
   highlight: string | null;
   onOpen: (id: string) => void;
   onPlace?: (id: string, placement: Placement) => void;
-  debugTools?: ReactNode;
 }) {
   const t = useT();
   const [language, setLanguage] = useLanguage();
   const [appearance] = useAppearance();
-  // Evolution: view, lines, and the legend, for every role; the admin tools in it come as `debugTools`.
+  // Evolution: view, lines, and the legend, for every role.
   const evolution = useCan('tree.appearance');
   const [showLines, setShowLines] = useShowLines();
   const [highlightCoreFamily, setHighlightCoreFamily] = useHighlightCoreFamily();
@@ -787,12 +785,6 @@ export default function Scene({
       {openTool === 'evolution' && evolution && (
         <section className="glass debug-panel" id="evolution-panel" aria-label={t.tools.evolution} ref={toolRef}>
           <div className="debug-panel-body">
-            {debugTools && (
-              <section>
-                <h2>{t.tools.data}</h2>
-                {debugTools}
-              </section>
-            )}
             <section>
               <h2>{t.tools.view}</h2>
               <ZoomScale controls={controls} />

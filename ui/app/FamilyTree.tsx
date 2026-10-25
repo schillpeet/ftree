@@ -14,7 +14,6 @@ import type { FamilyCardMode } from './FamilyCard';
 import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
-import RandomFamilyPanel from './RandomFamilyPanel';
 import { useT } from './i18n';
 import { OpenFamily, useCan, useMe } from './Permissions';
 import { can } from './access';
@@ -26,7 +25,6 @@ const firstFamilyId = (items: FamilySummary[]) =>
 export default function FamilyTree() {
   const t = useT();
   const me = useMe();
-  const devTools = useCan('dev.tools');
   // Only admins and developers, who may have several families, get the families board.
   const canCreate = useCan('family.create');
   const [members, setMembers] = useState<Member[] | null>(null);
@@ -34,7 +32,6 @@ export default function FamilyTree() {
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [familiesError, setFamiliesError] = useState(false);
-  const [openBoard, setOpenBoard] = useState<'random-family' | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [panel, setPanel] = useState<DashboardPanel | null>(null);
   const [familyCard, setFamilyCard] = useState<FamilyCardMode | null>(null);
@@ -136,16 +133,6 @@ export default function FamilyTree() {
         highlight={shownId}
         onOpen={(id) => setProfile({ id })}
         onPlace={canPlace ? (id, placement) => void placeMember(id, placement) : undefined}
-        debugTools={
-          devTools && (
-            <RandomFamilyPanel
-              families={families}
-              isOpen={openBoard === 'random-family'}
-              onToggle={() => setOpenBoard((open) => open === 'random-family' ? null : 'random-family')}
-              onCreated={addFamily}
-            />
-          )
-        }
       />
       <Dashboard
         isOpen={isMenuOpen}
@@ -210,7 +197,7 @@ export default function FamilyTree() {
           setFamilyCard('view');
         }}
         onToggleVisibility={toggleFamilyVisibility}
-        onImported={addFamily}
+        onAdded={addFamily}
       />
     </OpenFamily>
   );

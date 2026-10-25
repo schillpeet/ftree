@@ -41,7 +41,6 @@ const en = {
     clock: 'Time of day',
     dayTime: 'Time of day',
     previewTime: 'Preview time',
-    data: 'Data',
     view: 'View',
     pins: 'Pin points',
     lines: 'Connection lines',
@@ -107,7 +106,7 @@ const en = {
     importing: 'Importing GEDCOM …',
     import: 'Import GEDCOM',
     loading: 'Loading families …',
-    empty: 'No families yet. Create one with “Generate random family” under Evolution or import a GEDCOM file.',
+    empty: 'No families yet. Generate a random family or import a GEDCOM file.',
     all: 'All families',
     summary: (people: number, generations: number) =>
       `${people} people · ${generations} ${generations === 1 ? 'generation' : 'generations'}`,
@@ -306,7 +305,6 @@ const de: typeof en = {
     clock: 'Uhrzeit',
     dayTime: 'Tageszeit',
     previewTime: 'Uhrzeit vorschauen',
-    data: 'Daten',
     view: 'Ansicht',
     pins: 'Anheftpunkte',
     lines: 'Verbindungslinien',
@@ -372,7 +370,7 @@ const de: typeof en = {
     importing: 'GEDCOM wird importiert …',
     import: 'GEDCOM importieren',
     loading: 'Familien werden geladen …',
-    empty: 'Noch keine Familien angelegt. Erstelle eine über „Zufallsfamilie generieren“ unter Evolution oder importiere eine GEDCOM-Datei.',
+    empty: 'Noch keine Familien angelegt. Generiere eine Zufallsfamilie oder importiere eine GEDCOM-Datei.',
     all: 'Alle Familien',
     summary: (people, generations) =>
       `${people} Personen · ${generations} ${generations === 1 ? 'Generation' : 'Generationen'}`,

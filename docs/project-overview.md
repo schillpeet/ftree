@@ -82,7 +82,7 @@ The original aerial and grounded roots always stay; nothing grows below scale 1.
 
 ### Debug panel
 
-The "Evolution" button in the upper-right corner (the former debug panel, closed by default) opens a translucent panel that groups the tools into sections: "Daten" with the "Zufallsfamilie generieren" board (which opens to the left of the panel), "Ansicht" with the zoom slider, the "Front", "Above", and "Orbit" camera buttons, the "Anheftpunkte" pin checkbox, and the "Kartenstil" select (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
+The "Evolution" button in the upper-right corner (the former debug panel, closed by default) opens a translucent panel that groups the tools into sections: "Ansicht" with the zoom slider, the "Front", "Above", and "Orbit" camera buttons, the "Anheftpunkte" pin checkbox, and the "Kartenstil" select (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
 The "Linien anzeigen" checkbox in the "Verbindungslinien" section hides or shows the parent and partner lines in all three appearances, so that only the cards remain.
 The choice is remembered per browser and the lines are shown by default.
 While a person panel is open, the lines from that person to everyone the panel lists (parents, partners, children, siblings, and half-siblings) are drawn in a highlight color in all three appearances.
@@ -102,6 +102,7 @@ The preview is not saved, and cards cannot be dragged while it is on.
 ### Families
 
 A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
+The "Zufallsfamilie generieren" button in the families board of the menu, shown to admins and developers below "GEDCOM importieren", unfolds the random family form below it.
 The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
 The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
@@ -254,10 +255,10 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 ## Code Map
 
 - `ui/app/page.tsx` renders the home scene.
-- `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay, and passes the random family board into the scene's debug panel.
+- `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay.
 - `ui/app/FamilyTree.tsx` also renders the dashboard and the families board.
 - `ui/app/Dashboard.tsx` renders the burger menu and the family name that opens the family card (`ui/app/FamilyCard.tsx`, rendered by `MembersControls`); `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
-- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with its "Daten" section with the debug tools passed in by `FamilyTree`, "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
+- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, bridges, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's core family and blood relatives (`ui/app/experimental/highlight.ts`, `highlight.check.mjs`); `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.
 - `ui/app/RelationLegend.tsx` renders the experimental view's legend of lines, symbols, and stubs.
 - `ui/app/experimental/model.ts` derives unions, partnerships, and generations for the experimental view (`model.check.mjs`); `routing.ts` routes the circuit-diagram lines (`route.check.mjs`); `verify.ts` and `families.check.mjs` prove them on fixtures and random families (`node app/experimental/families.check.mjs` in `ui/`).
@@ -278,7 +279,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `<OpenFamily>`, `useCan(permission)` (outside any family or in the open one), `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and error-status rules, with `ui/app/access.check.mjs` as its self-check.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
-- `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the Evolution panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
+- `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its form in the families board ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
 - `ui/app/Tree.tsx` builds the tree geometry and foliage procedurally, collects the branch points that pins are picked from, and rebuilds the aerial roots and outer-ring roots for the crown scale.
 - `ui/app/growth.ts` says how far each ring around the tree has grown at a crown scale; `ui/app/growth.check.mjs` is its self-check (`node app/growth.check.mjs` in `ui/`).
 - `ui/app/Meadow.tsx` builds the terrain and instanced grass; it exports terrain height used by the tree and scene.
