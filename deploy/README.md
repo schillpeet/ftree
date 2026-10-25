@@ -4,6 +4,10 @@
 PostgreSQL is not part of the chart; the BFF reads `db.url`, `db.user`, and the `password` key of the Secret named in `db.existingSecret`.
 Always install the release as `ftree`: the UI image proxies `/api` to `http://ftree-bff:8080`, so the BFF Service must be named `ftree-bff`.
 Set `bff.corsAllowedOrigins` to the origin the browser opens the UI on (for example `http://localhost:8088` behind a port-forward); the proxy forwards the browser's `Origin`, so the BFF otherwise rejects every write with `403 Invalid CORS request`.
+`bff.auth.mode` is `cloudflare` by default: the BFF then verifies the Cloudflare Access JWT and needs `bff.auth.teamDomain` (for example `example.cloudflareaccess.com`) and `bff.auth.audience` (the Access application's AUD tag); without them the chart refuses to render, so Flux keeps the running release.
+`bff.auth.mode: dev` signs every request in as the unverified `dev@localhost` and is only for local clusters without Cloudflare Access.
+`bff.roles.admins` and `bff.roles.editors` are lists of emails; everyone else Access lets in is a visitor.
+The chart passes these values to the BFF as `APP_AUTH_MODE`, `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, `APP_ROLES_ADMINS`, and `APP_ROLES_EDITORS` (lists joined with `,`), leaving unset values out.
 Running ftree in a cluster (Flux manifests, the kubectl, kind, Helm, and Flux cheatsheet, and the plan for a local kind cluster) lives in the private [`schillpeet/ftree-infra`](https://github.com/schillpeet/ftree-infra) repository.
 
 ## Develop the chart
@@ -26,7 +30,7 @@ podman build -t localhost/ftree-ui:dev -f ui/Dockerfile ui
 podman build -t localhost/ftree-bff:dev -f bff/Dockerfile .
 podman save localhost/ftree-ui:dev localhost/ftree-bff:dev -o /tmp/ftree-images.tar
 kind load image-archive /tmp/ftree-images.tar --name ftree
-helm install ftree deploy/ftree --set ui.image.repository=localhost/ftree-ui --set ui.image.tag=dev --set ui.image.pullPolicy=Never --set bff.image.repository=localhost/ftree-bff --set bff.image.tag=dev --set bff.image.pullPolicy=Never --set bff.corsAllowedOrigins=http://localhost:8088
+helm install ftree deploy/ftree --set ui.image.repository=localhost/ftree-ui --set ui.image.tag=dev --set ui.image.pullPolicy=Never --set bff.image.repository=localhost/ftree-bff --set bff.image.tag=dev --set bff.image.pullPolicy=Never --set bff.corsAllowedOrigins=http://localhost:8088 --set bff.auth.mode=dev --set bff.roles.admins={dev@localhost}
 ```
 
 With Docker instead of Podman, use `docker build` and `docker save` with the same arguments.

@@ -295,6 +295,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `.github/workflows/pinact.yml` runs `actionlint` on all GitHub Actions workflows and uses Pinact to open a pull request when workflow actions need SHA pins. It runs when workflow files change.
 - `.github/workflows/release-images.yml` builds the UI and BFF images for arm64 on every published release and pushes them to `ghcr.io/schillpeet/ftree-ui` and `ghcr.io/schillpeet/ftree-bff`, tagged with the release version (for example `0.14.0`) and `sha-<commit>`; it can also be run manually, which only adds the `sha-` tag, and never pushes `latest`.
 - `.github/workflows/release-images.yml` also packages the Helm chart in `deploy/ftree/` on every published release, with the release version as chart and app version, and pushes it to `oci://ghcr.io/schillpeet/charts/ftree`; manual runs skip the chart.
+- The chart's `bff.auth.*` and `bff.roles.*` values become the BFF's `APP_AUTH_*` and `APP_ROLES_*` variables; in cloudflare mode the chart refuses to render without `bff.auth.teamDomain` and `bff.auth.audience` (see `deploy/README.md`).
 
 The procedural scene is presentation code.
 It is not a family-tree domain model or a persistence layer.
