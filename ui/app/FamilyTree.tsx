@@ -16,6 +16,7 @@ import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
 import RandomFamilyPanel from './RandomFamilyPanel';
 import { useT } from './i18n';
+import { useCan } from './Permissions';
 
 const firstFamilyId = (items: FamilySummary[]) =>
   items.find((family) => family.name.toLocaleLowerCase() === 'default')?.id ?? items[0]?.id ?? null;
@@ -23,6 +24,9 @@ const firstFamilyId = (items: FamilySummary[]) =>
 // Shares the members between the scene's scrolls and the list/form overlay.
 export default function FamilyTree() {
   const t = useT();
+  const canPlace = useCan('member.edit');
+  const canManage = useCan('family.manage');
+  const devTools = useCan('dev.tools');
   const [members, setMembers] = useState<Member[] | null>(null);
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
@@ -128,14 +132,16 @@ export default function FamilyTree() {
         focus={focus}
         highlight={shownId}
         onOpen={(id) => setProfile({ id })}
-        onPlace={(id, placement) => void placeMember(id, placement)}
+        onPlace={canPlace ? (id, placement) => void placeMember(id, placement) : undefined}
         debugTools={
-          <RandomFamilyPanel
-            families={families}
-            isOpen={openBoard === 'random-family'}
-            onToggle={() => setOpenBoard((open) => open === 'random-family' ? null : 'random-family')}
-            onCreated={addFamily}
-          />
+          devTools && (
+            <RandomFamilyPanel
+              families={families}
+              isOpen={openBoard === 'random-family'}
+              onToggle={() => setOpenBoard((open) => open === 'random-family' ? null : 'random-family')}
+              onCreated={addFamily}
+            />
+          )
         }
       />
       <Dashboard
@@ -155,6 +161,7 @@ export default function FamilyTree() {
         }}
         onFamilyClick={() => {
           if (activeFamilyId) return setFamilyCard((current) => current ?? 'view');
+          if (!canManage) return;
           setIsMenuOpen(true);
           setPanel('families');
         }}
@@ -189,7 +196,7 @@ export default function FamilyTree() {
         activeFamilyId={activeFamilyId}
         isLoading={isLoadingFamilies}
         error={familiesError ? t.families.loadFailed : null}
-        isOpen={panel === 'families'}
+        isOpen={panel === 'families' && canManage}
         onClose={() => setPanel(null)}
         onRetry={() => void loadFamilies()}
         onSelect={selectFamily}

@@ -21,6 +21,7 @@ import TieredTree, { TIERED_OPTIONS, buildTieredTree } from './TieredTree';
 import { tieredPlan } from './tieredLayout';
 import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onStorage, useLanguage, useT } from './i18n';
+import { useCan } from './Permissions';
 import { EvolutionIcon, LanguageIcon, SunIcon } from './icons';
 import Tree, { buildTree } from './Tree';
 
@@ -382,7 +383,8 @@ function Scrolls({
   layout?: Map<string, Point>;
   controlsRef: RefObject<CameraControls | null>;
   onOpen: (id: string) => void;
-  onPlace: (id: string, placement: Placement) => void;
+  // Missing without the permission to place cards; they cannot be dragged then.
+  onPlace?: (id: string, placement: Placement) => void;
 }) {
   const { camera, events, gl } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -506,7 +508,7 @@ function Scrolls({
       // No movement: a click, which Scroll turns into opening the profile.
       if (!last || last.target === 'reject') return;
       const [x, y, z] = last.position;
-      onPlace(id, last.target === 'free' ? { pinId: null, position: { x, y: y - TREE_BASE, z } } : { pinId: last.target.pin, position: null });
+      onPlace?.(id, last.target === 'free' ? { pinId: null, position: { x, y: y - TREE_BASE, z } } : { pinId: last.target.pin, position: null });
     };
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
@@ -526,7 +528,7 @@ function Scrolls({
           familyId,
           position: positions.get(member.id)!,
           onOpen: () => onOpen(member.id),
-          onDrag: showPins && spacing == null ? (event: { clientX: number; clientY: number }) => startDrag(member.id, event) : undefined,
+          onDrag: onPlace && showPins && spacing == null ? (event: { clientX: number; clientY: number }) => startDrag(member.id, event) : undefined,
         };
         if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} />;
         if (cardStyle === 'sign') return <SignCard key={member.id} {...card} evening={evening} />;
@@ -562,12 +564,13 @@ export default function Scene({
   // The person whose panel is open, whose lines to their relatives can stand out.
   highlight: string | null;
   onOpen: (id: string) => void;
-  onPlace: (id: string, placement: Placement) => void;
+  onPlace?: (id: string, placement: Placement) => void;
   debugTools?: ReactNode;
 }) {
   const t = useT();
   const [language, setLanguage] = useLanguage();
   const [appearance] = useAppearance();
+  const devTools = useCan('dev.tools');
   const [showLines, setShowLines] = useShowLines();
   const [highlightCoreFamily, setHighlightCoreFamily] = useHighlightCoreFamily();
   const [highlightBlood, setHighlightBlood] = useHighlightBlood();
@@ -746,16 +749,18 @@ export default function Scene({
           <LanguageIcon />
           {t.language.short}
         </button>
-        <button
-          className="glass glass-button"
-          type="button"
-          aria-expanded={openTool === 'evolution'}
-          aria-controls="evolution-panel"
-          onClick={() => toggleTool('evolution')}
-        >
-          <EvolutionIcon />
-          {t.tools.evolution}
-        </button>
+        {devTools && (
+          <button
+            className="glass glass-button"
+            type="button"
+            aria-expanded={openTool === 'evolution'}
+            aria-controls="evolution-panel"
+            onClick={() => toggleTool('evolution')}
+          >
+            <EvolutionIcon />
+            {t.tools.evolution}
+          </button>
+        )}
       </div>
       {experimental && showLegend && <RelationLegend onClose={() => setShowLegend(false)} />}
       {openTool === 'time' && !experimental && (
@@ -778,7 +783,7 @@ export default function Scene({
           </div>
         </section>
       )}
-      {openTool === 'evolution' && (
+      {openTool === 'evolution' && devTools && (
         <section className="glass debug-panel" id="evolution-panel" aria-label={t.tools.evolution} ref={toolRef}>
           <div className="debug-panel-body">
             <section>
