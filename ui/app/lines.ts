@@ -7,9 +7,9 @@ const LINES_KEY = 'ftree.showLines';
 const HIGHLIGHT_KEY = 'ftree.highlightRelatives';
 // Whether the lines to that person's blood relatives stand out in the experimental view.
 const BLOOD_KEY = 'ftree.highlightBlood';
-// Whether the experimental view shows the key to its lines and symbols.
+// Whether the experimental view shows the key to its lines and symbols; it does until the user closes it.
 const LEGEND_KEY = 'ftree.showLegend';
-// Whether that legend is folded to its header.
+// Whether that legend is folded to its header; it starts folded so it does not cover the tree.
 const LEGEND_FOLDED_KEY = 'ftree.legendFolded';
 
 // The server render has no localStorage and starts with `fallback`, as does a browser that never chose.
@@ -27,5 +27,5 @@ function useStoredSwitch(key: string, fallback = true) {
 export const useShowLines = () => useStoredSwitch(LINES_KEY);
 export const useHighlightCoreFamily = () => useStoredSwitch(HIGHLIGHT_KEY);
 export const useHighlightBlood = () => useStoredSwitch(BLOOD_KEY, false);
-export const useShowLegend = () => useStoredSwitch(LEGEND_KEY, false);
-export const useLegendFolded = () => useStoredSwitch(LEGEND_FOLDED_KEY, false);
+export const useShowLegend = () => useStoredSwitch(LEGEND_KEY);
+export const useLegendFolded = () => useStoredSwitch(LEGEND_FOLDED_KEY);
