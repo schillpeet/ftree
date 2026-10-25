@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.21.0](https://github.com/schillpeet/ftree/compare/v0.20.0...v0.21.0) (2026-10-25)
+
+
+### Features
+
+* **bff:** add roles per tree from an access file ([#202](https://github.com/schillpeet/ftree/issues/202)) ([bf652a3](https://github.com/schillpeet/ftree/commit/bf652a3f5c1a68a3b38facbc3646ad8bf420276a))
+* **db:** add family slugs ([#200](https://github.com/schillpeet/ftree/issues/200)) ([45b7ca9](https://github.com/schillpeet/ftree/commit/45b7ca9e3f917983b7997ace0eda6c40507f82e2))
+
+
+### Bug Fixes
+
+* **repo:** repair release please and readme preview workflows ([#198](https://github.com/schillpeet/ftree/issues/198)) ([f1d6539](https://github.com/schillpeet/ftree/commit/f1d653989be6c3164bd46c23bbca92e3f672023e))
+
+
+### Dependencies
+
+* **ui:** bump orval to 8.45.0 for patched undici ([#196](https://github.com/schillpeet/ftree/issues/196)) ([b13f66a](https://github.com/schillpeet/ftree/commit/b13f66a32505a0fca352348b7fb6cd17184329a8))
+
 ## [0.20.0](https://github.com/schillpeet/ftree/compare/v0.19.0...v0.20.0) (2026-10-25)
 
 
