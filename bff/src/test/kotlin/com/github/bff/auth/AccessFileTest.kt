@@ -16,13 +16,18 @@ class AccessFileTest {
               - email: father@example.com
                 trees:
                   schiller: editor
-                  design-lab: visitor
-              - email: nobody@example.com
+              - email: friend@example.com
+                developer: true
+                trees:
+                  schiller: visitor
+              - email: builder@example.com
+                developer: true
             """.trimIndent(),
         )
         assertEquals(Access(admin = true), people["admin@example.com"])
-        assertEquals(Access(admin = false, families = mapOf("schiller" to Role.EDITOR, "design-lab" to Role.VISITOR)), people["father@example.com"])
-        assertEquals(Access(admin = false), people["nobody@example.com"])
+        assertEquals(Access(admin = false, families = mapOf("schiller" to Role.EDITOR)), people["father@example.com"])
+        assertEquals(Access(admin = false, families = mapOf("schiller" to Role.VISITOR), developer = true), people["friend@example.com"])
+        assertEquals(Access(admin = false, developer = true), people["builder@example.com"])
     }
 
     @Test
@@ -37,7 +42,11 @@ class AccessFileTest {
             "people:\n  - email: a@example.com\n    trees:\n      Schiller: editor" to "not a family slug",
             "people:\n  - email: a@example.com\n    trees:\n      schiller: admin" to "editor or visitor",
             "people:\n  - email: a@example.com\n    admin: true\n    trees:\n      schiller: editor" to "list no trees",
-            "people:\n  - email: a@example.com\n  - email: A@example.com" to "listed twice",
+            "people:\n  - email: a@example.com\n    trees:\n      x: visitor\n  - email: A@example.com\n    developer: true" to "listed twice",
+            "people:\n  - email: a@example.com" to "exactly one tree, not 0",
+            "people:\n  - email: a@example.com\n    trees:\n      x: editor\n      y: visitor" to "exactly one tree, not 2",
+            "people:\n  - email: a@example.com\n    admin: true\n    developer: true" to "set only admin",
+            "people:\n  - email: a@example.com\n    developer: maybe" to "developer must be true or false",
         )
         mistakes.forEach { (text, message) ->
             val error = assertFailsWith<IllegalArgumentException>(text) { parseAccessFile(text) }

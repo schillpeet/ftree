@@ -21,6 +21,9 @@ class FamilyEntity(
     var slug: String = slugOf(name),
     @Column(nullable = false, updatable = false)
     var createdAt: Instant = Instant.now(),
+    // The trimmed, lowercased email of who created the family; null for families from before V18.
+    @Column(updatable = false, length = 320)
+    var createdBy: String? = null,
     var totalUsers: Int? = null,
     var generationCount: Int? = null,
     var minChildren: Int? = null,

@@ -1,5 +1,7 @@
 package com.github.bff.auth
 
+import com.github.bff.auth.Permission.FAMILY_CREATE
+import com.github.bff.auth.Permission.FAMILY_DELETE
 import com.github.bff.auth.Permission.FAMILY_EDIT
 import com.github.bff.auth.Permission.FAMILY_EXPORT
 import com.github.bff.auth.Permission.FAMILY_MANAGE
@@ -74,9 +76,9 @@ class SecurityConfiguration(
                 it.requestMatchers("/members", "/members/**").hasAuthority(FAMILY_MANAGE.key)
                 // Before PUT /families/{familyId}, which would match "order" as a family id.
                 it.requestMatchers(PUT, "/families/order").hasAuthority(FAMILY_MANAGE.key)
-                it.requestMatchers(POST, "/families", "/families/import", "/families/*/archive", "/families/*/anonymize")
-                    .hasAuthority(FAMILY_MANAGE.key)
-                it.requestMatchers(DELETE, "/families/*").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(POST, "/families", "/families/import").hasAuthority(FAMILY_CREATE.key)
+                it.requestMatchers(POST, "/families/*/archive", "/families/*/anonymize").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(DELETE, "/families/{familyId}").access(inFamily(FAMILY_DELETE))
                 it.requestMatchers(PUT, "/families/{familyId}", "/families/{familyId}/photo", "/families/{familyId}/photo-fit")
                     .access(inFamily(FAMILY_EDIT))
                 it.requestMatchers(DELETE, "/families/{familyId}/photo").access(inFamily(FAMILY_EDIT))

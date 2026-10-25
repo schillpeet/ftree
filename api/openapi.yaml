@@ -20,7 +20,7 @@ paths:
       tags:
         - Me
       summary: Get the signed-in user
-      description: Returns the caller's email, whether they are an admin, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
+      description: Returns the caller's email, whether they are an admin or a developer, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
       responses:
         "200":
           description: The signed-in user.
@@ -732,6 +732,7 @@ components:
       required:
         - email
         - admin
+        - developer
         - permissions
         - verified
       properties:
@@ -741,6 +742,9 @@ components:
         admin:
           type: boolean
           description: True for admins, who are admins in every family.
+        developer:
+          type: boolean
+          description: True for developers, who may create families and are developers in the families they created.
         permissions:
           type: array
           description: The permissions outside any family; admins have every permission.
@@ -754,6 +758,7 @@ components:
       description: A user's role in one family.
       enum:
         - admin
+        - developer
         - editor
         - visitor
     Permission:
@@ -764,7 +769,9 @@ components:
         - family.edit
         - family.export
         - member.delete
+        - family.delete
         - tree.appearance
+        - family.create
         - family.manage
         - dev.tools
     FamilySummary:

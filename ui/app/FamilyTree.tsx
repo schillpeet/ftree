@@ -27,6 +27,8 @@ export default function FamilyTree() {
   const t = useT();
   const me = useMe();
   const devTools = useCan('dev.tools');
+  // Only admins and developers, who may have several families, get the families board.
+  const canCreate = useCan('family.create');
   const [members, setMembers] = useState<Member[] | null>(null);
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);
   const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
@@ -162,6 +164,7 @@ export default function FamilyTree() {
         }}
         onFamilyClick={() => {
           if (activeFamilyId) return setFamilyCard((current) => current ?? 'view');
+          if (!canCreate) return;
           setIsMenuOpen(true);
           setPanel('families');
         }}
@@ -196,7 +199,7 @@ export default function FamilyTree() {
         activeFamilyId={activeFamilyId}
         isLoading={isLoadingFamilies}
         error={familiesError ? t.families.loadFailed : null}
-        isOpen={panel === 'families'}
+        isOpen={panel === 'families' && canCreate}
         onClose={() => setPanel(null)}
         onRetry={() => void loadFamilies()}
         onSelect={selectFamily}

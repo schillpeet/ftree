@@ -1,6 +1,8 @@
 package com.github.bff.auth
 
 import com.github.bff.auth.Permission.DEV_TOOLS
+import com.github.bff.auth.Permission.FAMILY_CREATE
+import com.github.bff.auth.Permission.FAMILY_DELETE
 import com.github.bff.auth.Permission.FAMILY_EDIT
 import com.github.bff.auth.Permission.FAMILY_EXPORT
 import com.github.bff.auth.Permission.FAMILY_MANAGE
@@ -16,20 +18,25 @@ class RoleTest {
     fun `roles in a family grant the permissions from the role concept`() {
         assertEquals(setOf(TREE_VIEW), Role.VISITOR.permissions)
         assertEquals(setOf(TREE_VIEW, MEMBER_EDIT, FAMILY_EDIT, FAMILY_EXPORT), Role.EDITOR.permissions)
-        assertEquals(setOf(TREE_VIEW, MEMBER_EDIT, FAMILY_EDIT, FAMILY_EXPORT, MEMBER_DELETE), Role.ADMIN.permissions)
+        assertEquals(setOf(TREE_VIEW, MEMBER_EDIT, FAMILY_EDIT, FAMILY_EXPORT, MEMBER_DELETE, FAMILY_DELETE), Role.DEVELOPER.permissions)
+        assertEquals(Role.DEVELOPER.permissions, Role.ADMIN.permissions)
     }
 
     @Test
-    fun `everyone may change the appearance, only admins manage families and use dev tools`() {
+    fun `everyone may change the appearance, developers create families, only admins manage them`() {
         assertEquals(setOf(TREE_APPEARANCE), Access(admin = false).permissions)
+        assertEquals(setOf(TREE_APPEARANCE, FAMILY_CREATE, DEV_TOOLS), Access(admin = false, developer = true).permissions)
         assertEquals(Permission.entries.toSet(), Access(admin = true).permissions)
-        assertEquals(setOf(TREE_APPEARANCE, FAMILY_MANAGE, DEV_TOOLS), Permission.entries.filterNot { it.perFamily }.toSet())
+        assertEquals(setOf(TREE_APPEARANCE, FAMILY_CREATE, FAMILY_MANAGE, DEV_TOOLS), Permission.entries.filterNot { it.perFamily }.toSet())
     }
 
     @Test
     fun `permission keys match the API`() {
         assertEquals(
-            listOf("tree.view", "member.edit", "family.edit", "family.export", "member.delete", "tree.appearance", "family.manage", "dev.tools"),
+            listOf(
+                "tree.view", "member.edit", "family.edit", "family.export", "member.delete", "family.delete",
+                "tree.appearance", "family.create", "family.manage", "dev.tools",
+            ),
             Permission.entries.map { it.key },
         )
     }

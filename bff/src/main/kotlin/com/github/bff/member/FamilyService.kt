@@ -1,5 +1,7 @@
 package com.github.bff.member
 
+import com.github.bff.auth.CurrentUser
+import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.ArchiveFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
@@ -66,6 +68,7 @@ class FamilyService(
             FamilyEntity(
                 name = name,
                 slug = newSlug(name),
+                createdBy = creator(),
                 totalUsers = totalUsers,
                 generationCount = generationCount,
                 minChildren = minChildren,
@@ -96,7 +99,7 @@ class FamilyService(
         val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         if (name.isEmpty() || name.length > 100 || members.isEmpty()) return FamilyArchiveResult.INVALID
         if (familyRepository.existsByNameIgnoreCase(name)) return FamilyArchiveResult.NAME_TAKEN
-        val archived = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name)))
+        val archived = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
         members.forEach { it.family = archived }
         memberRepository.flush()
         return FamilyArchiveResult.ARCHIVED(archived.toSummary(members))
@@ -115,7 +118,7 @@ class FamilyService(
         }
         if (familyRepository.existsByNameIgnoreCase(name)) return FamilyImportResult.NAME_TAKEN
 
-        val family = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name)))
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
         val saved = memberRepository.saveAll(
             people.map { person ->
                 MemberEntity(
@@ -160,7 +163,7 @@ class FamilyService(
 
         val originals = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         val names = AnonymousNames(originals)
-        val family = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name)))
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
         val copies = memberRepository.saveAll(
             originals.map { member ->
                 MemberEntity(
@@ -319,6 +322,8 @@ class FamilyService(
         )
 
     private fun newSlug(name: String) = uniqueSlug(name, familyRepository::existsBySlug)
+
+    private fun creator() = CurrentUser.current()?.email?.normalizedEmail()
 
     private fun FamilyEntity.toSummary(members: List<MemberEntity>, photoUpdatedAt: OffsetDateTime? = null) = FamilySummary().apply {
         id = this@toSummary.id

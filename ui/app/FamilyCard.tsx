@@ -268,7 +268,7 @@ export default function FamilyCard({
           </Can>
           {error && <p className="person-error" role="alert">{error}</p>}
           <div className="family-card-actions">
-            <Can permission="family.manage">
+            <Can permission="family.delete">
               <button type="button" className="family-card-button family-card-danger" disabled={isBusy} onClick={() => void remove()}>
                 <TrashIcon />
                 {t.familyCard.delete}

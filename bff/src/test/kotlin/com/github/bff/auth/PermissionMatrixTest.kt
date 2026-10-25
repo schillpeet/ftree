@@ -1,6 +1,8 @@
 package com.github.bff.auth
 
 import com.github.bff.auth.CloudflareTestTokens.token
+import com.github.bff.auth.Permission.FAMILY_CREATE
+import com.github.bff.auth.Permission.FAMILY_DELETE
 import com.github.bff.auth.Permission.FAMILY_EDIT
 import com.github.bff.auth.Permission.FAMILY_EXPORT
 import com.github.bff.auth.Permission.FAMILY_MANAGE
@@ -58,9 +60,9 @@ class PermissionMatrixTest {
         Endpoint(DELETE, "/families/$family/photo", FAMILY_EDIT),
         Endpoint(PUT, "/families/$family/photo-fit", FAMILY_EDIT, MediaType.APPLICATION_JSON),
         Endpoint(DELETE, "/families/$family/members/$member", MEMBER_DELETE),
-        Endpoint(POST, "/families", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
+        Endpoint(POST, "/families", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(PUT, "/families/order", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
-        Endpoint(POST, "/families/import", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
+        Endpoint(POST, "/families/import", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/archive", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/anonymize", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
         // Legacy default-family endpoints are admin-only.
@@ -70,7 +72,7 @@ class PermissionMatrixTest {
         Endpoint(PUT, "/members/$member/relatives", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(DELETE, "/members/$member", FAMILY_MANAGE),
         // DELETE /families/{id} last: it removes the family the other requests use.
-        Endpoint(DELETE, "/families/$family", FAMILY_MANAGE),
+        Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )
 
     private fun status(endpoint: Endpoint, email: String?): Int {

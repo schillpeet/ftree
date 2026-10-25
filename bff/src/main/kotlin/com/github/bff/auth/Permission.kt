@@ -8,7 +8,9 @@ enum class Permission(val key: String, val perFamily: Boolean) {
     FAMILY_EDIT("family.edit", true),
     FAMILY_EXPORT("family.export", true),
     MEMBER_DELETE("member.delete", true),
+    FAMILY_DELETE("family.delete", true),
     TREE_APPEARANCE("tree.appearance", false),
+    FAMILY_CREATE("family.create", false),
     FAMILY_MANAGE("family.manage", false),
     DEV_TOOLS("dev.tools", false),
 }
