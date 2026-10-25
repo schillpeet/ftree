@@ -224,8 +224,11 @@ The BFF knows three roles: `visitor` (`tree.view`), `editor` (adds `member.edit`
 `app.roles.admins` and `app.roles.editors` (env `APP_ROLES_ADMINS`, `APP_ROLES_EDITORS`) list emails per role, matched trimmed and case-insensitively; admin wins, and everyone else is a visitor.
 `GET /me` returns the signed-in user's `email`, `role`, `permissions`, and `verified`, or 401 without a user.
 `app.auth.mode` (env `APP_AUTH_MODE`) is `cloudflare` by default; `dev` signs every request in as `app.auth.dev-email` (default `dev@localhost`) with `verified` false and logs a warning at startup, and `start.sh` runs the BFF in dev mode with `dev@localhost` as admin.
-Spring Security runs stateless and still permits every request; Cloudflare Access JWT verification and permission enforcement are not implemented yet.
+Spring Security runs stateless and still permits every request; permission enforcement is not implemented yet.
 Because Cloudflare Access turns its cookie into the JWT header, the BFF rejects writes from other sites with 403: POST, PUT, PATCH, and DELETE with `Sec-Fetch-Site` `same-site` or `cross-site`, or without it but with an `Origin` outside `app.cors.allowed-origins`; the UI sends no CSRF token.
+In cloudflare mode the BFF verifies the Cloudflare Access JWT from the `Cf-Access-Jwt-Assertion` header against the keys at `https://<team-domain>/cdn-cgi/access/certs`, checking its signature, expiry, issuer (`https://<team-domain>`), and audience, and takes the user from its `email` claim with `verified` true.
+`app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
+A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` answers 401; an `Authorization: Bearer` header is ignored.
 A broader family-tree model (relationship types such as uncertain links) is not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
