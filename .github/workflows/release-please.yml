@@ -25,16 +25,17 @@ jobs:
       # release-please lists every Dependabot update (`deps` commits) under "Dependencies"; collapse them
       # into one line in CHANGELOG.md and in the PR body, from which the GitHub release notes are taken.
       # release-please rebuilds the release branch on every push to main, so this runs again each time.
+      # `pr` is empty when a release is created, and step env is evaluated before `if`, hence the `|| '{}'`.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: steps.release.outputs.pr
         with:
-          ref: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          ref: ${{ fromJSON(steps.release.outputs.pr || '{}').headBranchName }}
           token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
 
       - name: Collapse dependency updates in the changelog
         if: steps.release.outputs.pr
         env:
-          BRANCH: ${{ fromJSON(steps.release.outputs.pr).headBranchName }}
+          BRANCH: ${{ fromJSON(steps.release.outputs.pr || '{}').headBranchName }}
         run: |
           node .github/scripts/collapse-dependency-notes.mjs CHANGELOG.md
           if ! git diff --quiet CHANGELOG.md; then
@@ -48,7 +49,7 @@ jobs:
         if: steps.release.outputs.pr
         env:
           GH_TOKEN: ${{ secrets.RELEASE_PLEASE_TOKEN }}
-          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr).number }}
+          PR_NUMBER: ${{ fromJSON(steps.release.outputs.pr || '{}').number }}
         run: |
           gh pr view "$PR_NUMBER" --json body --jq .body > "$RUNNER_TEMP/body.md"
           cp "$RUNNER_TEMP/body.md" "$RUNNER_TEMP/original.md"
