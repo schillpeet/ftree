@@ -5,18 +5,6 @@
  * API contract for the ftree UI and Backend for Frontend.
  * OpenAPI spec version: 0.5.0
  */
-/**
- * Users not listed as admin or editor are visitors.
- */
-export type Role = typeof Role[keyof typeof Role];
-
-
-export const Role = {
-  admin: 'admin',
-  editor: 'editor',
-  visitor: 'visitor',
-} as const;
-
 export type Permission = typeof Permission[keyof typeof Permission];
 
 
@@ -26,6 +14,7 @@ export const Permission = {
   familyedit: 'family.edit',
   familyexport: 'family.export',
   memberdelete: 'member.delete',
+  treeappearance: 'tree.appearance',
   familymanage: 'family.manage',
   devtools: 'dev.tools',
 } as const;
@@ -33,12 +22,25 @@ export const Permission = {
 export interface Me {
   /** The email address the user signed in with. */
   email: string;
-  role: Role;
-  /** The permissions the role grants. */
+  /** True for admins, who are admins in every family. */
+  admin: boolean;
+  /** The permissions outside any family; admins have every permission. */
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
   verified: boolean;
 }
+
+/**
+ * A user's role in one family.
+ */
+export type Role = typeof Role[keyof typeof Role];
+
+
+export const Role = {
+  admin: 'admin',
+  editor: 'editor',
+  visitor: 'visitor',
+} as const;
 
 export interface TestFamilySettings {
   /**
@@ -100,6 +102,9 @@ export interface FamilySummary {
      */
   readonly photoUpdatedAt?: string | null;
   photoFit: PhotoFit;
+  role: Role;
+  /** The caller's permissions in this family, from their role in it. */
+  readonly permissions: readonly Permission[];
 }
 
 export interface SetFamilyPhotoFitRequest {
@@ -393,7 +398,7 @@ export const getGetMeUrl = () => {
 }
 
 /**
- * Returns the caller's email, role, and the permissions the role grants.
+ * Returns the caller's email, whether they are an admin, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
  * @summary Get the signed-in user
  */
 export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {

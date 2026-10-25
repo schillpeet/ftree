@@ -6,6 +6,9 @@
 {{- $_ := required "bff.auth.teamDomain is required in cloudflare mode" .Values.bff.auth.teamDomain }}
 {{- $_ := required "bff.auth.audience is required in cloudflare mode" .Values.bff.auth.audience }}
 {{- end }}
+{{- if and .Values.bff.access (or .Values.bff.roles.admins .Values.bff.roles.editors) }}
+{{- fail "set bff.access or bff.roles, not both; list the admins and editors in the access file" }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,6 +21,11 @@ spec:
   template:
     metadata:
       labels: {{- include "ftree.labels" (dict "ctx" . "component" "bff") | nindent 8 }}
+      {{- with .Values.bff.access }}
+      annotations:
+        # The BFF reads the access file only at startup, so a changed file rolls the pod.
+        checksum/access: {{ . | sha256sum }}
+      {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets: {{- toYaml . | nindent 8 }}
@@ -62,6 +70,10 @@ spec:
             - name: APP_ROLES_EDITORS
               value: {{ join "," . | quote }}
             {{- end }}
+            {{- if .Values.bff.access }}
+            - name: APP_ACCESS_FILE
+              value: /config/access.yaml
+            {{- end }}
           # The BFF has no health endpoint yet, so the probes only check that the port is open.
           readinessProbe:
             tcpSocket:
@@ -75,6 +87,18 @@ spec:
             runAsNonRoot: true
             runAsUser: 1000
             allowPrivilegeEscalation: false
+          {{- if .Values.bff.access }}
+          volumeMounts:
+            - name: access
+              mountPath: /config
+              readOnly: true
+          {{- end }}
+      {{- if .Values.bff.access }}
+      volumes:
+        - name: access
+          configMap:
+            name: {{ include "ftree.fullname" . }}-bff-access
+      {{- end }}
 ---
 apiVersion: v1
 kind: Service

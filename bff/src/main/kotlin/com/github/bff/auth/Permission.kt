@@ -1,12 +1,14 @@
 package com.github.bff.auth
 
-// The key is the API value and the Spring Security authority name.
-enum class Permission(val key: String) {
-    TREE_VIEW("tree.view"),
-    MEMBER_EDIT("member.edit"),
-    FAMILY_EDIT("family.edit"),
-    FAMILY_EXPORT("family.export"),
-    MEMBER_DELETE("member.delete"),
-    FAMILY_MANAGE("family.manage"),
-    DEV_TOOLS("dev.tools"),
+// The key is the API value and the Spring Security authority name. Family permissions apply to one family and come
+// from the role in it; the others apply everywhere.
+enum class Permission(val key: String, val perFamily: Boolean) {
+    TREE_VIEW("tree.view", true),
+    MEMBER_EDIT("member.edit", true),
+    FAMILY_EDIT("family.edit", true),
+    FAMILY_EXPORT("family.export", true),
+    MEMBER_DELETE("member.delete", true),
+    TREE_APPEARANCE("tree.appearance", false),
+    FAMILY_MANAGE("family.manage", false),
+    DEV_TOOLS("dev.tools", false),
 }

@@ -24,11 +24,11 @@ class DevModeTest {
         mockMvc.get("/me").andExpect {
             status { isOk() }
             jsonPath("$.email") { value("dev@localhost") }
-            jsonPath("$.role") { value("admin") }
+            jsonPath("$.admin") { value(true) }
             jsonPath("$.verified") { value(false) }
-            jsonPath("$.permissions.length()") { value(7) }
+            jsonPath("$.permissions.length()") { value(8) }
             jsonPath("$.permissions[0]") { value("tree.view") }
-            jsonPath("$.permissions[6]") { value("dev.tools") }
+            jsonPath("$.permissions[7]") { value("dev.tools") }
         }
     }
 

@@ -1,13 +1,20 @@
 'use client';
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { getMe, type Me, type Permission } from '../lib/api/generated/members';
+import { getMe, type FamilySummary, type Me, type Permission } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { CloseIcon } from './icons';
 import { authProblemOf, can, type AuthProblem } from './access';
 
 // undefined while `/me` is loading, null when it failed.
 const MeContext = createContext<Me | null | undefined>(undefined);
+
+// The family that is open; its permissions are the caller's role in it.
+const OpenFamilyContext = createContext<FamilySummary | null>(null);
+
+export function OpenFamily({ family, children }: { family: FamilySummary | null; children: ReactNode }) {
+  return <OpenFamilyContext value={family}>{children}</OpenFamilyContext>;
+}
 
 // Loads `/me` once; until it answers (or when it fails) nothing beyond viewing is shown.
 // It also notices 401/403 answers of any API call and explains them in a small banner.
@@ -53,7 +60,8 @@ export const useMe = () => useContext(MeContext) ?? null;
 // Whether `/me` has answered (successfully or not).
 export const useMeLoaded = () => useContext(MeContext) !== undefined;
 
-export const useCan = (permission: Permission) => can(useMe(), permission);
+// Outside any family, or in the open one.
+export const useCan = (permission: Permission) => can(useMe(), permission, useContext(OpenFamilyContext));
 
 export function Can({ permission, children }: { permission: Permission; children: ReactNode }) {
   return useCan(permission) ? children : null;

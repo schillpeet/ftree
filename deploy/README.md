@@ -6,8 +6,10 @@ Always install the release as `ftree`: the UI image proxies `/api` to `http://ft
 Set `bff.corsAllowedOrigins` to the origin the browser opens the UI on (for example `http://localhost:8088` behind a port-forward); the proxy forwards the browser's `Origin`, so the BFF otherwise rejects every write with `403 Invalid CORS request`.
 `bff.auth.mode` is `cloudflare` by default: the BFF then verifies the Cloudflare Access JWT and needs `bff.auth.teamDomain` (for example `example.cloudflareaccess.com`) and `bff.auth.audience` (the Access application's AUD tag); without them the chart refuses to render, so Flux keeps the running release.
 `bff.auth.mode: dev` signs every request in as the unverified `dev@localhost` and is only for local clusters without Cloudflare Access.
-`bff.roles.admins` and `bff.roles.editors` are lists of emails; everyone else Access lets in is a visitor.
-The chart passes these values to the BFF as `APP_AUTH_MODE`, `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, `APP_ROLES_ADMINS`, and `APP_ROLES_EDITORS` (lists joined with `,`), leaving unset values out.
+`bff.access` holds the access file as one string (for example `--set-file bff.access=access.yaml`): every person with `admin: true` or their role (`editor` or `visitor`) per family slug under `trees`.
+The chart puts it into the ConfigMap `ftree-bff-access`, mounts it as `/config/access.yaml`, sets `APP_ACCESS_FILE`, and restarts the BFF when it changes (checksum annotation).
+Without `bff.access`, `bff.roles.admins` and `bff.roles.editors` are lists of emails, and everyone else Access lets in is a visitor in the first family only; the chart refuses to render with both set.
+The chart passes the other values to the BFF as `APP_AUTH_MODE`, `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, `APP_ROLES_ADMINS`, and `APP_ROLES_EDITORS` (lists joined with `,`), leaving unset values out.
 Running ftree in a cluster (Flux manifests, the kubectl, kind, Helm, and Flux cheatsheet, and the plan for a local kind cluster) lives in the private [`schillpeet/ftree-infra`](https://github.com/schillpeet/ftree-infra) repository.
 
 ## Develop the chart

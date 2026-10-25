@@ -16,7 +16,11 @@ bff:
     teamDomain: ""
     # AUD tag of the Access application; required in cloudflare mode.
     audience: ""
-  # Emails per role, matched case-insensitively; everyone else Access lets in is a visitor.
+  # The access file's content as one string, e.g. --set-file bff.access=access.yaml: every person with admin: true or
+  # their role (editor or visitor) per family slug under trees. It replaces roles; set only one of the two.
+  access: ""
+  # Without access: emails per role, matched case-insensitively; everyone else Access lets in is a visitor in the first
+  # family only.
   roles:
     admins: []
     editors: []

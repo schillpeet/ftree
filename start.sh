@@ -61,8 +61,11 @@ start_service() {
   local pid started_at
 
   if [[ "$name" == bff ]]; then
-    # Dev mode signs every request in as dev@localhost, who is admin; production uses Cloudflare Access.
-    APP_AUTH_MODE=dev APP_ROLES_ADMINS=dev@localhost \
+    # Dev mode signs every request in as dev@localhost, who is admin unless APP_ACCESS_FILE names an access file that
+    # gives dev@localhost another role; production uses Cloudflare Access.
+    local admins=dev@localhost
+    [[ -n "${APP_ACCESS_FILE:-}" ]] && admins=
+    APP_AUTH_MODE=dev APP_ROLES_ADMINS="$admins" \
       nohup bash -c 'cd "$1" || exit; exec ./gradlew --no-daemon bootRun' _ "$ROOT/bff" \
       >"$log_file" 2>&1 </dev/null &
   else

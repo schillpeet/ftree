@@ -39,7 +39,7 @@ export default function Dashboard({
 }) {
   const t = useT();
   const [appearance, setAppearance] = useAppearance();
-  const devTools = useCan('dev.tools');
+  const mayChooseAppearance = useCan('tree.appearance');
   const me = useMe();
   const meLoaded = useMeLoaded();
   const menuRef = useRef<HTMLDivElement>(null);
@@ -107,7 +107,7 @@ export default function Dashboard({
         {isOpen && (
           <nav className="glass dashboard-nav" id="dashboard-nav" aria-label={t.menu.label}>
             {boardItem('profile', t.menu.profile, <UserIcon />)}
-            <Can permission="family.manage">{boardItem('families', t.menu.families, <UsersIcon />)}</Can>
+            {boardItem('families', t.menu.families, <UsersIcon />)}
             <Can permission="member.edit">
               <button type="button" className="dashboard-nav-item" disabled={!activeFamily} onClick={onAddMember}>
                 <UserPlusIcon />
@@ -137,7 +137,7 @@ export default function Dashboard({
                   <dt>{t.account.email}</dt>
                   <dd>{me.email}</dd>
                   <dt>{t.account.role}</dt>
-                  <dd>{t.account.roles[me.role]}</dd>
+                  <dd>{me.admin ? t.account.roles.admin : activeFamily ? t.account.roles[activeFamily.role] : t.account.noFamily}</dd>
                   <dt>{t.account.verification}</dt>
                   <dd>{me.verified ? t.account.verified : t.account.unverified}</dd>
                 </dl>
@@ -162,8 +162,8 @@ export default function Dashboard({
             </header>
             <div className="appearance-panel-body" role="radiogroup" aria-label={t.appearance.title}>
               {APPEARANCES.map((option) => {
-                // Without dev tools the other appearances are announced, not offered.
-                const soon = !devTools && option !== PUBLIC_APPEARANCE;
+                // Without `tree.appearance` the other appearances are announced, not offered.
+                const soon = !mayChooseAppearance && option !== PUBLIC_APPEARANCE;
                 return (
                   <label key={option} className="debug-check" data-disabled={soon ? '' : undefined}>
                     <input

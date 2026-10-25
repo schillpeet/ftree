@@ -25,11 +25,11 @@ fun cloudflareJwtValidator(settings: CloudflareSettings): OAuth2TokenValidator<J
     )
 
 // Access has already confirmed the email, so the user is verified.
-class CloudflareAccessAuthenticationConverter(private val roleResolver: RoleResolver) :
+class CloudflareAccessAuthenticationConverter(private val accessPolicy: AccessPolicy) :
     Converter<Jwt, AbstractAuthenticationToken> {
     override fun convert(jwt: Jwt): AbstractAuthenticationToken {
         val email = jwt.getClaimAsString("email")?.trim()
         if (email.isNullOrEmpty()) throw InvalidBearerTokenException("The Cloudflare Access token has no email")
-        return CurrentUserAuthentication(CurrentUser(email, roleResolver.resolve(email), verified = true))
+        return CurrentUserAuthentication(CurrentUser(email, accessPolicy.accessOf(email), verified = true))
     }
 }
