@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ftree BFF API
-  version: 0.4.0
+  version: 0.5.0
   description: API contract for the ftree UI and Backend for Frontend.
 servers:
   - url: http://localhost:8080
@@ -11,7 +11,25 @@ tags:
     description: Isolated family trees and test sets
   - name: Members
     description: People in the family tree
+  - name: Me
+    description: The signed-in user and their permissions
 paths:
+  /me:
+    get:
+      operationId: getMe
+      tags:
+        - Me
+      summary: Get the signed-in user
+      description: Returns the caller's email, role, and the permissions the role grants.
+      responses:
+        "200":
+          description: The signed-in user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          description: No signed-in user.
   /members:
     get:
       operationId: getMembers
@@ -709,6 +727,44 @@ paths:
           description: Member or photo not found.
 components:
   schemas:
+    Me:
+      type: object
+      required:
+        - email
+        - role
+        - permissions
+        - verified
+      properties:
+        email:
+          type: string
+          description: The email address the user signed in with.
+        role:
+          $ref: "#/components/schemas/Role"
+        permissions:
+          type: array
+          description: The permissions the role grants.
+          items:
+            $ref: "#/components/schemas/Permission"
+        verified:
+          type: boolean
+          description: True when Cloudflare Access confirmed the email; false in local dev mode.
+    Role:
+      type: string
+      description: Users not listed as admin or editor are visitors.
+      enum:
+        - admin
+        - editor
+        - visitor
+    Permission:
+      type: string
+      enum:
+        - tree.view
+        - member.edit
+        - family.edit
+        - family.export
+        - member.delete
+        - family.manage
+        - dev.tools
     FamilySummary:
       type: object
       required:

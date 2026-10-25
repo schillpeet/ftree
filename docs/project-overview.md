@@ -220,7 +220,12 @@ The GEDCOM import and export do not carry partnership status yet.
 The copy replaces first names at random and maps each distinct last name (birth names included) consistently to a random last name from fixed lists in `AnonymousNames.kt`, never reusing a name from the original; empty names stay empty.
 Anonymous copies keep the kinds of the parent links.
 The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
-Authentication and a broader family-tree model (relationship types such as uncertain links) are not implemented.
+The BFF knows three roles: `visitor` (`tree.view`), `editor` (adds `member.edit`, `family.edit`, and `family.export`), and `admin` (adds `member.delete`, `family.manage`, and `dev.tools`).
+`app.roles.admins` and `app.roles.editors` (env `APP_ROLES_ADMINS`, `APP_ROLES_EDITORS`) list emails per role, matched trimmed and case-insensitively; admin wins, and everyone else is a visitor.
+`GET /me` returns the signed-in user's `email`, `role`, `permissions`, and `verified`, or 401 without a user.
+`app.auth.mode` (env `APP_AUTH_MODE`) is `cloudflare` by default; `dev` signs every request in as `app.auth.dev-email` (default `dev@localhost`) with `verified` false and logs a warning at startup, and `start.sh` runs the BFF in dev mode with `dev@localhost` as admin.
+Spring Security runs stateless without CSRF protection (the BFF has no session or cookie of its own), and still permits every request; Cloudflare Access JWT verification and permission enforcement are not implemented yet.
+A broader family-tree model (relationship types such as uncertain links) is not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
 The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
@@ -263,6 +268,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/` contains the Next.js app, package manifest, pnpm lockfile/workspace settings, TypeScript, ESLint, and Next.js configuration.
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
+- `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.
 - `bff/src/test/kotlin/com/github/bff/member/ParentLinkTest.kt` covers storing, reading, and resetting parent link kinds.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
