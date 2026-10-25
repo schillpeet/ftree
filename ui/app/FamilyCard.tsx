@@ -3,6 +3,7 @@
 import { useRef, useState, type FormEvent } from 'react';
 import {
   anonymizeFamily,
+  createEmptyFamily,
   deleteFamily,
   deleteFamilyPhoto,
   getExportFamilyUrl,
@@ -22,11 +23,12 @@ import { CENTRE, type Offset } from './panelPosition';
 import { toJpeg, usePhotoPreview } from './MemberFields';
 import { Can, useCan } from './Permissions';
 
-export type FamilyCardMode = 'view' | 'edit';
+export type FamilyCardMode = 'view' | 'edit' | 'create';
 
 // Overview of the shown family: its members by generation, the oldest first. Behaves like the person
 // panel (drag, pin, closes on a click outside unless pinned) with a position of its own, and edits
-// the family in place: photo, name, anonymized copy, delete.
+// the family in place: photo, name, anonymized copy, delete. In create mode it has no family yet and
+// shows the same form for a new, empty one.
 export default function FamilyCard({
   family,
   members,
@@ -40,7 +42,8 @@ export default function FamilyCard({
   loadError,
   onRetry,
 }: {
-  family: FamilySummary;
+  // Null while creating.
+  family: FamilySummary | null;
   members: Member[] | null;
   mode: FamilyCardMode;
   onModeChange: (mode: FamilyCardMode) => void;
@@ -49,6 +52,7 @@ export default function FamilyCard({
   onOpenMember: (id: string) => void;
   // The family was renamed or deleted; reload the families.
   onChanged: () => void;
+  // A family was made here: an anonymized copy, or the new family of create mode.
   onCreated: (family: FamilySummary) => void;
   loadError: string | null;
   onRetry: () => void;
@@ -58,25 +62,28 @@ export default function FamilyCard({
   const canExport = useCan('family.export');
   const [pin, setPin] = usePanelPin('ftree.familyPanelPin');
   const [moved, setMoved] = useState<Offset>(CENTRE);
-  const [name, setName] = useState(family.name);
+  const creating = mode === 'create' || !family;
+  const [name, setName] = useState(family?.name ?? '');
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Picked image (uploaded on save) and whether the stored one is to be removed.
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [removePhoto, setRemovePhoto] = useState(false);
-  const [photoFit, setPhotoFit] = useState<PhotoFit>(family.photoFit);
+  const [photoFit, setPhotoFit] = useState<PhotoFit>(family?.photoFit ?? 'cover');
   const [isDragging, setIsDragging] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
   const preview = usePhotoPreview(photoFile);
   const rows = generationRows(members ?? []);
   // The upload time makes a new photo a new (uncached) URL.
-  const stored = family.photoUpdatedAt
+  const stored = family?.photoUpdatedAt
     ? `${getGetFamilyPhotoUrl(family.id)}?v=${encodeURIComponent(family.photoUpdatedAt)}`
     : null;
-  const photo = mode === 'edit' ? (preview ?? (removePhoto ? null : stored)) : stored;
-  const fit = mode === 'edit' ? photoFit : family.photoFit;
+  const editing = mode !== 'view' || !family;
+  const photo = editing ? (preview ?? (removePhoto ? null : stored)) : stored;
+  const fit = editing ? photoFit : family.photoFit;
 
   function edit() {
+    if (!family) return;
     setName(family.name);
     setPhotoFile(null);
     setRemovePhoto(false);
@@ -95,6 +102,7 @@ export default function FamilyCard({
   // card in edit mode.
   async function save(event: FormEvent) {
     event.preventDefault();
+    if (creating) return create();
     const next = name.trim();
     setIsBusy(true);
     setError(null);
@@ -122,8 +130,38 @@ export default function FamilyCard({
     }
   }
 
+  // Creates the empty family, then gives it the picked photo; the parent then shows the new family's card.
+  async function create() {
+    const next = name.trim();
+    if (!next) return;
+    setIsBusy(true);
+    setError(null);
+    let created: FamilySummary;
+    try {
+      const response = await createEmptyFamily({ name: next });
+      if (response.status === 409) return setError(t.familyExists(next));
+      if (response.status !== 201) return setError(t.familyCard.createFailed);
+      created = response.data;
+    } catch {
+      return setError(t.familyCard.createFailed);
+    } finally {
+      setIsBusy(false);
+    }
+    try {
+      if (photoFile) {
+        if ((await uploadFamilyPhoto(created.id, await toJpeg(photoFile))).status !== 204) throw new Error('photo');
+        if (photoFit !== created.photoFit && (await setFamilyPhotoFit(created.id, { photoFit })).status !== 200) throw new Error('fit');
+        created = { ...created, photoUpdatedAt: new Date().toISOString(), photoFit };
+      }
+    } catch {
+      window.alert(t.familyCard.createdWithoutPhoto);
+    }
+    onCreated(created);
+  }
+
   // A new family with the same structure under random names; the original stays as it is.
   async function anonymize() {
+    if (!family) return;
     const copy = window.prompt(t.families.anonymizeName, t.families.anonymizeDefault(family.name))?.trim();
     if (!copy) return;
     setIsBusy(true);
@@ -143,6 +181,7 @@ export default function FamilyCard({
 
   // Reloading the families falls back to "default" (or the first family) once this one is gone.
   async function remove() {
+    if (!family) return;
     if (!window.confirm(t.families.confirmDelete(family.name, family.memberCount))) return;
     setIsBusy(true);
     setError(null);
@@ -159,7 +198,7 @@ export default function FamilyCard({
 
   return (
     <PanelShell
-      label={t.familyCard.title}
+      label={creating ? t.familyCard.newTitle : t.familyCard.title}
       hideLabel
       closeLabel={t.familyCard.close}
       autoFocusClose={mode === 'view'}
@@ -175,9 +214,9 @@ export default function FamilyCard({
           setPin(null);
         }
       }}
-      onEdit={mode === 'view' && canEdit ? edit : undefined}
+      onEdit={!editing && canEdit ? edit : undefined}
       actions={
-        canExport && (
+        canExport && family && (
           <a
             className="person-icon-button"
             href={getExportFamilyUrl(family.id)}
@@ -191,7 +230,7 @@ export default function FamilyCard({
       }
       className="family-card"
     >
-      {mode === 'edit' ? (
+      {editing ? (
         <form className="family-card-edit" onSubmit={save}>
           {/* Dropping an image on the field picks it like the file chooser does. */}
           <label
@@ -258,27 +297,31 @@ export default function FamilyCard({
               </button>
             )}
           </div>
-          <Can permission="family.manage">
-            <div className="family-card-tools">
-              <button type="button" className="family-card-button" disabled={isBusy} onClick={() => void anonymize()}>
-                <CopyIcon />
-                {t.families.anonymize}
-              </button>
-            </div>
-          </Can>
+          {!creating && (
+            <Can permission="family.manage">
+              <div className="family-card-tools">
+                <button type="button" className="family-card-button" disabled={isBusy} onClick={() => void anonymize()}>
+                  <CopyIcon />
+                  {t.families.anonymize}
+                </button>
+              </div>
+            </Can>
+          )}
           {error && <p className="person-error" role="alert">{error}</p>}
           <div className="family-card-actions">
-            <Can permission="family.delete">
-              <button type="button" className="family-card-button family-card-danger" disabled={isBusy} onClick={() => void remove()}>
-                <TrashIcon />
-                {t.familyCard.delete}
-              </button>
-            </Can>
-            <button type="button" className="family-card-button" disabled={isBusy} onClick={() => onModeChange('view')}>
+            {!creating && (
+              <Can permission="family.delete">
+                <button type="button" className="family-card-button family-card-danger" disabled={isBusy} onClick={() => void remove()}>
+                  <TrashIcon />
+                  {t.familyCard.delete}
+                </button>
+              </Can>
+            )}
+            <button type="button" className="family-card-button" disabled={isBusy} onClick={() => (creating ? onClose() : onModeChange('view'))}>
               {t.familyCard.cancel}
             </button>
             <button type="submit" className="family-card-button family-card-primary" disabled={isBusy}>
-              {isBusy ? t.saving : t.familyCard.save}
+              {isBusy ? t.saving : creating ? t.familyCard.create : t.familyCard.save}
             </button>
           </div>
         </form>

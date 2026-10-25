@@ -114,6 +114,7 @@ Every family has a slug (lowercase ASCII words joined by `-`, at most 60 charact
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The original `/members` endpoints remain available for the default family.
 "GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.
+`POST /families/empty` creates a family without members or test settings under a unique name of up to 100 characters; like generating and importing, it needs `family.create`, and a developer who creates it is its developer.
 The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names stay empty.
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
 The family card's download button exports the family as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
@@ -124,6 +125,8 @@ The family card lists the family's members by generation, the oldest first and e
 The family card behaves like the person card: it can be dragged, pinned to a position of its own (`ftree.familyPanelPin`), and closes on ×, Escape, or a click outside unless pinned.
 The family card's header downloads the family as GEDCOM, and its pencil switches it to edit mode: a dashed photo field ("Foto ablegen" while empty), the name, "Familienfoto hinzufügen" or "Familienfoto ändern" and "Familienfoto entfernen", "Anonymisierte Kopie" in a row of its own, and below a line "Familie löschen" (after confirmation) apart from "Abbrechen" and "Speichern".
 The family photo fills the family card's cover; in edit mode the photo field takes a new photo by choosing a file or dropping an image, which the browser scales to at most 800 px as JPEG and uploads on save, and "Familienfoto entfernen" deletes it on save.
+"Neue Familie" at the top of the families board, shown to admins and developers, closes the menu and opens the family card in create mode: the same photo field, name, and photo display as in edit mode, with "Abbrechen" and "Anlegen" and without the copy and delete buttons.
+"Anlegen" creates the empty family, uploads the picked photo to it, shows the new family, and switches its card to view mode.
 In edit mode a switch under the photo field chooses "Füllend" (the photo fills the cover) or "Originalgröße" (the photo keeps its own size, centred, at most 240 px high and as wide as the card, never scaled up); it is saved per family via `PUT /families/{familyId}/photo-fit`.
 
 ### Members and relatives

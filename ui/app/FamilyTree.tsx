@@ -198,6 +198,11 @@ export default function FamilyTree() {
         }}
         onToggleVisibility={toggleFamilyVisibility}
         onAdded={addFamily}
+        onCreate={() => {
+          setPanel(null);
+          setIsMenuOpen(false);
+          setFamilyCard('create');
+        }}
       />
     </OpenFamily>
   );

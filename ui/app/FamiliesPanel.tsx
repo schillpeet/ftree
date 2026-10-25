@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { EyeIcon, EyeOffIcon, PencilIcon, UploadIcon, UsersIcon, CloseIcon } from './icons';
+import { EyeIcon, EyeOffIcon, PencilIcon, PlusIcon, UploadIcon, UsersIcon, CloseIcon } from './icons';
 import { importFamily, reorderFamilies, type FamilySummary } from '../lib/api/generated/members';
 import RandomFamilyPanel from './RandomFamilyPanel';
 import { useT } from './i18n';
@@ -20,6 +20,7 @@ export default function FamiliesPanel({
   onOpen,
   onToggleVisibility,
   onAdded,
+  onCreate,
 }: {
   families: FamilySummary[] | null;
   setFamilies: Dispatch<SetStateAction<FamilySummary[] | null>>;
@@ -35,6 +36,8 @@ export default function FamiliesPanel({
   onToggleVisibility: (familyId: string) => void;
   // A family was imported or generated here.
   onAdded: (family: FamilySummary) => void;
+  // Opens the family card with an empty form for a new family.
+  onCreate: () => void;
 }) {
   const t = useT();
   // Admins and developers import and generate families; only admins reorder them.
@@ -128,6 +131,10 @@ export default function FamiliesPanel({
       <div className="families-panel-body">
         {canImport && (
           <div className="family-set-import">
+            <button type="button" disabled={isImporting} onClick={onCreate}>
+              <PlusIcon />
+              {t.families.create}
+            </button>
             <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
               <UploadIcon />
               {isImporting ? t.families.importing : t.families.import}

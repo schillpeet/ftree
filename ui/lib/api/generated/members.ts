@@ -144,6 +144,14 @@ export interface CreateFamilyRequest {
   maxChildren: number;
 }
 
+export interface CreateEmptyFamilyRequest {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  name: string;
+}
+
 export interface ArchiveFamilyRequest {
   /**
      * @minLength 1
@@ -1177,6 +1185,76 @@ const res = await fetch(getAnonymizeFamilyUrl(familyId),
 
   const data: anonymizeFamilyResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as anonymizeFamilyResponse
+}
+
+
+
+export type createEmptyFamilyResponse201 = {
+  data: FamilySummary
+  status: 201
+}
+
+export type createEmptyFamilyResponse400 = {
+  data: void
+  status: 400
+}
+
+export type createEmptyFamilyResponse409 = {
+  data: void
+  status: 409
+}
+
+export type createEmptyFamilyResponseSuccess = (createEmptyFamilyResponse201) & {
+  headers: Headers;
+};
+export type createEmptyFamilyResponseError = (createEmptyFamilyResponse400 | createEmptyFamilyResponse409) & {
+  headers: Headers;
+};
+
+export type createEmptyFamilyResponse = (createEmptyFamilyResponseSuccess | createEmptyFamilyResponseError)
+
+export const getCreateEmptyFamilyUrl = () => {
+
+
+
+
+  return `/api/families/empty`
+}
+
+/**
+ * Creates a family without members or test settings; the members are added to it one by one.
+ * @summary Create an empty named family
+ */
+export const createEmptyFamily = async (createEmptyFamilyRequest: CreateEmptyFamilyRequest, options?: RequestInit): Promise<createEmptyFamilyResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getCreateEmptyFamilyUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(createEmptyFamilyRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: createEmptyFamilyResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as createEmptyFamilyResponse
 }
 
 

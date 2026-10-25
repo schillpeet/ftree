@@ -62,6 +62,7 @@ class PermissionMatrixTest {
         Endpoint(DELETE, "/families/$family/members/$member", MEMBER_DELETE),
         Endpoint(POST, "/families", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(PUT, "/families/order", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
+        Endpoint(POST, "/families/empty", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/import", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/archive", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/anonymize", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
