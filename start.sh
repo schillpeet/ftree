@@ -61,7 +61,9 @@ start_service() {
   local pid started_at
 
   if [[ "$name" == bff ]]; then
-    nohup bash -c 'cd "$1" || exit; exec ./gradlew --no-daemon bootRun' _ "$ROOT/bff" \
+    # Dev mode signs every request in as dev@localhost, who is admin; production uses Cloudflare Access.
+    APP_AUTH_MODE=dev APP_ROLES_ADMINS=dev@localhost \
+      nohup bash -c 'cd "$1" || exit; exec ./gradlew --no-daemon bootRun' _ "$ROOT/bff" \
       >"$log_file" 2>&1 </dev/null &
   else
     nohup bash -c 'cd "$1" || exit; exec pnpm --dir ui dev' _ "$ROOT" \

@@ -11,10 +11,12 @@ class WebConfiguration(
     private val allowedOrigins: String,
 ) : WebMvcConfigurer {
     override fun addCorsMappings(registry: CorsRegistry) {
-        val origins = allowedOrigins.split(',').map(String::trim).filter(String::isNotEmpty)
         registry.addMapping("/**")
-            .allowedOrigins(*origins.toTypedArray())
+            .allowedOrigins(*parseOrigins(allowedOrigins).toTypedArray())
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("Content-Type")
     }
 }
+
+// app.cors.allowed-origins is a comma-separated list; SecurityConfiguration trusts the same origins.
+fun parseOrigins(value: String): Set<String> = value.split(',').map(String::trim).filter(String::isNotEmpty).toSet()

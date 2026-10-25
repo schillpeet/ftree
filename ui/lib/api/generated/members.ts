@@ -3,8 +3,43 @@
  * Do not edit manually.
  * ftree BFF API
  * API contract for the ftree UI and Backend for Frontend.
- * OpenAPI spec version: 0.4.0
+ * OpenAPI spec version: 0.5.0
  */
+/**
+ * Users not listed as admin or editor are visitors.
+ */
+export type Role = typeof Role[keyof typeof Role];
+
+
+export const Role = {
+  admin: 'admin',
+  editor: 'editor',
+  visitor: 'visitor',
+} as const;
+
+export type Permission = typeof Permission[keyof typeof Permission];
+
+
+export const Permission = {
+  treeview: 'tree.view',
+  memberedit: 'member.edit',
+  familyedit: 'family.edit',
+  familyexport: 'family.export',
+  memberdelete: 'member.delete',
+  familymanage: 'family.manage',
+  devtools: 'dev.tools',
+} as const;
+
+export interface Me {
+  /** The email address the user signed in with. */
+  email: string;
+  role: Role;
+  /** The permissions the role grants. */
+  permissions: Permission[];
+  /** True when Cloudflare Access confirmed the email; false in local dev mode. */
+  verified: boolean;
+}
+
 export interface TestFamilySettings {
   /**
      * @minimum 1
@@ -323,6 +358,57 @@ export interface CreateMemberRequest {
   /** @nullable */
   photoUrl?: string | null;
 }
+
+export type getMeResponse200 = {
+  data: Me
+  status: 200
+}
+
+export type getMeResponse401 = {
+  data: void
+  status: 401
+}
+
+export type getMeResponseSuccess = (getMeResponse200) & {
+  headers: Headers;
+};
+export type getMeResponseError = (getMeResponse401) & {
+  headers: Headers;
+};
+
+export type getMeResponse = (getMeResponseSuccess | getMeResponseError)
+
+export const getGetMeUrl = () => {
+
+
+
+
+  return `/api/me`
+}
+
+/**
+ * Returns the caller's email, role, and the permissions the role grants.
+ * @summary Get the signed-in user
+ */
+export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {
+
+  const res = await fetch(getGetMeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getMeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getMeResponse
+}
+
+
 
 export type getMembersResponse200 = {
   data: Member[]

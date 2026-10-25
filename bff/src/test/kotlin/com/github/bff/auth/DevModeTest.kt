@@ -1,0 +1,76 @@
+package com.github.bff.auth
+
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
+import org.springframework.http.MediaType
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
+import org.springframework.test.web.servlet.get
+import org.springframework.test.web.servlet.post
+import org.springframework.transaction.annotation.Transactional
+import java.util.UUID
+import kotlin.test.Test
+
+@SpringBootTest(properties = ["app.auth.mode=dev", "app.roles.admins=dev@localhost"])
+@AutoConfigureMockMvc
+@Transactional
+class DevModeTest {
+    @Autowired
+    private lateinit var mockMvc: MockMvc
+
+    @Test
+    fun `me returns the unverified dev user with all admin permissions`() {
+        mockMvc.get("/me").andExpect {
+            status { isOk() }
+            jsonPath("$.email") { value("dev@localhost") }
+            jsonPath("$.role") { value("admin") }
+            jsonPath("$.verified") { value(false) }
+            jsonPath("$.permissions.length()") { value(7) }
+            jsonPath("$.permissions[0]") { value("tree.view") }
+            jsonPath("$.permissions[6]") { value("dev.tools") }
+        }
+    }
+
+    @Test
+    fun `post works without a csrf token`() {
+        mockMvc.post("/families") {
+            contentType = MediaType.APPLICATION_JSON
+            content = """{"name":"Csrf test ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
+        }.andExpect { status { isCreated() } }
+    }
+
+    // A second line of defence: a cross-site form can only send text/plain or form encodings.
+    @Test
+    fun `post rejects bodies a cross-site form can send`() {
+        listOf(MediaType.TEXT_PLAIN, MediaType.APPLICATION_FORM_URLENCODED).forEach { type ->
+            mockMvc.post("/families") {
+                contentType = type
+                content = """{"name":"Csrf test ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
+            }.andExpect { status { isUnsupportedMediaType() } }
+        }
+    }
+
+    @Test
+    fun `writes from other sites are forbidden, same-origin writes pass`() {
+        val body = """{"name":"Csrf test ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
+        mockMvc.post("/families") {
+            contentType = MediaType.APPLICATION_JSON
+            content = body
+            header("Sec-Fetch-Site", "cross-site")
+            header("Origin", "https://evil.example")
+        }.andExpect { status { isForbidden() } }
+        mockMvc.delete("/families/${UUID.randomUUID()}") {
+            header("Origin", "https://evil.example")
+        }.andExpect { status { isForbidden() } }
+        mockMvc.post("/families") {
+            contentType = MediaType.APPLICATION_JSON
+            content = body
+            header("Sec-Fetch-Site", "same-origin")
+            header("Origin", "http://localhost:3000")
+        }.andExpect {
+            status { isCreated() }
+            header { doesNotExist("Set-Cookie") }
+        }
+    }
+}
