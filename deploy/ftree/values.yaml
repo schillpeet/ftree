@@ -8,6 +8,18 @@ ui:
 bff:
   image: { repository: ghcr.io/schillpeet/ftree-bff, tag: "", pullPolicy: IfNotPresent }
   corsAllowedOrigins: ""
+  auth:
+    # cloudflare verifies the Cloudflare Access JWT; dev signs every request in as the unverified dev@localhost
+    # (a visitor unless listed in roles) and is only for local clusters.
+    mode: cloudflare
+    # Access team domain, e.g. example.cloudflareaccess.com; required in cloudflare mode.
+    teamDomain: ""
+    # AUD tag of the Access application; required in cloudflare mode.
+    audience: ""
+  # Emails per role, matched case-insensitively; everyone else Access lets in is a visitor.
+  roles:
+    admins: []
+    editors: []
   resources:
     requests: { memory: 512Mi }
     limits: { memory: 512Mi }

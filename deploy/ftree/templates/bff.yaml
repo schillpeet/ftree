@@ -1,3 +1,11 @@
+{{- /* Fail at render time, so Flux keeps the running release instead of rolling out a BFF that refuses to start. */}}
+{{- if not (has .Values.bff.auth.mode (list "cloudflare" "dev")) }}
+{{- fail (printf "bff.auth.mode must be cloudflare or dev, not %q" .Values.bff.auth.mode) }}
+{{- end }}
+{{- if eq .Values.bff.auth.mode "cloudflare" }}
+{{- $_ := required "bff.auth.teamDomain is required in cloudflare mode" .Values.bff.auth.teamDomain }}
+{{- $_ := required "bff.auth.audience is required in cloudflare mode" .Values.bff.auth.audience }}
+{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -35,6 +43,24 @@ spec:
             # Unset, the BFF allows http://localhost:3000; an empty value would block every origin.
             - name: APP_CORS_ALLOWED_ORIGINS
               value: {{ . | quote }}
+            {{- end }}
+            - name: APP_AUTH_MODE
+              value: {{ .Values.bff.auth.mode | quote }}
+            {{- with .Values.bff.auth.teamDomain }}
+            - name: APP_AUTH_TEAM_DOMAIN
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.bff.auth.audience }}
+            - name: APP_AUTH_AUDIENCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.bff.roles.admins }}
+            - name: APP_ROLES_ADMINS
+              value: {{ join "," . | quote }}
+            {{- end }}
+            {{- with .Values.bff.roles.editors }}
+            - name: APP_ROLES_EDITORS
+              value: {{ join "," . | quote }}
             {{- end }}
           # The BFF has no health endpoint yet, so the probes only check that the port is open.
           readinessProbe:
