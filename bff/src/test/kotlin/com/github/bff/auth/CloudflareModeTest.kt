@@ -1,60 +1,22 @@
 package com.github.bff.auth
 
-import com.nimbusds.jose.JWSAlgorithm
-import com.nimbusds.jose.JWSHeader
-import com.nimbusds.jose.crypto.RSASSASigner
-import com.nimbusds.jose.jwk.RSAKey
+import com.github.bff.auth.CloudflareTestTokens.token
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
-import com.nimbusds.jwt.JWTClaimsSet
-import com.nimbusds.jwt.SignedJWT
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Primary
+import org.springframework.context.annotation.Import
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.get
-import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import java.time.Instant
-import java.util.Date
 import kotlin.test.Test
 
 @SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
 @AutoConfigureMockMvc
+@Import(CloudflareTestDecoder::class)
 class CloudflareModeTest {
     @Autowired
     private lateinit var mockMvc: MockMvc
-
-    @TestConfiguration
-    class Keys {
-        // Same validators as production, but with a local key instead of Cloudflare's JWKS endpoint.
-        @Bean
-        @Primary
-        fun testJwtDecoder(properties: AuthProperties): JwtDecoder =
-            NimbusJwtDecoder.withPublicKey(KEY.toRSAPublicKey()).build()
-                .apply { setJwtValidator(cloudflareJwtValidator(properties.cloudflareSettings())) }
-    }
-
-    private fun token(
-        email: String? = "admin@example.com",
-        audience: List<String>? = listOf("test-audience"),
-        issuer: String = "https://test.cloudflareaccess.com",
-        expiresAt: Instant = Instant.now().plusSeconds(300),
-        key: RSAKey = KEY,
-    ): String {
-        val claims = JWTClaimsSet.Builder()
-            .issuer(issuer)
-            .audience(audience)
-            .issueTime(Date.from(Instant.now().minusSeconds(60)))
-            .expirationTime(Date.from(expiresAt))
-            .apply { if (email != null) claim("email", email) }
-            .build()
-        return SignedJWT(JWSHeader.Builder(JWSAlgorithm.RS256).keyID(key.keyID).build(), claims)
-            .apply { sign(RSASSASigner(key)) }
-            .serialize()
-    }
 
     private fun me(token: String) = mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token) }
 
@@ -94,9 +56,5 @@ class CloudflareModeTest {
         me(token(key = RSAKeyGenerator(2048).keyID("other").generate())).andExpect { status { isUnauthorized() } }
         me("not-a-jwt").andExpect { status { isUnauthorized() } }
         me(token(email = null)).andExpect { status { isUnauthorized() } }
-    }
-
-    private companion object {
-        val KEY: RSAKey = RSAKeyGenerator(2048).keyID("test").generate()
     }
 }
