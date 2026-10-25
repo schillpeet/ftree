@@ -81,6 +81,12 @@ export interface FamilySummary {
      * @maxLength 100
      */
   name: string;
+  /**
+     * Names the family in the access file; made from the name when the family is created and kept on rename.
+     * @maxLength 60
+     * @pattern ^[a-z0-9]+(-[a-z0-9]+)*$
+     */
+  readonly slug: string;
   /** @minimum 0 */
   memberCount: number;
   /** @minimum 0 */
