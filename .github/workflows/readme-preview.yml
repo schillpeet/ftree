@@ -41,7 +41,9 @@ jobs:
         run: |
           mkdir -p .local
           docker compose up -d --wait db
-          (cd bff && nohup ./gradlew --no-daemon bootRun > ../.local/bff.log 2>&1 &)
+          # Dev mode signs every request in as dev@localhost, who is admin, so the demo import below works.
+          (cd bff && APP_AUTH_MODE=dev APP_ROLES_ADMINS=dev@localhost \
+            nohup ./gradlew --no-daemon bootRun > ../.local/bff.log 2>&1 &)
           pnpm --dir ui install --frozen-lockfile
           pnpm --dir ui build
           nohup pnpm --dir ui start > .local/ui.log 2>&1 &
