@@ -403,7 +403,7 @@ export const getGetMeUrl = () => {
 }
 
 /**
- * Returns the caller's email, whether they are an admin, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
+ * Returns the caller's email, whether they are an admin or a developer, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
  * @summary Get the signed-in user
  */
 export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {
