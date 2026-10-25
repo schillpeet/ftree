@@ -488,9 +488,9 @@ export default function MembersControls({
       )}
 
       {/* Before the person panel, so a person opened from the card shows on top of it. */}
-      {familyCard && family && (
+      {(familyCard === 'create' || (familyCard && family)) && (
         <FamilyCard
-          family={family}
+          family={familyCard === 'create' ? null : family ?? null}
           members={members}
           mode={familyCard}
           onModeChange={onFamilyCardChange}
@@ -503,7 +503,11 @@ export default function MembersControls({
             onSelect(id);
           }}
           onChanged={onFamiliesChanged}
-          onCreated={onFamilyCreated}
+          onCreated={(created) => {
+            onFamilyCreated(created);
+            // The new family's card replaces the form; a copy made by anonymizing just becomes the shown family.
+            if (familyCard === 'create') onFamilyCardChange('view');
+          }}
           loadError={requestError}
           onRetry={() => void reloadMembers()}
         />

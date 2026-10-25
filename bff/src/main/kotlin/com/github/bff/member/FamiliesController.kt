@@ -3,6 +3,7 @@ package com.github.bff.member
 import com.github.bff.generated.api.FamiliesApi
 import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.ArchiveFamilyRequest
+import com.github.bff.generated.model.CreateEmptyFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
@@ -34,6 +35,13 @@ class FamiliesController(
 
     override fun createFamily(createFamilyRequest: CreateFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.create(createFamilyRequest)) {
+            is FamilyCreationResult.CREATED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
+            FamilyCreationResult.INVALID -> ResponseEntity.badRequest().build()
+            FamilyCreationResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+        }
+
+    override fun createEmptyFamily(createEmptyFamilyRequest: CreateEmptyFamilyRequest): ResponseEntity<FamilySummary> =
+        when (val result = familyService.createEmpty(createEmptyFamilyRequest)) {
             is FamilyCreationResult.CREATED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
             FamilyCreationResult.INVALID -> ResponseEntity.badRequest().build()
             FamilyCreationResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()

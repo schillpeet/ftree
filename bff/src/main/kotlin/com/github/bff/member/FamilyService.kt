@@ -4,6 +4,7 @@ import com.github.bff.auth.CurrentUser
 import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.ArchiveFamilyRequest
+import com.github.bff.generated.model.CreateEmptyFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
@@ -89,6 +90,16 @@ class FamilyService(
         val saved = memberRepository.saveAll(members)
         memberRepository.flush()
         return FamilyCreationResult.CREATED(family.toSummary(saved))
+    }
+
+    // A real family without members, filled one person at a time.
+    @Transactional
+    fun createEmpty(request: CreateEmptyFamilyRequest): FamilyCreationResult {
+        val name = request.name?.trim().orEmpty()
+        if (name.isEmpty() || name.length > 100) return FamilyCreationResult.INVALID
+        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyCreationResult.NAME_TAKEN
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
+        return FamilyCreationResult.CREATED(family.toSummary(emptyList()))
     }
 
     // Moves every member, with links and placements, into a new family; the source stays empty.

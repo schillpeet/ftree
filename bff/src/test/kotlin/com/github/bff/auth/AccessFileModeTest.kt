@@ -133,6 +133,21 @@ class AccessFileModeTest {
     }
 
     @Test
+    fun `developers create empty trees that only they and admins see`() {
+        createEmpty("father@example.com").andExpect { status { isForbidden() } }
+        val json = createEmpty("friend@example.com").andExpect {
+            status { isCreated() }
+            jsonPath("$.memberCount") { value(0) }
+            jsonPath("$.role") { value("developer") }
+        }.andReturn().response.contentAsString
+        val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
+
+        assertEquals("developer", families("friend@example.com")[own])
+        assertEquals(null, families("father@example.com")[own])
+        assertEquals("admin", families("admin@example.com")[own])
+    }
+
+    @Test
     fun `me tells admins and developers apart and gives everyone the appearance`() {
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "father@example.com")) }.andExpect {
             jsonPath("$.admin") { value(false) }
@@ -153,6 +168,12 @@ class AccessFileModeTest {
         header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = email))
         contentType = MediaType.APPLICATION_JSON
         content = """{"name":"Own ${UUID.randomUUID()}","totalUsers":1,"generationCount":1,"minChildren":0,"maxChildren":0}"""
+    }
+
+    private fun createEmpty(email: String) = mockMvc.post("/families/empty") {
+        header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = email))
+        contentType = MediaType.APPLICATION_JSON
+        content = """{"name":"Empty ${UUID.randomUUID()}"}"""
     }
 
     private fun rename(family: UUID, email: String) = mockMvc.put("/families/$family") {

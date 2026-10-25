@@ -1,6 +1,7 @@
 package com.github.bff.member
 
 import com.github.bff.generated.model.ArchiveFamilyRequest
+import com.github.bff.generated.model.CreateEmptyFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.ImportFamilyRequest
@@ -234,6 +235,28 @@ class FamilyServiceTest {
         assertEquals(FamilyImportResult.INVALID, familyService.import(ImportFamilyRequest("Text ${UUID.randomUUID()}", "kein GEDCOM")))
         assertEquals(FamilyImportResult.NAME_TAKEN, familyService.import(ImportFamilyRequest(family.name, "0 HEAD\n0 @I1@ INDI")))
         assertNull(familyService.export(UUID.randomUUID()))
+    }
+
+    @Test
+    fun `creates an empty family without members or test settings`() {
+        val name = "Leer ${UUID.randomUUID()}"
+
+        val family = (familyService.createEmpty(CreateEmptyFamilyRequest("  $name ")) as FamilyCreationResult.CREATED).summary
+
+        assertEquals(name, family.name)
+        assertEquals(0, family.memberCount)
+        assertNull(family.testSettings)
+        assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isEmpty())
+        assertEquals(family.slug, familyRepository.findById(family.id).orElseThrow().slug)
+    }
+
+    @Test
+    fun `refuses an empty family with a blank, too long, or taken name`() {
+        val taken = (familyService.create(request()) as FamilyCreationResult.CREATED).summary
+
+        assertEquals(FamilyCreationResult.INVALID, familyService.createEmpty(CreateEmptyFamilyRequest(" ")))
+        assertEquals(FamilyCreationResult.INVALID, familyService.createEmpty(CreateEmptyFamilyRequest("x".repeat(101))))
+        assertEquals(FamilyCreationResult.NAME_TAKEN, familyService.createEmpty(CreateEmptyFamilyRequest(taken.name.uppercase())))
     }
 
     @Test

@@ -308,6 +308,31 @@ paths:
           description: Family not found.
         "409":
           description: A family with this name already exists.
+  /families/empty:
+    post:
+      operationId: createEmptyFamily
+      tags:
+        - Families
+      summary: Create an empty named family
+      description: >-
+        Creates a family without members or test settings; the members are added to it one by one.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEmptyFamilyRequest"
+      responses:
+        "201":
+          description: Empty family created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The name is invalid.
+        "409":
+          description: A family with this name already exists.
   /families/import:
     post:
       operationId: importFamily
@@ -899,6 +924,15 @@ components:
           type: integer
           minimum: 0
           maximum: 3
+    CreateEmptyFamilyRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
     ArchiveFamilyRequest:
       type: object
       required:
