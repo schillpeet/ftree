@@ -15,6 +15,7 @@ import {
   type Relatives,
 } from '../lib/api/generated/members';
 import { useT } from './i18n';
+import { useCan } from './Permissions';
 import { initialsOf, nameOf } from './names';
 import { dateProblem } from './partnerships';
 import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
@@ -77,6 +78,8 @@ export default function MembersControls({
   onFamiliesChanged: () => void;
 }) {
   const t = useT();
+  const canEdit = useCan('member.edit');
+  const canDelete = useCan('member.delete');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -211,7 +214,7 @@ export default function MembersControls({
   }
 
   function openForm(member: Member | null = null) {
-    if (!familyId) return;
+    if (!familyId || !canEdit) return;
     // Keep an unsaved create draft, but never carry an edited member's values into a new person.
     if (member) {
       setForm(toForm(member));
@@ -379,7 +382,7 @@ export default function MembersControls({
           {...panelPosition}
           className={`person-panel-form${newRelative ? ' person-panel-origin' : ''}`}
           onDelete={
-            editing
+            editing && canDelete
               ? async () => {
                   if (await removeMember(editing, setFormError)) setIsFormOpen(false);
                 }
@@ -518,7 +521,7 @@ export default function MembersControls({
           onClose={() => setProfileId(null)}
           {...panelPosition}
           onBack={trail.some((id) => members.some((m) => m.id === id)) ? goBack : undefined}
-          onEdit={() => openForm(profileMember)}
+          onEdit={canEdit ? () => openForm(profileMember) : undefined}
         >
           <PersonView
             member={profileMember}

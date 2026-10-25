@@ -232,6 +232,14 @@ Because Cloudflare Access turns its cookie into the JWT header, the BFF rejects 
 In cloudflare mode the BFF verifies the Cloudflare Access JWT from the `Cf-Access-Jwt-Assertion` header against the keys at `https://<team-domain>/cdn-cgi/access/certs`, checking its signature, expiry, issuer (`https://<team-domain>`), and audience, and takes the user from its `email` claim with `verified` true.
 `app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
 A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` answers 401; an `Authorization: Bearer` header is ignored.
+The UI loads `GET /me` once at start and shows only what the permissions allow; it checks permissions, never role names, and the BFF still enforces them.
+The burger menu starts with "Profil" for everyone, a board with the email, the role, whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode), and a logout link to `/cdn-cgi/access/logout`.
+"Familien" needs `family.manage`, "Mitglied hinzufügen" needs `member.edit`, and "Momentaufnahme" and "Darstellung" are for everyone.
+Without `dev.tools` only the experimental appearance can be chosen; the others are disabled and marked "Demnächst", and a stored other choice falls back to experimental.
+The Evolution button and its random-family generator need `dev.tools`.
+Editing a person, their photo, relatives, and dragging cards to pins need `member.edit`; deleting a person needs `member.delete`.
+Editing the family card (name, photo, photo fit) needs `family.edit`, the GEDCOM download `family.export`, and the anonymized copy, deleting a family, importing, and reordering families `family.manage`.
+A 403 from the API shows a friendly notice that the role does not allow it, and a 401 suggests reloading or signing in again.
 A broader family-tree model (relationship types such as uncertain links) is not implemented.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
@@ -263,6 +271,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
 - `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, pin, "⋯", and close, draggable by the header), its read-only view with the relatives, and the shared relative chip.
 - `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport, reads a stored pin, and places a panel beside another; `ui/app/panelPosition.check.mjs` is its self-check.
+- `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `useCan(permission)`, `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and error-status rules, with `ui/app/access.check.mjs` as its self-check.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its board in the Evolution panel ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.

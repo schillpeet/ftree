@@ -20,6 +20,7 @@ import { CopyIcon, DownloadIcon, PhotoIcon, PhotoOffIcon, TrashIcon, UploadIcon,
 import { PanelShell, RelativeChip, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
 import { toJpeg, usePhotoPreview } from './MemberFields';
+import { Can, useCan } from './Permissions';
 
 export type FamilyCardMode = 'view' | 'edit';
 
@@ -53,6 +54,8 @@ export default function FamilyCard({
   onRetry: () => void;
 }) {
   const t = useT();
+  const canEdit = useCan('family.edit');
+  const canExport = useCan('family.export');
   const [pin, setPin] = usePanelPin('ftree.familyPanelPin');
   const [moved, setMoved] = useState<Offset>(CENTRE);
   const [name, setName] = useState(family.name);
@@ -172,17 +175,19 @@ export default function FamilyCard({
           setPin(null);
         }
       }}
-      onEdit={mode === 'view' ? edit : undefined}
+      onEdit={mode === 'view' && canEdit ? edit : undefined}
       actions={
-        <a
-          className="person-icon-button"
-          href={getExportFamilyUrl(family.id)}
-          download
-          aria-label={t.families.download(family.name)}
-          title={t.families.downloadTitle}
-        >
-          <DownloadIcon />
-        </a>
+        canExport && (
+          <a
+            className="person-icon-button"
+            href={getExportFamilyUrl(family.id)}
+            download
+            aria-label={t.families.download(family.name)}
+            title={t.families.downloadTitle}
+          >
+            <DownloadIcon />
+          </a>
+        )
       }
       className="family-card"
     >
@@ -253,18 +258,22 @@ export default function FamilyCard({
               </button>
             )}
           </div>
-          <div className="family-card-tools">
-            <button type="button" className="family-card-button" disabled={isBusy} onClick={() => void anonymize()}>
-              <CopyIcon />
-              {t.families.anonymize}
-            </button>
-          </div>
+          <Can permission="family.manage">
+            <div className="family-card-tools">
+              <button type="button" className="family-card-button" disabled={isBusy} onClick={() => void anonymize()}>
+                <CopyIcon />
+                {t.families.anonymize}
+              </button>
+            </div>
+          </Can>
           {error && <p className="person-error" role="alert">{error}</p>}
           <div className="family-card-actions">
-            <button type="button" className="family-card-button family-card-danger" disabled={isBusy} onClick={() => void remove()}>
-              <TrashIcon />
-              {t.familyCard.delete}
-            </button>
+            <Can permission="family.manage">
+              <button type="button" className="family-card-button family-card-danger" disabled={isBusy} onClick={() => void remove()}>
+                <TrashIcon />
+                {t.familyCard.delete}
+              </button>
+            </Can>
             <button type="button" className="family-card-button" disabled={isBusy} onClick={() => onModeChange('view')}>
               {t.familyCard.cancel}
             </button>

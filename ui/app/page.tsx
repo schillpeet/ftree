@@ -1,5 +1,10 @@
 import FamilyTree from './FamilyTree';
+import { PermissionsProvider } from './Permissions';
 
 export default function Home() {
-  return <FamilyTree />;
+  return (
+    <PermissionsProvider>
+      <FamilyTree />
+    </PermissionsProvider>
+  );
 }
