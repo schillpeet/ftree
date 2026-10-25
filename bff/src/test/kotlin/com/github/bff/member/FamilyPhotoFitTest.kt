@@ -1,9 +1,13 @@
 package com.github.bff.member
 
+import com.github.bff.auth.CurrentUser
+import com.github.bff.auth.CurrentUserAuthentication
+import com.github.bff.auth.Role
 import com.github.bff.generated.model.CreateFamilyRequest
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
@@ -13,6 +17,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.WebApplicationContext
 import java.util.UUID
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
@@ -30,7 +35,13 @@ class FamilyPhotoFitTest {
     @BeforeTest
     fun setUp() {
         mvc = MockMvcBuilders.webAppContextSetup(context).build()
+        // Without the security filters, an admin in the context lets the visibility filter show test families.
+        SecurityContextHolder.getContext().authentication =
+            CurrentUserAuthentication(CurrentUser("admin@example.com", Role.ADMIN, verified = true))
     }
+
+    @AfterTest
+    fun tearDown() = SecurityContextHolder.clearContext()
 
     private fun createFamily() =
         (familyService.create(CreateFamilyRequest("Family photo fit test ${UUID.randomUUID()}", 1, 1, 0, 0)) as FamilyCreationResult.CREATED).summary.id

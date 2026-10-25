@@ -224,7 +224,10 @@ The BFF knows three roles: `visitor` (`tree.view`), `editor` (adds `member.edit`
 `app.roles.admins` and `app.roles.editors` (env `APP_ROLES_ADMINS`, `APP_ROLES_EDITORS`) list emails per role, matched trimmed and case-insensitively; admin wins, and everyone else is a visitor.
 `GET /me` returns the signed-in user's `email`, `role`, `permissions`, and `verified`, or 401 without a user.
 `app.auth.mode` (env `APP_AUTH_MODE`) is `cloudflare` by default; `dev` signs every request in as `app.auth.dev-email` (default `dev@localhost`) with `verified` false and logs a warning at startup, and `start.sh` runs the BFF in dev mode with `dev@localhost` as admin.
-Spring Security runs stateless and still permits every request; permission enforcement is not implemented yet.
+Spring Security runs stateless and enforces the permissions per method and path: every request needs a signed-in user (401 otherwise), `GET /me` needs nothing more, and any other request needs its permission (403 otherwise), with unknown endpoints always denied.
+`tree.view` covers the reads (families, members, photos), `family.export` the GEDCOM export, `member.edit` creating and changing members, relatives, placement, and member photos, `member.delete` deleting members, `family.edit` renaming families, family photos, and the photo fit, and `family.manage` creating, generating, importing, archiving, anonymizing, reordering, and deleting families.
+The legacy `/members` endpoints without a family are admin-only (`family.manage`), because they act on the family named `default`, which non-admins may not see, and the UI no longer uses them.
+Non-admins see only the first real family, the first without test settings in the saved order: `GET /families` lists only that one, and every `/families/{familyId}/...` request for another family answers 404, so test families are admin-only.
 Because Cloudflare Access turns its cookie into the JWT header, the BFF rejects writes from other sites with 403: POST, PUT, PATCH, and DELETE with `Sec-Fetch-Site` `same-site` or `cross-site`, or without it but with an `Origin` outside `app.cors.allowed-origins`; the UI sends no CSRF token.
 In cloudflare mode the BFF verifies the Cloudflare Access JWT from the `Cf-Access-Jwt-Assertion` header against the keys at `https://<team-domain>/cdn-cgi/access/certs`, checking its signature, expiry, issuer (`https://<team-domain>`), and audience, and takes the user from its `email` claim with `verified` true.
 `app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
@@ -272,6 +275,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/` contains the Next.js app, package manifest, pnpm lockfile/workspace settings, TypeScript, ESLint, and Next.js configuration.
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
+- `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` limits non-admins to the first real family; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.
 - `bff/src/test/kotlin/com/github/bff/member/ParentLinkTest.kt` covers storing, reading, and resetting parent link kinds.

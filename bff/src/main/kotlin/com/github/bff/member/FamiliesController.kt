@@ -25,10 +25,12 @@ import java.util.UUID
 @RestController
 class FamiliesController(
     private val familyService: FamilyService,
+    private val familyVisibility: FamilyVisibility,
     // Request-scoped proxy; the generated interface does not pass the body's Content-Type.
     private val request: HttpServletRequest,
 ) : FamiliesApi {
-    override fun getFamilies(): ResponseEntity<List<FamilySummary>> = ResponseEntity.ok(familyService.findAll())
+    override fun getFamilies(): ResponseEntity<List<FamilySummary>> =
+        ResponseEntity.ok(familyVisibility.filter(familyService.findAll()) { it.id })
 
     override fun createFamily(createFamilyRequest: CreateFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.create(createFamilyRequest)) {

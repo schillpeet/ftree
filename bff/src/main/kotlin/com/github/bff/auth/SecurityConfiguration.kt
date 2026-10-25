@@ -1,12 +1,23 @@
 package com.github.bff.auth
 
+import com.github.bff.auth.Permission.FAMILY_EDIT
+import com.github.bff.auth.Permission.FAMILY_EXPORT
+import com.github.bff.auth.Permission.FAMILY_MANAGE
+import com.github.bff.auth.Permission.MEMBER_DELETE
+import com.github.bff.auth.Permission.MEMBER_EDIT
+import com.github.bff.auth.Permission.TREE_VIEW
 import com.github.bff.parseOrigins
+import jakarta.servlet.DispatcherType
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.http.HttpMethod.DELETE
+import org.springframework.http.HttpMethod.GET
+import org.springframework.http.HttpMethod.POST
+import org.springframework.http.HttpMethod.PUT
 import org.springframework.security.config.Customizer.withDefaults
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -39,7 +50,35 @@ class SecurityConfiguration(
             .cors(withDefaults())
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
-            .authorizeHttpRequests { it.anyRequest().permitAll() }
+            .authorizeHttpRequests {
+                // Error pages render the status of a request that already passed or failed these rules.
+                it.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                it.requestMatchers(GET, "/me").authenticated()
+                it.requestMatchers(GET, "/families/*/export").hasAuthority(FAMILY_EXPORT.key)
+                it.requestMatchers(GET, "/families", "/families/*/members", "/families/*/photo", "/families/*/members/*/photo")
+                    .hasAuthority(TREE_VIEW.key)
+                // The legacy endpoints act on the family named "default", which need not be the one non-admins may
+                // see, and the UI no longer uses them, so only admins keep them.
+                it.requestMatchers("/members", "/members/**").hasAuthority(FAMILY_MANAGE.key)
+                // Before PUT /families/*, which would match "order" as a family id.
+                it.requestMatchers(PUT, "/families/order").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(POST, "/families", "/families/import", "/families/*/archive", "/families/*/anonymize")
+                    .hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(DELETE, "/families/*").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(PUT, "/families/*", "/families/*/photo", "/families/*/photo-fit").hasAuthority(FAMILY_EDIT.key)
+                it.requestMatchers(DELETE, "/families/*/photo").hasAuthority(FAMILY_EDIT.key)
+                it.requestMatchers(DELETE, "/families/*/members/*").hasAuthority(MEMBER_DELETE.key)
+                it.requestMatchers(POST, "/families/*/members").hasAuthority(MEMBER_EDIT.key)
+                it.requestMatchers(
+                    PUT,
+                    "/families/*/members/*",
+                    "/families/*/members/*/relatives",
+                    "/families/*/members/*/placement",
+                    "/families/*/members/*/photo",
+                ).hasAuthority(MEMBER_EDIT.key)
+                it.requestMatchers(DELETE, "/families/*/members/*/photo").hasAuthority(MEMBER_EDIT.key)
+                it.anyRequest().denyAll()
+            }
         when (authProperties.mode) {
             AuthMode.CLOUDFLARE -> http.oauth2ResourceServer {
                 // HeaderBearerTokenResolver reads the raw header; DefaultBearerTokenResolver would require "Bearer ".
