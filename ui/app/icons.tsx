@@ -143,6 +143,13 @@ export const UploadIcon = () => (
   </Icon>
 );
 
+export const DiceIcon = () => (
+  <Icon>
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <path d="M9 9h.01M15 9h.01M12 12h.01M9 15h.01M15 15h.01" />
+  </Icon>
+);
+
 export const PhotoIcon = () => (
   <Icon>
     <rect x="3" y="3" width="18" height="18" rx="3" />

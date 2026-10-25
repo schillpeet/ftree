@@ -211,12 +211,34 @@ textarea {
 }
 
 .random-family-panel {
-  /* Opens to the left of the debug panel, so the panel never clips it. */
-  position: absolute;
-  top: 0;
-  right: calc(100% + 8px);
-  width: min(360px, calc(100vw - 32px));
-  max-height: calc(100dvh - 88px);
+  /* Unfolds below its button inside the families board, which scrolls. */
+  overflow: visible;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.random-family-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 10px 0 18px;
+}
+
+.random-family-header h3 {
+  margin: 0;
+  font: 600 15px/1.2 Arial, sans-serif;
+}
+
+.random-family-header button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
 }
 
 .random-family-form {
@@ -352,7 +374,7 @@ textarea {
   color: #173a2b;
 }
 
-.family-set-import button {
+.family-set-import > button {
   margin-top: 12px;
   padding: 8px 12px;
   border: 1px solid rgba(23, 58, 43, 0.25);
@@ -380,7 +402,8 @@ textarea {
 .family-set-delete:disabled,
 .family-set-select:disabled,
 .family-set-visibility:disabled,
-.family-set-import button:disabled {
+.family-set-import > button:disabled,
+.random-family-control > button:disabled {
   cursor: wait;
   opacity: 0.65;
 }
@@ -534,15 +557,6 @@ textarea {
   .families-panel {
     width: calc(100vw - 20px);
     max-height: calc(100dvh - 126px);
-  }
-
-  .random-family-panel {
-    position: fixed;
-    top: 64px;
-    right: 10px;
-    width: calc(100vw - 20px);
-    box-sizing: border-box;
-    max-height: calc(100dvh - 74px);
   }
 
   .member-form {
@@ -909,7 +923,13 @@ textarea {
   color: var(--glass-muted);
 }
 
-.family-set-import button,
+.family-set-import {
+  display: grid;
+  gap: 8px;
+}
+
+.family-set-import > button,
+.random-family-control > button,
 .members-error button {
   display: flex;
   align-items: center;
@@ -927,7 +947,9 @@ textarea {
   font: 500 14px/1.2 Arial, sans-serif;
 }
 
-.family-set-import button:hover,
+.family-set-import > button:hover,
+.random-family-control > button:hover,
+.random-family-control > button[aria-expanded='true'],
 .members-error button:hover {
   background: var(--glass-hover);
 }

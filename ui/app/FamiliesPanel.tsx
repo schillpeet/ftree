@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { EyeIcon, EyeOffIcon, PencilIcon, UploadIcon, UsersIcon, CloseIcon } from './icons';
 import { importFamily, reorderFamilies, type FamilySummary } from '../lib/api/generated/members';
+import RandomFamilyPanel from './RandomFamilyPanel';
 import { useT } from './i18n';
 import { useCan } from './Permissions';
 
@@ -18,7 +19,7 @@ export default function FamiliesPanel({
   onSelect,
   onOpen,
   onToggleVisibility,
-  onImported,
+  onAdded,
 }: {
   families: FamilySummary[] | null;
   setFamilies: Dispatch<SetStateAction<FamilySummary[] | null>>;
@@ -32,11 +33,13 @@ export default function FamiliesPanel({
   // Shows the family and opens its card, where it can be edited.
   onOpen: (familyId: string) => void;
   onToggleVisibility: (familyId: string) => void;
-  onImported: (family: FamilySummary) => void;
+  // A family was imported or generated here.
+  onAdded: (family: FamilySummary) => void;
 }) {
   const t = useT();
-  // Admins and developers import families; only admins reorder them.
+  // Admins and developers import and generate families; only admins reorder them.
   const canImport = useCan('family.create');
+  const canGenerate = useCan('dev.tools');
   const manage = useCan('family.manage');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -84,7 +87,7 @@ export default function FamiliesPanel({
         return;
       }
       if (response.status !== 201) throw new Error('Unexpected import response');
-      onImported(response.data);
+      onAdded(response.data);
     } catch {
       setImportError(t.families.importFailed);
     } finally {
@@ -140,6 +143,7 @@ export default function FamiliesPanel({
                 if (file) void importGedcom(file);
               }}
             />
+            {canGenerate && <RandomFamilyPanel families={families} onCreated={onAdded} />}
           </div>
         )}
         {isLoading && <p className="members-loading">{t.families.loading}</p>}
