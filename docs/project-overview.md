@@ -355,7 +355,13 @@ Whether Cloudflare Access and cloudflared deliver the events without delay is no
 Presence and the open streams live in the BFF's memory (`PresenceRegistry`, `TreeEventBroadcaster`), so they work only while the BFF runs as a single replica; with more replicas the events would have to go through PostgreSQL `LISTEN/NOTIFY`.
 `PresenceDirectory.all()` lists everyone present across families for a later admin overview.
 In dev mode the cookie `ftree-dev-email` signs the request in as that email instead of `app.auth.dev-email`, so two browser profiles can be two people locally; cloudflare mode ignores it.
-The UI does not use the stream or the presence yet.
+While a tree is open, the UI keeps one `EventSource` on its stream through the `/api` rewrite with a random client id per page load, and reopens it with growing delays (1 to 30 seconds) when the browser gives up after an error answer.
+The UI sends `PUT /families/{familyId}/presence` when the stream opens, whenever the shown person, the edited person, or idleness changes, and every 25 seconds as a heartbeat.
+A tab is idle while it is hidden (`visibilitychange`) or after 5 minutes without pointer, key, wheel, or touch input; the next input makes it active again.
+The presence bar under the family name shows everyone in the open tree to everyone with access, one round avatar per person with the initials the BFF derives from the email, the own avatar first and outlined, then active people, then idle people faded, each group by email.
+A person with several tabs counts once, idle only when every tab is, and admins carry a shield mark.
+Hovering or focusing an avatar shows a tooltip with the email, the admin role, and whether the person looks at the tree, views or edits a named person, or is away; beyond six people the rest collapse into a "+n" avatar.
+The UI ignores `member-changed`, `member-deleted`, and `family-changed` so far; live refresh, avatars at persons, and following someone are planned.
 
 ### Trash
 
@@ -398,6 +404,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `ui/app/admin/` holds the admin page: `layout.tsx` and `page.tsx` (tabs and the `users.view` gate), one component per tab (`OverviewTab.tsx`, `TreesTab.tsx`), `useAdminLoad.ts` for loading with retry and refresh, `admin.css`, and the pure helpers in `adminData.ts` with `adminData.check.mjs` as their self-check.
 - `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `<OpenFamily>`, `useCan(permission)` (outside any family or in the open one), `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and sign-in-problem rules, with `ui/app/access.check.mjs` as its self-check.
 - `ui/app/problems.ts` reads the `code` of a problem details answer from the BFF; `ui/app/problems.check.mjs` is its self-check.
+- `ui/app/live/useTreeEvents.ts` holds the tree's event stream, the presence heartbeat, and idleness, and keeps the presence in a store read with `useSyncExternalStore` (drei's `<Html>` gets no React context); `ui/app/live/PresenceBar.tsx` renders the avatars (styled in `ui/app/live/presence.css`), and `ui/app/live/presence.ts` merges tabs into people, sorts them, and decides idleness, with `ui/app/live/presence.check.mjs` as its self-check.
 - `ui/app/conflict.ts` tells an `EDIT_CONFLICT` answer from other errors and builds the versioned (or overwriting) update request; `ui/app/conflict.check.mjs` is its self-check.
 - `bff/src/main/kotlin/com/github/bff/problem/` holds `ApiProblem` (thrown with a `ProblemCode`, mapped to status and detail) and `ProblemAdvice`, which answers every error as problem details.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.

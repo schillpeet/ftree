@@ -347,6 +347,18 @@ const en = {
       purgeFailed: (name: string) => `“${name}” could not be deleted.`,
     },
   },
+  presence: {
+    label: (count: number) => (count === 1 ? 'Only you are in this tree' : `${count} people in this tree`),
+    you: (email: string) => `${email} (you)`,
+    admin: 'Administrator',
+    here: 'Looking at the tree',
+    viewing: (name: string) => `Viewing ${name}`,
+    editing: (name: string) => `Editing ${name}`,
+    idle: 'Away',
+    someone: 'a person',
+    unknownPerson: 'an unnamed person',
+    more: (count: number) => `${count} more`,
+  },
 };
 
 const de: typeof en = {
@@ -690,6 +702,18 @@ const de: typeof en = {
       restoreFailed: (name) => `„${name}“ konnte nicht wiederhergestellt werden.`,
       purgeFailed: (name) => `„${name}“ konnte nicht gelöscht werden.`,
     },
+  },
+  presence: {
+    label: (count) => (count === 1 ? 'Nur du bist in diesem Baum' : `${count} Personen in diesem Baum`),
+    you: (email) => `${email} (du)`,
+    admin: 'Administrator',
+    here: 'Schaut sich den Baum an',
+    viewing: (name) => `Sieht sich ${name} an`,
+    editing: (name) => `Bearbeitet ${name}`,
+    idle: 'Abwesend',
+    someone: 'eine Person',
+    unknownPerson: 'eine unbenannte Person',
+    more: (count) => `${count} weitere`,
   },
 };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   getFamilies,
   updateFamilyMemberPlacement,
@@ -16,6 +16,8 @@ import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
 import { useT } from './i18n';
+import PresenceBar from './live/PresenceBar';
+import { useTreeEvents } from './live/useTreeEvents';
 import { OpenFamily, useCan, useMe } from './Permissions';
 import { can } from './access';
 import { familyOfSlug, firstFamily, homePath, pathOf } from './slugRoute';
@@ -47,6 +49,11 @@ export default function FamilyTree() {
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
   const [shownId, setShownId] = useState<string | null>(null);
+  const [isEditingShown, setIsEditingShown] = useState(false);
+  const onShownChange = useCallback((id: string | null, editing: boolean) => {
+    setShownId(id);
+    setIsEditingShown(editing);
+  }, []);
 
   if (pending && pending.slug === urlSlug) setPending(null);
   const slug = pending ? pending.slug : urlSlug;
@@ -166,6 +173,7 @@ export default function FamilyTree() {
   // An unknown, invisible or reserved slug says so instead of showing an empty tree.
   const notFound = families !== null && slug !== undefined && !activeFamily;
   const canPlace = can(me, 'member.edit', activeFamily);
+  useTreeEvents(activeFamilyId, shownId, isEditingShown ? shownId : null);
 
   return (
     <OpenFamily family={activeFamily ?? null}>
@@ -199,6 +207,7 @@ export default function FamilyTree() {
           setPanel('families');
         }}
       />
+      {activeFamilyId && <PresenceBar members={members ?? []} />}
       {notFound && <TreeNotFound home={homePath(families)} />}
       <MemberSearch
         members={members ?? []}
@@ -221,7 +230,7 @@ export default function FamilyTree() {
         profile={profile}
         addRequest={addRequest}
         onSelect={(id) => setFocus({ id })}
-        onShownChange={setShownId}
+        onShownChange={onShownChange}
         onFamiliesChanged={() => void loadFamilies()}
       />
       <FamiliesPanel
