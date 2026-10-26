@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.26.0](https://github.com/schillpeet/ftree/compare/v0.25.0...v0.26.0) (2026-10-26)
+
+
+### ⚠ BREAKING CHANGES
+
+* **bff:** replace the developer role with tree owners ([#237](https://github.com/schillpeet/ftree/issues/237))
+
+### Features
+
+* **bff:** add the admin overview endpoint ([#233](https://github.com/schillpeet/ftree/issues/233)) ([6b75a2c](https://github.com/schillpeet/ftree/commit/6b75a2ccdc867248206816e6fadc83c2abb81c53))
+* **bff:** keep deleted families in a trash for 30 days ([#234](https://github.com/schillpeet/ftree/issues/234)) ([a9722e7](https://github.com/schillpeet/ftree/commit/a9722e749b30b9c048c50f8525cb36a9ef847acd))
+* **bff:** keep tree roles in the database ([#229](https://github.com/schillpeet/ftree/issues/229)) ([218b1a4](https://github.com/schillpeet/ftree/commit/218b1a4d97f41d7ffb9a9423f15deb12fe489184))
+* **bff:** reject stale member updates ([#228](https://github.com/schillpeet/ftree/issues/228)) ([9b42ac0](https://github.com/schillpeet/ftree/commit/9b42ac029a1ffbf7b6bc7478fcc8c3eefbc14537))
+* **bff:** replace the developer role with tree owners ([#237](https://github.com/schillpeet/ftree/issues/237)) ([7ada976](https://github.com/schillpeet/ftree/commit/7ada9766df92d61cc0faa71d0989744a34455e07))
+* **bff:** stream tree events and presence ([#231](https://github.com/schillpeet/ftree/issues/231)) ([98c7235](https://github.com/schillpeet/ftree/commit/98c723539375989182abdbe8fc54a225975ba807))
+* **ui:** add the admin page with overview and trees ([#236](https://github.com/schillpeet/ftree/issues/236)) ([183d96f](https://github.com/schillpeet/ftree/commit/183d96f52b40ab1f838a0575255b1720bed2e38e))
+* **ui:** open each tree at its own url ([#226](https://github.com/schillpeet/ftree/issues/226)) ([47b8b8a](https://github.com/schillpeet/ftree/commit/47b8b8a1a7a6c46102e65a15c9b82506d3db057a))
+* **ui:** resolve conflicting edits ([#235](https://github.com/schillpeet/ftree/issues/235)) ([4f7054a](https://github.com/schillpeet/ftree/commit/4f7054a397640ff519b0d7483e3997081d0e438a))
+* **ui:** show the audit log ([#240](https://github.com/schillpeet/ftree/issues/240)) ([8cb3196](https://github.com/schillpeet/ftree/commit/8cb31965a084b55bcc9ed8357d89104ba60af182))
+* **ui:** show who is in the tree ([#239](https://github.com/schillpeet/ftree/issues/239)) ([ed6a844](https://github.com/schillpeet/ftree/commit/ed6a844e1864ca4bfecea0d15e463663b45c6311))
+
+
+### Bug Fixes
+
+* **bff:** keep relatives links inside one family ([#232](https://github.com/schillpeet/ftree/issues/232)) ([a00fc41](https://github.com/schillpeet/ftree/commit/a00fc4185086516a14b23cd69aa690b1335628da))
+* **bff:** leave trashed families out of the admin lists ([#238](https://github.com/schillpeet/ftree/issues/238)) ([3c49e62](https://github.com/schillpeet/ftree/commit/3c49e6282e85632e12c88e46a9c292e84e3d26ab))
+
 ## [0.25.0](https://github.com/schillpeet/ftree/compare/v0.24.2...v0.25.0) (2026-10-26)
 
 
