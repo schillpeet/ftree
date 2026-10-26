@@ -6,16 +6,17 @@ import type { FamilySummary } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance } from './appearance';
 import { PUBLIC_APPEARANCE } from './access';
 import { useT } from './i18n';
-import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, PaletteIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
+import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, PaletteIcon, SignInIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
+import LoginsPanel from './LoginsPanel';
 import { Can, useCan, useMe, useMeLoaded } from './Permissions';
 
-export type DashboardPanel = 'profile' | 'families' | 'appearance';
+export type DashboardPanel = 'profile' | 'families' | 'appearance' | 'logins';
 
 // Boards drawn here inside the menu, which closes with them on a press outside.
-const OWN_PANELS: (DashboardPanel | null)[] = [null, 'profile', 'appearance'];
+const OWN_PANELS: (DashboardPanel | null)[] = [null, 'profile', 'appearance', 'logins'];
 
 // Top-left burger menu and the centred family name, which opens the family card; the boards it opens are rendered by
-// `FamiliesPanel` and `MembersControls` (the small profile and appearance boards live here), the right-hand
+// `FamiliesPanel` and `MembersControls` (the small profile, appearance and sign-in boards live here), the right-hand
 // buttons by `Scene`.
 export default function Dashboard({
   isOpen,
@@ -115,6 +116,7 @@ export default function Dashboard({
               </button>
             </Can>
             {boardItem('appearance', t.menu.appearance, <PaletteIcon />)}
+            <Can permission="users.view">{boardItem('logins', t.menu.logins, <SignInIcon />)}</Can>
             <button type="button" className="dashboard-nav-item" onClick={() => void takeSnapshot()}>
               <CameraIcon />
               <span>{t.menu.snapshot}</span>
@@ -159,6 +161,7 @@ export default function Dashboard({
             </div>
           </section>
         )}
+        {isOpen && panel === 'logins' && <LoginsPanel onClose={() => onPanel('logins')} />}
         {isOpen && panel === 'appearance' && (
           <section className="glass dashboard-board" id="appearance-panel" aria-label={t.appearance.title}>
             <header className="dashboard-board-header">

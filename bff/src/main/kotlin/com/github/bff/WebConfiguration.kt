@@ -1,5 +1,6 @@
 package com.github.bff
 
+import com.github.bff.auth.LoginRecordingInterceptor
 import com.github.bff.member.FamilyVisibilityInterceptor
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Configuration
@@ -12,8 +13,10 @@ class WebConfiguration(
     @Value("\${app.cors.allowed-origins:http://localhost:3000}")
     private val allowedOrigins: String,
     private val familyVisibilityInterceptor: FamilyVisibilityInterceptor,
+    private val loginRecordingInterceptor: LoginRecordingInterceptor,
 ) : WebMvcConfigurer {
     override fun addInterceptors(registry: InterceptorRegistry) {
+        registry.addInterceptor(loginRecordingInterceptor)
         registry.addInterceptor(familyVisibilityInterceptor)
     }
 

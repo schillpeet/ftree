@@ -8,6 +8,7 @@ import com.github.bff.auth.Permission.FAMILY_MANAGE
 import com.github.bff.auth.Permission.MEMBER_DELETE
 import com.github.bff.auth.Permission.MEMBER_EDIT
 import com.github.bff.auth.Permission.TREE_VIEW
+import com.github.bff.auth.Permission.USERS_VIEW
 import com.github.bff.member.FamilyVisibility
 import com.github.bff.parseOrigins
 import jakarta.servlet.DispatcherType
@@ -83,6 +84,7 @@ class SecurityConfiguration(
                 // Error pages render the status of a request that already passed or failed these rules.
                 it.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                 it.requestMatchers(GET, "/me").authenticated()
+                it.requestMatchers(GET, "/users").hasAuthority(USERS_VIEW.key)
                 // Lists only the families the user may see.
                 it.requestMatchers(GET, "/families").authenticated()
                 it.requestMatchers(GET, "/families/{familyId}/export").access(inFamily(FAMILY_EXPORT))

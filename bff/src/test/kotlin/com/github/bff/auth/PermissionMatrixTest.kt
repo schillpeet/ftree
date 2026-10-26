@@ -9,6 +9,7 @@ import com.github.bff.auth.Permission.FAMILY_MANAGE
 import com.github.bff.auth.Permission.MEMBER_DELETE
 import com.github.bff.auth.Permission.MEMBER_EDIT
 import com.github.bff.auth.Permission.TREE_VIEW
+import com.github.bff.auth.Permission.USERS_VIEW
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
 import org.springframework.beans.factory.annotation.Autowired
@@ -44,6 +45,7 @@ class PermissionMatrixTest {
 
     private fun endpoints(family: UUID, member: UUID = UUID.randomUUID()) = listOf(
         Endpoint(GET, "/me", null),
+        Endpoint(GET, "/users", USERS_VIEW),
         Endpoint(GET, "/families", null),
         Endpoint(GET, "/families/$family/members", TREE_VIEW),
         Endpoint(GET, "/families/$family/photo", TREE_VIEW),
