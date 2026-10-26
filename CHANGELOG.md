@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.2](https://github.com/schillpeet/ftree/compare/v0.24.1...v0.24.2) (2026-10-26)
+
+
+### Bug Fixes
+
+* **repo:** let the release publish the helm chart again ([#218](https://github.com/schillpeet/ftree/issues/218)) ([633ccec](https://github.com/schillpeet/ftree/commit/633ccec814fb592d3ddc8071a98911394933a89c))
+
 ## [0.24.1](https://github.com/schillpeet/ftree/compare/v0.24.0...v0.24.1) (2026-10-26)
 
 
