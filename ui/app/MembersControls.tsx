@@ -286,7 +286,8 @@ export default function MembersControls({
     try {
       let saved: Member;
       if (editing) {
-        const response = await updateFamilyMember(familyId, editing.id, request);
+        // The version it was opened with, so a save over someone else's newer one is rejected.
+        const response = await updateFamilyMember(familyId, editing.id, { ...request, version: editing.version });
         if (response.status !== 200) {
           setFormError(
             response.status === 404 ? t.members.gone : t.members.saveFailed,
@@ -318,7 +319,7 @@ export default function MembersControls({
       let relativesError: string | null = null;
       if (relate) {
         try {
-          const response = await updateFamilyMemberRelatives(familyId, saved.id, related.value);
+          const response = await updateFamilyMemberRelatives(familyId, saved.id, { ...related.value, version: saved.version });
           if (response.status === 400) relativesError = t.relatives.ownAncestor;
           else if (response.status !== 204) throw new Error('Unexpected relatives response');
         } catch {

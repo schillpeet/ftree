@@ -213,6 +213,15 @@ A drop less than a card height plus gap below a placed parent or above a placed 
 Light lines drawn over the foliage connect families between the cards' current positions: each parent drops to a bar joining the parents, a stem from its middle leads to a bar from which the children hang, and where two families' bars would overlap in a row they get different heights.
 Partners without shared children are joined by a gold line.
 
+### Concurrent edits
+
+Every member carries a `version` (column `members.version`, JPA `@Version`) that the member API returns.
+`PUT /families/{familyId}/members/{id}` and its `/relatives` accept an optional `version`; when it differs from the stored one, they answer 409 with code `EDIT_CONFLICT` and change nothing, and without one they overwrite whatever is stored, so "overwrite anyway" sends no version or the latest.
+Two saves racing from the same version also end in one success and one `EDIT_CONFLICT`, because the row is only written while its version is still the one read.
+Changing a member's fields raises its version; changing relatives raises the version of every member whose own parent, child, or partner links were added, removed, or altered (kinds and partnership details included), since their relatives forms are now outdated, while derived siblings do not count.
+Moving a card and uploading or removing a photo leave the version alone, so dragging cards never makes someone's open edit stale.
+The UI sends the version it opened the edit form with, and the relatives the version returned by that save; a 409 shows the generic save error until a conflict dialog offers reloading or overwriting.
+
 ### BFF and API
 
 The UI calls a generated client.
@@ -275,6 +284,7 @@ The BFF logs JSON in the Elastic Common Schema (`logging.structured.format.conso
 The PostgreSQL driver runs with `logServerErrorDetail=false`, so database errors such as constraint violations do not quote row values in exceptions and logs.
 Every BFF error is an RFC 9457 problem details body (`application/problem+json`, schema `Problem` in `api/openapi.yaml`) with `type` (`urn:ftree:problem:<code>`), `title`, `status`, a fixed `detail`, `instance` (the request path), and a machine-readable `code`.
 The codes are `VALIDATION_FAILED` and `INVALID_REQUEST` (400), `UNAUTHENTICATED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `NAME_TAKEN` and `PIN_TAKEN` (409), `PHOTO_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), and `INTERNAL_ERROR` (500); `VALIDATION_FAILED` lists the rejected fields in `errors`.
+`EDIT_CONFLICT` (409) answers a member save based on an outdated version.
 `ProblemAdvice` (a `@RestControllerAdvice` on Spring's `ProblemDetail`) writes them for controllers, interceptors, Spring MVC's own errors, and the 401/403 of the security filters; responses never contain exception messages or stack traces, and unexpected errors are logged with their type only.
 The CORS filter's 403 for a foreign `Origin` has no body; browsers hide it from scripts anyway.
 `api/openapi.yaml` declares the `Cf-Access-Jwt-Assertion` header as the global security scheme `cloudflareAccess`, so every operation requires a sign-in; the local dev mode needs no header.
@@ -349,6 +359,7 @@ There is no API to change memberships or rights yet; until then they come from t
 - `bff/src/test/kotlin/com/github/bff/ManagementPortTest.kt` checks the management port, that the app port does not serve Actuator, metric labels, and JSON logs.
 - `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.
 - `bff/src/test/kotlin/com/github/bff/member/ParentLinkTest.kt` covers storing, reading, and resetting parent link kinds.
+- `bff/src/test/kotlin/com/github/bff/member/StaleMemberTest.kt` covers member versions: stale and racing saves, saves without a version, which relatives changes raise versions, and card moves that do not.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
 - `docker-compose.yml` defines the local PostgreSQL database used by the BFF and a Swagger UI container that serves `api/openapi.yaml` at `http://localhost:4010`.
 - `bff/Dockerfile` builds the BFF into a container image from the repository root (`docker build -f bff/Dockerfile .`); the image runs as a non-root user and reads `DB_URL`, `DB_USER`, and `DB_PASSWORD` at runtime.

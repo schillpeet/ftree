@@ -18,7 +18,7 @@ val ProblemCode.status: HttpStatus
         ProblemCode.FORBIDDEN -> HttpStatus.FORBIDDEN
         ProblemCode.NOT_FOUND -> HttpStatus.NOT_FOUND
         ProblemCode.METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED
-        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN -> HttpStatus.CONFLICT
+        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT -> HttpStatus.CONFLICT
         ProblemCode.PHOTO_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE
         ProblemCode.UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE
         ProblemCode.INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
@@ -35,6 +35,7 @@ private val ProblemCode.detail: String
         ProblemCode.METHOD_NOT_ALLOWED -> "The resource does not support this method."
         ProblemCode.NAME_TAKEN -> "A family with this name already exists."
         ProblemCode.PIN_TAKEN -> "Another member is already pinned to this place."
+        ProblemCode.EDIT_CONFLICT -> "Someone else changed this member in the meantime; reload it and save again."
         ProblemCode.PHOTO_TOO_LARGE -> "The photo is too large."
         ProblemCode.UNSUPPORTED_MEDIA_TYPE -> "The content type is not supported."
         ProblemCode.INTERNAL_ERROR -> "An unexpected error occurred."

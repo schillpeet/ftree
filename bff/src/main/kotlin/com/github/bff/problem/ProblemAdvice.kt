@@ -2,8 +2,10 @@ package com.github.bff.problem
 
 import com.github.bff.generated.model.FieldError
 import com.github.bff.generated.model.ProblemCode
+import jakarta.persistence.OptimisticLockException
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
+import org.springframework.dao.OptimisticLockingFailureException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatusCode
 import org.springframework.http.ProblemDetail
@@ -24,6 +26,10 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 class ProblemAdvice : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ApiProblem::class)
     fun handleApiProblem(exception: ApiProblem, request: HttpServletRequest) = answer(exception.code, request)
+
+    // A save based on an older version of a member, found by MemberService or by Hibernate when it writes the row.
+    @ExceptionHandler(OptimisticLockingFailureException::class, OptimisticLockException::class)
+    fun handleStale(request: HttpServletRequest) = answer(ProblemCode.EDIT_CONFLICT, request)
 
     @ExceptionHandler(AuthenticationException::class)
     fun handleAuthentication(request: HttpServletRequest) = answer(ProblemCode.UNAUTHENTICATED, request)
