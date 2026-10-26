@@ -250,6 +250,12 @@ Editing a person, their photo, relatives, and dragging cards to pins need `membe
 Editing the family card (name, photo, photo fit) needs `family.edit`, the GEDCOM download `family.export`, deleting a family `family.delete`, creating and importing families `family.create`, and the anonymized copy and reordering families `family.manage`.
 A 403 from the API shows a friendly notice that the role does not allow it, and a 401 suggests reloading or signing in again.
 A broader family-tree model (relationship types such as uncertain links) is not implemented.
+The BFF serves Actuator on its own management port, `management.server.port` (env `MANAGEMENT_PORT`, default 8081), so the UI's `/api` rewrite and the tunnel, which forward to port 8080, never reach it.
+The management port exposes only `/actuator/health` (without details or components), `/actuator/health/liveness`, `/actuator/health/readiness`, and `/actuator/prometheus`, without a user; other Actuator endpoints answer 403 or 404, and `/actuator/**` on port 8080 stays denied like any unknown endpoint (`managementSecurityFilterChain` in `SecurityConfiguration.kt`).
+The chart does not use the Actuator probes or expose the management port yet.
+`http.server.requests` metrics are labelled with the matched URI template, for example `/families/{familyId}/members`, or `UNKNOWN`, never with ids, emails, or names from the path.
+The BFF logs JSON in the Elastic Common Schema (`logging.structured.format.console=ecs`), also locally under `start.sh`; log statements must not contain names, emails, or ids of people.
+The PostgreSQL driver runs with `logServerErrorDetail=false`, so database errors such as constraint violations do not quote row values in exceptions and logs.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
 The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
@@ -295,6 +301,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
 - `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` gives each user their role per family and hides the others; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the legacy role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
+- `bff/src/test/kotlin/com/github/bff/ManagementPortTest.kt` checks the management port, that the app port does not serve Actuator, metric labels, and JSON logs.
 - `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.
 - `bff/src/test/kotlin/com/github/bff/member/ParentLinkTest.kt` covers storing, reading, and resetting parent link kinds.
 - `bff/build.gradle.kts` configures OpenAPI Generator's Java Spring generator; generated interfaces and models go under `bff/build/generated/openapi/`.
