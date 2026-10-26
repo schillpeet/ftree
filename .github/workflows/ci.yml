@@ -2,6 +2,8 @@ name: CI
 
 # Always runs so `ci-ok` can be a required status check. The ui and bff jobs run only when
 # files that affect them change (Markdown-only changes are skipped); `ci-ok` waits for them.
+# The image job also runs on release-please's release PR, so a release with fixable CRITICAL
+# vulnerabilities in its images cannot be merged and never gets a tag.
 on:
   workflow_dispatch:
   pull_request:
@@ -22,6 +24,7 @@ jobs:
     outputs:
       ui: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ui == 'true' }}
       bff: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.bff == 'true' }}
+      image: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release-please--') || steps.filter.outputs.image == 'true' }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         if: github.event_name != 'pull_request'
@@ -36,6 +39,9 @@ jobs:
               - "!**/*.md"
             bff:
               - "{bff/**,api/openapi.yaml,.github/workflows/ci.yml}"
+              - "!**/*.md"
+            image:
+              - "{bff/**,ui/**,api/openapi.yaml,.dockerignore,.github/workflows/ci.yml}"
               - "!**/*.md"
 
   ui:
@@ -114,9 +120,45 @@ jobs:
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - run: ./gradlew build
 
+  # Builds both images like release-images.yml (arm64, not pushed) and fails on the same Trivy gate,
+  # before a release exists; release-images.yml scans again at release time as a last check.
+  image:
+    needs: changes
+    if: needs.changes.outputs.image == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: ui
+            context: ui
+            file: ui/Dockerfile
+          - name: bff
+            context: .
+            file: bff/Dockerfile
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/arm64
+          load: true
+          tags: ftree-${{ matrix.name }}:scan
+      - name: Fail on fixable critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          scan-type: image
+          image-ref: ftree-${{ matrix.name }}:scan
+          ignore-unfixed: true
+          severity: CRITICAL
+          exit-code: "1"
+
   # Required status check: passes when every job above succeeded or was skipped.
   ci-ok:
-    needs: [changes, ui, bff]
+    needs: [changes, ui, bff, image]
     if: always()
     runs-on: ubuntu-latest
     steps:
