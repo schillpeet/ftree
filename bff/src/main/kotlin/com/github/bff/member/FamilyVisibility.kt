@@ -7,6 +7,7 @@ import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.problem.ApiProblem
+import jakarta.servlet.DispatcherType
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.stereotype.Component
@@ -69,10 +70,12 @@ class FamilyVisibility(private val familyRepository: FamilyRepository) {
     }
 }
 
-// Answers 404 (NOT_FOUND) for every /families/{familyId}/... request to a family the user may not see.
+// Answers 404 (NOT_FOUND) for every /families/{familyId}/... request to a family the user may not see. The async
+// dispatch that ends an event stream has no user and was checked when the stream opened.
 @Component
 class FamilyVisibilityInterceptor(private val familyVisibility: FamilyVisibility) : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
+        if (request.dispatcherType == DispatcherType.ASYNC) return true
         val variables = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as? Map<*, *>
         val familyId = (variables?.get("familyId") as? String)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
         if (familyId == null || familyVisibility.isVisible(familyId)) return true

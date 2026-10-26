@@ -1,5 +1,6 @@
 package com.github.bff.auth
 
+import jakarta.servlet.http.Cookie
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -29,6 +30,22 @@ class DevModeTest {
             jsonPath("$.permissions.length()") { value(11) }
             jsonPath("$.permissions[0]") { value("tree.view") }
             jsonPath("$.permissions[10]") { value("users.view") }
+        }
+    }
+
+    @Test
+    fun `the dev email cookie signs in as someone else`() {
+        mockMvc.get("/me") { cookie(Cookie(DevAuthenticationFilter.DEV_EMAIL_COOKIE, "visitor@example.com")) }.andExpect {
+            status { isOk() }
+            jsonPath("$.email") { value("visitor@example.com") }
+            jsonPath("$.admin") { value(false) }
+            jsonPath("$.verified") { value(false) }
+        }
+        // Anything that is not an email falls back to the dev user.
+        listOf("", "not-an-email", "a b@example.com", "x".repeat(320) + "@example.com").forEach { value ->
+            mockMvc.get("/me") { cookie(Cookie(DevAuthenticationFilter.DEV_EMAIL_COOKIE, value)) }.andExpect {
+                jsonPath("$.email") { value("dev@localhost") }
+            }
         }
     }
 

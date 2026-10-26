@@ -472,6 +472,88 @@ export interface CreateMemberRequest {
 }
 
 /**
+ * A random id of one browser tab, chosen by the client.
+ * @minLength 1
+ * @maxLength 64
+ * @pattern ^[A-Za-z0-9_-]+$
+ */
+export type ClientId = string;
+
+export interface PresenceUpdate {
+  clientId: ClientId;
+  /**
+     * The member whose profile the client shows, if any.
+     * @nullable
+     */
+  viewing?: string | null;
+  /**
+     * The member the client edits, if any.
+     * @nullable
+     */
+  editing?: string | null;
+  /** Whether the tab is hidden or the user has been inactive for a while. */
+  idle: boolean;
+}
+
+/**
+ * One browser tab in the family; a user with two tabs appears twice.
+ */
+export interface PresentClient {
+  clientId: ClientId;
+  /** @maxLength 320 */
+  email: string;
+  /**
+     * Up to two capital letters taken from the email's local part, for the avatar.
+     * @maxLength 2
+     */
+  initials: string;
+  /** Whether the user is an admin, who may be in any family. */
+  admin: boolean;
+  /** @nullable */
+  viewing?: string | null;
+  /** @nullable */
+  editing?: string | null;
+  idle: boolean;
+}
+
+/**
+ * The data of a `presence` event, everyone in the family right now, sorted by email.
+ */
+export interface PresenceEvent {
+  /** @maxItems 1000 */
+  present: PresentClient[];
+}
+
+/**
+ * The data of a `member-changed` or `member-deleted` event; a change to a member's relatives may change the members it links as well.
+ */
+export interface MemberEvent {
+  memberId: string;
+  /**
+     * The email of whoever saved the change.
+     * @maxLength 320
+     */
+  by: string;
+}
+
+/**
+ * The data of a `family-changed` event: the family's name, photo, or photo fit changed, its members were archived into another family, or it was deleted, after which the stream ends.
+ */
+export interface FamilyEvent {
+  familyId: string;
+  /**
+     * The email of whoever saved the change.
+     * @maxLength 320
+     */
+  by: string;
+}
+
+/**
+ * A `text/event-stream` body; each event has an `event` name and one line of JSON `data` holding a `PresenceEvent`, `MemberEvent`, or `FamilyEvent`.
+ */
+export interface EventStream { [key: string]: unknown }
+
+/**
  * The fields of CreateMemberRequest plus the version the update is based on.
  */
 export interface UpdateMemberRequest {
@@ -539,6 +621,13 @@ export type EditConflictResponse = Problem;
  * An unexpected error on the server; the body names no internals. Code `INTERNAL_ERROR`.
  */
 export type InternalErrorResponse = Problem;
+
+export type StreamFamilyEventsParams = {
+/**
+ * A random id the browser tab chooses once, the same it sends to `PUT /families/{familyId}/presence`.
+ */
+clientId: ClientId;
+};
 
 export type getMeResponse200 = {
   data: Me
@@ -2515,4 +2604,170 @@ export const deleteFamilyMemberPhoto = async (familyId: string,
 
   const data: deleteFamilyMemberPhotoResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteFamilyMemberPhotoResponse
+}
+
+
+
+export type streamFamilyEventsResponse200 = {
+  data: EventStream
+  status: 200
+}
+
+export type streamFamilyEventsResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type streamFamilyEventsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type streamFamilyEventsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type streamFamilyEventsResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type streamFamilyEventsResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type streamFamilyEventsResponseSuccess = (streamFamilyEventsResponse200) & {
+  headers: Headers;
+};
+export type streamFamilyEventsResponseError = (streamFamilyEventsResponse400 | streamFamilyEventsResponse401 | streamFamilyEventsResponse403 | streamFamilyEventsResponse404 | streamFamilyEventsResponse500) & {
+  headers: Headers;
+};
+
+export type streamFamilyEventsResponse = (streamFamilyEventsResponseSuccess | streamFamilyEventsResponseError)
+
+export const getStreamFamilyEventsUrl = (familyId: string,
+    params: StreamFamilyEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/families/${familyId}/events?${stringifiedParams}` : `/api/families/${familyId}/events`
+}
+
+/**
+ * A server-sent event stream for `EventSource`; needs `tree.view` in the family. It starts with a `presence` event and sends one whenever someone arrives, leaves, or changes what they view, edit, or whether they are idle. After every saved change it sends `member-changed`, `member-deleted`, or `family-changed`, each naming who made it in `by`; the `data` of every event is one JSON object. A comment line every 20 seconds keeps proxies from closing the stream, and the server ends it after 30 minutes so `EventSource` reconnects with a fresh sign-in. Opening the stream adds the client to the family's presence like `PUT /families/{familyId}/presence`, and closing it removes the client. Presence lives in the memory of the single BFF replica.
+ * @summary Stream presence and changes in a family
+ */
+export const streamFamilyEvents = async (familyId: string,
+    params: StreamFamilyEventsParams, options?: RequestInit): Promise<streamFamilyEventsResponse> => {
+
+  const res = await fetch(getStreamFamilyEventsUrl(familyId,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+  const contentType = (res.headers.get('content-type') ?? '').toLowerCase();
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: streamFamilyEventsResponse['data'] = body ? (contentType.includes('json') ? JSON.parse(body) : body) : {}
+  return { data, status: res.status, headers: res.headers } as streamFamilyEventsResponse
+}
+
+
+
+export type updateFamilyPresenceResponse204 = {
+  data: void
+  status: 204
+}
+
+export type updateFamilyPresenceResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type updateFamilyPresenceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateFamilyPresenceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateFamilyPresenceResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type updateFamilyPresenceResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type updateFamilyPresenceResponseSuccess = (updateFamilyPresenceResponse204) & {
+  headers: Headers;
+};
+export type updateFamilyPresenceResponseError = (updateFamilyPresenceResponse400 | updateFamilyPresenceResponse401 | updateFamilyPresenceResponse403 | updateFamilyPresenceResponse404 | updateFamilyPresenceResponse500) & {
+  headers: Headers;
+};
+
+export type updateFamilyPresenceResponse = (updateFamilyPresenceResponseSuccess | updateFamilyPresenceResponseError)
+
+export const getUpdateFamilyPresenceUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/presence`
+}
+
+/**
+ * Clients send it whenever their state changes and at least every 30 seconds; a client without either for 60 seconds leaves the presence. Needs `tree.view` in the family; every stream of the family then gets a new `presence` event if anything changed.
+ * @summary Say what this client views or edits in a family
+ */
+export const updateFamilyPresence = async (familyId: string,
+    presenceUpdate: PresenceUpdate, options?: RequestInit): Promise<updateFamilyPresenceResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateFamilyPresenceUrl(familyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(presenceUpdate)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateFamilyPresenceResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as updateFamilyPresenceResponse
 }

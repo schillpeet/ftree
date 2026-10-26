@@ -7,6 +7,8 @@ import com.github.bff.generated.model.Partnership
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Position
 import com.github.bff.generated.model.Relatives
+import com.github.bff.live.TreeEvent
+import org.springframework.context.ApplicationEventPublisher
 import jakarta.persistence.EntityManager
 import jakarta.persistence.LockModeType
 import org.springframework.jdbc.core.JdbcTemplate
@@ -24,6 +26,7 @@ class MemberService(
     private val familyRepository: FamilyRepository,
     private val memberRepository: MemberRepository,
     private val jdbc: JdbcTemplate,
+    private val events: ApplicationEventPublisher,
     private val entityManager: EntityManager,
 ) {
     fun findAll(familyId: UUID): List<Member>? {
@@ -51,7 +54,7 @@ class MemberService(
                 note = request.note,
                 photoUrl = request.photoUrl?.toString(),
             ),
-        ).toResponse(null, emptyList(), emptyList())
+        ).also { changed(familyId, it.id) }.toResponse(null, emptyList(), emptyList())
     }
 
     /**
@@ -71,6 +74,7 @@ class MemberService(
         entity.deathPlace = request.deathPlace
         entity.note = request.note
         entity.photoUrl = request.photoUrl?.toString()
+        changed(familyId, id)
         // Writes now, so the answer carries the raised version.
         memberRepository.flush()
         return entity.toResponse(
@@ -170,6 +174,7 @@ class MemberService(
                 )
             }
         }
+        changed(familyId, id)
         // Everyone whose own links changed sees different relatives now, so an edit they had open is stale. Fails
         // when one of them was saved by someone else in the meantime.
         val linksAfter = linksByMember(familyId)
@@ -228,6 +233,7 @@ class MemberService(
         member.posX = position?.x
         member.posY = position?.y
         member.posZ = position?.z
+        changed(familyId, id)
         return PlacementResult.UPDATED
     }
 
@@ -239,6 +245,7 @@ class MemberService(
         member.parents.clear()
         member.partners.clear()
         memberRepository.delete(member)
+        events.publishEvent(TreeEvent.MemberDeleted(familyId, id))
         return true
     }
 
@@ -258,6 +265,7 @@ class MemberService(
             """,
             id, type, data,
         )
+        changed(familyId, id)
         return PhotoResult.UPDATED
     }
 
@@ -269,11 +277,17 @@ class MemberService(
         ).firstOrNull()
 
     @Transactional
-    fun deletePhoto(familyId: UUID, id: UUID): Boolean =
-        jdbc.update(
+    fun deletePhoto(familyId: UUID, id: UUID): Boolean {
+        val deleted = jdbc.update(
             "DELETE FROM member_photos p USING members m WHERE m.id = p.member_id AND p.member_id = ? AND m.family_id = ?",
             id, familyId,
         ) > 0
+        if (deleted) changed(familyId, id)
+        return deleted
+    }
+
+    // The family's event streams get it once the transaction has committed.
+    private fun changed(familyId: UUID, id: UUID) = events.publishEvent(TreeEvent.MemberChanged(familyId, id))
 
     // One query for the whole family instead of one per member; never loads the bytes.
     private fun photoTimes(familyId: UUID): Map<UUID, OffsetDateTime> =
