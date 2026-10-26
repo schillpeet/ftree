@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.24.0](https://github.com/schillpeet/ftree/compare/v0.23.0...v0.24.0) (2026-10-26)
+
+
+### Features
+
+* **bff:** add an admin login overview ([#210](https://github.com/schillpeet/ftree/issues/210)) ([63f8bf9](https://github.com/schillpeet/ftree/commit/63f8bf90a6396a3a0db0ee88fc6b9cd55163747f))
+* **bff:** expose actuator health and prometheus metrics ([#209](https://github.com/schillpeet/ftree/issues/209)) ([414c672](https://github.com/schillpeet/ftree/commit/414c672fa320d29be9352c3f144146530767a516))
+* **bff:** return errors as rfc 9457 problem details ([#213](https://github.com/schillpeet/ftree/issues/213)) ([056a296](https://github.com/schillpeet/ftree/commit/056a296e7e1a0916347af0649cf26c3b762f8ec9))
+* **bff:** use actuator liveness and readiness probes in the chart ([#214](https://github.com/schillpeet/ftree/issues/214)) ([688d301](https://github.com/schillpeet/ftree/commit/688d30191d8fb96ed978c678f40a9ceabfcf83fd))
+
 ## [0.23.0](https://github.com/schillpeet/ftree/compare/v0.22.0...v0.23.0) (2026-10-25)
 
 
