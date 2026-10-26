@@ -312,6 +312,16 @@ Whoever creates, imports, archives, or anonymizes a family gets a developer memb
 `GET /users` lists the access file's people first and then everyone else with a right in the database, by email, with `listed` true, before the people who only signed in.
 There is no API to change memberships or rights yet; until then they come from the seed and from creating families, and the access file keeps applying next to them.
 
+### Administration
+
+`GET /admin/overview`, `GET /admin/presence`, and `GET /admin/families` need `users.view`, so only admins read them, and change nothing; they live in `bff/.../admin/` under the OpenAPI tag `admin`.
+The overview counts `families` (test families included), `members`, `users` (`total`, `signedIn`, and `invited` for people named but never signed in), `photos` (`count` and `bytes` of family and member photos together), and `online` (distinct people with a tab in any tree, from the presence registry).
+`seats.used` counts the distinct people who currently have access, that is the access file's people plus everyone with an admin or can-create-trees flag or a membership in the database, and `seats.limit` is the fixed 50 of the Cloudflare free plan; Cloudflare is not asked yet.
+`lastBackupAt` is always null for now.
+`GET /admin/presence` lists one entry per browser tab from `PresenceDirectory.all()`: `userId` (null without a `users` row), `email`, `displayName` (the display name, else the email before the `@`), `admin`, the tree's `familyId`, `familySlug`, and `familyName`, `viewing`, `editing`, `idle`, and `since`.
+`GET /admin/families` lists every family in the saved order, test families and families without any role of the caller included, with `createdBy`, `createdAt`, `test`, `memberCount`, and `memberships` (how many people hold the `developer`, `editor`, and `visitor` role; admins hold none).
+The admin page and its tabs do not use these endpoints yet.
+
 ### Presence
 
 `GET /families/{familyId}/events?clientId=<id>` is a server-sent event stream (Spring MVC `SseEmitter`) for `EventSource` that needs `tree.view` in the family and answers 404 for families the user cannot see, like every family path.
@@ -376,6 +386,7 @@ The UI does not use the stream or the presence yet.
 - `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` gives each user their role per family and hides the others; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the legacy role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once.
+- `bff/src/main/kotlin/com/github/bff/admin/AdminOverviewService.kt` reads the admin overview, presence, and family lists, which `AdminController.kt` serves.
 - `bff/src/main/kotlin/com/github/bff/auth/LoginRecorder.kt` records sign-ins with an in-memory throttle and `UsersController.kt` serves `GET /users`; `ui/app/LoginsPanel.tsx` is the admin board showing them.
 - `bff/src/test/kotlin/com/github/bff/ManagementPortTest.kt` checks the management port, that the app port does not serve Actuator, metric labels, and JSON logs.
 - `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.

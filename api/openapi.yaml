@@ -20,6 +20,8 @@ tags:
     description: Who may sign in and who has signed in
   - name: Live
     description: Who is in a family tree right now and what others change in it
+  - name: admin
+    description: Read-only overviews across all trees and people, for admins
 paths:
   /me:
     get:
@@ -57,6 +59,71 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/UserLogin"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  # Administration: read-only overviews across all trees, for admins.
+  /admin/overview:
+    get:
+      operationId: getAdminOverview
+      tags:
+        - admin
+      summary: Count trees, people, photos, and who is online
+      description: Needs `users.view`, which only admins have. Online people come from the BFF's memory, so they are accurate only while the BFF runs as a single replica.
+      responses:
+        "200":
+          description: The totals.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOverview"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/presence:
+    get:
+      operationId: getAdminPresence
+      tags:
+        - admin
+      summary: List everyone present in any tree
+      description: One entry per browser tab, sorted by email and tab, with the tree and member each views or edits. Needs `users.view`.
+      responses:
+        "200":
+          description: Everyone present right now; empty when nobody is.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminPresence"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/families:
+    get:
+      operationId: getAdminFamilies
+      tags:
+        - admin
+      summary: List every family with its owners and size
+      description: Includes test families and families the caller has no role in, in the saved order. Needs `users.view`.
+      responses:
+        "200":
+          description: Every family.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminFamily"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1257,6 +1324,175 @@ components:
           format: date-time
           nullable: true
           description: The latest recorded sign-in, accurate to a few minutes; null when the person has never signed in.
+    AdminOverview:
+      type: object
+      required:
+        - families
+        - members
+        - users
+        - photos
+        - online
+        - seats
+        - lastBackupAt
+      properties:
+        families:
+          type: integer
+          minimum: 0
+          description: Trees, test families included.
+        members:
+          type: integer
+          minimum: 0
+        users:
+          type: object
+          required:
+            - total
+            - signedIn
+            - invited
+          properties:
+            total:
+              type: integer
+              minimum: 0
+              description: Everyone the access file or the database names, and everyone who signed in.
+            signedIn:
+              type: integer
+              minimum: 0
+            invited:
+              type: integer
+              minimum: 0
+              description: Named, but never signed in.
+        photos:
+          type: object
+          required:
+            - count
+            - bytes
+          description: Family photos and member photos together.
+          properties:
+            count:
+              type: integer
+              minimum: 0
+            bytes:
+              type: integer
+              format: int64
+              minimum: 0
+        online:
+          type: integer
+          minimum: 0
+          description: Distinct people with at least one tab present in any tree.
+        seats:
+          type: object
+          required:
+            - used
+            - limit
+          properties:
+            used:
+              type: integer
+              minimum: 0
+              description: Distinct people who currently have access, that is admins, people who may create trees, and anyone with a role in a tree.
+            limit:
+              type: integer
+              minimum: 0
+        lastBackupAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Always null until backups are reported.
+    AdminPresence:
+      type: object
+      required:
+        - userId
+        - email
+        - displayName
+        - admin
+        - familyId
+        - familySlug
+        - familyName
+        - viewing
+        - editing
+        - idle
+        - since
+      properties:
+        userId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null when the person has no `users` row.
+        email:
+          type: string
+        displayName:
+          type: string
+          description: The display name, or the part of the email before the `@`.
+        admin:
+          type: boolean
+        familyId:
+          type: string
+          format: uuid
+        familySlug:
+          type: string
+        familyName:
+          type: string
+        viewing:
+          type: string
+          format: uuid
+          nullable: true
+        editing:
+          type: string
+          format: uuid
+          nullable: true
+        idle:
+          type: boolean
+        since:
+          type: string
+          format: date-time
+          description: When the tab arrived in the tree.
+    AdminFamily:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - createdBy
+        - createdAt
+        - test
+        - memberCount
+        - memberships
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        createdBy:
+          type: string
+          nullable: true
+          description: The email of who created the family; null for families from before it was recorded.
+        createdAt:
+          type: string
+          format: date-time
+        test:
+          type: boolean
+          description: True for generated test families.
+        memberCount:
+          type: integer
+          minimum: 0
+        memberships:
+          type: object
+          required:
+            - developer
+            - editor
+            - visitor
+          description: How many people hold each role in the family. Admins hold none and are not counted.
+          properties:
+            developer:
+              type: integer
+              minimum: 0
+            editor:
+              type: integer
+              minimum: 0
+            visitor:
+              type: integer
+              minimum: 0
     Role:
       type: string
       description: A user's role in one family.

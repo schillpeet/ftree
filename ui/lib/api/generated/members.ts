@@ -111,6 +111,117 @@ export interface UserLogin {
   lastSeen: string | null;
 }
 
+export type AdminOverviewUsers = {
+  /**
+     * Everyone the access file or the database names, and everyone who signed in.
+     * @minimum 0
+     */
+  total: number;
+  /** @minimum 0 */
+  signedIn: number;
+  /**
+     * Named, but never signed in.
+     * @minimum 0
+     */
+  invited: number;
+};
+
+/**
+ * Family photos and member photos together.
+ */
+export type AdminOverviewPhotos = {
+  /** @minimum 0 */
+  count: number;
+  /** @minimum 0 */
+  bytes: number;
+};
+
+export type AdminOverviewSeats = {
+  /**
+     * Distinct people who currently have access, that is admins, people who may create trees, and anyone with a role in a tree.
+     * @minimum 0
+     */
+  used: number;
+  /** @minimum 0 */
+  limit: number;
+};
+
+export interface AdminOverview {
+  /**
+     * Trees, test families included.
+     * @minimum 0
+     */
+  families: number;
+  /** @minimum 0 */
+  members: number;
+  users: AdminOverviewUsers;
+  /** Family photos and member photos together. */
+  photos: AdminOverviewPhotos;
+  /**
+     * Distinct people with at least one tab present in any tree.
+     * @minimum 0
+     */
+  online: number;
+  seats: AdminOverviewSeats;
+  /**
+     * Always null until backups are reported.
+     * @nullable
+     */
+  lastBackupAt: string | null;
+}
+
+export interface AdminPresence {
+  /**
+     * Null when the person has no `users` row.
+     * @nullable
+     */
+  userId: string | null;
+  email: string;
+  /** The display name, or the part of the email before the `@`. */
+  displayName: string;
+  admin: boolean;
+  familyId: string;
+  familySlug: string;
+  familyName: string;
+  /** @nullable */
+  viewing: string | null;
+  /** @nullable */
+  editing: string | null;
+  idle: boolean;
+  /** When the tab arrived in the tree. */
+  since: string;
+}
+
+/**
+ * How many people hold each role in the family. Admins hold none and are not counted.
+ */
+export type AdminFamilyMemberships = {
+  /** @minimum 0 */
+  developer: number;
+  /** @minimum 0 */
+  editor: number;
+  /** @minimum 0 */
+  visitor: number;
+};
+
+export interface AdminFamily {
+  id: string;
+  name: string;
+  slug: string;
+  /**
+     * The email of who created the family; null for families from before it was recorded.
+     * @nullable
+     */
+  createdBy: string | null;
+  createdAt: string;
+  /** True for generated test families. */
+  test: boolean;
+  /** @minimum 0 */
+  memberCount: number;
+  /** How many people hold each role in the family. Admins hold none and are not counted. */
+  memberships: AdminFamilyMemberships;
+}
+
 /**
  * A user's role in one family.
  */
@@ -747,6 +858,189 @@ export const getUsers = async ( options?: RequestInit): Promise<getUsersResponse
 
   const data: getUsersResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getUsersResponse
+}
+
+
+
+export type getAdminOverviewResponse200 = {
+  data: AdminOverview
+  status: 200
+}
+
+export type getAdminOverviewResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminOverviewResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminOverviewResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminOverviewResponseSuccess = (getAdminOverviewResponse200) & {
+  headers: Headers;
+};
+export type getAdminOverviewResponseError = (getAdminOverviewResponse401 | getAdminOverviewResponse403 | getAdminOverviewResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminOverviewResponse = (getAdminOverviewResponseSuccess | getAdminOverviewResponseError)
+
+export const getGetAdminOverviewUrl = () => {
+
+
+
+
+  return `/api/admin/overview`
+}
+
+/**
+ * Needs `users.view`, which only admins have. Online people come from the BFF's memory, so they are accurate only while the BFF runs as a single replica.
+ * @summary Count trees, people, photos, and who is online
+ */
+export const getAdminOverview = async ( options?: RequestInit): Promise<getAdminOverviewResponse> => {
+
+  const res = await fetch(getGetAdminOverviewUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminOverviewResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminOverviewResponse
+}
+
+
+
+export type getAdminPresenceResponse200 = {
+  data: AdminPresence[]
+  status: 200
+}
+
+export type getAdminPresenceResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminPresenceResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminPresenceResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminPresenceResponseSuccess = (getAdminPresenceResponse200) & {
+  headers: Headers;
+};
+export type getAdminPresenceResponseError = (getAdminPresenceResponse401 | getAdminPresenceResponse403 | getAdminPresenceResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminPresenceResponse = (getAdminPresenceResponseSuccess | getAdminPresenceResponseError)
+
+export const getGetAdminPresenceUrl = () => {
+
+
+
+
+  return `/api/admin/presence`
+}
+
+/**
+ * One entry per browser tab, sorted by email and tab, with the tree and member each views or edits. Needs `users.view`.
+ * @summary List everyone present in any tree
+ */
+export const getAdminPresence = async ( options?: RequestInit): Promise<getAdminPresenceResponse> => {
+
+  const res = await fetch(getGetAdminPresenceUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminPresenceResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminPresenceResponse
+}
+
+
+
+export type getAdminFamiliesResponse200 = {
+  data: AdminFamily[]
+  status: 200
+}
+
+export type getAdminFamiliesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminFamiliesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminFamiliesResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminFamiliesResponseSuccess = (getAdminFamiliesResponse200) & {
+  headers: Headers;
+};
+export type getAdminFamiliesResponseError = (getAdminFamiliesResponse401 | getAdminFamiliesResponse403 | getAdminFamiliesResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminFamiliesResponse = (getAdminFamiliesResponseSuccess | getAdminFamiliesResponseError)
+
+export const getGetAdminFamiliesUrl = () => {
+
+
+
+
+  return `/api/admin/families`
+}
+
+/**
+ * Includes test families and families the caller has no role in, in the saved order. Needs `users.view`.
+ * @summary List every family with its owners and size
+ */
+export const getAdminFamilies = async ( options?: RequestInit): Promise<getAdminFamiliesResponse> => {
+
+  const res = await fetch(getGetAdminFamiliesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminFamiliesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminFamiliesResponse
 }
 
 
