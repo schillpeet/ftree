@@ -13,7 +13,7 @@
  * - `FORBIDDEN` (403): signed in, but not allowed.
  * - `NOT_FOUND` (404): the family, member, or photo does not exist or is not visible.
  * - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
- * - `NAME_TAKEN` (409): a family with this name already exists.
+ * - `NAME_TAKEN` (409): a family with this name already exists, possibly in the trash.
  * - `PIN_TAKEN` (409): another member is already pinned to this place.
  * - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
  * - `PHOTO_TOO_LARGE` (413): the photo is too large.
@@ -234,6 +234,22 @@ export const Role = {
   editor: 'editor',
   visitor: 'visitor',
 } as const;
+
+export interface TrashedFamily {
+  id: string;
+  name: string;
+  slug: string;
+  deletedAt: string;
+  /**
+     * The email of whoever deleted the family, trimmed and lowercased; null when unknown.
+     * @nullable
+     */
+  deletedBy: string | null;
+  /** When the BFF removes the family for good. */
+  purgeAt: string;
+  /** @minimum 0 */
+  memberCount: number;
+}
 
 export interface TestFamilySettings {
   /**
@@ -1045,6 +1061,199 @@ export const getAdminFamilies = async ( options?: RequestInit): Promise<getAdmin
 
 
 
+export type getTrashResponse200 = {
+  data: TrashedFamily[]
+  status: 200
+}
+
+export type getTrashResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getTrashResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getTrashResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getTrashResponseSuccess = (getTrashResponse200) & {
+  headers: Headers;
+};
+export type getTrashResponseError = (getTrashResponse401 | getTrashResponse403 | getTrashResponse500) & {
+  headers: Headers;
+};
+
+export type getTrashResponse = (getTrashResponseSuccess | getTrashResponseError)
+
+export const getGetTrashUrl = () => {
+
+
+
+
+  return `/api/admin/trash`
+}
+
+/**
+ * Lists the families in the trash, the one deleted longest ago first. `DELETE /families/{familyId}` moves a family here instead of deleting it; it disappears for everyone else, admins included, and keeps its name and slug. The BFF removes it for good at `purgeAt`, 30 days after it was deleted. Needs `family.manage`, which only admins have.
+ * @summary List the trashed families
+ */
+export const getTrash = async ( options?: RequestInit): Promise<getTrashResponse> => {
+
+  const res = await fetch(getGetTrashUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getTrashResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getTrashResponse
+}
+
+
+
+export type purgeTrashedFamilyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type purgeTrashedFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type purgeTrashedFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type purgeTrashedFamilyResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type purgeTrashedFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type purgeTrashedFamilyResponseSuccess = (purgeTrashedFamilyResponse204) & {
+  headers: Headers;
+};
+export type purgeTrashedFamilyResponseError = (purgeTrashedFamilyResponse401 | purgeTrashedFamilyResponse403 | purgeTrashedFamilyResponse404 | purgeTrashedFamilyResponse500) & {
+  headers: Headers;
+};
+
+export type purgeTrashedFamilyResponse = (purgeTrashedFamilyResponseSuccess | purgeTrashedFamilyResponseError)
+
+export const getPurgeTrashedFamilyUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/admin/trash/${familyId}`
+}
+
+/**
+ * Removes the trashed family with its members, links, and photos right away; this cannot be undone. Needs `family.manage`.
+ * @summary Delete a trashed family for good
+ */
+export const purgeTrashedFamily = async (familyId: string, options?: RequestInit): Promise<purgeTrashedFamilyResponse> => {
+
+  const res = await fetch(getPurgeTrashedFamilyUrl(familyId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: purgeTrashedFamilyResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as purgeTrashedFamilyResponse
+}
+
+
+
+export type restoreTrashedFamilyResponse204 = {
+  data: void
+  status: 204
+}
+
+export type restoreTrashedFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type restoreTrashedFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type restoreTrashedFamilyResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type restoreTrashedFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type restoreTrashedFamilyResponseSuccess = (restoreTrashedFamilyResponse204) & {
+  headers: Headers;
+};
+export type restoreTrashedFamilyResponseError = (restoreTrashedFamilyResponse401 | restoreTrashedFamilyResponse403 | restoreTrashedFamilyResponse404 | restoreTrashedFamilyResponse500) & {
+  headers: Headers;
+};
+
+export type restoreTrashedFamilyResponse = (restoreTrashedFamilyResponseSuccess | restoreTrashedFamilyResponseError)
+
+export const getRestoreTrashedFamilyUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/admin/trash/${familyId}/restore`
+}
+
+/**
+ * Takes the family out of the trash with everything it had, memberships included. Needs `family.manage`.
+ * @summary Restore a trashed family
+ */
+export const restoreTrashedFamily = async (familyId: string, options?: RequestInit): Promise<restoreTrashedFamilyResponse> => {
+
+  const res = await fetch(getRestoreTrashedFamilyUrl(familyId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: restoreTrashedFamilyResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as restoreTrashedFamilyResponse
+}
+
+
+
 export type getFamiliesResponse200 = {
   data: FamilySummary[]
   status: 200
@@ -1311,8 +1520,8 @@ export const getDeleteFamilyUrl = (familyId: string,) => {
 }
 
 /**
- * Any family, including the default family, can be deleted.
- * @summary Delete a family and all of its members
+ * Any family, including the default family, can be deleted. The family and its members move to the trash for 30 days (see the Trash tag), where only admins can restore or remove them; until then its name and slug stay taken.
+ * @summary Move a family to the trash
  */
 export const deleteFamily = async (familyId: string, options?: RequestInit): Promise<deleteFamilyResponse> => {
 

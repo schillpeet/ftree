@@ -74,6 +74,10 @@ class PermissionMatrixTest {
         // Live: presence and change events.
         Endpoint(GET, "/families/$family/events?clientId=matrix", TREE_VIEW),
         Endpoint(PUT, "/families/$family/presence", TREE_VIEW, MediaType.APPLICATION_JSON),
+        // Trash: a visible family is not in the trash, so these answer 404 to admins.
+        Endpoint(GET, "/admin/trash", FAMILY_MANAGE),
+        Endpoint(POST, "/admin/trash/$family/restore", FAMILY_MANAGE),
+        Endpoint(DELETE, "/admin/trash/$family", FAMILY_MANAGE),
         // DELETE /families/{id} last: it removes the family the other requests use.
         Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )
@@ -91,7 +95,7 @@ class PermissionMatrixTest {
 
     // The visible family, so the visibility filter's 404 never hides a 403.
     private fun visibleFamily() =
-        (familyRepository.findFirstByTotalUsersIsNullOrderByPositionAsc() ?: familyRepository.saveAndFlush(FamilyEntity(name = "Matrix ${UUID.randomUUID()}"))).id
+        (familyRepository.findFirstByTotalUsersIsNullAndDeletedAtIsNullOrderByPositionAsc() ?: familyRepository.saveAndFlush(FamilyEntity(name = "Matrix ${UUID.randomUUID()}"))).id
 
     @Test
     fun `every endpoint requires the permission from the role concept`() {

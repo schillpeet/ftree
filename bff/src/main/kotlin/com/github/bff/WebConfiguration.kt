@@ -17,7 +17,8 @@ class WebConfiguration(
 ) : WebMvcConfigurer {
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(loginRecordingInterceptor)
-        registry.addInterceptor(familyVisibilityInterceptor)
+        // The trash endpoints name trashed families, which the interceptor would hide.
+        registry.addInterceptor(familyVisibilityInterceptor).excludePathPatterns("/admin/**")
     }
 
     override fun addCorsMappings(registry: CorsRegistry) {

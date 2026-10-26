@@ -34,6 +34,9 @@ class FamilyServiceTest {
     @Autowired
     private lateinit var memberService: MemberService
 
+    @Autowired
+    private lateinit var trash: TrashService
+
     @Test
     fun `migration creates an initial family and assigns every existing member`() {
         val families = familyRepository.findAllByOrderByPositionAsc()
@@ -66,13 +69,15 @@ class FamilyServiceTest {
     }
 
     @Test
-    fun `deletes the default family and all of its members`() {
+    fun `purges the default family and all of its members`() {
         val family = familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
         assertNotNull(family)
         assertNotNull(memberService.create(family.id, CreateMemberRequest("Test", "Member")))
         assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isNotEmpty())
 
-        assertTrue(familyService.delete(family.id))
+        assertTrue(trash.trash(family.id))
+        assertFalse(familyService.findAll().any { it.id == family.id })
+        assertTrue(trash.purge(family.id))
 
         assertFalse(familyRepository.existsById(family.id))
         assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isEmpty())
@@ -119,7 +124,8 @@ class FamilyServiceTest {
 
         assertEquals(RelativesResult.NOT_FOUND, memberService.updateRelatives(first.id, foreignMember.id, emptyRelatives))
 
-        assertTrue(familyService.delete(second.id))
+        assertTrue(trash.trash(second.id))
+        assertTrue(trash.purge(second.id))
         assertFalse(familyRepository.existsById(second.id))
         assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(second.id).isEmpty())
         assertNotNull(familyRepository.findById(first.id).orElse(null))

@@ -26,7 +26,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 @RestControllerAdvice
 class ProblemAdvice : ResponseEntityExceptionHandler() {
     @ExceptionHandler(ApiProblem::class)
-    fun handleApiProblem(exception: ApiProblem, request: HttpServletRequest) = answer(exception.code, request)
+    fun handleApiProblem(exception: ApiProblem, request: HttpServletRequest) = answer(exception.code, request, exception.detail)
 
     // A save based on an older version of a member, found by MemberService or by Hibernate when it writes the row.
     @ExceptionHandler(OptimisticLockingFailureException::class, OptimisticLockException::class)
@@ -77,8 +77,8 @@ class ProblemAdvice : ResponseEntityExceptionHandler() {
         return ResponseEntity.status(statusCode).headers(headers).body(problem)
     }
 
-    private fun answer(code: ProblemCode, request: HttpServletRequest) =
-        ResponseEntity.status(code.status).body(problemDetail(code, request.requestURI))
+    private fun answer(code: ProblemCode, request: HttpServletRequest, detail: String? = null) =
+        ResponseEntity.status(code.status).body(problemDetail(code, request.requestURI, detail = detail))
 
     private companion object {
         val log = LoggerFactory.getLogger(ProblemAdvice::class.java)

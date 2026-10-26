@@ -35,4 +35,9 @@ class FamilyEntity(
     @Generated
     @Column(nullable = false, insertable = false)
     var position: Int = 0,
+    // Trash: a trashed family keeps its name, slug, members, and memberships but is invisible to everyone until it is
+    // restored or TrashService purges it.
+    var deletedAt: Instant? = null,
+    @Column(length = 320)
+    var deletedBy: String? = null,
 )

@@ -36,7 +36,7 @@ class FamilyService(
 ) {
     fun findAll(): List<FamilySummary> {
         val photos = photoTimes()
-        return familyRepository.findAllByOrderByPositionAsc().map { family ->
+        return familyRepository.findAllByDeletedAtIsNullOrderByPositionAsc().map { family ->
             family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id), photos[family.id])
         }
     }
@@ -45,7 +45,7 @@ class FamilyService(
     @Transactional
     fun reorder(request: ReorderFamiliesRequest): Boolean {
         val ids = request.familyIds.orEmpty()
-        val families = familyRepository.findAll().associateBy { it.id }
+        val families = familyRepository.findAllByDeletedAtIsNullOrderByPositionAsc().associateBy { it.id }
         if (ids.size != families.size || ids.toSet() != families.keys) return false
         ids.forEachIndexed { index, id -> families.getValue(id).position = index }
         return true
@@ -281,21 +281,6 @@ class FamilyService(
             )
         }
         return FamilyExport(family.name, writeGedcom(people))
-    }
-
-    @Transactional
-    fun delete(id: UUID): Boolean {
-        val family = familyRepository.findById(id).orElse(null) ?: return false
-        val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
-        members.forEach { member ->
-            member.parents.clear()
-            member.partners.clear()
-        }
-        memberRepository.flush()
-        memberRepository.deleteAll(members)
-        familyRepository.delete(family)
-        events.publishEvent(TreeEvent.FamilyDeleted(id))
-        return true
     }
 
     /** Stores or replaces the family's photo; only JPEG, PNG, and WebP up to MAX_PHOTO_BYTES. */

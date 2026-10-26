@@ -36,6 +36,9 @@ class StaleMemberTest {
     private lateinit var familyService: FamilyService
 
     @Autowired
+    private lateinit var trash: TrashService
+
+    @Autowired
     private lateinit var memberService: MemberService
 
     private val admin by lazy { token(email = "admin@example.com") }
@@ -49,7 +52,8 @@ class StaleMemberTest {
 
     @AfterTest
     fun deleteFamily() {
-        familyService.delete(family)
+        trash.trash(family)
+        trash.purge(family)
     }
 
     private fun member(id: UUID): Member = memberService.findAll(family)!!.single { it.id == id }

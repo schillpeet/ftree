@@ -44,7 +44,7 @@ class FamilyVisibilityTest {
 
     @BeforeTest
     fun createFamilies() {
-        visible = familyRepository.findFirstByTotalUsersIsNullOrderByPositionAsc()?.id
+        visible = familyRepository.findFirstByTotalUsersIsNullAndDeletedAtIsNullOrderByPositionAsc()?.id
             ?: familyRepository.saveAndFlush(FamilyEntity(name = "Visible ${UUID.randomUUID()}")).id
         test = (familyService.create(CreateFamilyRequest("Visibility test ${UUID.randomUUID()}", 1, 1, 0, 0)) as FamilyCreationResult.CREATED).summary.id
         // Listed before every real family, the test family must still not become the visible one.
