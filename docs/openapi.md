@@ -30,7 +30,6 @@ The local Swagger UI reads `api/openapi.yaml` directly, so it shows the spec of 
 
 ## Next steps
 
-- Remove the legacy `/members` endpoints, which only serve the default family.
 - Add size bounds (`maxLength`, `maxItems`, `minimum`/`maximum`) field by field, together with the BFF validation they imply; the lint lists the missing ones as warnings.
 - Publish the spec as static documentation per release.
 - Move to OpenAPI 3.1 when the generators support it.

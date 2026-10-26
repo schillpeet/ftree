@@ -68,12 +68,6 @@ class PermissionMatrixTest {
         Endpoint(POST, "/families/import", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/archive", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/anonymize", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
-        // Legacy default-family endpoints are admin-only.
-        Endpoint(GET, "/members", FAMILY_MANAGE),
-        Endpoint(POST, "/members", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
-        Endpoint(PUT, "/members/$member", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
-        Endpoint(PUT, "/members/$member/relatives", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
-        Endpoint(DELETE, "/members/$member", FAMILY_MANAGE),
         // DELETE /families/{id} last: it removes the family the other requests use.
         Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )

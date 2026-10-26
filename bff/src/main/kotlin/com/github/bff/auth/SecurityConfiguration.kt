@@ -112,9 +112,6 @@ class SecurityConfiguration(
                     "/families/{familyId}/photo",
                     "/families/{familyId}/members/*/photo",
                 ).access(inFamily(TREE_VIEW))
-                // The legacy endpoints act on the family named "default", which need not be one a non-admin may see,
-                // and the UI no longer uses them, so only admins keep them.
-                it.requestMatchers("/members", "/members/**").hasAuthority(FAMILY_MANAGE.key)
                 // Before PUT /families/{familyId}, which would match "order" as a family id.
                 it.requestMatchers(PUT, "/families/order").hasAuthority(FAMILY_MANAGE.key)
                 it.requestMatchers(POST, "/families", "/families/empty", "/families/import").hasAuthority(FAMILY_CREATE.key)
