@@ -129,7 +129,7 @@ export type AdminOverviewUsers = {
 };
 
 /**
- * Family photos and member photos together.
+ * Family photos and member photos together, without those of trees in the trash.
  */
 export type AdminOverviewPhotos = {
   /** @minimum 0 */
@@ -150,14 +150,17 @@ export type AdminOverviewSeats = {
 
 export interface AdminOverview {
   /**
-     * Trees, test families included.
+     * Trees, test families included and trashed ones left out.
      * @minimum 0
      */
   families: number;
-  /** @minimum 0 */
+  /**
+     * People in the trees outside the trash.
+     * @minimum 0
+     */
   members: number;
   users: AdminOverviewUsers;
-  /** Family photos and member photos together. */
+  /** Family photos and member photos together, without those of trees in the trash. */
   photos: AdminOverviewPhotos;
   /**
      * Distinct people with at least one tab present in any tree.
@@ -1040,7 +1043,7 @@ export const getGetAdminFamiliesUrl = () => {
 }
 
 /**
- * Includes test families and families the caller has no role in, in the saved order. Needs `users.view`.
+ * Includes test families and families the caller has no role in, in the saved order, but not the families in the trash, which `GET /admin/trash` lists. Needs `users.view`.
  * @summary List every family with its owners and size
  */
 export const getAdminFamilies = async ( options?: RequestInit): Promise<getAdminFamiliesResponse> => {
