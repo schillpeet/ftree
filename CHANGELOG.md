@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.24.1](https://github.com/schillpeet/ftree/compare/v0.24.0...v0.24.1) (2026-10-26)
+
+
+### Bug Fixes
+
+* **bff:** update spring boot to 4.1.2 ([#215](https://github.com/schillpeet/ftree/issues/215)) ([c51f015](https://github.com/schillpeet/ftree/commit/c51f01566367f3ab5041cb1df6f8bfadbae9df74))
+
 ## [0.24.0](https://github.com/schillpeet/ftree/compare/v0.23.0...v0.24.0) (2026-10-26)
 
 
