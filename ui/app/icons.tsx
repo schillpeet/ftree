@@ -48,6 +48,12 @@ export const UsersIcon = () => (
   </Icon>
 );
 
+export const ShieldIcon = () => (
+  <Icon>
+    <path d="M12 3l7 3v5.5c0 4.3-2.9 7.8-7 9.5-4.1-1.7-7-5.2-7-9.5V6l7-3z" />
+  </Icon>
+);
+
 export const UserIcon = () => (
   <Icon>
     <circle cx="12" cy="8" r="3.5" />

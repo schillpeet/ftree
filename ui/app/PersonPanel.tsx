@@ -33,14 +33,23 @@ function ageOf(member: Member) {
   return years;
 }
 
-export function Avatar({ member, photo, large }: { member: Pick<Member, 'firstName' | 'lastName'>; photo: string | null | undefined; large?: boolean }) {
+// `member` may also be ready-made initials, such as the ones the presence derives from an email.
+export function Avatar({
+  member,
+  photo,
+  large,
+}: {
+  member: Pick<Member, 'firstName' | 'lastName'> | { initials: string };
+  photo: string | null | undefined;
+  large?: boolean;
+}) {
   const className = `person-avatar${large ? ' person-avatar-large' : ''}`;
   // Arbitrary user URLs: next/image would need every host configured.
   // eslint-disable-next-line @next/next/no-img-element
   if (photo) return <img className={className} src={photo} alt="" />;
   return (
     <span className={className} aria-hidden="true">
-      {initialsOf(member)}
+      {'initials' in member ? member.initials : initialsOf(member)}
     </span>
   );
 }

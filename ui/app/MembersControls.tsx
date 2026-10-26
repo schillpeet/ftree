@@ -75,8 +75,8 @@ export default function MembersControls({
   // A new object per "Add member" in the menu, which opens the form for a new person.
   addRequest: object | null;
   onSelect: (id: string) => void;
-  // The person whose panel is open (viewed or edited), or null.
-  onShownChange: (id: string | null) => void;
+  // The person whose panel is open (viewed or edited), or null, and whether the form edits them.
+  onShownChange: (id: string | null, editing: boolean) => void;
   onFamiliesChanged: () => void;
 }) {
   const t = useT();
@@ -197,7 +197,8 @@ export default function MembersControls({
     if (shift && !pin) setMoved((current) => ({ x: current.x - shift, y: current.y }));
     setNewRelative(null);
   }
-  useEffect(() => onShownChange(shownId), [shownId, onShownChange]);
+  const isEditingShown = isFormOpen && !!editing;
+  useEffect(() => onShownChange(shownId, isEditingShown), [shownId, isEditingShown, onShownChange]);
 
   // Resolves whether the member is gone; onError shows a failure where it was requested.
   async function removeMember(member: Member, onError = setRequestError) {

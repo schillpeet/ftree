@@ -1,0 +1,111 @@
+/* Presence: who is in the open tree, as a row of avatars under the centred family name. */
+
+.presence-bar {
+  position: fixed;
+  z-index: 4;
+  top: 68px;
+  left: 50%;
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transform: translateX(-50%);
+}
+
+.presence-person {
+  position: relative;
+  border-radius: 50%;
+  outline: none;
+}
+
+.presence-person .person-avatar,
+.presence-admin {
+  transition: opacity 0.3s;
+}
+
+.presence-person .person-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--glass-bg);
+  backdrop-filter: blur(16px) saturate(1.2);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-size: 12px;
+}
+
+.presence-person[data-me] .person-avatar {
+  border-color: var(--glass-accent);
+}
+
+/* Only the avatar fades, so the tooltip stays readable. */
+.presence-person[data-idle] .person-avatar,
+.presence-person[data-idle] .presence-admin {
+  opacity: 0.45;
+}
+
+.presence-person:focus-visible .person-avatar {
+  outline: 2px solid var(--glass-accent);
+  outline-offset: 2px;
+}
+
+.presence-admin {
+  position: absolute;
+  right: -3px;
+  bottom: -3px;
+  display: grid;
+  width: 15px;
+  height: 15px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--glass-accent);
+  color: #0c121b;
+}
+
+.presence-admin .icon {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.4;
+}
+
+.presence-tooltip {
+  position: absolute;
+  z-index: 1;
+  top: calc(100% + 8px);
+  left: 50%;
+  display: none;
+  min-width: max-content;
+  max-width: 280px;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.3;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.presence-tooltip span {
+  color: var(--glass-muted);
+}
+
+.presence-person:hover .presence-tooltip,
+.presence-person:focus-visible .presence-tooltip {
+  display: flex;
+}
+
+@media (max-width: 700px) {
+  /* Below the row of scene buttons, which takes the line under the family name here. */
+  .presence-bar {
+    top: 116px;
+    left: 10px;
+    transform: none;
+  }
+
+  .presence-tooltip {
+    left: 0;
+    transform: none;
+  }
+}
