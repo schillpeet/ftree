@@ -1,4 +1,4 @@
-import type { FamilySummary, Me, Permission } from '../lib/api/generated/members';
+import type { FamilySummary, Me, Permission, ProblemCode } from '../lib/api/generated/members';
 
 // What the UI may show; the BFF enforces the same permissions, so this only hides what would fail.
 // Checks always name a permission, never a role. `/me` holds the permissions outside any family,
@@ -20,14 +20,16 @@ export function allowedAppearance(saved: string | null, mayChoose: boolean | nul
   return APPEARANCES.includes(saved as Appearance) ? (saved as Appearance) : 'organic';
 }
 
-// 403: signed in, but the role does not allow it. 401: no (valid) sign-in, e.g. an expired Access session.
+// FORBIDDEN: signed in, but the role does not allow it. UNAUTHENTICATED: no (valid) sign-in, e.g. an expired Access session.
 export type AuthProblem = 'forbidden' | 'signedOut';
 
-// Only responses of this app's own `/api/*` proxy count; `origin` is the page's origin.
-export function authProblemOf(url: string, status: number, origin: string): AuthProblem | null {
+// Only responses of this app's own `/api/*` proxy count; `origin` is the page's origin. The BFF's answers carry a
+// problem code; an answer without one did not come from the BFF (Cloudflare Access, the proxy), so only there the
+// status decides.
+export function authProblemOf(url: string, status: number, code: ProblemCode | null, origin: string): AuthProblem | null {
   if (!isApiUrl(url, origin)) return null;
-  if (status === 403) return 'forbidden';
-  if (status === 401) return 'signedOut';
+  if (code === 'FORBIDDEN' || (code === null && status === 403)) return 'forbidden';
+  if (code === 'UNAUTHENTICATED' || (code === null && status === 401)) return 'signedOut';
   return null;
 }
 

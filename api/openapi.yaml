@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ftree BFF API
-  version: 0.5.0
+  version: 0.6.0
   description: API contract for the ftree UI and Backend for Frontend.
 servers:
   - url: http://localhost:8080
@@ -31,7 +31,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/Me"
         "401":
-          description: No signed-in user.
+          description: No signed-in user. Code `UNAUTHENTICATED`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /users:
     get:
       operationId: getUsers
@@ -49,9 +53,17 @@ paths:
                 items:
                   $ref: "#/components/schemas/UserLogin"
         "401":
-          description: No signed-in user.
+          description: No signed-in user. Code `UNAUTHENTICATED`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "403":
-          description: The caller may not see the sign-ins.
+          description: The caller may not see the sign-ins. Code `FORBIDDEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /members:
     get:
       operationId: getMembers
@@ -87,7 +99,11 @@ paths:
               schema:
                 $ref: "#/components/schemas/Member"
         "400":
-          description: The request is invalid.
+          description: The request is invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /members/{id}:
     parameters:
       - name: id
@@ -116,9 +132,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Member"
         "400":
-          description: The request is invalid.
+          description: The request is invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     delete:
       operationId: deleteMember
       tags:
@@ -128,7 +152,11 @@ paths:
         "204":
           description: Member deleted.
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /members/{id}/relatives:
     parameters:
       - name: id
@@ -159,9 +187,17 @@ paths:
         "204":
           description: Relatives updated.
         "400":
-          description: The relatives are invalid.
+          description: The relatives are invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families:
     get:
       operationId: getFamilies
@@ -196,9 +232,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/FamilySummary"
         "400":
-          description: The name or generation settings are invalid or infeasible.
+          description: The name or generation settings are invalid or infeasible. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
-          description: A family with this name already exists.
+          description: A family with this name already exists. Code `NAME_TAKEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/order:
     put:
       operationId: reorderFamilies
@@ -215,7 +259,11 @@ paths:
         "204":
           description: Order saved.
         "400":
-          description: The list does not contain every family exactly once.
+          description: The list does not contain every family exactly once. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}:
     parameters:
       - name: familyId
@@ -234,7 +282,11 @@ paths:
         "204":
           description: Family and its members deleted.
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     put:
       operationId: renameFamily
       tags:
@@ -255,11 +307,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/FamilySummary"
         "400":
-          description: The name is invalid.
+          description: The name is invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
-          description: A family with this name already exists.
+          description: A family with this name already exists. Code `NAME_TAKEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/archive:
     parameters:
       - name: familyId
@@ -288,11 +352,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/FamilySummary"
         "400":
-          description: The name is invalid or the family has no members.
+          description: The name is invalid or the family has no members. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
-          description: A family with this name already exists.
+          description: A family with this name already exists. Code `NAME_TAKEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/anonymize:
     parameters:
       - name: familyId
@@ -325,11 +401,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/FamilySummary"
         "400":
-          description: The name is invalid.
+          description: The name is invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
-          description: A family with this name already exists.
+          description: A family with this name already exists. Code `NAME_TAKEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/empty:
     post:
       operationId: createEmptyFamily
@@ -352,9 +440,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/FamilySummary"
         "400":
-          description: The name is invalid.
+          description: The name is invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
-          description: A family with this name already exists.
+          description: A family with this name already exists. Code `NAME_TAKEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/import:
     post:
       operationId: importFamily
@@ -381,9 +477,17 @@ paths:
         "400":
           description: >-
             The name is invalid, the file cannot be read, someone would be their own ancestor,
-            or it contains more than 2000 people.
+            or it contains more than 2000 people. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
-          description: A family with this name already exists.
+          description: A family with this name already exists. Code `NAME_TAKEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/export:
     parameters:
       - name: familyId
@@ -406,7 +510,11 @@ paths:
               schema:
                 type: string
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/photo:
     parameters:
       - name: familyId
@@ -443,7 +551,11 @@ paths:
                 type: string
                 format: binary
         "404":
-          description: Family or photo not found.
+          description: Family or photo not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     put:
       operationId: uploadFamilyPhoto
       tags:
@@ -469,13 +581,29 @@ paths:
         "204":
           description: Photo stored.
         "400":
-          description: The body is empty.
+          description: The body is empty. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "413":
-          description: The photo is larger than 2 MB.
+          description: The photo is larger than 2 MB. Code `PHOTO_TOO_LARGE`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "415":
-          description: The content type is not JPEG, PNG, or WebP.
+          description: The content type is not JPEG, PNG, or WebP. Code `UNSUPPORTED_MEDIA_TYPE`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     delete:
       operationId: deleteFamilyPhoto
       tags:
@@ -485,7 +613,11 @@ paths:
         "204":
           description: Photo removed.
         "404":
-          description: Family or photo not found.
+          description: Family or photo not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/photo-fit:
     parameters:
       - name: familyId
@@ -513,9 +645,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/FamilySummary"
         "400":
-          description: The photo fit is missing or unknown.
+          description: The photo fit is missing or unknown. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/members:
     parameters:
       - name: familyId
@@ -539,7 +679,11 @@ paths:
                 items:
                   $ref: "#/components/schemas/Member"
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     post:
       operationId: createFamilyMember
       tags:
@@ -559,9 +703,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Member"
         "400":
-          description: The request is invalid.
+          description: The request is invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Family not found.
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/members/{id}:
     parameters:
       - name: familyId
@@ -596,9 +748,17 @@ paths:
               schema:
                 $ref: "#/components/schemas/Member"
         "400":
-          description: The request is invalid.
+          description: The request is invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     delete:
       operationId: deleteFamilyMember
       tags:
@@ -608,7 +768,11 @@ paths:
         "204":
           description: Member deleted.
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/members/{id}/relatives:
     parameters:
       - name: familyId
@@ -647,9 +811,17 @@ paths:
         "204":
           description: Relatives updated.
         "400":
-          description: The relatives are invalid.
+          description: The relatives are invalid. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/members/{id}/placement:
     parameters:
       - name: familyId
@@ -682,11 +854,23 @@ paths:
         "204":
           description: Placement updated.
         "400":
-          description: Neither or both of pinId and position are set.
+          description: Neither or both of pinId and position are set. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "409":
-          description: Another member's card already hangs on this pin.
+          description: Another member's card already hangs on this pin. Code `PIN_TAKEN`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
   /families/{familyId}/members/{id}/photo:
     parameters:
       - name: familyId
@@ -729,7 +913,11 @@ paths:
                 type: string
                 format: binary
         "404":
-          description: Member or photo not found.
+          description: Member or photo not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     put:
       operationId: uploadFamilyMemberPhoto
       tags:
@@ -755,13 +943,29 @@ paths:
         "204":
           description: Photo stored.
         "400":
-          description: The body is empty.
+          description: The body is empty. Code `INVALID_REQUEST`, or `VALIDATION_FAILED` for a body that breaks the schema.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
-          description: Member not found.
+          description: Member not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "413":
-          description: The photo is larger than 2 MB.
+          description: The photo is larger than 2 MB. Code `PHOTO_TOO_LARGE`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "415":
-          description: The content type is not JPEG, PNG, or WebP.
+          description: The content type is not JPEG, PNG, or WebP. Code `UNSUPPORTED_MEDIA_TYPE`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
     delete:
       operationId: deleteFamilyMemberPhoto
       tags:
@@ -771,9 +975,90 @@ paths:
         "204":
           description: Photo removed.
         "404":
-          description: Member or photo not found.
+          description: Member or photo not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
 components:
   schemas:
+    Problem:
+      type: object
+      description: An error as RFC 9457 problem details, sent as `application/problem+json`. Clients switch on `code`, never on `detail` or `title`.
+      required:
+        - type
+        - title
+        - status
+        - code
+      properties:
+        type:
+          type: string
+          format: uri
+          description: A URN naming the kind of problem, `urn:ftree:problem:` followed by the code in kebab case.
+          example: urn:ftree:problem:name-taken
+        title:
+          type: string
+          description: The HTTP status phrase.
+          example: Conflict
+        status:
+          type: integer
+          description: The HTTP status code.
+          example: 409
+        detail:
+          type: string
+          description: A fixed English explanation for people; it never contains internals or the request's data.
+          example: A family with this name already exists.
+        instance:
+          type: string
+          format: uri-reference
+          description: The path of the request that failed.
+          example: /families
+        code:
+          $ref: "#/components/schemas/ProblemCode"
+        errors:
+          type: array
+          description: The fields that broke the schema, only with `VALIDATION_FAILED`.
+          items:
+            $ref: "#/components/schemas/FieldError"
+    ProblemCode:
+      type: string
+      description: |-
+        What went wrong, for clients to act on:
+        - `VALIDATION_FAILED` (400): the body or a parameter breaks the schema or is not readable JSON.
+        - `INVALID_REQUEST` (400): the request is well-formed but not possible, for example an infeasible generation or a cycle of ancestors.
+        - `UNAUTHENTICATED` (401): no valid sign-in.
+        - `FORBIDDEN` (403): signed in, but not allowed.
+        - `NOT_FOUND` (404): the family, member, or photo does not exist or is not visible.
+        - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
+        - `NAME_TAKEN` (409): a family with this name already exists.
+        - `PIN_TAKEN` (409): another member is already pinned to this place.
+        - `PHOTO_TOO_LARGE` (413): the photo is too large.
+        - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
+        - `INTERNAL_ERROR` (500): an unexpected error on the server.
+      enum:
+        - VALIDATION_FAILED
+        - INVALID_REQUEST
+        - UNAUTHENTICATED
+        - FORBIDDEN
+        - NOT_FOUND
+        - METHOD_NOT_ALLOWED
+        - NAME_TAKEN
+        - PIN_TAKEN
+        - PHOTO_TOO_LARGE
+        - UNSUPPORTED_MEDIA_TYPE
+        - INTERNAL_ERROR
+    FieldError:
+      type: object
+      required:
+        - field
+        - message
+      properties:
+        field:
+          type: string
+          description: The field's path in the body, for example `firstName`.
+        message:
+          type: string
+          description: Why the value is not accepted.
     Me:
       type: object
       required:
