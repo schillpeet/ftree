@@ -46,6 +46,9 @@ class PermissionMatrixTest {
     private fun endpoints(family: UUID, member: UUID = UUID.randomUUID()) = listOf(
         Endpoint(GET, "/me", null),
         Endpoint(GET, "/users", USERS_VIEW),
+        Endpoint(GET, "/admin/overview", USERS_VIEW),
+        Endpoint(GET, "/admin/presence", USERS_VIEW),
+        Endpoint(GET, "/admin/families", USERS_VIEW),
         Endpoint(GET, "/families", null),
         Endpoint(GET, "/families/$family/members", TREE_VIEW),
         Endpoint(GET, "/families/$family/photo", TREE_VIEW),
