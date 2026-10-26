@@ -17,7 +17,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 
-// Reads across all trees and people for the admin page; nothing here changes data.
+// Reads across all trees and people for the admin page; nothing here changes data. Trashed trees count only in /admin/trash.
 @Service
 class AdminOverviewService(
     private val jdbc: JdbcTemplate,
@@ -29,11 +29,17 @@ class AdminOverviewService(
         val signedIn = jdbc.queryForList("SELECT email FROM users WHERE first_seen IS NOT NULL", String::class.java).toSet()
         val known = signedIn + jdbc.queryForList("SELECT email FROM users", String::class.java) + accessPolicy.bootstrapAdmins()
         val (photoCount, photoBytes) = jdbc.queryForObject(
-            "SELECT count(*), coalesce(sum(octet_length(data)), 0) FROM (SELECT data FROM family_photos UNION ALL SELECT data FROM member_photos) p",
+            "SELECT count(*), coalesce(sum(octet_length(data)), 0) FROM (" +
+                "SELECT p.data FROM family_photos p JOIN families f ON f.id = p.family_id WHERE f.deleted_at IS NULL " +
+                "UNION ALL SELECT p.data FROM member_photos p JOIN members m ON m.id = p.member_id " +
+                "JOIN families f ON f.id = m.family_id WHERE f.deleted_at IS NULL) p",
         ) { rs, _ -> rs.getInt(1) to rs.getLong(2) }
         return AdminOverview(
-            count("families"),
-            count("members"),
+            jdbc.queryForObject("SELECT count(*) FROM families WHERE deleted_at IS NULL", Int::class.java)!!,
+            jdbc.queryForObject(
+                "SELECT count(*) FROM members m JOIN families f ON f.id = m.family_id WHERE f.deleted_at IS NULL",
+                Int::class.java,
+            )!!,
             AdminOverviewUsers(known.size, signedIn.size, known.size - signedIn.size),
             AdminOverviewPhotos(photoCount, photoBytes),
             presence.all().map { it.email }.distinct().size,
@@ -77,7 +83,8 @@ class AdminOverviewService(
         }.groupBy({ it.first }, { it.second to it.third }).mapValues { it.value.toMap() }
         return jdbc.query(
             "SELECT f.id, f.name, f.slug, f.created_by, f.created_at, f.total_users IS NOT NULL, " +
-                "(SELECT count(*) FROM members m WHERE m.family_id = f.id) FROM families f ORDER BY f.position",
+                "(SELECT count(*) FROM members m WHERE m.family_id = f.id) FROM families f " +
+                "WHERE f.deleted_at IS NULL ORDER BY f.position",
         ) { rs, _ ->
             val id = rs.getObject(1, UUID::class.java)
             val byRole = roles[id].orEmpty()
@@ -93,8 +100,6 @@ class AdminOverviewService(
             )
         }
     }
-
-    private fun count(table: String) = jdbc.queryForObject("SELECT count(*) FROM $table", Int::class.java)!!
 
     companion object {
         // The Cloudflare Zero Trust free plan; later read from Cloudflare.

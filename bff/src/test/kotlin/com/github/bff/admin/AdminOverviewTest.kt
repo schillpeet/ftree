@@ -14,6 +14,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Import
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.delete
 import org.springframework.test.web.servlet.get
 import org.springframework.transaction.annotation.Transactional
 import tools.jackson.databind.JsonNode
@@ -25,7 +26,9 @@ import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 
 @SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
@@ -175,6 +178,27 @@ class AdminOverviewTest {
         assertEquals(true, t["createdBy"].isNull)
         assertEquals(0, t["memberCount"].asInt())
         assertEquals(0, t["memberships"]["owner"].asInt())
+    }
+
+    @Test
+    fun `trashed families are neither listed nor counted`() {
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = "Trashed ${UUID.randomUUID()}"))
+        val member = UUID.randomUUID()
+        jdbc.update("INSERT INTO members (id, family_id, first_name, last_name) VALUES (?, ?, 'A', 'B')", member, family.id)
+        jdbc.update("INSERT INTO family_photos (family_id, content_type, data, updated_at) VALUES (?, 'image/png', ?, now())", family.id, ByteArray(10))
+        jdbc.update("INSERT INTO member_photos (member_id, content_type, data, updated_at) VALUES (?, 'image/png', ?, now())", member, ByteArray(20))
+        val before = fetch("/admin/overview")
+
+        mockMvc.delete("/families/${family.id}") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "admin@example.com")) }
+            .andExpect { status { isNoContent() } }
+
+        val after = fetch("/admin/overview")
+        assertEquals(before["families"].asInt() - 1, after["families"].asInt())
+        assertEquals(before["members"].asInt() - 1, after["members"].asInt())
+        assertEquals(before["photos"]["count"].asInt() - 2, after["photos"]["count"].asInt())
+        assertEquals(before["photos"]["bytes"].asLong() - 30, after["photos"]["bytes"].asLong())
+        assertFalse(fetch("/admin/families").any { it["id"].asString() == family.id.toString() })
+        assertTrue(fetch("/admin/trash").any { it["id"].asString() == family.id.toString() })
     }
 
     @Test

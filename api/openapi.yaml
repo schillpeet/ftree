@@ -116,10 +116,10 @@ paths:
       tags:
         - admin
       summary: List every family with its owners and size
-      description: Includes test families and families the caller has no role in, in the saved order. Needs `users.view`.
+      description: Includes test families and families the caller has no role in, in the saved order, but not the families in the trash, which `GET /admin/trash` lists. Needs `users.view`.
       responses:
         "200":
-          description: Every family.
+          description: Every family outside the trash.
           content:
             application/json:
               schema:
@@ -1421,10 +1421,11 @@ components:
         families:
           type: integer
           minimum: 0
-          description: Trees, test families included.
+          description: Trees, test families included and trashed ones left out.
         members:
           type: integer
           minimum: 0
+          description: People in the trees outside the trash.
         users:
           type: object
           required:
@@ -1448,7 +1449,7 @@ components:
           required:
             - count
             - bytes
-          description: Family photos and member photos together.
+          description: Family photos and member photos together, without those of trees in the trash.
           properties:
             count:
               type: integer

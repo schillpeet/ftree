@@ -27,9 +27,7 @@ export default function TreesTab() {
   const mayManage = useCan('family.manage');
   const families = useAdminLoad<AdminFamily[]>(getAdminFamilies);
   const trash = useAdminLoad<TrashedFamily[]>(mayManage ? getTrash : noTrash);
-  // `GET /admin/families` still lists trashed families, so the ones in the trash are left out here.
-  const trashed = new Set(trash.data?.map((family) => family.id));
-  const trees = families.data?.filter((family) => !trashed.has(family.id)) ?? null;
+  const trees = families.data;
   // The id of the tree an action runs for, so its buttons wait.
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
