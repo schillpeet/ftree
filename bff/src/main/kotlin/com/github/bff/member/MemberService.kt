@@ -22,31 +22,6 @@ class MemberService(
     private val memberRepository: MemberRepository,
     private val jdbc: JdbcTemplate,
 ) {
-    fun findDefaultFamilyMembers(): List<Member> =
-        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)?.let { findAll(it.id) }.orEmpty()
-
-    @Transactional
-    fun createDefaultFamilyMember(request: CreateMemberRequest): Member? =
-        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
-            ?.let { create(it.id, request) }
-
-    @Transactional
-    fun updateDefaultFamilyMember(id: UUID, request: CreateMemberRequest): Member? =
-        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
-            ?.let { update(it.id, id, request) }
-
-    @Transactional
-    fun updateDefaultFamilyMemberRelatives(id: UUID, relatives: Relatives): RelativesResult =
-        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
-            ?.let { updateRelatives(it.id, id, relatives) }
-            ?: RelativesResult.NOT_FOUND
-
-    @Transactional
-    fun deleteDefaultFamilyMember(id: UUID): Boolean =
-        familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
-            ?.let { delete(it.id, id) }
-            ?: false
-
     fun findAll(familyId: UUID): List<Member>? {
         if (!familyRepository.existsById(familyId)) return null
         val photos = photoTimes(familyId)
