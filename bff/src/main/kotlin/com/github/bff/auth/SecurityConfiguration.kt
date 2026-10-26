@@ -144,7 +144,7 @@ class SecurityConfiguration(
                 val email = authProperties.devEmail
                 log.warn("Auth mode is dev: every request runs as {} without verification. Never use this in production.", email)
                 http.addFilterBefore(
-                    DevAuthenticationFilter(CurrentUser(email, accessPolicy.accessOf(email), verified = false)),
+                    DevAuthenticationFilter { CurrentUser(email, accessPolicy.accessOf(email), verified = false) },
                     AnonymousAuthenticationFilter::class.java,
                 )
             }

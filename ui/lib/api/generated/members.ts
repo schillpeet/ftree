@@ -95,7 +95,7 @@ export interface Me {
 export interface UserLogin {
   /** The email, trimmed and lowercased. */
   email: string;
-  /** True when the access file (or the `app.roles` lists) names the email. */
+  /** True when the access file (or the `app.roles` lists) names the email or the database gives it a right. */
   listed: boolean;
   /**
      * The first recorded sign-in; null when the person has never signed in.
@@ -572,7 +572,7 @@ export const getGetUsersUrl = () => {
 }
 
 /**
- * Lists everyone the access file (or the `app.roles` lists) names, in its order, with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
+ * Lists everyone the access file (or the `app.roles` lists) names, in its order, then everyone else the database gives a right (admin, creating trees, or a role in a tree) by email, each with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
  * @summary List sign-ins
  */
 export const getUsers = async ( options?: RequestInit): Promise<getUsersResponse> => {

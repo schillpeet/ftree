@@ -13,7 +13,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.concurrent.ConcurrentHashMap
 
-// Records who signed in and when they were last seen, writing at most once per INTERVAL per person; the last writes
+// Records who signed in and when they were first and last seen, writing at most once per INTERVAL per person; the last writes
 // are kept in memory only, so a restart writes once more for everyone.
 @Component
 class LoginRecorder(private val jdbc: JdbcTemplate) {
@@ -32,7 +32,7 @@ class LoginRecorder(private val jdbc: JdbcTemplate) {
             val at = OffsetDateTime.ofInstant(now, ZoneOffset.UTC)
             jdbc.update(
                 "INSERT INTO users (email, first_seen, last_seen) VALUES (?, ?, ?) " +
-                    "ON CONFLICT (email) DO UPDATE SET last_seen = excluded.last_seen",
+                    "ON CONFLICT (email) DO UPDATE SET first_seen = coalesce(users.first_seen, excluded.first_seen), last_seen = excluded.last_seen",
                 key, at, at,
             )
         } catch (exception: RuntimeException) {
@@ -42,7 +42,8 @@ class LoginRecorder(private val jdbc: JdbcTemplate) {
         }
     }
 
-    data class Login(val firstSeen: OffsetDateTime, val lastSeen: OffsetDateTime)
+    // Both null for someone who has a right but never signed in.
+    data class Login(val firstSeen: OffsetDateTime?, val lastSeen: OffsetDateTime?)
 
     fun logins(): Map<String, Login> =
         jdbc.query("SELECT email, first_seen, last_seen FROM users") { rs, _ ->

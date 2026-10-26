@@ -286,6 +286,21 @@ The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
 The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records.
 pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
+### Sharing
+
+Roles per tree live in PostgreSQL (V20): `family_memberships` holds one role per family and normalized email (`editor`, `visitor`, or `developer`, with its own `id`, `granted_by`, and `granted_at`) and disappears with its family or its `users` row.
+`users` also stands for people who have access but never signed in (`first_seen` and `last_seen` null) and carries the global rights `admin` and `can_create_trees`, plus `invited_at` and `invited_by`, which are set when a grant adds the row.
+`users.id` is a UUID that names a person without their email, and `users.display_name` is empty until people can set it.
+`audit_log` records who granted which right when (`actor`, `action`, `target_type`, `target_id`, and `details` as JSON), with a null actor for the BFF itself.
+At the first start with V20, `MembershipSeed` copies the rights into the database once: the creator of every family (`created_by`) becomes its developer, the trees of the access file become memberships, `developer: true` becomes `can_create_trees`, and `admin: true` becomes `admin`, each written to the audit log.
+Families without `created_by` get the first bootstrap admin (the first admin of the access file, or of `app.roles.admins`) as developer, written to the audit log with the source `bootstrap-admin`.
+The seed runs only while no `access_file.imported` entry is in the audit log and `family_memberships` is empty, so it never runs again even after every membership was removed; it skips trees whose slug no family has yet and locks the table so a second BFF starting at the same time waits and then skips it.
+Every request reads the user's rights from the database and adds them to the access file (or the `app.roles` lists): admins of either source are admins, `can_create_trees` makes a developer, and in each family the higher of the membership and the access file's role applies, so the access file's admins stay admins whatever the database says.
+Only a developer membership reaches a test family; editor and visitor memberships do not.
+Whoever creates, imports, archives, or anonymizes a family gets a developer membership in the new family, written to the audit log.
+`GET /users` lists the access file's people first and then everyone else with a right in the database, by email, with `listed` true, before the people who only signed in.
+There is no API to change memberships or rights yet; until then they come from the seed and from creating families, and the access file keeps applying next to them.
+
 ## Code Map
 
 - `ui/app/layout.tsx` wraps every page in `PermissionsProvider`; `ui/app/(tree)/layout.tsx` renders the scene for `/` and `/<slug>` (`ui/app/(tree)/page.tsx`, `ui/app/(tree)/[slug]/page.tsx`); `ui/app/slugRoute.ts` resolves slugs and where `/` leads, with `ui/app/slugRoute.check.mjs` as its self-check.
@@ -329,6 +344,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
 - `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` gives each user their role per family and hides the others; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the legacy role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
+- `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once.
 - `bff/src/main/kotlin/com/github/bff/auth/LoginRecorder.kt` records sign-ins with an in-memory throttle and `UsersController.kt` serves `GET /users`; `ui/app/LoginsPanel.tsx` is the admin board showing them.
 - `bff/src/test/kotlin/com/github/bff/ManagementPortTest.kt` checks the management port, that the app port does not serve Actuator, metric labels, and JSON logs.
 - `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.

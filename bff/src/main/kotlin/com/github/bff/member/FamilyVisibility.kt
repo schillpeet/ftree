@@ -17,8 +17,9 @@ import com.github.bff.generated.model.Permission as ApiPermission
 import com.github.bff.generated.model.Role as ApiRole
 
 // The user's role in a family. Admins are admins in every family, test families included, and developers are
-// developers in the families they created. Everyone else has the role the access file gives them for the family's
-// slug (or, with the app.roles lists, in the first family without test settings); other test families and every
+// developers in the families they created (a developer membership, which also reaches test families). Everyone else
+// has the highest of their membership in the database, the role the access file gives them for the family's slug, and,
+// with the app.roles lists, their role in the first family without test settings; other test families and every
 // other family look as if they did not exist.
 @Component
 class FamilyVisibility(private val familyRepository: FamilyRepository) {
@@ -49,12 +50,15 @@ class FamilyVisibility(private val familyRepository: FamilyRepository) {
 
     private fun roleIn(family: FamilyEntity, user: CurrentUser): Role? {
         val access = user.access
-        return when {
-            access.admin -> Role.ADMIN
-            access.developer && family.createdBy != null && family.createdBy == user.email.normalizedEmail() -> Role.DEVELOPER
-            family.totalUsers != null -> null
-            else -> access.families[family.slug] ?: access.firstFamily?.takeIf { family.id == firstFamilyId() }
-        }
+        if (access.admin) return Role.ADMIN
+        val role = listOfNotNull(
+            access.memberships[family.id],
+            // The membership of a family created in this request is newer than the user's access.
+            Role.DEVELOPER.takeIf { access.developer && family.createdBy != null && family.createdBy == user.email.normalizedEmail() },
+            access.families[family.slug],
+            access.firstFamily?.takeIf { family.id == firstFamilyId() },
+        ).maxOrNull()
+        return role?.takeIf { family.totalUsers == null || it == Role.DEVELOPER }
     }
 
     private fun firstFamilyId() = familyRepository.findFirstByTotalUsersIsNullOrderByPositionAsc()?.id
