@@ -256,7 +256,10 @@ The UI tells errors apart by the problem `code` (for example `NAME_TAKEN` or `NO
 A broader family-tree model (relationship types such as uncertain links) is not implemented.
 The BFF serves Actuator on its own management port, `management.server.port` (env `MANAGEMENT_PORT`, default 8081), so the UI's `/api` rewrite and the tunnel, which forward to port 8080, never reach it.
 The management port exposes only `/actuator/health` (without details or components), `/actuator/health/liveness`, `/actuator/health/readiness`, and `/actuator/prometheus`, without a user; other Actuator endpoints answer 403 or 404, and `/actuator/**` on port 8080 stays denied like any unknown endpoint (`managementSecurityFilterChain` in `SecurityConfiguration.kt`).
-The chart does not use the Actuator probes or expose the management port yet.
+`/actuator/health/readiness` includes the database, so it answers 503 while PostgreSQL is unreachable; `/actuator/health/liveness` leaves the database out, so a database outage does not restart the BFF.
+The chart's BFF startup, liveness, and readiness probes call these endpoints on the management port; the startup probe allows two minutes for the JVM and Flyway before liveness applies.
+The management port is a container port only; the chart's BFF Service still exposes just port 8080.
+The UI answers `GET /healthz` with `ok` without calling the BFF (`ui/app/healthz/route.ts`), and the chart's UI probes use it instead of rendering the home page.
 `http.server.requests` metrics are labelled with the matched URI template, for example `/families/{familyId}/members`, or `UNKNOWN`, never with ids, emails, or names from the path.
 The BFF logs JSON in the Elastic Common Schema (`logging.structured.format.console=ecs`), also locally under `start.sh`; log statements must not contain names, emails, or ids of people.
 The PostgreSQL driver runs with `logServerErrorDetail=false`, so database errors such as constraint violations do not quote row values in exceptions and logs.
@@ -273,6 +276,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 ## Code Map
 
 - `ui/app/page.tsx` renders the home scene.
+- `ui/app/healthz/route.ts` answers the chart's UI probes.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay.
 - `ui/app/FamilyTree.tsx` also renders the dashboard and the families board.
 - `ui/app/Dashboard.tsx` renders the burger menu and the family name that opens the family card (`ui/app/FamilyCard.tsx`, rendered by `MembersControls`); `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.

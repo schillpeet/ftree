@@ -37,6 +37,8 @@ spec:
           ports:
             - name: http
               containerPort: 8080
+            - name: management
+              containerPort: 8081
           env:
             - name: DB_URL
               value: {{ .Values.db.url | quote }}
@@ -74,14 +76,22 @@ spec:
             - name: APP_ACCESS_FILE
               value: /config/access.yaml
             {{- end }}
-          # The probes still only check that the port is open; the Actuator probes on the management port (8081) are not wired in yet.
+          # Actuator probes on the management port; readiness includes the database, liveness does not.
+          # The startup probe gives the JVM and Flyway up to two minutes before liveness may restart the pod.
+          startupProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
+            periodSeconds: 5
+            failureThreshold: 24
           readinessProbe:
-            tcpSocket:
-              port: http
+            httpGet:
+              path: /actuator/health/readiness
+              port: management
           livenessProbe:
-            tcpSocket:
-              port: http
-            initialDelaySeconds: 30
+            httpGet:
+              path: /actuator/health/liveness
+              port: management
           resources: {{- toYaml .Values.bff.resources | nindent 12 }}
           securityContext:
             runAsNonRoot: true

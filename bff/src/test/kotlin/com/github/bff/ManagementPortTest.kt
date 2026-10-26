@@ -88,6 +88,31 @@ class ManagementPortTest {
     }
 }
 
+// Components are hidden in production; shown here only to see which checks each probe runs.
+@SpringBootTest(
+    webEnvironment = RANDOM_PORT,
+    properties = [
+        "management.server.port=0",
+        "app.auth.mode=dev",
+        "management.endpoint.health.group.readiness.show-components=always",
+        "management.endpoint.health.group.liveness.show-components=always",
+    ],
+)
+class ManagementPortProbeGroupsTest {
+    @LocalManagementPort
+    private var managementPort = 0
+
+    @Test
+    fun `readiness checks the database and liveness does not`() {
+        val readiness = get(managementPort, "/actuator/health/readiness").body()
+        assertTrue(readiness.contains(""""db":"""), readiness)
+        assertTrue(readiness.contains(""""readinessState":"""), readiness)
+        val liveness = get(managementPort, "/actuator/health/liveness").body()
+        assertTrue(liveness.contains(""""livenessState":"""), liveness)
+        assertFalse(liveness.contains(""""db":"""), liveness)
+    }
+}
+
 @SpringBootTest(webEnvironment = RANDOM_PORT, properties = ["management.server.port=0"])
 @Import(CloudflareTestDecoder::class)
 class ManagementPortCloudflareModeTest {
