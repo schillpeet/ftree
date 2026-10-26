@@ -27,7 +27,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 @Transactional
@@ -156,7 +156,7 @@ class AdminOverviewTest {
             FamilyEntity(name = "Test ${UUID.randomUUID()}", totalUsers = 1, generationCount = 1, minChildren = 0, maxChildren = 0),
         )
         jdbc.update("INSERT INTO members (id, family_id, first_name, last_name) VALUES (gen_random_uuid(), ?, 'A', 'B')", normal.id)
-        listOf("dev" to Role.DEVELOPER, "ed1" to Role.EDITOR, "ed2" to Role.EDITOR, "vis" to Role.VISITOR).forEach { (name, role) ->
+        listOf("own" to Role.OWNER, "ed1" to Role.EDITOR, "ed2" to Role.EDITOR, "vis" to Role.VISITOR).forEach { (name, role) ->
             val email = "$name-${UUID.randomUUID()}@example.com"
             user(email, signedIn = false)
             jdbc.update("INSERT INTO family_memberships (family_id, email, role) VALUES (?, ?, ?)", normal.id, email, role.name.lowercase())
@@ -169,12 +169,12 @@ class AdminOverviewTest {
         assertEquals("creator@example.com", n["createdBy"].asString())
         assertEquals(false, n["test"].asBoolean())
         assertEquals(1, n["memberCount"].asInt())
-        assertEquals(listOf(1, 2, 1), listOf("developer", "editor", "visitor").map { n["memberships"][it].asInt() })
+        assertEquals(listOf(1, 2, 1), listOf("owner", "editor", "visitor").map { n["memberships"][it].asInt() })
         val t = families.getValue(test.id.toString())
         assertEquals(true, t["test"].asBoolean())
         assertEquals(true, t["createdBy"].isNull)
         assertEquals(0, t["memberCount"].asInt())
-        assertEquals(0, t["memberships"]["developer"].asInt())
+        assertEquals(0, t["memberships"]["owner"].asInt())
     }
 
     @Test

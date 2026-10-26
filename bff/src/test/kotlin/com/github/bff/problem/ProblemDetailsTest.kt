@@ -24,7 +24,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 @Transactional
@@ -88,8 +88,7 @@ class ProblemDetailsTest {
 
     @Test
     fun `a family the user may not see is not found`() {
-        // The visitor sees only the first family, so the second one created here stays hidden.
-        createdFamily()
+        // The visitor has no membership in it.
         val hidden = createdFamily()
         mockMvc.get("/families/$hidden/members") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "visitor@example.com")) }
             .problem(ProblemCode.NOT_FOUND, 404, "/families/$hidden/members")

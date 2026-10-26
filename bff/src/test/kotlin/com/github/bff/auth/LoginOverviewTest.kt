@@ -1,6 +1,8 @@
 package com.github.bff.auth
 
 import com.github.bff.auth.CloudflareTestTokens.token
+import com.github.bff.member.FamilyEntity
+import com.github.bff.member.FamilyRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -22,6 +24,7 @@ import kotlin.io.path.writeText
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -36,6 +39,12 @@ class LoginOverviewTest {
 
     @Autowired
     private lateinit var jdbc: JdbcTemplate
+
+    @Autowired
+    private lateinit var memberships: Memberships
+
+    @Autowired
+    private lateinit var familyRepository: FamilyRepository
 
     private val start = Instant.parse("2026-10-01T08:00:00Z")
 
@@ -76,6 +85,9 @@ class LoginOverviewTest {
     @Test
     fun `admins see the listed people with their sign-ins, then everyone else who signed in`() {
         val stranger = "stranger-${UUID.randomUUID()}@example.com"
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = "Logins $RUN")).id
+        memberships.grant(family, NEVER.uppercase(), Role.VISITOR, ADMIN)
+        memberships.grant(family, SIGNED_IN, Role.EDITOR, ADMIN)
         at(start)
         signIn(SIGNED_IN)
         at(start + Duration.ofMinutes(1))
@@ -87,7 +99,10 @@ class LoginOverviewTest {
         val users = Regex("""\{"email":"([^"]+)","listed":(\w+),"firstSeen":("[^"]+"|null),"lastSeen":("[^"]+"|null)}""")
             .findAll(json).associate { it.groupValues[1] to it.groupValues.drop(2) }
 
-        assertEquals(listOf(ADMIN, NEVER, SIGNED_IN), users.keys.take(3))
+        // The bootstrap admin first, then everyone with a right in the database by email, then the rest.
+        val order = users.keys.toList()
+        assertEquals(ADMIN, order.first())
+        assertTrue(order.indexOf(NEVER) < order.indexOf(SIGNED_IN) && order.indexOf(SIGNED_IN) < order.indexOf(stranger), "$order")
         assertEquals(listOf("true", "null", "null"), users[NEVER])
         assertEquals("true", users.getValue(SIGNED_IN)[0])
         assertEquals("false", users.getValue(stranger)[0])
@@ -116,12 +131,6 @@ class LoginOverviewTest {
                 people:
                   - email: $ADMIN
                     admin: true
-                  - email: ${NEVER.uppercase()}
-                    trees:
-                      schiller: visitor
-                  - email: $SIGNED_IN
-                    trees:
-                      schiller: editor
                 """.trimIndent(),
             )
             registry.add("app.access.file") { file.toString() }

@@ -28,7 +28,7 @@ export default function FamilyTree() {
   const me = useMe();
   const router = useRouter();
   const { slug: urlSlug } = useParams<{ slug?: string }>();
-  // Only admins and developers, who may have several families, get the families board.
+  // Only admins and people who may create trees, who may have several families, get the families board.
   const canCreate = useCan('family.create');
   const [members, setMembers] = useState<Member[] | null>(null);
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);

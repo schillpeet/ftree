@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { APPEARANCES, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can } from './access.ts';
 
-const me = { email: 'x@example.org', admin: false, developer: false, permissions: ['tree.appearance'], verified: true };
+const me = { email: 'x@example.org', admin: false, canCreateTrees: false, permissions: ['tree.appearance'], verified: true };
 const visited = { role: 'visitor', permissions: ['tree.view'] };
 const edited = { role: 'editor', permissions: ['tree.view', 'member.edit', 'family.edit', 'family.export'] };
 

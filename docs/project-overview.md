@@ -103,7 +103,7 @@ The preview is not saved, and cards cannot be dragged while it is on.
 ### Families
 
 A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
-The "Zufallsfamilie generieren" button in the families board of the menu, shown to admins and developers below "GEDCOM importieren", unfolds the random family form below it.
+The "Zufallsfamilie generieren" button in the families board of the menu, shown to admins and people who may create trees below "GEDCOM importieren", unfolds the random family form below it.
 The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
 The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
@@ -114,7 +114,7 @@ Every family has a slug (lowercase ASCII words joined by `-`, at most 60 charact
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The legacy `/members` endpoints for the default family were removed; members are only reached through `/families/{familyId}/members`.
 "GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.
-`POST /families/empty` creates a family without members or test settings under a unique name of up to 100 characters; like generating and importing, it needs `family.create`, and a developer who creates it is its developer.
+`POST /families/empty` creates a family without members or test settings under a unique name of up to 100 characters; like generating and importing, it needs `family.create`, and whoever creates it is its owner.
 The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names stay empty.
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
 The family card's download button exports the family as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
@@ -125,7 +125,7 @@ The family card lists the family's members by generation, the oldest first and e
 The family card behaves like the person card: it can be dragged, pinned to a position of its own (`ftree.familyPanelPin`), and closes on ×, Escape, or a click outside unless pinned.
 The family card's header downloads the family as GEDCOM, and its pencil switches it to edit mode: a dashed photo field ("Foto ablegen" while empty), the name, "Familienfoto hinzufügen" or "Familienfoto ändern" and "Familienfoto entfernen", "Anonymisierte Kopie" in a row of its own, and below a line "Familie löschen" (after confirmation) apart from "Abbrechen" and "Speichern".
 The family photo fills the family card's cover; in edit mode the photo field takes a new photo by choosing a file or dropping an image, which the browser scales to at most 800 px as JPEG and uploads on save, and "Familienfoto entfernen" deletes it on save.
-"Neue Familie" at the top of the families board, shown to admins and developers, closes the menu and opens the family card in create mode: the same photo field, name, and photo display as in edit mode, with "Abbrechen" and "Anlegen" and without the copy and delete buttons.
+"Neue Familie" at the top of the families board, shown to admins and people who may create trees, closes the menu and opens the family card in create mode: the same photo field, name, and photo display as in edit mode, with "Abbrechen" and "Anlegen" and without the copy and delete buttons.
 "Anlegen" creates the empty family, uploads the picked photo to it, shows the new family, and switches its card to view mode.
 In edit mode a switch under the photo field chooses "Füllend" (the photo fills the cover) or "Originalgröße" (the photo keeps its own size, centred, at most 240 px high and as wide as the card, never scaled up); it is saved per family via `PUT /families/{familyId}/photo-fit`.
 
@@ -250,25 +250,26 @@ The GEDCOM import and export do not carry partnership status yet.
 The copy replaces first names at random and maps each distinct last name (birth names included) consistently to a random last name from fixed lists in `AnonymousNames.kt`, never reusing a name from the original; empty names stay empty.
 Anonymous copies keep the kinds of the parent links.
 The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
-Roles apply per family: `visitor` (`tree.view`), `editor` (adds `member.edit`, `family.edit`, and `family.export`), `developer` (adds `member.delete` and `family.delete`), and `admin` (the same as developer); admins are admins in every family and also have `family.create`, `family.manage`, and `dev.tools`.
-Developers have `family.create` and `dev.tools`, so they create and import families, and they are developers in the families they created; every family stores the normalized email of who created it in `created_by` (null for families from before V18).
+Roles apply per family: `visitor` (`tree.view`), `editor` (adds `member.edit`, `family.edit`, and `family.export`), `owner` (adds `member.delete`, `family.delete`, and `family.share`), and `admin` (the same as owner); admins are admins in every family and also have `family.create`, `family.manage`, `dev.tools`, `users.view`, and `users.manage`.
+People with `users.can_create_trees` have `family.create` and `dev.tools`, so they create and import families, and they become the owner of every family they create; every family stores the normalized email of who created it in `created_by` (null for families from before V18).
 Everyone has `tree.appearance`, which offers every appearance and the Evolution panel with its view, line, and legend settings.
-`app.access.file` (env `APP_ACCESS_FILE`) points to the access file, a YAML list `people` in which every entry has an `email` and `admin: true`, `developer: true` (optionally with `trees`), or `trees` with exactly one family slug mapped to `editor` or `visitor`, because only admins and developers can switch between families; the BFF reads it once at startup, refuses to start when it is malformed or set together with `app.roles`, and gives people it does not list no family.
-Without an access file, `app.roles.admins` and `app.roles.editors` (env `APP_ROLES_ADMINS`, `APP_ROLES_EDITORS`) list emails, matched trimmed and case-insensitively; admins win, editors are editors and everyone else is a visitor in the first real family only, the first without test settings in the saved order.
-`GET /me` returns the signed-in user's `email`, `admin`, `developer`, the `permissions` outside any family, and `verified`, or 401 without a user; every family in `GET /families` and in the answers of family writes carries the caller's `role` and `permissions` in it.
+`app.access.file` (env `APP_ACCESS_FILE`) points to the access file, a YAML list `people` in which every entry has an `email` and `admin: true`, `developer: true` (optionally with `trees`), or `trees` with exactly one family slug mapped to `editor` or `visitor`; the BFF reads it once at startup and refuses to start when it is malformed or set together with `app.roles.admins`.
+Only the access file's admins apply at runtime, as bootstrap admins who stay admins whatever the database says; `MembershipSeed` imports its other entries into the database once (see Sharing).
+Without an access file, `app.roles.admins` (env `APP_ROLES_ADMINS`) lists the bootstrap admins' emails, matched trimmed and case-insensitively.
+`GET /me` returns the signed-in user's `email`, `admin`, `canCreateTrees`, the `permissions` outside any family, and `verified`, or 401 without a user; every family in `GET /families` and in the answers of family writes carries the caller's `role` and `permissions` in it.
 `app.auth.mode` (env `APP_AUTH_MODE`) is `cloudflare` by default; `dev` signs every request in as `app.auth.dev-email` (default `dev@localhost`) with `verified` false and logs a warning at startup, and `start.sh` runs the BFF in dev mode with `dev@localhost` as admin.
 Spring Security runs stateless and enforces the permissions per method and path: every request needs a signed-in user (401 otherwise), `GET /me` needs nothing more, and any other request needs its permission (403 otherwise), taken from the role in the family of the path for `/families/{familyId}/...`, with unknown endpoints always denied.
 `tree.view` covers the reads (families, members, photos), `family.export` the GEDCOM export, `member.edit` creating and changing members, relatives, placement, and member photos, `member.delete` deleting members, `family.edit` renaming families, family photos, and the photo fit, `family.delete` deleting a family, `family.create` creating, generating, and importing families, and `family.manage` archiving, anonymizing, and reordering families.
 Every request that reaches a controller records its signed-in user in the `users` table (V19: trimmed, lowercased `email`, `first_seen`, `last_seen`), writing at most once per five minutes per person, which the BFF remembers in memory only.
-`GET /users` needs `users.view`, which only admins have, and lists everyone the access file (or the `app.roles` admins and editors) names, in its order, with `listed` true and `firstSeen` and `lastSeen` (null when they never signed in), followed by everyone else who signed in, most recent first.
-Non-admins see only the families they have a role in: `GET /families` lists only those, and every `/families/{familyId}/...` request for another family answers 404, so test families are admin-only.
+`GET /users` needs `users.view`, which only admins have, and lists the bootstrap admins in their order, with `listed` true and `firstSeen` and `lastSeen` (null when they never signed in), followed by everyone else who signed in, most recent first.
+Non-admins see only the families they have a role in: `GET /families` lists only those, and every `/families/{familyId}/...` request for another family answers 404, so test families are only for admins and their owners.
 Because Cloudflare Access turns its cookie into the JWT header, the BFF rejects writes from other sites with 403: POST, PUT, PATCH, and DELETE with `Sec-Fetch-Site` `same-site` or `cross-site`, or without it but with an `Origin` outside `app.cors.allowed-origins`; the UI sends no CSRF token.
 In cloudflare mode the BFF verifies the Cloudflare Access JWT from the `Cf-Access-Jwt-Assertion` header against the keys at `https://<team-domain>/cdn-cgi/access/certs`, checking its signature, expiry, issuer (`https://<team-domain>`), and audience, and takes the user from its `email` claim with `verified` true.
 `app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
 A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` answers 401; an `Authorization: Bearer` header is ignored.
 The UI loads `GET /me` once at start and shows only what the permissions allow, those from `/me` together with those of the open family; it checks permissions, never role names, and the BFF still enforces them.
-The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator or Developer, otherwise the role in the open family), whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode), and a logout link to `/cdn-cgi/access/logout`.
-"Familien" needs `family.create` (admins and developers) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Mitglied hinzufügen" needs `member.edit` in the open family, and "Momentaufnahme" and "Darstellung" are for everyone.
+The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator, otherwise the role in the open family: Eigentümer, Bearbeiter, or Gast), whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode), and a logout link to `/cdn-cgi/access/logout`.
+"Familien" needs `family.create` (admins and people who may create trees) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Mitglied hinzufügen" needs `member.edit` in the open family, and "Momentaufnahme" and "Darstellung" are for everyone.
 "Verwaltung" ("Administration") needs `users.view` and links to the admin page at `/admin`; the former read-only "Anmeldungen" board of `GET /users` is gone until the admin page gets a people tab.
 Without `tree.appearance` only the experimental appearance can be chosen; the others are disabled and marked "Demnächst", and a stored other choice falls back to experimental.
 The Evolution button needs `tree.appearance`, so everyone sees it; its random-family generator needs `dev.tools`.
@@ -302,27 +303,31 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 
 ### Sharing
 
-Roles per tree live in PostgreSQL (V20): `family_memberships` holds one role per family and normalized email (`editor`, `visitor`, or `developer`, with its own `id`, `granted_by`, and `granted_at`) and disappears with its family or its `users` row.
+Roles per tree live in PostgreSQL (V20): `family_memberships` holds one role per family and normalized email (`owner`, `editor`, or `visitor`, with its own `id`, `granted_by`, and `granted_at`) and disappears with its family or its `users` row.
 `users` also stands for people who have access but never signed in (`first_seen` and `last_seen` null) and carries the global rights `admin` and `can_create_trees`, plus `invited_at` and `invited_by`, which are set when a grant adds the row.
 `users.id` is a UUID that names a person without their email, and `users.display_name` is empty until people can set it.
 `audit_log` records who granted which right when (`actor`, `action`, `target_type`, `target_id`, and `details` as JSON), with a null actor for the BFF itself.
-At the first start with V20, `MembershipSeed` copies the rights into the database once: the creator of every family (`created_by`) becomes its developer, the trees of the access file become memberships, `developer: true` becomes `can_create_trees`, and `admin: true` becomes `admin`, each written to the audit log.
-Families without `created_by` get the first bootstrap admin (the first admin of the access file, or of `app.roles.admins`) as developer, written to the audit log with the source `bootstrap-admin`.
+At the first start with V20, `MembershipSeed` copies the rights into the database once: the creator of every family (`created_by`) becomes its owner, the trees of the access file become memberships, `developer: true` becomes `can_create_trees`, and `admin: true` becomes `admin`, each written to the audit log.
+At every start, every family without an owner, such as those without `created_by`, gets the first bootstrap admin (the first admin of the access file, or of `app.roles.admins`) as owner, written to the audit log with the source `bootstrap-admin`; a family that has an owner is left alone, so this runs idempotently.
 The seed runs only while no `access_file.imported` entry is in the audit log and `family_memberships` is empty, so it never runs again even after every membership was removed; it skips trees whose slug no family has yet and locks the table so a second BFF starting at the same time waits and then skips it.
-Every request reads the user's rights from the database and adds them to the access file (or the `app.roles` lists): admins of either source are admins, `can_create_trees` makes a developer, and in each family the higher of the membership and the access file's role applies, so the access file's admins stay admins whatever the database says.
-Only a developer membership reaches a test family; editor and visitor memberships do not.
-Whoever creates, imports, archives, or anonymizes a family gets a developer membership in the new family, written to the audit log.
-`GET /users` lists the access file's people first and then everyone else with a right in the database, by email, with `listed` true, before the people who only signed in.
-There is no API to change memberships or rights yet; until then they come from the seed and from creating families, and the access file keeps applying next to them.
+Every request reads the user's rights from the database alone: `users.admin` and the bootstrap admins are admins, `can_create_trees` allows creating trees, and in each family the role of the membership applies; without a membership a family does not exist for them.
+Only an owner membership reaches a test family; editor and visitor memberships do not.
+Whoever creates, imports, archives, or anonymizes a family gets an owner membership in the new family, written to the audit log.
+`GET /users` lists the bootstrap admins first and then everyone else with a right in the database, by email, with `listed` true, before the people who only signed in.
+V24 turns every `developer` membership into `owner`, and the `developer` role, the global developer flag of `GET /me`, and the `app.roles.editors` fallback (everyone else a visitor in the first real family) are gone, a breaking change released as `feat(bff)!`.
+`MembershipService` sets and revokes roles in a tree, locking the family row so concurrent changes run one after another, and writes `membership.granted`, `membership.changed`, or `membership.revoked` to the audit log.
+Every tree keeps at least one owner: `MembershipService` refuses to demote or remove the last one with 400 `INVALID_REQUEST`.
+`family.share` (owners and admins) and `users.manage` (admins) exist in the permission set, but no endpoint uses them yet.
+There is no API to change memberships or rights yet; until then they come from the seed, from creating families, and from `MembershipService` inside the BFF.
 
 ### Administration
 
 `GET /admin/overview`, `GET /admin/presence`, and `GET /admin/families` need `users.view`, so only admins read them, and change nothing; they live in `bff/.../admin/` under the OpenAPI tag `admin`.
 The overview counts `families` (test families included), `members`, `users` (`total`, `signedIn`, and `invited` for people named but never signed in), `photos` (`count` and `bytes` of family and member photos together), and `online` (distinct people with a tab in any tree, from the presence registry).
-`seats.used` counts the distinct people who currently have access, that is the access file's people plus everyone with an admin or can-create-trees flag or a membership in the database, and `seats.limit` is the fixed 50 of the Cloudflare free plan; Cloudflare is not asked yet.
+`seats.used` counts the distinct people who currently have access, that is the bootstrap admins plus everyone with an admin or can-create-trees flag or a membership in the database, and `seats.limit` is the fixed 50 of the Cloudflare free plan; Cloudflare is not asked yet.
 `lastBackupAt` is always null for now.
 `GET /admin/presence` lists one entry per browser tab from `PresenceDirectory.all()`: `userId` (null without a `users` row), `email`, `displayName` (the display name, else the email before the `@`), `admin`, the tree's `familyId`, `familySlug`, and `familyName`, `viewing`, `editing`, `idle`, and `since`.
-`GET /admin/families` lists every family in the saved order, test families and families without any role of the caller included, with `createdBy`, `createdAt`, `test`, `memberCount`, and `memberships` (how many people hold the `developer`, `editor`, and `visitor` role; admins hold none).
+`GET /admin/families` lists every family in the saved order, test families and families without any role of the caller included, with `createdBy`, `createdAt`, `test`, `memberCount`, and `memberships` (how many people hold the `owner`, `editor`, and `visitor` role; admins hold none).
 `/admin` is a full page outside the tree's route group, so it has no 3D scene, in the dashboard's glass style with "Zurück zum Baum" (to `/`) and the language switch.
 The admin page shows its tabs only with `users.view` and otherwise "Kein Zugriff"; the BFF enforces the rights of every endpoint it calls.
 The admin page has the tabs "Übersicht" and "Bäume"; people, invitations, and the audit log are planned as further tabs.
@@ -355,7 +360,7 @@ The UI does not use the stream or the presence yet.
 ### Trash
 
 `DELETE /families/{familyId}` no longer removes a family: it sets `families.deleted_at` and `deleted_by` and moves the family, its members, photos, and memberships into a trash for 30 days.
-A trashed family is invisible to everyone, admins included: every family path answers 404, it is missing from `GET /families`, and it does not count as the first family or in a reorder.
+A trashed family is invisible to everyone, admins included: every family path answers 404, it is missing from `GET /families`, and it does not count in a reorder.
 Its name and slug stay taken, so creating, importing, archiving, anonymizing, or renaming to that name answers 409 `NAME_TAKEN` with a detail that says the name is in the trash.
 `GET /admin/trash` lists the trashed families (`id`, `name`, `slug`, `deletedAt`, `deletedBy`, `purgeAt`, `memberCount`), the one deleted longest ago first.
 `POST /admin/trash/{familyId}/restore` brings a family back with everything it had, and `DELETE /admin/trash/{familyId}` removes it for good at once, photos included; both answer 404 for a family that is not in the trash.
@@ -410,8 +415,9 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `bff/src/main/kotlin/com/github/bff/live/` holds the presence (`PresenceRegistry.kt`), the change events (`TreeEvent.kt`), the event streams (`TreeEventBroadcaster.kt`), and `LiveController.kt`; `PresenceRegistryTest` and `TreeEventsTest` cover them.
 - `bff/src/main/kotlin/com/github/bff/member/TrashService.kt` trashes, restores, and purges families and holds `TrashPurger`; `TrashController.kt` serves `/admin/trash`, and `TrashTest` covers it.
 - `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` gives each user their role per family and hides the others; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
-- `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the legacy role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
-- `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once.
+- `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
+- `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once and gives every tree without an owner the first bootstrap admin.
+- `bff/src/main/kotlin/com/github/bff/auth/MembershipService.kt` sets and revokes roles in a tree and keeps at least one owner; `MembershipServiceTest` covers it.
 - `bff/src/main/kotlin/com/github/bff/admin/AdminOverviewService.kt` reads the admin overview, presence, and family lists, which `AdminController.kt` serves.
 - `bff/src/main/kotlin/com/github/bff/auth/LoginRecorder.kt` records sign-ins with an in-memory throttle and `UsersController.kt` serves `GET /users`, which the UI does not show at the moment.
 - `bff/src/test/kotlin/com/github/bff/ManagementPortTest.kt` checks the management port, that the app port does not serve Actuator, metric labels, and JSON logs.
@@ -445,7 +451,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `.github/workflows/trivy.yml` runs Trivy on every pull request and push to `main`: it fails on any secret in the repository, on fixable CRITICAL vulnerabilities in the UI's dependencies, and on CRITICAL misconfigurations in the rendered Helm chart.
 - `trivy.yml` does not cover the BFF's Gradle dependencies, since the BFF has no Gradle lockfile; the release image scan covers them.
 - Trivy actions are pinned by commit SHA to releases made after the March 2026 tag hijacking of `aquasecurity/trivy-action` and `setup-trivy`, and the Trivy version is set explicitly.
-- The chart's `bff.auth.*` and `bff.roles.*` values become the BFF's `APP_AUTH_*` and `APP_ROLES_*` variables, and `bff.access` becomes the mounted access file in `APP_ACCESS_FILE`; in cloudflare mode the chart refuses to render without `bff.auth.teamDomain` and `bff.auth.audience` (see `deploy/README.md`).
+- The chart's `bff.auth.*` and `bff.roles.admins` values become the BFF's `APP_AUTH_*` and `APP_ROLES_ADMINS` variables, and `bff.access` becomes the mounted access file in `APP_ACCESS_FILE`; in cloudflare mode the chart refuses to render without `bff.auth.teamDomain` and `bff.auth.audience` (see `deploy/README.md`).
 
 The procedural scene is presentation code.
 It is not a family-tree domain model or a persistence layer.

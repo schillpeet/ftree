@@ -339,10 +339,10 @@ class FamilyService(
 
     private fun creator() = CurrentUser.current()?.email?.normalizedEmail()
 
-    // Whoever creates a family becomes its developer.
+    // Whoever creates a family becomes its owner.
     private fun saveNew(family: FamilyEntity): FamilyEntity =
         familyRepository.saveAndFlush(family).also { saved ->
-            saved.createdBy?.let { memberships.grant(saved.id, it, Role.DEVELOPER, it) }
+            saved.createdBy?.let { memberships.grant(saved.id, it, Role.OWNER, it) }
         }
 
     private fun FamilyEntity.toSummary(members: List<MemberEntity>, photoUpdatedAt: OffsetDateTime? = null) = FamilySummary().apply {

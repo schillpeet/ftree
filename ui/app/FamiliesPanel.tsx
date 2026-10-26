@@ -41,7 +41,7 @@ export default function FamiliesPanel({
   onCreate: () => void;
 }) {
   const t = useT();
-  // Admins and developers import and generate families; only admins reorder them.
+  // Admins and people who may create trees import and generate families; only admins reorder them.
   const canImport = useCan('family.create');
   const canGenerate = useCan('dev.tools');
   const manage = useCan('family.manage');

@@ -3,6 +3,8 @@ package com.github.bff.live
 import com.github.bff.auth.CLOUDFLARE_ACCESS_JWT_HEADER
 import com.github.bff.auth.CloudflareTestDecoder
 import com.github.bff.auth.CloudflareTestTokens.token
+import com.github.bff.auth.Memberships
+import com.github.bff.auth.Role
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
 import com.github.bff.member.TrashService
@@ -26,7 +28,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 // Not transactional: the events go out only after a commit.
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 class TreeEventsTest {
@@ -48,15 +50,17 @@ class TreeEventsTest {
     @Autowired
     private lateinit var trash: TrashService
 
+    @Autowired
+    private lateinit var memberships: Memberships
+
     private lateinit var visible: UUID
     private lateinit var hidden: UUID
     private val created = mutableListOf<UUID>()
 
     @BeforeTest
     fun createFamilies() {
-        // The editor's role is in the first family without test settings; a new one listed first leaves the others alone.
         visible = familyRepository.saveAndFlush(FamilyEntity(name = "Live ${UUID.randomUUID()}")).id.also(created::add)
-        jdbc.update("UPDATE families SET position = (SELECT min(position) - 1 FROM families) WHERE id = ?", visible)
+        memberships.grant(visible, "editor@example.com", Role.EDITOR, null)
         hidden = familyRepository.saveAndFlush(
             FamilyEntity(name = "Live test ${UUID.randomUUID()}", totalUsers = 1, generationCount = 1, minChildren = 0, maxChildren = 0),
         ).id.also(created::add)

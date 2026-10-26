@@ -46,7 +46,7 @@ class MembershipSeedTest {
     @BeforeTest
     fun forgetTheSeed() {
         val policy = AccessPolicy(AccessProperties(accessFile().toString()), RoleProperties(), memberships)
-        seed = MembershipSeed(jdbc, policy, memberships, auditLog, transactions)
+        seed = MembershipSeed(jdbc, policy, memberships, MembershipService(jdbc, memberships, auditLog), auditLog, transactions)
         jdbc.update("DELETE FROM family_memberships")
         jdbc.update("DELETE FROM audit_log")
         lab = familyRepository.saveAndFlush(FamilyEntity(name = "Lab $RUN", slug = "lab-$RUN", createdBy = BUILDER)).id
@@ -73,9 +73,8 @@ class MembershipSeedTest {
 
         assertEquals(
             mapOf(
-                (lab to BUILDER) to "developer",
-                (own to ADMIN) to "developer",
-                (plain to ADMIN) to "developer",
+                (lab to BUILDER) to "owner",
+                (own to ADMIN) to "owner",
                 (lab to EDITOR) to "editor",
                 (lab to VISITOR) to "visitor",
             ),
@@ -92,9 +91,24 @@ class MembershipSeedTest {
         assertTrue(audit.any { it.startsWith("membership.granted $lab") && BUILDER in it && "created-by" in it }, "$audit")
         assertTrue(audit.any { it.startsWith("membership.granted $lab") && EDITOR in it && "access-file" in it }, "$audit")
         assertTrue(audit.any { it.startsWith("user.admin.granted $ADMIN") }, "$audit")
-        assertTrue(audit.any { it.startsWith("membership.granted $plain") && ADMIN in it && "bootstrap-admin" in it }, "$audit")
         assertTrue(audit.any { it.startsWith("user.can-create-trees.granted $BUILDER") }, "$audit")
         assertEquals(1, audit.count { it.startsWith("access_file.imported") })
+    }
+
+    @Test
+    fun `makes the first bootstrap admin the owner of trees without one, once`() {
+        seed.seed()
+        jdbc.update("INSERT INTO family_memberships (family_id, email, role) VALUES (?, ?, 'visitor')", plain, ADMIN)
+
+        assertTrue(seed.ensureOwners() > 0)
+        assertEquals("owner", memberships()[plain to ADMIN])
+        assertEquals("owner", memberships()[lab to BUILDER])
+        assertEquals(null, memberships()[lab to ADMIN])
+        assertTrue(audit().any { it.startsWith("membership.changed $plain") && ADMIN in it && "bootstrap-admin" in it }, "${audit()}")
+
+        val audit = audit()
+        assertEquals(0, seed.ensureOwners())
+        assertEquals(audit, audit())
     }
 
     @Test

@@ -61,8 +61,8 @@ start_service() {
   local pid started_at
 
   if [[ "$name" == bff ]]; then
-    # Dev mode signs every request in as dev@localhost, who is admin unless APP_ACCESS_FILE names an access file that
-    # gives dev@localhost another role; production uses Cloudflare Access.
+    # Dev mode signs every request in as dev@localhost, who is a bootstrap admin unless APP_ACCESS_FILE names an access
+    # file, whose admins are then the bootstrap admins; production uses Cloudflare Access.
     local admins=dev@localhost
     [[ -n "${APP_ACCESS_FILE:-}" ]] && admins=
     APP_AUTH_MODE=dev APP_ROLES_ADMINS="$admins" \

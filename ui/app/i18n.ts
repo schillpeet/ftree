@@ -19,7 +19,7 @@ const en = {
     private: 'Private',
     email: 'Email',
     role: 'Role',
-    roles: { admin: 'Administrator', developer: 'Developer', editor: 'Editor', visitor: 'Visitor' },
+    roles: { admin: 'Administrator', owner: 'Owner', editor: 'Editor', visitor: 'Visitor' },
     noFamily: 'No tree open',
     verification: 'Verification',
     verified: 'verified by Cloudflare Access',
@@ -322,8 +322,8 @@ const en = {
       actions: 'Actions',
       test: 'Test',
       unknown: 'Unknown',
-      roleCounts: (developers: number, editors: number, visitors: number) =>
-        `${developers} developers, ${editors} editors, ${visitors} visitors`,
+      roleCounts: (owners: number, editors: number, visitors: number) =>
+        `${owners} owners, ${editors} editors, ${visitors} visitors`,
       open: 'Open',
       trash: 'Move to trash',
       confirmTrash: (name: string, count: number) =>
@@ -365,7 +365,7 @@ const de: typeof en = {
     private: 'Privat',
     email: 'E-Mail',
     role: 'Rolle',
-    roles: { admin: 'Administrator', developer: 'Entwickler', editor: 'Bearbeiter', visitor: 'Gast' },
+    roles: { admin: 'Administrator', owner: 'Eigentümer', editor: 'Bearbeiter', visitor: 'Gast' },
     noFamily: 'Kein Baum geöffnet',
     verification: 'Bestätigung',
     verified: 'verifiziert durch Cloudflare Access',
@@ -667,7 +667,7 @@ const de: typeof en = {
       actions: 'Aktionen',
       test: 'Test',
       unknown: 'Unbekannt',
-      roleCounts: (developers, editors, visitors) => `${developers} Entwickler, ${editors} Bearbeiter, ${visitors} Besucher`,
+      roleCounts: (owners, editors, visitors) => `${owners} Eigentümer, ${editors} Bearbeiter, ${visitors} Besucher`,
       open: 'Öffnen',
       trash: 'In den Papierkorb',
       confirmTrash: (name, count) =>

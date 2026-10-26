@@ -108,7 +108,7 @@ export default function TreesTab() {
                   </td>
                   <td>
                     {t.admin.trees.roleCounts(
-                      family.memberships.developer,
+                      family.memberships.owner,
                       family.memberships.editor,
                       family.memberships.visitor,
                     )}

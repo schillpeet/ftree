@@ -24,10 +24,10 @@ class AccessFileTest {
                 developer: true
             """.trimIndent(),
         )
-        assertEquals(Access(admin = true), people["admin@example.com"])
-        assertEquals(Access(admin = false, families = mapOf("schiller" to Role.EDITOR)), people["father@example.com"])
-        assertEquals(Access(admin = false, families = mapOf("schiller" to Role.VISITOR), developer = true), people["friend@example.com"])
-        assertEquals(Access(admin = false, developer = true), people["builder@example.com"])
+        assertEquals(AccessFileEntry(admin = true), people["admin@example.com"])
+        assertEquals(AccessFileEntry(admin = false, families = mapOf("schiller" to Role.EDITOR)), people["father@example.com"])
+        assertEquals(AccessFileEntry(admin = false, families = mapOf("schiller" to Role.VISITOR), developer = true), people["friend@example.com"])
+        assertEquals(AccessFileEntry(admin = false, developer = true), people["builder@example.com"])
     }
 
     @Test

@@ -29,7 +29,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 @Transactional
@@ -39,6 +39,9 @@ class PermissionMatrixTest {
 
     @Autowired
     private lateinit var familyRepository: FamilyRepository
+
+    @Autowired
+    private lateinit var memberships: Memberships
 
     // null means any signed-in user.
     private data class Endpoint(val method: HttpMethod, val path: String, val permission: Permission?, val body: MediaType? = null)
@@ -93,20 +96,34 @@ class PermissionMatrixTest {
         return mockMvc.perform(builder).andReturn().response.status
     }
 
-    // The visible family, so the visibility filter's 404 never hides a 403.
-    private fun visibleFamily() =
-        (familyRepository.findFirstByTotalUsersIsNullAndDeletedAtIsNullOrderByPositionAsc() ?: familyRepository.saveAndFlush(FamilyEntity(name = "Matrix ${UUID.randomUUID()}"))).id
+    // A new family in which every non-admin has a membership, so the visibility filter's 404 never hides a 403.
+    private fun visibleFamily(): UUID {
+        val family = familyRepository.saveAndFlush(FamilyEntity(name = "Matrix ${UUID.randomUUID()}")).id
+        memberships.grant(family, "visitor@example.com", Role.VISITOR, null)
+        memberships.grant(family, "editor@example.com", Role.EDITOR, null)
+        memberships.grant(family, "owner@example.com", Role.OWNER, null)
+        memberships.grant(family, "creator@example.com", Role.VISITOR, null)
+        return family
+    }
 
     @Test
     fun `every endpoint requires the permission from the role concept`() {
-        // With the app.roles lists, non-admins have their role in the first family, the visible one.
+        memberships.grantFlags("creator@example.com", admin = false, canCreateTrees = true, grantedBy = null)
+        // Non-admins have the role of their membership in the family, plus the rights outside any family.
         val users = mapOf(
             "visitor@example.com" to Role.VISITOR.permissions + Access.NONE.permissions,
             "editor@example.com" to Role.EDITOR.permissions + Access.NONE.permissions,
+            // Tree owners: an editor's rights plus deleting members and the tree, and sharing it (family.share), but
+            // nothing outside their tree, so neither creating trees nor any admin endpoint.
+            "owner@example.com" to Role.OWNER.permissions + Access.NONE.permissions,
+            // can_create_trees replaces the global developer role: creating trees and the dev tools, nothing more in a
+            // tree they only visit.
+            "creator@example.com" to Role.VISITOR.permissions + Access(admin = false, canCreateTrees = true).permissions,
             "admin@example.com" to Permission.entries.toSet(),
         )
         val mismatches = users.flatMap { (email, permissions) ->
-            endpoints(visibleFamily()).mapNotNull { endpoint ->
+            val family = visibleFamily()
+            endpoints(family).mapNotNull { endpoint ->
                 val status = status(endpoint, email)
                 val allowed = endpoint.permission == null || endpoint.permission in permissions
                 val ok = if (allowed) status != 401 && status != 403 else status == 403
@@ -114,6 +131,26 @@ class PermissionMatrixTest {
             }
         }
         assertEquals(emptyList(), mismatches)
+    }
+
+    // Tree owners, which replace the global developer role: their rights end at their own tree, and whoever creates a
+    // tree (can_create_trees) becomes its owner.
+    @Test
+    fun `owners act only in their own tree, and creating a tree makes its owner`() {
+        visibleFamily()
+        val other = familyRepository.saveAndFlush(FamilyEntity(name = "Matrix other ${UUID.randomUUID()}")).id
+        assertEquals(404, status(Endpoint(DELETE, "/families/$other", FAMILY_DELETE), "owner@example.com"))
+
+        memberships.grantFlags("creator@example.com", admin = false, canCreateTrees = true, grantedBy = null)
+        val json = mockMvc.perform(
+            request(POST, "/families/empty")
+                .header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "creator@example.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"name":"Matrix own ${UUID.randomUUID()}"}"""),
+        ).andReturn().response.contentAsString
+        assertEquals("owner", Regex(""""role":"(\w+)"""").find(json)?.groupValues?.get(1), json)
+        val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
+        assertEquals(204, status(Endpoint(DELETE, "/families/$own", FAMILY_DELETE), "creator@example.com"))
     }
 
     @Test

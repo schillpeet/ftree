@@ -151,11 +151,9 @@ export default function Dashboard({
                   <dd>
                     {me.admin
                       ? t.account.roles.admin
-                      : me.developer
-                        ? t.account.roles.developer
-                        : activeFamily
-                          ? t.account.roles[activeFamily.role]
-                          : t.account.noFamily}
+                      : activeFamily
+                        ? t.account.roles[activeFamily.role]
+                        : t.account.noFamily}
                   </dd>
                   <dt>{t.account.verification}</dt>
                   <dd>{me.verified ? t.account.verified : t.account.unverified}</dd>

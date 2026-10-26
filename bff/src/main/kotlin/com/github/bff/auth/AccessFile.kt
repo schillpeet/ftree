@@ -4,24 +4,32 @@ import org.yaml.snakeyaml.LoaderOptions
 import org.yaml.snakeyaml.Yaml
 import org.yaml.snakeyaml.constructor.SafeConstructor
 
+// One person of the access file: families maps family slugs to their role there.
+data class AccessFileEntry(
+    val admin: Boolean,
+    val families: Map<String, Role> = emptyMap(),
+    val developer: Boolean = false,
+)
+
 // Parses the access file, keyed by trimmed, lowercased email:
 //
 //   people:
 //     - email: admin@example.com
-//       admin: true
+//       admin: true             # a bootstrap admin, admin whatever the database says
 //     - email: developer@example.com
-//       developer: true         # sees the trees they create, plus any listed under trees
+//       developer: true         # imported once as users.can_create_trees
 //     - email: someone@example.com
 //       trees:
-//         schiller: editor      # exactly one family slug and editor or visitor
+//         schiller: editor      # imported once as a membership: exactly one family slug and editor or visitor
 //
-// Editors and visitors belong to exactly one tree, since only admins and developers can switch between trees.
-// Any mistake fails with a message naming the entry, so the BFF does not start with a half-read file.
-fun parseAccessFile(text: String): Map<String, Access> {
+// Only the admins apply at runtime; MembershipSeed imports everything else into the database once, after which the
+// database alone decides. Any mistake fails with a message naming the entry, so the BFF does not start with a
+// half-read file.
+fun parseAccessFile(text: String): Map<String, AccessFileEntry> {
     val root = Yaml(SafeConstructor(LoaderOptions())).load<Any?>(text)
     if (root !is Map<*, *> || root.keys != setOf("people")) invalid("expected a single top-level key \"people\"")
     val people = root["people"] as? List<*> ?: invalid("\"people\" must be a list")
-    val result = linkedMapOf<String, Access>()
+    val result = linkedMapOf<String, AccessFileEntry>()
     people.forEachIndexed { index, entry ->
         val where = "people[$index]"
         if (entry !is Map<*, *>) invalid("$where must be a map")
@@ -41,7 +49,7 @@ fun parseAccessFile(text: String): Map<String, Access> {
         if (!admin && !developer && families.size != 1) {
             invalid("$where ($email): editors and visitors need exactly one tree, not ${families.size}")
         }
-        if (result.put(email, Access(admin, families, developer = developer)) != null) invalid("$email is listed twice")
+        if (result.put(email, AccessFileEntry(admin, families, developer)) != null) invalid("$email is listed twice")
     }
     return result
 }

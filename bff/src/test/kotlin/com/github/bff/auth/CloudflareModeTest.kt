@@ -12,7 +12,7 @@ import org.springframework.test.web.servlet.get
 import java.time.Instant
 import kotlin.test.Test
 
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 class CloudflareModeTest {
@@ -28,7 +28,7 @@ class CloudflareModeTest {
             jsonPath("$.email") { value("Admin@Example.com") }
             jsonPath("$.admin") { value(true) }
             jsonPath("$.verified") { value(true) }
-            jsonPath("$.permissions.length()") { value(11) }
+            jsonPath("$.permissions.length()") { value(13) }
         }
         listOf("editor@example.com", "someone@example.com").forEach { email ->
             me(token(email = email)).andExpect {
