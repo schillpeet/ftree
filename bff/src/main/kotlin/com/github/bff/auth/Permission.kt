@@ -13,4 +13,5 @@ enum class Permission(val key: String, val perFamily: Boolean) {
     FAMILY_CREATE("family.create", false),
     FAMILY_MANAGE("family.manage", false),
     DEV_TOOLS("dev.tools", false),
+    USERS_VIEW("users.view", false),
 }

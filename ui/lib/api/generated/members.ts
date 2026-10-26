@@ -19,6 +19,7 @@ export const Permission = {
   familycreate: 'family.create',
   familymanage: 'family.manage',
   devtools: 'dev.tools',
+  usersview: 'users.view',
 } as const;
 
 export interface Me {
@@ -32,6 +33,23 @@ export interface Me {
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
   verified: boolean;
+}
+
+export interface UserLogin {
+  /** The email, trimmed and lowercased. */
+  email: string;
+  /** True when the access file (or the `app.roles` lists) names the email. */
+  listed: boolean;
+  /**
+     * The first recorded sign-in; null when the person has never signed in.
+     * @nullable
+     */
+  firstSeen: string | null;
+  /**
+     * The latest recorded sign-in, accurate to a few minutes; null when the person has never signed in.
+     * @nullable
+     */
+  lastSeen: string | null;
 }
 
 /**
@@ -430,6 +448,62 @@ export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {
 
   const data: getMeResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getMeResponse
+}
+
+
+
+export type getUsersResponse200 = {
+  data: UserLogin[]
+  status: 200
+}
+
+export type getUsersResponse401 = {
+  data: void
+  status: 401
+}
+
+export type getUsersResponse403 = {
+  data: void
+  status: 403
+}
+
+export type getUsersResponseSuccess = (getUsersResponse200) & {
+  headers: Headers;
+};
+export type getUsersResponseError = (getUsersResponse401 | getUsersResponse403) & {
+  headers: Headers;
+};
+
+export type getUsersResponse = (getUsersResponseSuccess | getUsersResponseError)
+
+export const getGetUsersUrl = () => {
+
+
+
+
+  return `/api/users`
+}
+
+/**
+ * Lists everyone the access file (or the `app.roles` lists) names, in its order, with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
+ * @summary List sign-ins
+ */
+export const getUsers = async ( options?: RequestInit): Promise<getUsersResponse> => {
+
+  const res = await fetch(getGetUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getUsersResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getUsersResponse
 }
 
 

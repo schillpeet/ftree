@@ -13,6 +13,8 @@ tags:
     description: People in the family tree
   - name: Me
     description: The signed-in user and their permissions
+  - name: Users
+    description: Who may sign in and who has signed in
 paths:
   /me:
     get:
@@ -30,6 +32,26 @@ paths:
                 $ref: "#/components/schemas/Me"
         "401":
           description: No signed-in user.
+  /users:
+    get:
+      operationId: getUsers
+      tags:
+        - Users
+      summary: List sign-ins
+      description: Lists everyone the access file (or the `app.roles` lists) names, in its order, with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
+      responses:
+        "200":
+          description: The listed and signed-in users.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserLogin"
+        "401":
+          description: No signed-in user.
+        "403":
+          description: The caller may not see the sign-ins.
   /members:
     get:
       operationId: getMembers
@@ -778,6 +800,30 @@ components:
         verified:
           type: boolean
           description: True when Cloudflare Access confirmed the email; false in local dev mode.
+    UserLogin:
+      type: object
+      required:
+        - email
+        - listed
+        - firstSeen
+        - lastSeen
+      properties:
+        email:
+          type: string
+          description: The email, trimmed and lowercased.
+        listed:
+          type: boolean
+          description: True when the access file (or the `app.roles` lists) names the email.
+        firstSeen:
+          type: string
+          format: date-time
+          nullable: true
+          description: The first recorded sign-in; null when the person has never signed in.
+        lastSeen:
+          type: string
+          format: date-time
+          nullable: true
+          description: The latest recorded sign-in, accurate to a few minutes; null when the person has never signed in.
     Role:
       type: string
       description: A user's role in one family.
@@ -799,6 +845,7 @@ components:
         - family.create
         - family.manage
         - dev.tools
+        - users.view
     FamilySummary:
       type: object
       required:

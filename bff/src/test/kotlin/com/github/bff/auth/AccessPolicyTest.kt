@@ -29,6 +29,13 @@ class AccessPolicyTest {
     }
 
     @Test
+    fun `lists the access file in its order, or the admins and editors of the role lists`() {
+        assertEquals(listOf("admin@example.com", "editor@example.com"), AccessPolicy(AccessProperties(file.toString()), RoleProperties()).listed())
+        val roles = RoleProperties(admins = listOf(" Admin@example.com", ""), editors = listOf("editor@example.com", "admin@example.com"))
+        assertEquals(listOf("admin@example.com", "editor@example.com"), AccessPolicy(AccessProperties(), roles).listed())
+    }
+
+    @Test
     fun `refuses an access file next to the role lists`() {
         assertFailsWith<IllegalStateException> {
             AccessPolicy(AccessProperties(file.toString()), RoleProperties(admins = listOf("admin@example.com")))

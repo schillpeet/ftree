@@ -10,6 +10,7 @@ import com.github.bff.auth.Permission.MEMBER_DELETE
 import com.github.bff.auth.Permission.MEMBER_EDIT
 import com.github.bff.auth.Permission.TREE_APPEARANCE
 import com.github.bff.auth.Permission.TREE_VIEW
+import com.github.bff.auth.Permission.USERS_VIEW
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -27,7 +28,7 @@ class RoleTest {
         assertEquals(setOf(TREE_APPEARANCE), Access(admin = false).permissions)
         assertEquals(setOf(TREE_APPEARANCE, FAMILY_CREATE, DEV_TOOLS), Access(admin = false, developer = true).permissions)
         assertEquals(Permission.entries.toSet(), Access(admin = true).permissions)
-        assertEquals(setOf(TREE_APPEARANCE, FAMILY_CREATE, FAMILY_MANAGE, DEV_TOOLS), Permission.entries.filterNot { it.perFamily }.toSet())
+        assertEquals(setOf(TREE_APPEARANCE, FAMILY_CREATE, FAMILY_MANAGE, DEV_TOOLS, USERS_VIEW), Permission.entries.filterNot { it.perFamily }.toSet())
     }
 
     @Test
@@ -35,7 +36,7 @@ class RoleTest {
         assertEquals(
             listOf(
                 "tree.view", "member.edit", "family.edit", "family.export", "member.delete", "family.delete",
-                "tree.appearance", "family.create", "family.manage", "dev.tools",
+                "tree.appearance", "family.create", "family.manage", "dev.tools", "users.view",
             ),
             Permission.entries.map { it.key },
         )
