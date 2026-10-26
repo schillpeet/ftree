@@ -1653,13 +1653,52 @@ components:
           format: uri
           nullable: true
     UpdateMemberRequest:
-      allOf:
-        - $ref: "#/components/schemas/CreateMemberRequest"
-        - type: object
-          properties:
-            version:
-              description: The member's version the update is based on; when absent, the update overwrites whatever is stored.
-              type: integer
-              format: int64
-              minimum: 0
-              nullable: true
+      description: The fields of CreateMemberRequest plus the version the update is based on.
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+          minLength: 0
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 0
+          maxLength: 100
+        birthName:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Surname at birth, for example a maiden name that was given up.
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+        birthPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        deathDate:
+          type: string
+          format: date
+          nullable: true
+        deathPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        note:
+          type: string
+          maxLength: 5000
+          nullable: true
+        photoUrl:
+          type: string
+          format: uri
+          nullable: true
+        version:
+          description: The member's version the update is based on; when absent, the update overwrites whatever is stored.
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true

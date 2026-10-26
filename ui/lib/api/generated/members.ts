@@ -471,14 +471,54 @@ export interface CreateMemberRequest {
   photoUrl?: string | null;
 }
 
-export type UpdateMemberRequest = CreateMemberRequest & ({
+/**
+ * The fields of CreateMemberRequest plus the version the update is based on.
+ */
+export interface UpdateMemberRequest {
+  /**
+     * @minLength 0
+     * @maxLength 100
+     */
+  firstName: string;
+  /**
+     * @minLength 0
+     * @maxLength 100
+     */
+  lastName: string;
+  /**
+     * Surname at birth, for example a maiden name that was given up.
+     * @maxLength 100
+     * @nullable
+     */
+  birthName?: string | null;
+  /** @nullable */
+  birthDate?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  birthPlace?: string | null;
+  /** @nullable */
+  deathDate?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  deathPlace?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  note?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
   /**
      * The member's version the update is based on; when absent, the update overwrites whatever is stored.
      * @minimum 0
      * @nullable
      */
   version?: number | null;
-});
+}
 
 /**
  * No valid sign-in. Code `UNAUTHENTICATED`.
