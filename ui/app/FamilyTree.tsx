@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import {
   getFamilies,
   updateFamilyMemberPlacement,
@@ -17,19 +18,24 @@ import Scene, { type Focus } from './Scene';
 import { useT } from './i18n';
 import { OpenFamily, useCan, useMe } from './Permissions';
 import { can } from './access';
+import { familyOfSlug, firstFamily, homePath, pathOf } from './slugRoute';
+import TreeNotFound from './TreeNotFound';
 
-const firstFamilyId = (items: FamilySummary[]) =>
-  items.find((family) => family.name.toLocaleLowerCase() === 'default')?.id ?? items[0]?.id ?? null;
-
-// Shares the members between the scene's scrolls and the list/form overlay.
+// Shares the members between the scene's scrolls and the list/form overlay. Rendered by the `(tree)` layout, so it
+// stays mounted while the URL switches between trees; the open tree is the one the URL's slug names.
 export default function FamilyTree() {
   const t = useT();
   const me = useMe();
+  const router = useRouter();
+  const { slug: urlSlug } = useParams<{ slug?: string }>();
   // Only admins and developers, who may have several families, get the families board.
   const canCreate = useCan('family.create');
   const [members, setMembers] = useState<Member[] | null>(null);
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);
-  const [activeFamilyId, setActiveFamilyId] = useState<string | null>(null);
+  // The tree just chosen here, shown before the URL follows; `slug: undefined` is `/` with no tree.
+  const [pending, setPending] = useState<{ slug: string | undefined } | null>(null);
+  // Set when the families board hides the only shown tree, so `/` does not lead on to the first one again.
+  const [hidden, setHidden] = useState(false);
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [familiesError, setFamiliesError] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -42,7 +48,27 @@ export default function FamilyTree() {
   const [profile, setProfile] = useState<Focus>(null);
   const [shownId, setShownId] = useState<string | null>(null);
 
-  const loadFamilies = useCallback(async () => {
+  if (pending && pending.slug === urlSlug) setPending(null);
+  const slug = pending ? pending.slug : urlSlug;
+  const activeFamily = families ? familyOfSlug(families, slug) : null;
+  const activeFamilyId = activeFamily?.id ?? null;
+
+  // Whatever belongs to the previous tree goes when another one opens, also by back/forward or a typed URL.
+  const [openedFamilyId, setOpenedFamilyId] = useState(activeFamilyId);
+  if (openedFamilyId !== activeFamilyId) {
+    setOpenedFamilyId(activeFamilyId);
+    forgetOpenFamily();
+  }
+
+  function forgetOpenFamily() {
+    setMembers(null);
+    setFocus(null);
+    setProfile(null);
+    setFamilyCard(null);
+    setAddRequest(null);
+  }
+
+  async function loadFamilies() {
     setIsLoadingFamilies(true);
     setFamiliesError(false);
     try {
@@ -50,17 +76,19 @@ export default function FamilyTree() {
       if (response.status !== 200 || !Array.isArray(response.data)) {
         throw new Error('Unexpected families response');
       }
-      setFamilies(response.data);
-      setActiveFamilyId((current) => {
-        if (current === null) return null;
-        return response.data.some((family) => family.id === current) ? current : firstFamilyId(response.data);
-      });
+      const loaded = response.data;
+      setFamilies(loaded);
+      // A tree that went away (deleted) leads on like `/`, to "default" or the first family.
+      if (activeFamilyId && !loaded.some((family) => family.id === activeFamilyId)) {
+        setPending({ slug: firstFamily(loaded)?.slug });
+        router.replace(homePath(loaded) ?? '/');
+      }
     } catch {
       setFamiliesError(true);
     } finally {
       setIsLoadingFamilies(false);
     }
-  }, []);
+  }
 
   useEffect(() => {
     let current = true;
@@ -71,11 +99,7 @@ export default function FamilyTree() {
         if (response.status !== 200 || !Array.isArray(response.data)) {
           throw new Error('Unexpected families response');
         }
-        const loaded = response.data;
-        setFamilies(loaded);
-        setActiveFamilyId((selected) =>
-          selected && loaded.some((family) => family.id === selected) ? selected : firstFamilyId(loaded),
-        );
+        setFamilies(response.data);
       } catch {
         if (current) setFamiliesError(true);
       } finally {
@@ -88,14 +112,32 @@ export default function FamilyTree() {
     };
   }, []);
 
-  function selectFamily(familyId: string | null) {
-    if (familyId === activeFamilyId) return;
-    setMembers(null);
-    setFocus(null);
-    setProfile(null);
-    setFamilyCard(null);
-    setAddRequest(null);
-    setActiveFamilyId(familyId);
+  // `/` leads on to the first visible tree, replacing itself so the back button skips it.
+  useEffect(() => {
+    if (slug !== undefined || hidden || !families) return;
+    const home = homePath(families);
+    if (home) router.replace(home);
+  }, [slug, hidden, families, router]);
+
+  // Opens a tree (null: none) by its URL; `card` is the family card to show there.
+  function selectFamily(familyId: string | null, card: FamilyCardMode | null = null) {
+    if (familyId === activeFamilyId) {
+      if (card) setFamilyCard(card);
+      return;
+    }
+    const family = familyId === null ? null : families?.find((item) => item.id === familyId);
+    if (family === undefined) return;
+    openFamily(family, card);
+  }
+
+  function openFamily(family: FamilySummary | null, card: FamilyCardMode | null = null) {
+    // Cleared here rather than on arrival, so the card chosen for the new tree survives.
+    setOpenedFamilyId(family?.id ?? null);
+    forgetOpenFamily();
+    setFamilyCard(card);
+    setHidden(family === null);
+    setPending({ slug: family?.slug });
+    router.push(family ? pathOf(family) : '/');
   }
 
   function toggleFamilyVisibility(familyId: string) {
@@ -116,12 +158,13 @@ export default function FamilyTree() {
     }
   }
 
-  function addFamily(family: FamilySummary) {
+  function addFamily(family: FamilySummary, card: FamilyCardMode | null = null) {
     setFamilies((current) => [...(current ?? []).filter((item) => item.id !== family.id), family]);
-    selectFamily(family.id);
+    openFamily(family, card);
   }
 
-  const activeFamily = families?.find((family) => family.id === activeFamilyId);
+  // An unknown, invisible or reserved slug says so instead of showing an empty tree.
+  const notFound = families !== null && slug !== undefined && !activeFamily;
   const canPlace = can(me, 'member.edit', activeFamily);
 
   return (
@@ -156,6 +199,7 @@ export default function FamilyTree() {
           setPanel('families');
         }}
       />
+      {notFound && <TreeNotFound home={homePath(families)} />}
       <MemberSearch
         members={members ?? []}
         onSelect={(id) => {
@@ -168,10 +212,10 @@ export default function FamilyTree() {
       <MembersControls
         key={activeFamilyId ?? 'no-family'}
         familyId={activeFamilyId}
-        family={activeFamily}
+        family={activeFamily ?? undefined}
         familyCard={familyCard}
         onFamilyCardChange={setFamilyCard}
-        onFamilyCreated={addFamily}
+        onFamilyCreated={(family) => addFamily(family, familyCard === 'create' ? 'view' : null)}
         members={members}
         setMembers={setMembers}
         profile={profile}
@@ -191,13 +235,12 @@ export default function FamilyTree() {
         onRetry={() => void loadFamilies()}
         onSelect={selectFamily}
         onOpen={(id) => {
-          selectFamily(id);
+          selectFamily(id, 'view');
           setPanel(null);
           setIsMenuOpen(false);
-          setFamilyCard('view');
         }}
         onToggleVisibility={toggleFamilyVisibility}
-        onAdded={addFamily}
+        onAdded={(family) => addFamily(family)}
         onCreate={() => {
           setPanel(null);
           setIsMenuOpen(false);

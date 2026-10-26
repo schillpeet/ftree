@@ -8,6 +8,7 @@ import { PUBLIC_APPEARANCE } from './access';
 import { useT } from './i18n';
 import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, PaletteIcon, SignInIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
 import LoginsPanel from './LoginsPanel';
+import TreeSwitcher from './TreeSwitcher';
 import { Can, useCan, useMe, useMeLoaded } from './Permissions';
 
 export type DashboardPanel = 'profile' | 'families' | 'appearance' | 'logins';
@@ -15,9 +16,9 @@ export type DashboardPanel = 'profile' | 'families' | 'appearance' | 'logins';
 // Boards drawn here inside the menu, which closes with them on a press outside.
 const OWN_PANELS: (DashboardPanel | null)[] = [null, 'profile', 'appearance', 'logins'];
 
-// Top-left burger menu and the centred family name, which opens the family card; the boards it opens are rendered by
-// `FamiliesPanel` and `MembersControls` (the small profile, appearance and sign-in boards live here), the right-hand
-// buttons by `Scene`.
+// Top-left burger menu and the centred family name, which opens the family card (with several trees, a switcher sits
+// beside it); the boards it opens are rendered by `FamiliesPanel` and `MembersControls` (the small profile, appearance
+// and sign-in boards live here), the right-hand buttons by `Scene`.
 export default function Dashboard({
   isOpen,
   panel,
@@ -45,6 +46,8 @@ export default function Dashboard({
   const meLoaded = useMeLoaded();
   const menuRef = useRef<HTMLDivElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
+  // Whoever sees more than one tree switches between them at the family name.
+  const switchable = !!families && families.length > 1;
 
   // A press outside the menu (or an Escape) closes the menu; while another board is open it handles both itself.
   useEffect(() => {
@@ -155,6 +158,8 @@ export default function Dashboard({
                 <p className="person-muted">{meLoaded ? t.account.unavailable : t.account.loading}</p>
               )}
               {/* Ends the Cloudflare Access session; locally there is none, so the link only leads to a 404. */}
+              {/* Cloudflare answers this path, not the app, so it needs a full page load; the `[slug]` route only looks alike. */}
+              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
               <a className="profile-logout" href="/cdn-cgi/access/logout">
                 {t.account.logout}
               </a>
@@ -193,17 +198,19 @@ export default function Dashboard({
           </section>
         )}
       </div>
-      <button
-        type="button"
-        className="glass dashboard-family"
-        title={activeFamily ? t.familyCard.open(activeFamily.name) : t.menu.families}
-        onClick={onFamilyClick}
-      >
-        <UsersIcon />
-        <span className="dashboard-family-name">
-          {activeFamily?.name ?? t.menu.noFamily}
-        </span>
-      </button>
+      {switchable ? (
+        <TreeSwitcher families={families ?? []} activeFamily={activeFamily ?? null} onFamilyClick={onFamilyClick} />
+      ) : (
+        <button
+          type="button"
+          className="glass dashboard-family"
+          title={activeFamily ? t.familyCard.open(activeFamily.name) : t.menu.families}
+          onClick={onFamilyClick}
+        >
+          <UsersIcon />
+          <span className="dashboard-family-name">{activeFamily?.name ?? t.menu.noFamily}</span>
+        </button>
+      )}
     </>
   );
 }

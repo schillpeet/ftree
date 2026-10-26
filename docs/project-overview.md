@@ -129,6 +129,17 @@ The family photo fills the family card's cover; in edit mode the photo field tak
 "Anlegen" creates the empty family, uploads the picked photo to it, shows the new family, and switches its card to view mode.
 In edit mode a switch under the photo field chooses "Füllend" (the photo fills the cover) or "Originalgröße" (the photo keeps its own size, centred, at most 240 px high and as wide as the card, never scaled up); it is saved per family via `PUT /families/{familyId}/photo-fit`.
 
+### Tree URLs
+
+Every tree opens at `/<slug>`, its family's slug; deep links, reloads, and the browser's back and forward buttons show that tree.
+`/` leads on to the family named `default`, else the first visible family, and replaces itself in the history; without any visible family it stays empty with "Keine Familie".
+Choosing a tree in the families board or creating one navigates to its URL, and hiding the shown tree there goes back to `/` without leading on.
+A deleted tree's URL leads on like `/` once the families reload.
+A slug that names no visible family, is malformed, or is reserved shows "Baum nicht gefunden" with a link back to the first tree; unknown and forbidden trees look the same.
+The slugs `admin`, `api`, `healthz`, and `cdn-cgi` are reserved for routes of their own and never open a tree; the BFF does not prevent such slugs yet.
+Whoever sees more than one family gets a chevron beside the family name at the top centre that lists every visible tree by name, marks the open one, and links to each tree's URL; with one family the name looks as before.
+The scene lives in the `(tree)` route group's layout, so switching trees keeps the canvas and only swaps the family.
+
 ### Members and relatives
 
 Every member appears in the scene as a card whose look the "Kartenstil" select picks; the choice is remembered per browser in `localStorage`.
@@ -277,7 +288,8 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 
 ## Code Map
 
-- `ui/app/page.tsx` renders the home scene.
+- `ui/app/layout.tsx` wraps every page in `PermissionsProvider`; `ui/app/(tree)/layout.tsx` renders the scene for `/` and `/<slug>` (`ui/app/(tree)/page.tsx`, `ui/app/(tree)/[slug]/page.tsx`); `ui/app/slugRoute.ts` resolves slugs and where `/` leads, with `ui/app/slugRoute.check.mjs` as its self-check.
+- `ui/app/TreeSwitcher.tsx` lists the visible trees at the family name and `ui/app/TreeNotFound.tsx` answers unknown slugs, both styled in `ui/app/treeRoute.css`.
 - `ui/app/healthz/route.ts` answers the chart's UI probes.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay.
 - `ui/app/FamilyTree.tsx` also renders the dashboard and the families board.
