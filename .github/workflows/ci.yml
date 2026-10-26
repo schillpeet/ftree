@@ -74,9 +74,19 @@ jobs:
           BASE_REF: ${{ github.base_ref }}
         run: |
           git show "origin/$BASE_REF:api/openapi.yaml" > "$RUNNER_TEMP/base.yaml"
-          docker run --rm -v "$RUNNER_TEMP:/base:ro" -v "$PWD/api:/revision:ro" \
-            tufin/oasdiff:v1.34.1@sha256:67a23cfea7d251e2ae34ee703ac8733c5d96bc2e7b90fd0f4d475ec99367b85f \
-            breaking /base/base.yaml /revision/openapi.yaml --fail-on ERR
+          breaking() {
+            docker run --rm -v "$RUNNER_TEMP:/base:ro" -v "$PWD/api:/revision:ro" \
+              tufin/oasdiff:v1.34.1@sha256:67a23cfea7d251e2ae34ee703ac8733c5d96bc2e7b90fd0f4d475ec99367b85f \
+              breaking /base/base.yaml /revision/openapi.yaml "$@"
+          }
+          # A new problem code is no breaking change: clients treat a code they do not know as a generic error. oasdiff
+          # reports it once per error response and only ignores exact lines, so the lines are built from its own
+          # findings. Only the `code` property of Problem is exempt; new values in any other enum still fail.
+          breaking --format json \
+            | jq -r '.[] | select(.id == "response-property-enum-value-added" and (.text | test("enum value to the `code` response property")))
+                | "\(.operation) \(.path) \(.text)"' \
+            > "$RUNNER_TEMP/err-ignore.txt"
+          breaking --fail-on ERR --err-ignore /base/err-ignore.txt
 
   ui:
     needs: changes
