@@ -289,6 +289,14 @@ const en = {
     notFoundHint: 'This tree does not exist, or you have no access to it.',
     backHome: 'Back to your tree',
   },
+  conflict: {
+    title: 'Someone else changed this person',
+    text: 'This person was saved by someone else while you were editing. Reload to see their version and discard your changes, or overwrite it with yours.',
+    reload: 'Reload',
+    overwrite: 'Overwrite anyway',
+    cancel: 'Cancel',
+    gone: 'This person no longer exists.',
+  },
 };
 
 const de: typeof en = {
@@ -575,6 +583,14 @@ const de: typeof en = {
     notFound: 'Baum nicht gefunden',
     notFoundHint: 'Diesen Baum gibt es nicht, oder du hast keinen Zugriff darauf.',
     backHome: 'Zurück zu deinem Baum',
+  },
+  conflict: {
+    title: 'Jemand hat diese Person geändert',
+    text: 'Diese Person wurde von jemand anderem gespeichert, während du sie bearbeitet hast. Lade neu, um die andere Fassung zu sehen und deine Änderungen zu verwerfen, oder überschreibe sie mit deiner.',
+    reload: 'Neu laden',
+    overwrite: 'Trotzdem überschreiben',
+    cancel: 'Abbrechen',
+    gone: 'Diese Person existiert nicht mehr.',
   },
 };
 

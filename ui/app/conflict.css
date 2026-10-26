@@ -1,0 +1,57 @@
+.conflict-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.45);
+}
+
+.conflict-dialog {
+  display: grid;
+  gap: 12px;
+  width: min(420px, 100%);
+  padding: 20px;
+}
+
+.conflict-dialog h2 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.conflict-dialog p {
+  margin: 0;
+  color: var(--glass-muted);
+  line-height: 1.45;
+}
+
+.conflict-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.conflict-actions button {
+  padding: 8px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.conflict-actions button:hover:not(:disabled) {
+  background: var(--glass-hover);
+}
+
+.conflict-actions .conflict-reload {
+  border-color: var(--glass-accent);
+  color: var(--glass-accent);
+}
+
+.conflict-actions .conflict-overwrite {
+  color: var(--glass-danger);
+}

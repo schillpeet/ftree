@@ -220,7 +220,10 @@ Every member carries a `version` (column `members.version`, JPA `@Version`) that
 Two saves racing from the same version also end in one success and one `EDIT_CONFLICT`, because the row is only written while its version is still the one read.
 Changing a member's fields raises its version; changing relatives raises the version of every member whose own parent, child, or partner links were added, removed, or altered (kinds and partnership details included), since their relatives forms are now outdated, while derived siblings do not count.
 Moving a card and uploading or removing a photo leave the version alone, so dragging cards never makes someone's open edit stale.
-The UI sends the version it opened the edit form with, and the relatives the version returned by that save; a 409 shows the generic save error until a conflict dialog offers reloading or overwriting.
+The UI sends the version it opened the edit form with, and the relatives the version returned by that save.
+When saving a person answers `EDIT_CONFLICT`, the UI shows a conflict dialog (`ConflictDialog.tsx`, styles in `conflict.css`) instead of the generic save error.
+The dialog offers "Reload" (fetches the family again, discards the local edits, and reopens the form with the stored person), "Overwrite anyway" (resends the save without a version), and "Cancel" (keeps the form and its edits open).
+Other 409 answers and other statuses stay ordinary save errors.
 
 ### BFF and API
 
@@ -381,6 +384,7 @@ The UI still says "delete" and has no trash view yet.
 - `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport, reads a stored pin, and places a panel beside another; `ui/app/panelPosition.check.mjs` is its self-check.
 - `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `<OpenFamily>`, `useCan(permission)` (outside any family or in the open one), `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and sign-in-problem rules, with `ui/app/access.check.mjs` as its self-check.
 - `ui/app/problems.ts` reads the `code` of a problem details answer from the BFF; `ui/app/problems.check.mjs` is its self-check.
+- `ui/app/conflict.ts` tells an `EDIT_CONFLICT` answer from other errors and builds the versioned (or overwriting) update request; `ui/app/conflict.check.mjs` is its self-check.
 - `bff/src/main/kotlin/com/github/bff/problem/` holds `ApiProblem` (thrown with a `ProblemCode`, mapped to status and detail) and `ProblemAdvice`, which answers every error as problem details.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
