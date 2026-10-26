@@ -15,8 +15,7 @@
 
 ### Dependencies
 
-* **repo:** bump docker/login-action from 4.6.0 to 4.7.0 ([#225](https://github.com/schillpeet/ftree/issues/225)) ([4224961](https://github.com/schillpeet/ftree/commit/42249611d4bfdf9bee89b553b48672e65ec77a9e))
-* **repo:** bump the codeql-action group across 1 directory with 3 updates ([#223](https://github.com/schillpeet/ftree/issues/223)) ([0cf1af4](https://github.com/schillpeet/ftree/commit/0cf1af4c27dece1fe2b2c6f5f881981d2d9ef2c0))
+* update dependencies with dependabot ([#223](https://github.com/schillpeet/ftree/issues/223), [#225](https://github.com/schillpeet/ftree/issues/225))
 
 ## [0.24.2](https://github.com/schillpeet/ftree/compare/v0.24.1...v0.24.2) (2026-10-26)
 
