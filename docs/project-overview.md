@@ -269,7 +269,7 @@ A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` 
 The UI loads `GET /me` once at start and shows only what the permissions allow, those from `/me` together with those of the open family; it checks permissions, never role names, and the BFF still enforces them.
 The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator or Developer, otherwise the role in the open family), whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode), and a logout link to `/cdn-cgi/access/logout`.
 "Familien" needs `family.create` (admins and developers) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Mitglied hinzufügen" needs `member.edit` in the open family, and "Momentaufnahme" and "Darstellung" are for everyone.
-"Anmeldungen" ("Sign-ins") needs `users.view` and opens a read-only board listing `GET /users`: each email with "Zuletzt gesehen" and "erstmals" or "Nie angemeldet", and a "Nicht in der Zugriffsdatei" mark for people signed in without being listed.
+"Verwaltung" ("Administration") needs `users.view` and links to the admin page at `/admin`; the former read-only "Anmeldungen" board of `GET /users` is gone until the admin page gets a people tab.
 Without `tree.appearance` only the experimental appearance can be chosen; the others are disabled and marked "Demnächst", and a stored other choice falls back to experimental.
 The Evolution button needs `tree.appearance`, so everyone sees it; its random-family generator needs `dev.tools`.
 Editing a person, their photo, relatives, and dragging cards to pins need `member.edit`; deleting a person needs `member.delete`.
@@ -323,7 +323,15 @@ The overview counts `families` (test families included), `members`, `users` (`to
 `lastBackupAt` is always null for now.
 `GET /admin/presence` lists one entry per browser tab from `PresenceDirectory.all()`: `userId` (null without a `users` row), `email`, `displayName` (the display name, else the email before the `@`), `admin`, the tree's `familyId`, `familySlug`, and `familyName`, `viewing`, `editing`, `idle`, and `since`.
 `GET /admin/families` lists every family in the saved order, test families and families without any role of the caller included, with `createdBy`, `createdAt`, `test`, `memberCount`, and `memberships` (how many people hold the `developer`, `editor`, and `visitor` role; admins hold none).
-The admin page and its tabs do not use these endpoints yet.
+`/admin` is a full page outside the tree's route group, so it has no 3D scene, in the dashboard's glass style with "Zurück zum Baum" (to `/`) and the language switch.
+The admin page shows its tabs only with `users.view` and otherwise "Kein Zugriff"; the BFF enforces the rights of every endpoint it calls.
+The admin page has the tabs "Übersicht" and "Bäume"; people, invitations, and the audit log are planned as further tabs.
+"Übersicht" shows tiles for online now, access seats (used of limit, with signed-in and invited people), trees, persons, and photos with their storage size, from `GET /admin/overview`.
+Below the tiles, "Gerade aktiv" lists `GET /admin/presence` with one row per person and tree however many tabs they have there: name, email, admin mark, the tree as a link, editing or idle marks, and since when.
+"Übersicht" refreshes its tiles and the active list every 15 seconds.
+"Bäume" lists `GET /admin/families` with name, slug, test mark, creator and date, how many people hold each role, and the person count, with "Öffnen" (to `/<slug>`) and "In den Papierkorb" after a confirmation.
+Below the trees, the trash (`family.manage`) lists `GET /admin/trash` with who deleted each tree and when, the remaining days, "Wiederherstellen", and "Endgültig löschen", which needs the tree's exact name typed into a prompt.
+`GET /admin/families` and the overview's tree and person totals still include trashed families; until the BFF leaves them out, "Bäume" hides the trees that are in the trash.
 
 ### Presence
 
@@ -354,7 +362,7 @@ Its name and slug stay taken, so creating, importing, archiving, anonymizing, or
 The three trash endpoints need `family.manage`, which only admins have, and the family visibility check skips `/admin/**`.
 `TrashPurger` runs daily at 03:30 (`app.trash.purge-cron`) and removes every family trashed 30 days ago or longer, using the clock in `TrashService`, which tests replace.
 Trashing, restoring, and purging write `family.trashed`, `family.restored`, and `family.purged` to the audit log with the family's name; the purger's entries have no actor and the detail `reason` `expired`.
-The UI still says "delete" and has no trash view yet.
+The tree's family card still says "delete"; the trash is shown on the admin page.
 
 ## Code Map
 
@@ -382,6 +390,7 @@ The UI still says "delete" and has no trash view yet.
 - `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
 - `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, pin, "⋯", and close, draggable by the header), its read-only view with the relatives, and the shared relative chip.
 - `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport, reads a stored pin, and places a panel beside another; `ui/app/panelPosition.check.mjs` is its self-check.
+- `ui/app/admin/` holds the admin page: `layout.tsx` and `page.tsx` (tabs and the `users.view` gate), one component per tab (`OverviewTab.tsx`, `TreesTab.tsx`), `useAdminLoad.ts` for loading with retry and refresh, `admin.css`, and the pure helpers in `adminData.ts` with `adminData.check.mjs` as their self-check.
 - `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `<OpenFamily>`, `useCan(permission)` (outside any family or in the open one), `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and sign-in-problem rules, with `ui/app/access.check.mjs` as its self-check.
 - `ui/app/problems.ts` reads the `code` of a problem details answer from the BFF; `ui/app/problems.check.mjs` is its self-check.
 - `ui/app/conflict.ts` tells an `EDIT_CONFLICT` answer from other errors and builds the versioned (or overwriting) update request; `ui/app/conflict.check.mjs` is its self-check.
@@ -404,7 +413,7 @@ The UI still says "delete" and has no trash view yet.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the legacy role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once.
 - `bff/src/main/kotlin/com/github/bff/admin/AdminOverviewService.kt` reads the admin overview, presence, and family lists, which `AdminController.kt` serves.
-- `bff/src/main/kotlin/com/github/bff/auth/LoginRecorder.kt` records sign-ins with an in-memory throttle and `UsersController.kt` serves `GET /users`; `ui/app/LoginsPanel.tsx` is the admin board showing them.
+- `bff/src/main/kotlin/com/github/bff/auth/LoginRecorder.kt` records sign-ins with an in-memory throttle and `UsersController.kt` serves `GET /users`, which the UI does not show at the moment.
 - `bff/src/test/kotlin/com/github/bff/ManagementPortTest.kt` checks the management port, that the app port does not serve Actuator, metric labels, and JSON logs.
 - `bff/src/main/kotlin/com/github/bff/member/Gedcom.kt` parses and writes the GEDCOM subset used for family import and export; `GedcomTest` and `GedcomKindsTest` cover it.
 - `bff/src/test/kotlin/com/github/bff/member/ParentLinkTest.kt` covers storing, reading, and resetting parent link kinds.

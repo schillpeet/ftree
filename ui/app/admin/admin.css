@@ -1,0 +1,214 @@
+/* The admin page: a full, scrolling page in the dashboard's dark glass, over a night sky instead of the scene. */
+
+.admin-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 16px 16px 72px;
+  background: radial-gradient(ellipse at top, #24364a 0%, #111a26 55%, #0a0f16 100%);
+  color: #fff;
+  font: 14px/1.4 Arial, sans-serif;
+}
+
+.admin-page > * {
+  max-width: 1100px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.admin-page a {
+  color: var(--glass-accent);
+}
+
+.admin-page a.glass-button,
+.admin-page a.family-card-button {
+  color: #fff;
+  text-decoration: none;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.admin-header h1 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font: 500 26px/1.15 Georgia, 'Times New Roman', serif;
+  text-align: center;
+}
+
+.admin-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.admin-tabs [aria-selected='true'] {
+  border-color: var(--glass-accent);
+  color: var(--glass-accent);
+}
+
+.admin-tab {
+  display: grid;
+  gap: 16px;
+}
+
+.admin-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-tile {
+  display: grid;
+  gap: 4px;
+  padding: 16px 18px;
+}
+
+.admin-tile-label {
+  color: var(--glass-muted);
+  font: 600 12px/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-tile-value {
+  font: 600 28px/1.15 Arial, sans-serif;
+}
+
+.admin-card {
+  padding: 16px 18px;
+  overflow-x: auto;
+}
+
+.admin-card h2 {
+  margin: 0 0 12px;
+  font: 600 17px/1.2 Arial, sans-serif;
+}
+
+.admin-card > .admin-muted {
+  margin: 0 0 12px;
+}
+
+.admin-muted {
+  color: var(--glass-muted);
+  font-size: 13px;
+}
+
+.admin-error {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  color: var(--glass-danger);
+}
+
+.admin-error p {
+  margin: 0;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.admin-table th {
+  padding: 0 12px 8px 0;
+  color: var(--glass-muted);
+  font: 600 12px/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.admin-table td {
+  padding: 10px 12px 10px 0;
+  border-top: 1px solid var(--glass-border);
+  vertical-align: top;
+}
+
+/* A cell's second line, such as the slug or the date, sits below its value. */
+.admin-table td > .admin-muted {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.admin-table tr[data-idle] td {
+  color: var(--glass-muted);
+}
+
+.admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.admin-badge-accent {
+  border-color: var(--glass-accent);
+  color: var(--glass-accent);
+}
+
+.admin-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* On a phone the tables become one block per row. */
+@media (max-width: 640px) {
+  .admin-header {
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .admin-header h1 {
+    flex-basis: 100%;
+    order: -1;
+    font-size: 22px;
+  }
+
+  .admin-table thead {
+    display: none;
+  }
+
+  .admin-table tr {
+    display: grid;
+    gap: 4px;
+    padding: 10px 0;
+    border-top: 1px solid var(--glass-border);
+  }
+
+  .admin-table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .admin-actions {
+    justify-content: flex-start;
+    padding-top: 6px;
+  }
+}

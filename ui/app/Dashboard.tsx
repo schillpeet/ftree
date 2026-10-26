@@ -1,24 +1,24 @@
 'use client';
 
 import { toPng } from 'html-to-image';
+import Link from 'next/link';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance } from './appearance';
 import { PUBLIC_APPEARANCE } from './access';
 import { useT } from './i18n';
-import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, PaletteIcon, SignInIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
-import LoginsPanel from './LoginsPanel';
+import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, PaletteIcon, SettingsIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
 import TreeSwitcher from './TreeSwitcher';
 import { Can, useCan, useMe, useMeLoaded } from './Permissions';
 
-export type DashboardPanel = 'profile' | 'families' | 'appearance' | 'logins';
+export type DashboardPanel = 'profile' | 'families' | 'appearance';
 
 // Boards drawn here inside the menu, which closes with them on a press outside.
-const OWN_PANELS: (DashboardPanel | null)[] = [null, 'profile', 'appearance', 'logins'];
+const OWN_PANELS: (DashboardPanel | null)[] = [null, 'profile', 'appearance'];
 
 // Top-left burger menu and the centred family name, which opens the family card (with several trees, a switcher sits
-// beside it); the boards it opens are rendered by `FamiliesPanel` and `MembersControls` (the small profile, appearance
-// and sign-in boards live here), the right-hand buttons by `Scene`.
+// beside it); the boards it opens are rendered by `FamiliesPanel` and `MembersControls` (the small profile and appearance
+// boards live here; the admin page has its own route), the right-hand buttons by `Scene`.
 export default function Dashboard({
   isOpen,
   panel,
@@ -119,7 +119,13 @@ export default function Dashboard({
               </button>
             </Can>
             {boardItem('appearance', t.menu.appearance, <PaletteIcon />)}
-            <Can permission="users.view">{boardItem('logins', t.menu.logins, <SignInIcon />)}</Can>
+            <Can permission="users.view">
+              <Link className="dashboard-nav-item" href="/admin">
+                <SettingsIcon />
+                <span>{t.menu.admin}</span>
+                <ChevronIcon />
+              </Link>
+            </Can>
             <button type="button" className="dashboard-nav-item" onClick={() => void takeSnapshot()}>
               <CameraIcon />
               <span>{t.menu.snapshot}</span>
@@ -166,7 +172,6 @@ export default function Dashboard({
             </div>
           </section>
         )}
-        {isOpen && panel === 'logins' && <LoginsPanel onClose={() => onPanel('logins')} />}
         {isOpen && panel === 'appearance' && (
           <section className="glass dashboard-board" id="appearance-panel" aria-label={t.appearance.title}>
             <header className="dashboard-board-header">
