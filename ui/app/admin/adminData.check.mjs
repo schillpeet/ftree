@@ -1,6 +1,6 @@
-// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, and who is active.
+// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, and audit details.
 import assert from 'node:assert/strict';
-import { confirmsName, daysLeft, formatBytes, presenceRows } from './adminData.ts';
+import { auditDetails, confirmsName, daysLeft, formatBytes, presenceRows } from './adminData.ts';
 
 const now = Date.parse('2026-10-26T12:00:00Z');
 
@@ -56,5 +56,15 @@ assert.deepEqual(
 );
 assert.equal(rows[0].admin, true);
 assert.deepEqual(presenceRows([]), []);
+
+// Audit details come in a fixed order, unknown keys last and alphabetical.
+assert.deepEqual(auditDetails({ source: 'seed', zeta: '1', role: 'editor', alpha: '2', email: 'a@example.org' }), [
+  ['email', 'a@example.org'],
+  ['role', 'editor'],
+  ['source', 'seed'],
+  ['alpha', '2'],
+  ['zeta', '1'],
+]);
+assert.deepEqual(auditDetails({}), []);
 
 console.log('adminData checks passed');

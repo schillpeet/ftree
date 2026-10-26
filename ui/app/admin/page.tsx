@@ -5,16 +5,18 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useLanguage, useT } from '../i18n';
 import { ChevronLeftIcon, LanguageIcon } from '../icons';
 import { useCan, useMeLoaded } from '../Permissions';
+import AuditTab from './AuditTab';
 import OverviewTab from './OverviewTab';
 import TreesTab from './TreesTab';
 
-// One entry per tab; people, invitations and the audit log follow as tabs of their own.
-const TABS = ['overview', 'trees'] as const;
+// One entry per tab; people and invitations follow as tabs of their own.
+const TABS = ['overview', 'trees', 'audit'] as const;
 type Tab = (typeof TABS)[number];
 
 const PANELS: Record<Tab, () => ReactNode> = {
   overview: () => <OverviewTab />,
   trees: () => <TreesTab />,
+  audit: () => <AuditTab />,
 };
 
 // Only for `users.view` (admins); the BFF enforces the same rights on every admin endpoint.

@@ -178,6 +178,44 @@
   white-space: nowrap;
 }
 
+/* The audit log's filters sit in a row above the table, and "mehr laden" below it. */
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.admin-filters label {
+  display: grid;
+  gap: 4px;
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.admin-select {
+  min-width: 180px;
+  max-width: 100%;
+  padding: 7px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+  font: inherit;
+}
+
+.admin-select option {
+  background: #16212e;
+}
+
+.admin-table td > .admin-muted + .admin-muted {
+  margin-top: 2px;
+}
+
+.admin-more {
+  margin-top: 12px;
+}
+
 /* On a phone the tables become one block per row. */
 @media (max-width: 640px) {
   .admin-header {

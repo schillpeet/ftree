@@ -81,6 +81,10 @@ class PermissionMatrixTest {
         Endpoint(GET, "/admin/trash", FAMILY_MANAGE),
         Endpoint(POST, "/admin/trash/$family/restore", FAMILY_MANAGE),
         Endpoint(DELETE, "/admin/trash/$family", FAMILY_MANAGE),
+        // Audit log: admins only.
+        Endpoint(GET, "/admin/audit", USERS_VIEW),
+        Endpoint(GET, "/admin/audit?limit=5&action=family.trashed", USERS_VIEW),
+        Endpoint(GET, "/admin/audit/filters", USERS_VIEW),
         // DELETE /families/{id} last: it removes the family the other requests use.
         Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )

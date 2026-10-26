@@ -331,12 +331,19 @@ The overview counts `families` (test families included), `members`, `users` (`to
 Trashed families appear only in `GET /admin/trash`: `GET /admin/families` leaves them out, and the overview counts neither them nor their members and photos.
 `/admin` is a full page outside the tree's route group, so it has no 3D scene, in the dashboard's glass style with "Zurück zum Baum" (to `/`) and the language switch.
 The admin page shows its tabs only with `users.view` and otherwise "Kein Zugriff"; the BFF enforces the rights of every endpoint it calls.
-The admin page has the tabs "Übersicht" and "Bäume"; people, invitations, and the audit log are planned as further tabs.
+The admin page has the tabs "Übersicht", "Bäume", and "Protokoll"; people and invitations are planned as further tabs.
 "Übersicht" shows tiles for online now, access seats (used of limit, with signed-in and invited people), trees, persons, and photos with their storage size, from `GET /admin/overview`.
 Below the tiles, "Gerade aktiv" lists `GET /admin/presence` with one row per person and tree however many tabs they have there: name, email, admin mark, the tree as a link, editing or idle marks, and since when.
 "Übersicht" refreshes its tiles and the active list every 15 seconds.
 "Bäume" lists `GET /admin/families` with name, slug, test mark, creator and date, how many people hold each role, and the person count, with "Öffnen" (to `/<slug>`) and "In den Papierkorb" after a confirmation.
 Below the trees, the trash (`family.manage`) lists `GET /admin/trash` with who deleted each tree and when, the remaining days, "Wiederherstellen", and "Endgültig löschen", which needs the tree's exact name typed into a prompt.
+`GET /admin/audit` needs `users.view` and lists `audit_log` newest first as `entries` (`id`, `at`, `actor` as email or null for the BFF itself, `actorId`, `action`, `targetType`, `targetId`, `targetName`, and `details`) with `next`, the `before` for the following page, or null on the last.
+The query takes `limit` (1 to 100, default 50), `before` (an entry id), and the optional filters `userId`, `familyId`, and `action`, which combine; ids are used instead of emails, so no email appears in a URL or log.
+`userId` matches entries a person made and entries about them; an unknown id matches nothing, and invalid parameters answer 400 `INVALID_REQUEST`.
+`targetName` is the tree's current name, else the name recorded in the entry, so entries of purged trees stay readable.
+`GET /admin/audit/filters` lists the people with a `users` row who appear in the log and the actions it contains, for the filter menus.
+"Protokoll" shows the log as a table with time, who, action (a readable label, the raw action when unknown), target, and details, newest first, and "Mehr laden" appends the next 50 entries.
+Its menus filter by person, tree (`GET /admin/families`), and action; changing one starts the list again.
 
 ### Presence
 
