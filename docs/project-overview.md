@@ -230,6 +230,7 @@ Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their 
 Families can have one photo (JPEG, PNG, or WebP up to 2 MB) via `GET`, `PUT`, and `DELETE /families/{familyId}/photo`, stored in its own `family_photos` table; family summaries carry `photoUpdatedAt` for the same year-long private cache, and deleting a family removes its photo.
 Family summaries carry `photoFit` (`cover` fills the family card's title area, `original` shows the photo at its natural size, limited by the client), stored in `families.photo_fit` (migration V16), set via `PUT /families/{familyId}/photo-fit`, and `cover` for every new family.
 Partnership status and dates live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
+A relative, sibling, or partner id that is not a member of the family in the path is answered with 400 `INVALID_REQUEST` like an unknown id, and database triggers on `member_parents` and `member_partners` refuse links between members of different families.
 The status is `together`, `married`, `separated`, `divorced`, or `widowed`, set per partner in the relatives form.
 Each status keeps only its own dates: `since` for together, `marriedOn` for married, `endedOn` for separated, and `marriedOn` with `endedOn` for divorced and widowed (the date of death); the BFF drops the others.
 Divorced partners count as former partners like separated ones, so the trees treat both alike.
