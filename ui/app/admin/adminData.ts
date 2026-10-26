@@ -56,3 +56,10 @@ export function presenceRows(entries: readonly AdminPresence[]): PresenceRow[] {
     (a, b) => Date.parse(a.since) - Date.parse(b.since) || a.displayName.localeCompare(b.displayName),
   );
 }
+
+// The facts of an audit entry as key and value pairs in a fixed order, the usual ones first; none for an empty object.
+const DETAIL_ORDER = ['email', 'role', 'name', 'reason', 'source'];
+export function auditDetails(details: Record<string, string>): [string, string][] {
+  const rank = (key: string) => (DETAIL_ORDER.includes(key) ? DETAIL_ORDER.indexOf(key) : DETAIL_ORDER.length);
+  return Object.entries(details).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b));
+}

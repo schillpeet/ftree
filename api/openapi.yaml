@@ -132,6 +132,88 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  /admin/audit:
+    get:
+      operationId: getAdminAudit
+      tags:
+        - admin
+      summary: List the audit log, newest first
+      description: >-
+        Who changed which rights or trees when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them,
+        and an unknown id matches nothing. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
+      parameters:
+        - name: limit
+          in: query
+          description: How many entries at most; 50 by default.
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: before
+          in: query
+          description: Only entries older than the entry with this id, that is the `next` of the previous page.
+          schema:
+            type: integer
+            format: int64
+            minimum: 1
+        - name: userId
+          in: query
+          description: Only entries made by or about this person (`id` in `AuditPerson`).
+          schema:
+            type: string
+            format: uuid
+        - name: familyId
+          in: query
+          description: Only entries about this tree.
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          description: Only entries of this action, for example `family.trashed`.
+          schema:
+            type: string
+            maxLength: 60
+      responses:
+        "200":
+          description: One page, empty when nothing matches.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditPage"
+        "400":
+          description: A parameter is invalid. Code `INVALID_REQUEST`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/audit/filters:
+    get:
+      operationId: getAdminAuditFilters
+      tags:
+        - admin
+      summary: List what the audit log can be filtered by
+      description: The people with a `users` row who made or are the subject of an entry, by name, and the actions that occur in the log. Needs `users.view`.
+      responses:
+        "200":
+          description: The people and actions.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditFilters"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   # Trash: deleted families, admin only.
   /admin/trash:
     get:
@@ -1528,6 +1610,96 @@ components:
           type: string
           format: date-time
           description: When the tab arrived in the tree.
+    AuditPage:
+      type: object
+      required:
+        - entries
+        - next
+      properties:
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEntry"
+        next:
+          type: integer
+          format: int64
+          nullable: true
+          description: The `before` for the next page; null when this is the last.
+    AuditEntry:
+      type: object
+      required:
+        - id
+        - at
+        - actor
+        - actorId
+        - action
+        - targetType
+        - targetId
+        - targetName
+        - details
+      properties:
+        id:
+          type: integer
+          format: int64
+        at:
+          type: string
+          format: date-time
+        actor:
+          type: string
+          nullable: true
+          description: The email of whoever did it; null when the BFF did it itself, for example the seed or the trash purge.
+        actorId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The actor's id; null for the BFF itself or when the actor has no `users` row.
+        action:
+          type: string
+          description: For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.trashed`, `family.restored`, or `family.purged`.
+        targetType:
+          type: string
+          description: "`family` or `user`."
+        targetId:
+          type: string
+          description: The family's id, or the email of the person.
+        targetName:
+          type: string
+          nullable: true
+          description: The family's current name, else the name recorded in the entry; null for a person.
+        details:
+          type: object
+          additionalProperties:
+            type: string
+          description: Extra facts such as `email`, `role`, `name`, `source`, or `reason`.
+    AuditFilters:
+      type: object
+      required:
+        - people
+        - actions
+      properties:
+        people:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditPerson"
+        actions:
+          type: array
+          items:
+            type: string
+    AuditPerson:
+      type: object
+      required:
+        - id
+        - email
+        - displayName
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+          nullable: true
     AdminFamily:
       type: object
       required:

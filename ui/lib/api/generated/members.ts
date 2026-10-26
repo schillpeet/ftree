@@ -198,6 +198,60 @@ export interface AdminPresence {
 }
 
 /**
+ * Extra facts such as `email`, `role`, `name`, `source`, or `reason`.
+ */
+export type AuditEntryDetails = {[key: string]: string};
+
+export interface AuditEntry {
+  id: number;
+  at: string;
+  /**
+     * The email of whoever did it; null when the BFF did it itself, for example the seed or the trash purge.
+     * @nullable
+     */
+  actor: string | null;
+  /**
+     * The actor's id; null for the BFF itself or when the actor has no `users` row.
+     * @nullable
+     */
+  actorId: string | null;
+  /** For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.trashed`, `family.restored`, or `family.purged`. */
+  action: string;
+  /** `family` or `user`. */
+  targetType: string;
+  /** The family's id, or the email of the person. */
+  targetId: string;
+  /**
+     * The family's current name, else the name recorded in the entry; null for a person.
+     * @nullable
+     */
+  targetName: string | null;
+  /** Extra facts such as `email`, `role`, `name`, `source`, or `reason`. */
+  details: AuditEntryDetails;
+}
+
+export interface AuditPage {
+  entries: AuditEntry[];
+  /**
+     * The `before` for the next page; null when this is the last.
+     * @nullable
+     */
+  next: number | null;
+}
+
+export interface AuditPerson {
+  id: string;
+  email: string;
+  /** @nullable */
+  displayName: string | null;
+}
+
+export interface AuditFilters {
+  people: AuditPerson[];
+  actions: string[];
+}
+
+/**
  * How many people hold each role in the family. Admins hold none and are not counted.
  */
 export type AdminFamilyMemberships = {
@@ -754,6 +808,33 @@ export type EditConflictResponse = Problem;
  */
 export type InternalErrorResponse = Problem;
 
+export type GetAdminAuditParams = {
+/**
+ * How many entries at most; 50 by default.
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+/**
+ * Only entries older than the entry with this id, that is the `next` of the previous page.
+ * @minimum 1
+ */
+before?: number;
+/**
+ * Only entries made by or about this person (`id` in `AuditPerson`).
+ */
+userId?: string;
+/**
+ * Only entries about this tree.
+ */
+familyId?: string;
+/**
+ * Only entries of this action, for example `family.trashed`.
+ * @maxLength 60
+ */
+action?: string;
+};
+
 export type StreamFamilyEventsParams = {
 /**
  * A random id the browser tab chooses once, the same it sends to `PUT /families/{familyId}/presence`.
@@ -1062,6 +1143,140 @@ export const getAdminFamilies = async ( options?: RequestInit): Promise<getAdmin
 
   const data: getAdminFamiliesResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getAdminFamiliesResponse
+}
+
+
+
+export type getAdminAuditResponse200 = {
+  data: AuditPage
+  status: 200
+}
+
+export type getAdminAuditResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type getAdminAuditResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminAuditResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminAuditResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminAuditResponseSuccess = (getAdminAuditResponse200) & {
+  headers: Headers;
+};
+export type getAdminAuditResponseError = (getAdminAuditResponse400 | getAdminAuditResponse401 | getAdminAuditResponse403 | getAdminAuditResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminAuditResponse = (getAdminAuditResponseSuccess | getAdminAuditResponseError)
+
+export const getGetAdminAuditUrl = (params?: GetAdminAuditParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/audit?${stringifiedParams}` : `/api/admin/audit`
+}
+
+/**
+ * Who changed which rights or trees when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them, and an unknown id matches nothing. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
+ * @summary List the audit log, newest first
+ */
+export const getAdminAudit = async (params?: GetAdminAuditParams, options?: RequestInit): Promise<getAdminAuditResponse> => {
+
+  const res = await fetch(getGetAdminAuditUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminAuditResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminAuditResponse
+}
+
+
+
+export type getAdminAuditFiltersResponse200 = {
+  data: AuditFilters
+  status: 200
+}
+
+export type getAdminAuditFiltersResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminAuditFiltersResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminAuditFiltersResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminAuditFiltersResponseSuccess = (getAdminAuditFiltersResponse200) & {
+  headers: Headers;
+};
+export type getAdminAuditFiltersResponseError = (getAdminAuditFiltersResponse401 | getAdminAuditFiltersResponse403 | getAdminAuditFiltersResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminAuditFiltersResponse = (getAdminAuditFiltersResponseSuccess | getAdminAuditFiltersResponseError)
+
+export const getGetAdminAuditFiltersUrl = () => {
+
+
+
+
+  return `/api/admin/audit/filters`
+}
+
+/**
+ * The people with a `users` row who made or are the subject of an entry, by name, and the actions that occur in the log. Needs `users.view`.
+ * @summary List what the audit log can be filtered by
+ */
+export const getAdminAuditFilters = async ( options?: RequestInit): Promise<getAdminAuditFiltersResponse> => {
+
+  const res = await fetch(getGetAdminAuditFiltersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminAuditFiltersResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminAuditFiltersResponse
 }
 
 

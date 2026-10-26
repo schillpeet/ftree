@@ -108,7 +108,7 @@ class SecurityConfiguration(
                 // An event stream ends with an async dispatch of the request that already passed these rules.
                 it.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 it.requestMatchers(GET, "/me").authenticated()
-                it.requestMatchers(GET, "/users", "/admin/overview", "/admin/presence", "/admin/families").hasAuthority(USERS_VIEW.key)
+                it.requestMatchers(GET, "/users", "/admin/overview", "/admin/presence", "/admin/families", "/admin/audit", "/admin/audit/filters").hasAuthority(USERS_VIEW.key)
                 // Lists only the families the user may see.
                 it.requestMatchers(GET, "/families").authenticated()
                 it.requestMatchers(GET, "/families/{familyId}/export").access(inFamily(FAMILY_EXPORT))
