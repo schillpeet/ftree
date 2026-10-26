@@ -3,7 +3,7 @@
  * Do not edit manually.
  * ftree BFF API
  * API contract for the ftree UI and Backend for Frontend.
- * OpenAPI spec version: 0.6.0
+ * OpenAPI spec version: 0.7.0
  */
 /**
  * What went wrong, for clients to act on:
@@ -458,20 +458,45 @@ export interface CreateMemberRequest {
   photoUrl?: string | null;
 }
 
+/**
+ * No valid sign-in. Code `UNAUTHENTICATED`.
+ */
+export type UnauthorizedResponse = Problem;
+
+/**
+ * Signed in, but the caller's role lacks the permission, or a browser write came from another site. Code `FORBIDDEN`.
+ */
+export type ForbiddenResponse = Problem;
+
+/**
+ * An unexpected error on the server; the body names no internals. Code `INTERNAL_ERROR`.
+ */
+export type InternalErrorResponse = Problem;
+
 export type getMeResponse200 = {
   data: Me
   status: 200
 }
 
 export type getMeResponse401 = {
-  data: Problem
+  data: UnauthorizedResponse
   status: 401
+}
+
+export type getMeResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getMeResponse500 = {
+  data: InternalErrorResponse
+  status: 500
 }
 
 export type getMeResponseSuccess = (getMeResponse200) & {
   headers: Headers;
 };
-export type getMeResponseError = (getMeResponse401) & {
+export type getMeResponseError = (getMeResponse401 | getMeResponse403 | getMeResponse500) & {
   headers: Headers;
 };
 
@@ -515,19 +540,24 @@ export type getUsersResponse200 = {
 }
 
 export type getUsersResponse401 = {
-  data: Problem
+  data: UnauthorizedResponse
   status: 401
 }
 
 export type getUsersResponse403 = {
-  data: Problem
+  data: ForbiddenResponse
   status: 403
+}
+
+export type getUsersResponse500 = {
+  data: InternalErrorResponse
+  status: 500
 }
 
 export type getUsersResponseSuccess = (getUsersResponse200) & {
   headers: Headers;
 };
-export type getUsersResponseError = (getUsersResponse401 | getUsersResponse403) & {
+export type getUsersResponseError = (getUsersResponse401 | getUsersResponse403 | getUsersResponse500) & {
   headers: Headers;
 };
 
@@ -570,12 +600,29 @@ export type getMembersResponse200 = {
   status: 200
 }
 
+export type getMembersResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getMembersResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getMembersResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type getMembersResponseSuccess = (getMembersResponse200) & {
   headers: Headers;
 };
-;
+export type getMembersResponseError = (getMembersResponse401 | getMembersResponse403 | getMembersResponse500) & {
+  headers: Headers;
+};
 
-export type getMembersResponse = (getMembersResponseSuccess)
+export type getMembersResponse = (getMembersResponseSuccess | getMembersResponseError)
 
 export const getGetMembersUrl = () => {
 
@@ -619,10 +666,25 @@ export type createMemberResponse400 = {
   status: 400
 }
 
+export type createMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type createMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type createMemberResponseSuccess = (createMemberResponse201) & {
   headers: Headers;
 };
-export type createMemberResponseError = (createMemberResponse400) & {
+export type createMemberResponseError = (createMemberResponse400 | createMemberResponse401 | createMemberResponse403 | createMemberResponse500) & {
   headers: Headers;
 };
 
@@ -683,15 +745,30 @@ export type updateMemberResponse400 = {
   status: 400
 }
 
+export type updateMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type updateMemberResponse404 = {
   data: Problem
   status: 404
 }
 
+export type updateMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type updateMemberResponseSuccess = (updateMemberResponse200) & {
   headers: Headers;
 };
-export type updateMemberResponseError = (updateMemberResponse400 | updateMemberResponse404) & {
+export type updateMemberResponseError = (updateMemberResponse400 | updateMemberResponse401 | updateMemberResponse403 | updateMemberResponse404 | updateMemberResponse500) & {
   headers: Headers;
 };
 
@@ -749,15 +826,30 @@ export type deleteMemberResponse204 = {
   status: 204
 }
 
+export type deleteMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type deleteMemberResponse404 = {
   data: Problem
   status: 404
 }
 
+export type deleteMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type deleteMemberResponseSuccess = (deleteMemberResponse204) & {
   headers: Headers;
 };
-export type deleteMemberResponseError = (deleteMemberResponse404) & {
+export type deleteMemberResponseError = (deleteMemberResponse401 | deleteMemberResponse403 | deleteMemberResponse404 | deleteMemberResponse500) & {
   headers: Headers;
 };
 
@@ -804,15 +896,30 @@ export type updateMemberRelativesResponse400 = {
   status: 400
 }
 
+export type updateMemberRelativesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateMemberRelativesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type updateMemberRelativesResponse404 = {
   data: Problem
   status: 404
 }
 
+export type updateMemberRelativesResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type updateMemberRelativesResponseSuccess = (updateMemberRelativesResponse204) & {
   headers: Headers;
 };
-export type updateMemberRelativesResponseError = (updateMemberRelativesResponse400 | updateMemberRelativesResponse404) & {
+export type updateMemberRelativesResponseError = (updateMemberRelativesResponse400 | updateMemberRelativesResponse401 | updateMemberRelativesResponse403 | updateMemberRelativesResponse404 | updateMemberRelativesResponse500) & {
   headers: Headers;
 };
 
@@ -870,12 +977,29 @@ export type getFamiliesResponse200 = {
   status: 200
 }
 
+export type getFamiliesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getFamiliesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getFamiliesResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type getFamiliesResponseSuccess = (getFamiliesResponse200) & {
   headers: Headers;
 };
-;
+export type getFamiliesResponseError = (getFamiliesResponse401 | getFamiliesResponse403 | getFamiliesResponse500) & {
+  headers: Headers;
+};
 
-export type getFamiliesResponse = (getFamiliesResponseSuccess)
+export type getFamiliesResponse = (getFamiliesResponseSuccess | getFamiliesResponseError)
 
 export const getGetFamiliesUrl = () => {
 
@@ -918,15 +1042,30 @@ export type createFamilyResponse400 = {
   status: 400
 }
 
+export type createFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type createFamilyResponse409 = {
   data: Problem
   status: 409
 }
 
+export type createFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type createFamilyResponseSuccess = (createFamilyResponse201) & {
   headers: Headers;
 };
-export type createFamilyResponseError = (createFamilyResponse400 | createFamilyResponse409) & {
+export type createFamilyResponseError = (createFamilyResponse400 | createFamilyResponse401 | createFamilyResponse403 | createFamilyResponse409 | createFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -987,10 +1126,25 @@ export type reorderFamiliesResponse400 = {
   status: 400
 }
 
+export type reorderFamiliesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type reorderFamiliesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type reorderFamiliesResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type reorderFamiliesResponseSuccess = (reorderFamiliesResponse204) & {
   headers: Headers;
 };
-export type reorderFamiliesResponseError = (reorderFamiliesResponse400) & {
+export type reorderFamiliesResponseError = (reorderFamiliesResponse400 | reorderFamiliesResponse401 | reorderFamiliesResponse403 | reorderFamiliesResponse500) & {
   headers: Headers;
 };
 
@@ -1046,15 +1200,30 @@ export type deleteFamilyResponse204 = {
   status: 204
 }
 
+export type deleteFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type deleteFamilyResponse404 = {
   data: Problem
   status: 404
 }
 
+export type deleteFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type deleteFamilyResponseSuccess = (deleteFamilyResponse204) & {
   headers: Headers;
 };
-export type deleteFamilyResponseError = (deleteFamilyResponse404) & {
+export type deleteFamilyResponseError = (deleteFamilyResponse401 | deleteFamilyResponse403 | deleteFamilyResponse404 | deleteFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -1102,6 +1271,16 @@ export type renameFamilyResponse400 = {
   status: 400
 }
 
+export type renameFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type renameFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type renameFamilyResponse404 = {
   data: Problem
   status: 404
@@ -1112,10 +1291,15 @@ export type renameFamilyResponse409 = {
   status: 409
 }
 
+export type renameFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type renameFamilyResponseSuccess = (renameFamilyResponse200) & {
   headers: Headers;
 };
-export type renameFamilyResponseError = (renameFamilyResponse400 | renameFamilyResponse404 | renameFamilyResponse409) & {
+export type renameFamilyResponseError = (renameFamilyResponse400 | renameFamilyResponse401 | renameFamilyResponse403 | renameFamilyResponse404 | renameFamilyResponse409 | renameFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -1178,6 +1362,16 @@ export type archiveFamilyResponse400 = {
   status: 400
 }
 
+export type archiveFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type archiveFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type archiveFamilyResponse404 = {
   data: Problem
   status: 404
@@ -1188,10 +1382,15 @@ export type archiveFamilyResponse409 = {
   status: 409
 }
 
+export type archiveFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type archiveFamilyResponseSuccess = (archiveFamilyResponse201) & {
   headers: Headers;
 };
-export type archiveFamilyResponseError = (archiveFamilyResponse400 | archiveFamilyResponse404 | archiveFamilyResponse409) & {
+export type archiveFamilyResponseError = (archiveFamilyResponse400 | archiveFamilyResponse401 | archiveFamilyResponse403 | archiveFamilyResponse404 | archiveFamilyResponse409 | archiveFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -1254,6 +1453,16 @@ export type anonymizeFamilyResponse400 = {
   status: 400
 }
 
+export type anonymizeFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type anonymizeFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type anonymizeFamilyResponse404 = {
   data: Problem
   status: 404
@@ -1264,10 +1473,15 @@ export type anonymizeFamilyResponse409 = {
   status: 409
 }
 
+export type anonymizeFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type anonymizeFamilyResponseSuccess = (anonymizeFamilyResponse201) & {
   headers: Headers;
 };
-export type anonymizeFamilyResponseError = (anonymizeFamilyResponse400 | anonymizeFamilyResponse404 | anonymizeFamilyResponse409) & {
+export type anonymizeFamilyResponseError = (anonymizeFamilyResponse400 | anonymizeFamilyResponse401 | anonymizeFamilyResponse403 | anonymizeFamilyResponse404 | anonymizeFamilyResponse409 | anonymizeFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -1330,15 +1544,30 @@ export type createEmptyFamilyResponse400 = {
   status: 400
 }
 
+export type createEmptyFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createEmptyFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type createEmptyFamilyResponse409 = {
   data: Problem
   status: 409
 }
 
+export type createEmptyFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type createEmptyFamilyResponseSuccess = (createEmptyFamilyResponse201) & {
   headers: Headers;
 };
-export type createEmptyFamilyResponseError = (createEmptyFamilyResponse400 | createEmptyFamilyResponse409) & {
+export type createEmptyFamilyResponseError = (createEmptyFamilyResponse400 | createEmptyFamilyResponse401 | createEmptyFamilyResponse403 | createEmptyFamilyResponse409 | createEmptyFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -1400,15 +1629,30 @@ export type importFamilyResponse400 = {
   status: 400
 }
 
+export type importFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type importFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type importFamilyResponse409 = {
   data: Problem
   status: 409
 }
 
+export type importFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type importFamilyResponseSuccess = (importFamilyResponse201) & {
   headers: Headers;
 };
-export type importFamilyResponseError = (importFamilyResponse400 | importFamilyResponse409) & {
+export type importFamilyResponseError = (importFamilyResponse400 | importFamilyResponse401 | importFamilyResponse403 | importFamilyResponse409 | importFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -1465,15 +1709,30 @@ export type exportFamilyResponse200 = {
   status: 200
 }
 
+export type exportFamilyResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type exportFamilyResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type exportFamilyResponse404 = {
   data: Problem
   status: 404
 }
 
+export type exportFamilyResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type exportFamilyResponseSuccess = (exportFamilyResponse200) & {
   headers: Headers;
 };
-export type exportFamilyResponseError = (exportFamilyResponse404) & {
+export type exportFamilyResponseError = (exportFamilyResponse401 | exportFamilyResponse403 | exportFamilyResponse404 | exportFamilyResponse500) & {
   headers: Headers;
 };
 
@@ -1526,15 +1785,30 @@ export type getFamilyPhotoResponse200ImageWebp = {
   status: 200
 }
 
+export type getFamilyPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getFamilyPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type getFamilyPhotoResponse404 = {
   data: Problem
   status: 404
 }
 
+export type getFamilyPhotoResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type getFamilyPhotoResponseSuccess = (getFamilyPhotoResponse200ImageJpeg | getFamilyPhotoResponse200ImagePng | getFamilyPhotoResponse200ImageWebp) & {
   headers: Headers;
 };
-export type getFamilyPhotoResponseError = (getFamilyPhotoResponse404) & {
+export type getFamilyPhotoResponseError = (getFamilyPhotoResponse401 | getFamilyPhotoResponse403 | getFamilyPhotoResponse404 | getFamilyPhotoResponse500) & {
   headers: Headers;
 };
 
@@ -1581,6 +1855,16 @@ export type uploadFamilyPhotoResponse400 = {
   status: 400
 }
 
+export type uploadFamilyPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type uploadFamilyPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type uploadFamilyPhotoResponse404 = {
   data: Problem
   status: 404
@@ -1596,10 +1880,15 @@ export type uploadFamilyPhotoResponse415 = {
   status: 415
 }
 
+export type uploadFamilyPhotoResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type uploadFamilyPhotoResponseSuccess = (uploadFamilyPhotoResponse204) & {
   headers: Headers;
 };
-export type uploadFamilyPhotoResponseError = (uploadFamilyPhotoResponse400 | uploadFamilyPhotoResponse404 | uploadFamilyPhotoResponse413 | uploadFamilyPhotoResponse415) & {
+export type uploadFamilyPhotoResponseError = (uploadFamilyPhotoResponse400 | uploadFamilyPhotoResponse401 | uploadFamilyPhotoResponse403 | uploadFamilyPhotoResponse404 | uploadFamilyPhotoResponse413 | uploadFamilyPhotoResponse415 | uploadFamilyPhotoResponse500) & {
   headers: Headers;
 };
 
@@ -1657,15 +1946,30 @@ export type deleteFamilyPhotoResponse204 = {
   status: 204
 }
 
+export type deleteFamilyPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteFamilyPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type deleteFamilyPhotoResponse404 = {
   data: Problem
   status: 404
 }
 
+export type deleteFamilyPhotoResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type deleteFamilyPhotoResponseSuccess = (deleteFamilyPhotoResponse204) & {
   headers: Headers;
 };
-export type deleteFamilyPhotoResponseError = (deleteFamilyPhotoResponse404) & {
+export type deleteFamilyPhotoResponseError = (deleteFamilyPhotoResponse401 | deleteFamilyPhotoResponse403 | deleteFamilyPhotoResponse404 | deleteFamilyPhotoResponse500) & {
   headers: Headers;
 };
 
@@ -1712,15 +2016,30 @@ export type setFamilyPhotoFitResponse400 = {
   status: 400
 }
 
+export type setFamilyPhotoFitResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type setFamilyPhotoFitResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type setFamilyPhotoFitResponse404 = {
   data: Problem
   status: 404
 }
 
+export type setFamilyPhotoFitResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type setFamilyPhotoFitResponseSuccess = (setFamilyPhotoFitResponse200) & {
   headers: Headers;
 };
-export type setFamilyPhotoFitResponseError = (setFamilyPhotoFitResponse400 | setFamilyPhotoFitResponse404) & {
+export type setFamilyPhotoFitResponseError = (setFamilyPhotoFitResponse400 | setFamilyPhotoFitResponse401 | setFamilyPhotoFitResponse403 | setFamilyPhotoFitResponse404 | setFamilyPhotoFitResponse500) & {
   headers: Headers;
 };
 
@@ -1777,15 +2096,30 @@ export type getFamilyMembersResponse200 = {
   status: 200
 }
 
+export type getFamilyMembersResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getFamilyMembersResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type getFamilyMembersResponse404 = {
   data: Problem
   status: 404
 }
 
+export type getFamilyMembersResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type getFamilyMembersResponseSuccess = (getFamilyMembersResponse200) & {
   headers: Headers;
 };
-export type getFamilyMembersResponseError = (getFamilyMembersResponse404) & {
+export type getFamilyMembersResponseError = (getFamilyMembersResponse401 | getFamilyMembersResponse403 | getFamilyMembersResponse404 | getFamilyMembersResponse500) & {
   headers: Headers;
 };
 
@@ -1832,15 +2166,30 @@ export type createFamilyMemberResponse400 = {
   status: 400
 }
 
+export type createFamilyMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type createFamilyMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type createFamilyMemberResponse404 = {
   data: Problem
   status: 404
 }
 
+export type createFamilyMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type createFamilyMemberResponseSuccess = (createFamilyMemberResponse201) & {
   headers: Headers;
 };
-export type createFamilyMemberResponseError = (createFamilyMemberResponse400 | createFamilyMemberResponse404) & {
+export type createFamilyMemberResponseError = (createFamilyMemberResponse400 | createFamilyMemberResponse401 | createFamilyMemberResponse403 | createFamilyMemberResponse404 | createFamilyMemberResponse500) & {
   headers: Headers;
 };
 
@@ -1902,15 +2251,30 @@ export type updateFamilyMemberResponse400 = {
   status: 400
 }
 
+export type updateFamilyMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateFamilyMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type updateFamilyMemberResponse404 = {
   data: Problem
   status: 404
 }
 
+export type updateFamilyMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type updateFamilyMemberResponseSuccess = (updateFamilyMemberResponse200) & {
   headers: Headers;
 };
-export type updateFamilyMemberResponseError = (updateFamilyMemberResponse400 | updateFamilyMemberResponse404) & {
+export type updateFamilyMemberResponseError = (updateFamilyMemberResponse400 | updateFamilyMemberResponse401 | updateFamilyMemberResponse403 | updateFamilyMemberResponse404 | updateFamilyMemberResponse500) & {
   headers: Headers;
 };
 
@@ -1970,15 +2334,30 @@ export type deleteFamilyMemberResponse204 = {
   status: 204
 }
 
+export type deleteFamilyMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteFamilyMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type deleteFamilyMemberResponse404 = {
   data: Problem
   status: 404
 }
 
+export type deleteFamilyMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type deleteFamilyMemberResponseSuccess = (deleteFamilyMemberResponse204) & {
   headers: Headers;
 };
-export type deleteFamilyMemberResponseError = (deleteFamilyMemberResponse404) & {
+export type deleteFamilyMemberResponseError = (deleteFamilyMemberResponse401 | deleteFamilyMemberResponse403 | deleteFamilyMemberResponse404 | deleteFamilyMemberResponse500) & {
   headers: Headers;
 };
 
@@ -2027,15 +2406,30 @@ export type updateFamilyMemberRelativesResponse400 = {
   status: 400
 }
 
+export type updateFamilyMemberRelativesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateFamilyMemberRelativesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type updateFamilyMemberRelativesResponse404 = {
   data: Problem
   status: 404
 }
 
+export type updateFamilyMemberRelativesResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type updateFamilyMemberRelativesResponseSuccess = (updateFamilyMemberRelativesResponse204) & {
   headers: Headers;
 };
-export type updateFamilyMemberRelativesResponseError = (updateFamilyMemberRelativesResponse400 | updateFamilyMemberRelativesResponse404) & {
+export type updateFamilyMemberRelativesResponseError = (updateFamilyMemberRelativesResponse400 | updateFamilyMemberRelativesResponse401 | updateFamilyMemberRelativesResponse403 | updateFamilyMemberRelativesResponse404 | updateFamilyMemberRelativesResponse500) & {
   headers: Headers;
 };
 
@@ -2100,6 +2494,16 @@ export type updateFamilyMemberPlacementResponse400 = {
   status: 400
 }
 
+export type updateFamilyMemberPlacementResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateFamilyMemberPlacementResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type updateFamilyMemberPlacementResponse404 = {
   data: Problem
   status: 404
@@ -2110,10 +2514,15 @@ export type updateFamilyMemberPlacementResponse409 = {
   status: 409
 }
 
+export type updateFamilyMemberPlacementResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type updateFamilyMemberPlacementResponseSuccess = (updateFamilyMemberPlacementResponse204) & {
   headers: Headers;
 };
-export type updateFamilyMemberPlacementResponseError = (updateFamilyMemberPlacementResponse400 | updateFamilyMemberPlacementResponse404 | updateFamilyMemberPlacementResponse409) & {
+export type updateFamilyMemberPlacementResponseError = (updateFamilyMemberPlacementResponse400 | updateFamilyMemberPlacementResponse401 | updateFamilyMemberPlacementResponse403 | updateFamilyMemberPlacementResponse404 | updateFamilyMemberPlacementResponse409 | updateFamilyMemberPlacementResponse500) & {
   headers: Headers;
 };
 
@@ -2183,15 +2592,30 @@ export type getFamilyMemberPhotoResponse200ImageWebp = {
   status: 200
 }
 
+export type getFamilyMemberPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getFamilyMemberPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type getFamilyMemberPhotoResponse404 = {
   data: Problem
   status: 404
 }
 
+export type getFamilyMemberPhotoResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type getFamilyMemberPhotoResponseSuccess = (getFamilyMemberPhotoResponse200ImageJpeg | getFamilyMemberPhotoResponse200ImagePng | getFamilyMemberPhotoResponse200ImageWebp) & {
   headers: Headers;
 };
-export type getFamilyMemberPhotoResponseError = (getFamilyMemberPhotoResponse404) & {
+export type getFamilyMemberPhotoResponseError = (getFamilyMemberPhotoResponse401 | getFamilyMemberPhotoResponse403 | getFamilyMemberPhotoResponse404 | getFamilyMemberPhotoResponse500) & {
   headers: Headers;
 };
 
@@ -2240,6 +2664,16 @@ export type uploadFamilyMemberPhotoResponse400 = {
   status: 400
 }
 
+export type uploadFamilyMemberPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type uploadFamilyMemberPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type uploadFamilyMemberPhotoResponse404 = {
   data: Problem
   status: 404
@@ -2255,10 +2689,15 @@ export type uploadFamilyMemberPhotoResponse415 = {
   status: 415
 }
 
+export type uploadFamilyMemberPhotoResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type uploadFamilyMemberPhotoResponseSuccess = (uploadFamilyMemberPhotoResponse204) & {
   headers: Headers;
 };
-export type uploadFamilyMemberPhotoResponseError = (uploadFamilyMemberPhotoResponse400 | uploadFamilyMemberPhotoResponse404 | uploadFamilyMemberPhotoResponse413 | uploadFamilyMemberPhotoResponse415) & {
+export type uploadFamilyMemberPhotoResponseError = (uploadFamilyMemberPhotoResponse400 | uploadFamilyMemberPhotoResponse401 | uploadFamilyMemberPhotoResponse403 | uploadFamilyMemberPhotoResponse404 | uploadFamilyMemberPhotoResponse413 | uploadFamilyMemberPhotoResponse415 | uploadFamilyMemberPhotoResponse500) & {
   headers: Headers;
 };
 
@@ -2318,15 +2757,30 @@ export type deleteFamilyMemberPhotoResponse204 = {
   status: 204
 }
 
+export type deleteFamilyMemberPhotoResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteFamilyMemberPhotoResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type deleteFamilyMemberPhotoResponse404 = {
   data: Problem
   status: 404
 }
 
+export type deleteFamilyMemberPhotoResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
 export type deleteFamilyMemberPhotoResponseSuccess = (deleteFamilyMemberPhotoResponse204) & {
   headers: Headers;
 };
-export type deleteFamilyMemberPhotoResponseError = (deleteFamilyMemberPhotoResponse404) & {
+export type deleteFamilyMemberPhotoResponseError = (deleteFamilyMemberPhotoResponse401 | deleteFamilyMemberPhotoResponse403 | deleteFamilyMemberPhotoResponse404 | deleteFamilyMemberPhotoResponse500) & {
   headers: Headers;
 };
 

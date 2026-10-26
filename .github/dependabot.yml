@@ -8,6 +8,14 @@ updates:
       prefix: "deps(ui)"
       prefix-development: "deps(ui)"
 
+  - package-ecosystem: npm
+    directory: /api
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(repo)"
+      prefix-development: "deps(repo)"
+
   - package-ecosystem: gradle
     directory: /bff
     schedule:
