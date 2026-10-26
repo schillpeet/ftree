@@ -14,6 +14,8 @@ import {
   type Member,
   type Relatives,
 } from '../lib/api/generated/members';
+import ConflictDialog from './ConflictDialog';
+import { isEditConflict, withVersion } from './conflict';
 import { useT } from './i18n';
 import { useCan } from './Permissions';
 import { initialsOf, nameOf } from './names';
@@ -84,6 +86,7 @@ export default function MembersControls({
   const [isSaving, setIsSaving] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
   const [editing, setEditing] = useState<Member | null>(null);
   // Picked image, uploaded once the member is saved.
@@ -268,8 +271,8 @@ export default function MembersControls({
     setForm((current) => ({ ...current, [field]: value }));
   }
 
-  async function submitMember(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function submitMember(event: FormEvent<HTMLFormElement> | null, overwrite = false) {
+    event?.preventDefault();
     if (!familyId) return;
     // Checked before anything is saved, so a wrong date never leaves the person half saved.
     const problem = relatives.current?.value.partnerships?.map((p) => dateProblem(p)).find(Boolean);
@@ -286,8 +289,13 @@ export default function MembersControls({
     try {
       let saved: Member;
       if (editing) {
-        // The version it was opened with, so a save over someone else's newer one is rejected.
-        const response = await updateFamilyMember(familyId, editing.id, { ...request, version: editing.version });
+        // The version it was opened with, so a save over someone else's newer one is rejected;
+        // the conflict dialog can resend without it to overwrite.
+        const response = await updateFamilyMember(familyId, editing.id, withVersion(request, editing.version, overwrite));
+        if (isEditConflict(response)) {
+          setConflict(true);
+          return;
+        }
         if (response.status !== 200) {
           setFormError(
             response.status === 404 ? t.members.gone : t.members.saveFailed,
@@ -349,6 +357,34 @@ export default function MembersControls({
       setPhotoFile(null);
       if (!editing) setForm({ ...EMPTY_FORM });
     } catch {
+      setFormError(t.members.unreachable);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  // Drops the local edits and opens the form again with what is stored now.
+  async function reloadEditing() {
+    if (!familyId || !editing) return;
+    setIsSaving(true);
+    try {
+      const response = await getFamilyMembers(familyId);
+      if (response.status !== 200 || !Array.isArray(response.data)) throw new Error('Unexpected members response');
+      const fresh = response.data.find((m) => m.id === editing.id);
+      setConflict(false);
+      setMembers(response.data);
+      if (!fresh) {
+        setFormError(t.conflict.gone);
+        return;
+      }
+      setEditing(fresh);
+      setForm(toForm(fresh));
+      setPhotoFile(null);
+      setFormError(null);
+      // The relatives fields hold the old selection; a new key remounts them from the reloaded member.
+      setFormKey((key) => key + 1);
+    } catch {
+      setConflict(false);
       setFormError(t.members.unreachable);
     } finally {
       setIsSaving(false);
@@ -461,6 +497,17 @@ export default function MembersControls({
             )}
           </form>
         </PanelShell>
+      )}
+      {conflict && (
+        <ConflictDialog
+          busy={isSaving}
+          onReload={() => void reloadEditing()}
+          onOverwrite={() => {
+            setConflict(false);
+            void submitMember(null, true);
+          }}
+          onCancel={() => setConflict(false)}
+        />
       )}
 
       {isFormOpen && newRelative && familyId && (

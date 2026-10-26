@@ -125,6 +125,7 @@ jobs:
       - run: node app/simpleLayout.check.mjs
       - run: node app/access.check.mjs
       - run: node app/slugRoute.check.mjs
+      - run: node app/conflict.check.mjs
       - run: node app/experimental/model.check.mjs
       - run: node app/experimental/route.check.mjs
       - run: node app/experimental/families.check.mjs
