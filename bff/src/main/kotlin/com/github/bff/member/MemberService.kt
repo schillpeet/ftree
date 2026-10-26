@@ -7,6 +7,8 @@ import com.github.bff.generated.model.Partnership
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Position
 import com.github.bff.generated.model.Relatives
+import com.github.bff.live.TreeEvent
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +23,7 @@ class MemberService(
     private val familyRepository: FamilyRepository,
     private val memberRepository: MemberRepository,
     private val jdbc: JdbcTemplate,
+    private val events: ApplicationEventPublisher,
 ) {
     fun findAll(familyId: UUID): List<Member>? {
         if (!familyRepository.existsById(familyId)) return null
@@ -47,7 +50,7 @@ class MemberService(
                 note = request.note,
                 photoUrl = request.photoUrl?.toString(),
             ),
-        ).toResponse(null, emptyList(), emptyList())
+        ).also { changed(familyId, it.id) }.toResponse(null, emptyList(), emptyList())
     }
 
     /** Replaces the member's fields but keeps its parent/child links; null when it is not in the family. */
@@ -63,6 +66,7 @@ class MemberService(
         entity.deathPlace = request.deathPlace
         entity.note = request.note
         entity.photoUrl = request.photoUrl?.toString()
+        changed(familyId, id)
         return entity.toResponse(
             photoTimes(familyId)[id],
             partnerships(familyId)[id].orEmpty(),
@@ -158,6 +162,7 @@ class MemberService(
                 )
             }
         }
+        changed(familyId, id)
         return RelativesResult.UPDATED
     }
 
@@ -192,6 +197,7 @@ class MemberService(
         member.posX = position?.x
         member.posY = position?.y
         member.posZ = position?.z
+        changed(familyId, id)
         return PlacementResult.UPDATED
     }
 
@@ -203,6 +209,7 @@ class MemberService(
         member.parents.clear()
         member.partners.clear()
         memberRepository.delete(member)
+        events.publishEvent(TreeEvent.MemberDeleted(familyId, id))
         return true
     }
 
@@ -222,6 +229,7 @@ class MemberService(
             """,
             id, type, data,
         )
+        changed(familyId, id)
         return PhotoResult.UPDATED
     }
 
@@ -233,11 +241,17 @@ class MemberService(
         ).firstOrNull()
 
     @Transactional
-    fun deletePhoto(familyId: UUID, id: UUID): Boolean =
-        jdbc.update(
+    fun deletePhoto(familyId: UUID, id: UUID): Boolean {
+        val deleted = jdbc.update(
             "DELETE FROM member_photos p USING members m WHERE m.id = p.member_id AND p.member_id = ? AND m.family_id = ?",
             id, familyId,
         ) > 0
+        if (deleted) changed(familyId, id)
+        return deleted
+    }
+
+    // The family's event streams get it once the transaction has committed.
+    private fun changed(familyId: UUID, id: UUID) = events.publishEvent(TreeEvent.MemberChanged(familyId, id))
 
     // One query for the whole family instead of one per member; never loads the bytes.
     private fun photoTimes(familyId: UUID): Map<UUID, OffsetDateTime> =

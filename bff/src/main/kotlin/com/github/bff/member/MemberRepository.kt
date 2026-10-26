@@ -8,6 +8,8 @@ interface MemberRepository : JpaRepository<MemberEntity, UUID> {
 
     fun findByIdAndFamilyId(id: UUID, familyId: UUID): MemberEntity?
 
+    fun existsByIdAndFamilyId(id: UUID, familyId: UUID): Boolean
+
     fun findAllByFamilyIdAndParentsId(familyId: UUID, parentId: UUID): List<MemberEntity>
 
     fun findAllByFamilyIdAndPartnersId(familyId: UUID, partnerId: UUID): List<MemberEntity>
