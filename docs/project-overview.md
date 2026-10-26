@@ -328,6 +328,7 @@ The overview counts `families` (test families included), `members`, `users` (`to
 `lastBackupAt` is always null for now.
 `GET /admin/presence` lists one entry per browser tab from `PresenceDirectory.all()`: `userId` (null without a `users` row), `email`, `displayName` (the display name, else the email before the `@`), `admin`, the tree's `familyId`, `familySlug`, and `familyName`, `viewing`, `editing`, `idle`, and `since`.
 `GET /admin/families` lists every family in the saved order, test families and families without any role of the caller included, with `createdBy`, `createdAt`, `test`, `memberCount`, and `memberships` (how many people hold the `owner`, `editor`, and `visitor` role; admins hold none).
+Trashed families appear only in `GET /admin/trash`: `GET /admin/families` leaves them out, and the overview counts neither them nor their members and photos.
 `/admin` is a full page outside the tree's route group, so it has no 3D scene, in the dashboard's glass style with "Zurück zum Baum" (to `/`) and the language switch.
 The admin page shows its tabs only with `users.view` and otherwise "Kein Zugriff"; the BFF enforces the rights of every endpoint it calls.
 The admin page has the tabs "Übersicht" and "Bäume"; people, invitations, and the audit log are planned as further tabs.
@@ -336,7 +337,6 @@ Below the tiles, "Gerade aktiv" lists `GET /admin/presence` with one row per per
 "Übersicht" refreshes its tiles and the active list every 15 seconds.
 "Bäume" lists `GET /admin/families` with name, slug, test mark, creator and date, how many people hold each role, and the person count, with "Öffnen" (to `/<slug>`) and "In den Papierkorb" after a confirmation.
 Below the trees, the trash (`family.manage`) lists `GET /admin/trash` with who deleted each tree and when, the remaining days, "Wiederherstellen", and "Endgültig löschen", which needs the tree's exact name typed into a prompt.
-`GET /admin/families` and the overview's tree and person totals still include trashed families; until the BFF leaves them out, "Bäume" hides the trees that are in the trash.
 
 ### Presence
 
