@@ -69,26 +69,13 @@ class FamilyServiceTest {
     fun `deletes the default family and all of its members`() {
         val family = familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
         assertNotNull(family)
-        assertNotNull(memberService.createDefaultFamilyMember(CreateMemberRequest("Test", "Member")))
+        assertNotNull(memberService.create(family.id, CreateMemberRequest("Test", "Member")))
         assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isNotEmpty())
 
         assertTrue(familyService.delete(family.id))
 
         assertFalse(familyRepository.existsById(family.id))
         assertTrue(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id).isEmpty())
-    }
-
-    @Test
-    fun `legacy member operations create and list people in the default family`() {
-        val created = memberService.createDefaultFamilyMember(
-            CreateMemberRequest("Anna", "Default"),
-        )
-
-        assertNotNull(created)
-        assertTrue(memberService.findDefaultFamilyMembers().any { it.id == created.id })
-        val defaultFamily = familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
-        assertNotNull(defaultFamily)
-        assertEquals(defaultFamily.id, memberRepository.findByIdAndFamilyId(created.id, defaultFamily.id)?.family?.id)
     }
 
     @Test
@@ -143,11 +130,11 @@ class FamilyServiceTest {
     fun `archives the default family into a new family and leaves it empty`() {
         val default = familyRepository.findByNameIgnoreCase(DEFAULT_FAMILY_NAME)
         assertNotNull(default)
-        val parent = memberService.createDefaultFamilyMember(CreateMemberRequest("Parent", "Archive"))
-        val child = memberService.createDefaultFamilyMember(CreateMemberRequest("Child", "Archive"))
+        val parent = memberService.create(default.id, CreateMemberRequest("Parent", "Archive"))
+        val child = memberService.create(default.id, CreateMemberRequest("Child", "Archive"))
         assertNotNull(parent)
         assertNotNull(child)
-        memberService.updateDefaultFamilyMemberRelatives(child.id, Relatives(listOf(parent.id), emptyList(), emptyList()))
+        memberService.updateRelatives(default.id, child.id, Relatives(listOf(parent.id), emptyList(), emptyList()))
         val before = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(default.id).size
         val name = "Archiv ${UUID.randomUUID()}"
 

@@ -72,14 +72,11 @@ jobs:
         if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '!:')
         env:
           BASE_REF: ${{ github.base_ref }}
-        # The spec declares the sign-in that every operation has always required only since this check exists, so
-        # oasdiff's anonymous-access check is lowered until the base branch declares it too.
         run: |
           git show "origin/$BASE_REF:api/openapi.yaml" > "$RUNNER_TEMP/base.yaml"
-          echo "api-security-anonymous-access-removed info" > "$RUNNER_TEMP/severity-levels.txt"
           docker run --rm -v "$RUNNER_TEMP:/base:ro" -v "$PWD/api:/revision:ro" \
             tufin/oasdiff:v1.34.1@sha256:67a23cfea7d251e2ae34ee703ac8733c5d96bc2e7b90fd0f4d475ec99367b85f \
-            breaking /base/base.yaml /revision/openapi.yaml --fail-on ERR --severity-levels /base/severity-levels.txt
+            breaking /base/base.yaml /revision/openapi.yaml --fail-on ERR
 
   ui:
     needs: changes

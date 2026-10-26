@@ -24,25 +24,6 @@ class MembersController(
     // Request-scoped proxy; the generated interface does not pass the body's Content-Type.
     private val request: HttpServletRequest,
 ) : MembersApi {
-    override fun getMembers(): ResponseEntity<List<Member>> =
-        ResponseEntity.ok(memberService.findDefaultFamilyMembers())
-
-    override fun createMember(createMemberRequest: CreateMemberRequest): ResponseEntity<Member> =
-        memberService.createDefaultFamilyMember(createMemberRequest)
-            ?.let { ResponseEntity.status(HttpStatus.CREATED).body(it) }
-            ?: throw ApiProblem(ProblemCode.NOT_FOUND)
-
-    override fun updateMember(id: UUID, createMemberRequest: CreateMemberRequest): ResponseEntity<Member> =
-        memberService.updateDefaultFamilyMember(id, createMemberRequest)?.let { ResponseEntity.ok(it) }
-            ?: throw ApiProblem(ProblemCode.NOT_FOUND)
-
-    override fun updateMemberRelatives(id: UUID, relatives: Relatives): ResponseEntity<Void> =
-        relativesResponse(memberService.updateDefaultFamilyMemberRelatives(id, relatives))
-
-    override fun deleteMember(id: UUID): ResponseEntity<Void> =
-        if (memberService.deleteDefaultFamilyMember(id)) ResponseEntity.noContent().build()
-        else throw ApiProblem(ProblemCode.NOT_FOUND)
-
     override fun getFamilyMembers(familyId: UUID): ResponseEntity<List<Member>> =
         memberService.findAll(familyId)?.let { ResponseEntity.ok(it) } ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
