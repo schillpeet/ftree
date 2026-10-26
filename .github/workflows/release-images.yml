@@ -1,6 +1,7 @@
 name: Release images
 
 # Builds the UI and BFF container images and the Helm chart for each published release and pushes them to GHCR.
+# Trivy scans each image before the push and stops the release on fixable CRITICAL vulnerabilities.
 # Images are arm64 only, matching the Hetzner CAX servers they are meant for.
 on:
   release:
@@ -9,10 +10,13 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   image:
+    permissions:
+      contents: read
+      packages: write
+      security-events: write # uploads the Trivy results to code scanning
     strategy:
       matrix:
         include:
@@ -40,6 +44,42 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=sha
+      # Build into the local Docker daemon first, so an image is only pushed after Trivy has scanned it.
+      - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.file }}
+          platforms: linux/arm64
+          load: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+      # All fixable findings go to code scanning; only fixable CRITICAL ones fail the release below.
+      - name: Scan image for code scanning
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          scan-type: image
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-${{ matrix.name }}.sarif
+      - uses: github/codeql-action/upload-sarif@6f2ac81f5cd81fe351a197ba0b00d91d03cd2aee # v4.39.0
+        if: always() && hashFiles(format('trivy-{0}.sarif', matrix.name)) != ''
+        with:
+          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-image-${{ matrix.name }}
+      - name: Fail on fixable critical vulnerabilities
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_SKIP_DB_UPDATE: "true" # the scan above already downloaded it
+        with:
+          version: v0.75.0
+          scan-type: image
+          image-ref: ${{ fromJSON(steps.meta.outputs.json).tags[0] }}
+          ignore-unfixed: true
+          severity: CRITICAL
+          exit-code: "1"
+      # Same builder and inputs as above, so this reuses the cached layers instead of building again.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: ${{ matrix.context }}

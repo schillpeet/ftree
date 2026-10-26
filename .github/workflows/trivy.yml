@@ -1,0 +1,57 @@
+name: Trivy
+
+# Scans the repository for secrets and vulnerable dependencies and the Helm chart for misconfigurations.
+# Only CRITICAL findings (and any secret) fail, so existing lower findings do not block unrelated pull requests.
+# The release images are scanned in release-images.yml.
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trivy-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Secrets
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          scan-type: fs
+          scan-ref: .
+          skip-dirs: .cache # trivy-action keeps its database cache in the workspace
+          scanners: secret
+          exit-code: "1"
+      # Gradle has no lockfile, so this covers the UI's dependencies; the BFF's are scanned in its release image.
+      - name: Dependencies
+        if: ${{ !cancelled() }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          version: v0.75.0
+          scan-type: fs
+          scan-ref: .
+          skip-dirs: .cache
+          scanners: vuln
+          ignore-unfixed: true
+          severity: CRITICAL
+          exit-code: "1"
+      # The chart refuses to render without the Cloudflare Access values, so placeholders stand in for them.
+      - name: Helm chart
+        if: ${{ !cancelled() }}
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        env:
+          TRIVY_HELM_SET: bff.auth.teamDomain=example.cloudflareaccess.com,bff.auth.audience=example
+        with:
+          version: v0.75.0
+          scan-type: config
+          scan-ref: deploy/ftree
+          severity: CRITICAL
+          exit-code: "1"
