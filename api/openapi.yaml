@@ -31,7 +31,7 @@ paths:
       tags:
         - Me
       summary: Get the signed-in user
-      description: Returns the caller's email, whether they are an admin or a developer, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
+      description: Returns the caller's email, whether they are an admin or may create trees, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
       responses:
         "200":
           description: The signed-in user.
@@ -51,7 +51,7 @@ paths:
       tags:
         - Users
       summary: List sign-ins
-      description: Lists everyone the access file (or the `app.roles` lists) names, in its order, then everyone else the database gives a right (admin, creating trees, or a role in a tree) by email, each with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
+      description: Lists the bootstrap admins (from the access file or `app.roles.admins`) in their order, then everyone else the database gives a right (admin, creating trees, or a role in a tree) by email, each with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
       responses:
         "200":
           description: The listed and signed-in users.
@@ -1362,7 +1362,7 @@ components:
       required:
         - email
         - admin
-        - developer
+        - canCreateTrees
         - permissions
         - verified
       properties:
@@ -1372,9 +1372,9 @@ components:
         admin:
           type: boolean
           description: True for admins, who are admins in every family.
-        developer:
+        canCreateTrees:
           type: boolean
-          description: True for developers, who may create families and are developers in the families they created.
+          description: True for people who may create trees, becoming the owner of each tree they create; admins may always.
         permissions:
           type: array
           description: The permissions outside any family; admins have every permission.
@@ -1396,7 +1396,7 @@ components:
           description: The email, trimmed and lowercased.
         listed:
           type: boolean
-          description: True when the access file (or the `app.roles` lists) names the email or the database gives it a right.
+          description: True for a bootstrap admin (from the access file or `app.roles.admins`) or when the database gives the email a right.
         firstSeen:
           type: string
           format: date-time
@@ -1562,12 +1562,12 @@ components:
         memberships:
           type: object
           required:
-            - developer
+            - owner
             - editor
             - visitor
           description: How many people hold each role in the family. Admins hold none and are not counted.
           properties:
-            developer:
+            owner:
               type: integer
               minimum: 0
             editor:
@@ -1578,10 +1578,10 @@ components:
               minimum: 0
     Role:
       type: string
-      description: A user's role in one family.
+      description: A user's role in one family. Owners may also delete and share the family; every family has at least one.
       enum:
         - admin
-        - developer
+        - owner
         - editor
         - visitor
     Permission:
@@ -1593,11 +1593,13 @@ components:
         - family.export
         - member.delete
         - family.delete
+        - family.share
         - tree.appearance
         - family.create
         - family.manage
         - dev.tools
         - users.view
+        - users.manage
     TrashedFamily:
       type: object
       required:

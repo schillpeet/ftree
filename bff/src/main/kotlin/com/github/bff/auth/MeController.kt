@@ -16,7 +16,7 @@ class MeController : MeApi {
             Me(
                 user.email,
                 user.access.admin,
-                user.access.developer,
+                user.access.canCreateTrees,
                 Permission.entries.filter { it in user.permissions }.map { ApiPermission.fromValue(it.key) },
                 user.verified,
             ),

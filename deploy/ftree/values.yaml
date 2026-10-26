@@ -10,20 +10,20 @@ bff:
   corsAllowedOrigins: ""
   auth:
     # cloudflare verifies the Cloudflare Access JWT; dev signs every request in as the unverified dev@localhost
-    # (a visitor unless listed in roles) and is only for local clusters.
+    # (without any tree unless listed in roles.admins or given rights in the database) and is only for local clusters.
     mode: cloudflare
     # Access team domain, e.g. example.cloudflareaccess.com; required in cloudflare mode.
     teamDomain: ""
     # AUD tag of the Access application; required in cloudflare mode.
     audience: ""
-  # The access file's content as one string, e.g. --set-file bff.access=access.yaml: every person with admin: true or
-  # their role (editor or visitor) per family slug under trees. It replaces roles; set only one of the two.
+  # The access file's content as one string, e.g. --set-file bff.access=access.yaml. Its admin: true entries are the
+  # bootstrap admins; the BFF imports its other entries into the database once, which decides from then on. It replaces
+  # roles; set only one of the two.
   access: ""
-  # Without access: emails per role, matched case-insensitively; everyone else Access lets in is a visitor in the first
-  # family only.
+  # Without access: the bootstrap admins' emails, matched case-insensitively; everyone else gets their trees from the
+  # database.
   roles:
     admins: []
-    editors: []
   resources:
     requests: { memory: 512Mi }
     limits: { memory: 512Mi }

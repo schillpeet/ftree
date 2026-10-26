@@ -27,9 +27,9 @@ class DevModeTest {
             jsonPath("$.email") { value("dev@localhost") }
             jsonPath("$.admin") { value(true) }
             jsonPath("$.verified") { value(false) }
-            jsonPath("$.permissions.length()") { value(11) }
+            jsonPath("$.permissions.length()") { value(13) }
             jsonPath("$.permissions[0]") { value("tree.view") }
-            jsonPath("$.permissions[10]") { value("users.view") }
+            jsonPath("$.permissions[12]") { value("users.manage") }
         }
     }
 

@@ -6,8 +6,8 @@
 {{- $_ := required "bff.auth.teamDomain is required in cloudflare mode" .Values.bff.auth.teamDomain }}
 {{- $_ := required "bff.auth.audience is required in cloudflare mode" .Values.bff.auth.audience }}
 {{- end }}
-{{- if and .Values.bff.access (or .Values.bff.roles.admins .Values.bff.roles.editors) }}
-{{- fail "set bff.access or bff.roles, not both; list the admins and editors in the access file" }}
+{{- if and .Values.bff.access .Values.bff.roles.admins }}
+{{- fail "set bff.access or bff.roles.admins, not both; list the admins in the access file" }}
 {{- end }}
 apiVersion: apps/v1
 kind: Deployment
@@ -66,10 +66,6 @@ spec:
             {{- end }}
             {{- with .Values.bff.roles.admins }}
             - name: APP_ROLES_ADMINS
-              value: {{ join "," . | quote }}
-            {{- end }}
-            {{- with .Values.bff.roles.editors }}
-            - name: APP_ROLES_EDITORS
               value: {{ join "," . | quote }}
             {{- end }}
             {{- if .Values.bff.access }}

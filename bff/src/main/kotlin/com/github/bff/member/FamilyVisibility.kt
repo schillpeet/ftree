@@ -1,9 +1,9 @@
 package com.github.bff.member
 
+import com.github.bff.auth.AccessPolicy
 import com.github.bff.auth.CurrentUser
 import com.github.bff.auth.Permission
 import com.github.bff.auth.Role
-import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.problem.ApiProblem
@@ -17,13 +17,11 @@ import java.util.UUID
 import com.github.bff.generated.model.Permission as ApiPermission
 import com.github.bff.generated.model.Role as ApiRole
 
-// The user's role in a family. Admins are admins in every family, test families included, and developers are
-// developers in the families they created (a developer membership, which also reaches test families). Everyone else
-// has the highest of their membership in the database, the role the access file gives them for the family's slug, and,
-// with the app.roles lists, their role in the first family without test settings; other test families and every
-// other family look as if they did not exist.
+// The user's role in a family. Admins are admins in every family, test families included; everyone else has the role
+// of their membership in the database, and only owners reach test families. Every other family looks as if it did not
+// exist.
 @Component
-class FamilyVisibility(private val familyRepository: FamilyRepository) {
+class FamilyVisibility(private val familyRepository: FamilyRepository, private val accessPolicy: AccessPolicy) {
     fun roleIn(familyId: UUID, user: CurrentUser? = CurrentUser.current()): Role? {
         user ?: return null
         val family = familyRepository.findById(familyId).orElse(null) ?: return null
@@ -45,25 +43,21 @@ class FamilyVisibility(private val familyRepository: FamilyRepository) {
         }
     }
 
-    // One family returned by a write, which only someone with a role in it can make.
-    fun withCallerRole(family: FamilySummary): FamilySummary = family.withRole(roleIn(family.id) ?: Role.VISITOR)
+    // One family returned by a write, which only someone with a role in it can make. The access is read again, since the
+    // owner membership of a family created in this request is newer than the user's access.
+    fun withCallerRole(family: FamilySummary): FamilySummary {
+        val user = CurrentUser.current()?.let { it.copy(access = accessPolicy.accessOf(it.email)) }
+        return family.withRole(roleIn(family.id, user) ?: Role.VISITOR)
+    }
 
     private fun roleIn(family: FamilyEntity, user: CurrentUser): Role? {
         // A trashed family is invisible to everyone, admins included; only the trash endpoints reach it.
         if (family.deletedAt != null) return null
         val access = user.access
         if (access.admin) return Role.ADMIN
-        val role = listOfNotNull(
-            access.memberships[family.id],
-            // The membership of a family created in this request is newer than the user's access.
-            Role.DEVELOPER.takeIf { access.developer && family.createdBy != null && family.createdBy == user.email.normalizedEmail() },
-            access.families[family.slug],
-            access.firstFamily?.takeIf { family.id == firstFamilyId() },
-        ).maxOrNull()
-        return role?.takeIf { family.totalUsers == null || it == Role.DEVELOPER }
+        val role = access.memberships[family.id]
+        return role?.takeIf { family.totalUsers == null || it == Role.OWNER }
     }
-
-    private fun firstFamilyId() = familyRepository.findFirstByTotalUsersIsNullAndDeletedAtIsNullOrderByPositionAsc()?.id
 
     private fun FamilySummary.withRole(role: Role) = apply {
         this.role = ApiRole.fromValue(role.name.lowercase())

@@ -25,8 +25,9 @@ import kotlin.io.path.writeText
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 
-// Rights granted in the database, for people the access file does not list, apply on the next request.
+// Rights granted in the database apply on the next request; of the access file only the admins still apply.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
@@ -83,21 +84,20 @@ class DatabaseRolesTest {
     }
 
     @Test
-    fun `the higher of the access file and the database wins`() {
-        memberships.grant(tree, LISTED, Role.VISITOR, ADMIN)
-        assertEquals("editor", families(LISTED)[tree.toString()])
+    fun `the trees of the access file no longer apply, only the database does`() {
+        assertEquals(emptyMap(), families(LISTED))
 
-        memberships.grant(other, LISTED, Role.DEVELOPER, ADMIN)
-        assertEquals("developer", families(LISTED)[other.toString()])
+        memberships.grant(tree, LISTED, Role.VISITOR, ADMIN)
+        assertEquals(mapOf(tree.toString() to "visitor"), families(LISTED))
     }
 
     @Test
-    fun `only a developer membership reaches a test family`() {
+    fun `only an owner membership reaches a test family`() {
         memberships.grant(test, EDITOR, Role.EDITOR, ADMIN)
-        memberships.grant(test, BUILDER, Role.DEVELOPER, ADMIN)
+        memberships.grant(test, BUILDER, Role.OWNER, ADMIN)
 
         assertEquals(null, families(EDITOR)[test.toString()])
-        assertEquals("developer", families(BUILDER)[test.toString()])
+        assertEquals("owner", families(BUILDER)[test.toString()])
     }
 
     @Test
@@ -108,13 +108,13 @@ class DatabaseRolesTest {
         assertEquals("admin", families(VISITOR)[test.toString()])
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = BUILDER)) }.andExpect {
             jsonPath("$.admin") { value(false) }
-            jsonPath("$.developer") { value(true) }
+            jsonPath("$.canCreateTrees") { value(true) }
         }
         mockMvc.get("/users") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = VISITOR)) }.andExpect { status { isOk() } }
     }
 
     @Test
-    fun `the creator of a tree becomes its developer, written to the audit log`() {
+    fun `the creator of a tree becomes its owner, written to the audit log`() {
         memberships.grantFlags(BUILDER, admin = false, canCreateTrees = true, grantedBy = ADMIN)
 
         val json = mockMvc.post("/families/empty") {
@@ -123,18 +123,19 @@ class DatabaseRolesTest {
             content = """{"name":"Built ${UUID.randomUUID()}"}"""
         }.andExpect {
             status { isCreated() }
-            jsonPath("$.role") { value("developer") }
+            jsonPath("$.role") { value("owner") }
+            jsonPath("$.permissions[?(@ == 'family.share')]") { exists() }
         }.andReturn().response.contentAsString
         val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
 
         assertEquals(
-            "developer",
+            "owner",
             jdbc.queryForObject("SELECT role FROM family_memberships WHERE family_id = ?::uuid AND email = ?", String::class.java, own, BUILDER),
         )
         assertEquals(
             1,
             jdbc.queryForObject(
-                "SELECT count(*) FROM audit_log WHERE action = 'membership.granted' AND target_id = ? AND actor = ? AND details ->> 'role' = 'developer'",
+                "SELECT count(*) FROM audit_log WHERE action = 'membership.granted' AND target_id = ? AND actor = ? AND details ->> 'role' = 'owner'",
                 Int::class.java, own, BUILDER,
             ),
         )
@@ -155,8 +156,9 @@ class DatabaseRolesTest {
             .andReturn().response.contentAsString
         val users = Regex("""\{"email":"([^"]+)","listed":(\w+)""").findAll(json).map { it.groupValues[1] to it.groupValues[2] }.toList()
 
-        assertEquals(listOf(ADMIN to "true", LISTED to "true"), users.take(2))
+        assertEquals(ADMIN to "true", users.first())
         assertEquals("true", users.toMap()[VISITOR])
+        assertNotEquals("true", users.toMap()[LISTED])
     }
 
     companion object {

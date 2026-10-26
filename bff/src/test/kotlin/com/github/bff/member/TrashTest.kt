@@ -28,7 +28,7 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 @Transactional

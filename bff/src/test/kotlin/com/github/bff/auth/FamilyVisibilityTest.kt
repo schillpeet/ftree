@@ -21,7 +21,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "app.roles.editors=editor@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 @Transactional
@@ -38,18 +38,24 @@ class FamilyVisibilityTest {
     @Autowired
     private lateinit var jdbc: JdbcTemplate
 
+    @Autowired
+    private lateinit var memberships: Memberships
+
     private lateinit var visible: UUID
     private lateinit var otherReal: UUID
     private lateinit var test: UUID
 
     @BeforeTest
     fun createFamilies() {
-        visible = familyRepository.findFirstByTotalUsersIsNullAndDeletedAtIsNullOrderByPositionAsc()?.id
-            ?: familyRepository.saveAndFlush(FamilyEntity(name = "Visible ${UUID.randomUUID()}")).id
+        visible = familyRepository.saveAndFlush(FamilyEntity(name = "Visible ${UUID.randomUUID()}")).id
         test = (familyService.create(CreateFamilyRequest("Visibility test ${UUID.randomUUID()}", 1, 1, 0, 0)) as FamilyCreationResult.CREATED).summary.id
-        // Listed before every real family, the test family must still not become the visible one.
+        // Listed before every real family, the test family must not become visible as the first one used to.
         jdbc.update("UPDATE families SET position = (SELECT min(position) - 1 FROM families) WHERE id = ?", test)
         otherReal = familyRepository.saveAndFlush(FamilyEntity(name = "Other ${UUID.randomUUID()}")).id
+        memberships.grant(visible, "visitor@example.com", Role.VISITOR, null)
+        memberships.grant(visible, "editor@example.com", Role.EDITOR, null)
+        // Only owners reach a test family; an editor there sees nothing of it.
+        memberships.grant(test, "editor@example.com", Role.EDITOR, null)
     }
 
     private fun familyIds(email: String): List<String> {
@@ -59,7 +65,7 @@ class FamilyVisibilityTest {
     }
 
     @Test
-    fun `non-admins list only the first real family`() {
+    fun `non-admins list only the families of their memberships`() {
         listOf("visitor@example.com", "editor@example.com").forEach { email ->
             assertEquals(listOf(visible.toString()), familyIds(email), email)
         }
@@ -84,6 +90,11 @@ class FamilyVisibilityTest {
         }
         mockMvc.get("/families/$visible/members") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "visitor@example.com")) }
             .andExpect { status { isOk() } }
+    }
+
+    @Test
+    fun `nobody sees a family without a membership, not even the first one`() {
+        assertEquals(emptyList(), familyIds("someone@example.com"))
     }
 
     @Test

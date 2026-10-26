@@ -74,11 +74,13 @@ export const Permission = {
   familyexport: 'family.export',
   memberdelete: 'member.delete',
   familydelete: 'family.delete',
+  familyshare: 'family.share',
   treeappearance: 'tree.appearance',
   familycreate: 'family.create',
   familymanage: 'family.manage',
   devtools: 'dev.tools',
   usersview: 'users.view',
+  usersmanage: 'users.manage',
 } as const;
 
 export interface Me {
@@ -86,8 +88,8 @@ export interface Me {
   email: string;
   /** True for admins, who are admins in every family. */
   admin: boolean;
-  /** True for developers, who may create families and are developers in the families they created. */
-  developer: boolean;
+  /** True for people who may create trees, becoming the owner of each tree they create; admins may always. */
+  canCreateTrees: boolean;
   /** The permissions outside any family; admins have every permission. */
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
@@ -97,7 +99,7 @@ export interface Me {
 export interface UserLogin {
   /** The email, trimmed and lowercased. */
   email: string;
-  /** True when the access file (or the `app.roles` lists) names the email or the database gives it a right. */
+  /** True for a bootstrap admin (from the access file or `app.roles.admins`) or when the database gives the email a right. */
   listed: boolean;
   /**
      * The first recorded sign-in; null when the person has never signed in.
@@ -197,7 +199,7 @@ export interface AdminPresence {
  */
 export type AdminFamilyMemberships = {
   /** @minimum 0 */
-  developer: number;
+  owner: number;
   /** @minimum 0 */
   editor: number;
   /** @minimum 0 */
@@ -223,14 +225,14 @@ export interface AdminFamily {
 }
 
 /**
- * A user's role in one family.
+ * A user's role in one family. Owners may also delete and share the family; every family has at least one.
  */
 export type Role = typeof Role[keyof typeof Role];
 
 
 export const Role = {
   admin: 'admin',
-  developer: 'developer',
+  owner: 'owner',
   editor: 'editor',
   visitor: 'visitor',
 } as const;
@@ -794,7 +796,7 @@ export const getGetMeUrl = () => {
 }
 
 /**
- * Returns the caller's email, whether they are an admin or a developer, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
+ * Returns the caller's email, whether they are an admin or may create trees, and their permissions outside any family; each family in `GET /families` carries the caller's role and permissions in it.
  * @summary Get the signed-in user
  */
 export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {
@@ -855,7 +857,7 @@ export const getGetUsersUrl = () => {
 }
 
 /**
- * Lists everyone the access file (or the `app.roles` lists) names, in its order, then everyone else the database gives a right (admin, creating trees, or a role in a tree) by email, each with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
+ * Lists the bootstrap admins (from the access file or `app.roles.admins`) in their order, then everyone else the database gives a right (admin, creating trees, or a role in a tree) by email, each with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
  * @summary List sign-ins
  */
 export const getUsers = async ( options?: RequestInit): Promise<getUsersResponse> => {

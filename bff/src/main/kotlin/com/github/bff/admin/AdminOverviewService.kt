@@ -27,7 +27,7 @@ class AdminOverviewService(
 ) {
     fun overview(): AdminOverview {
         val signedIn = jdbc.queryForList("SELECT email FROM users WHERE first_seen IS NOT NULL", String::class.java).toSet()
-        val known = signedIn + jdbc.queryForList("SELECT email FROM users", String::class.java) + accessPolicy.listed()
+        val known = signedIn + jdbc.queryForList("SELECT email FROM users", String::class.java) + accessPolicy.bootstrapAdmins()
         val (photoCount, photoBytes) = jdbc.queryForObject(
             "SELECT count(*), coalesce(sum(octet_length(data)), 0) FROM (SELECT data FROM family_photos UNION ALL SELECT data FROM member_photos) p",
         ) { rs, _ -> rs.getInt(1) to rs.getLong(2) }
@@ -37,7 +37,7 @@ class AdminOverviewService(
             AdminOverviewUsers(known.size, signedIn.size, known.size - signedIn.size),
             AdminOverviewPhotos(photoCount, photoBytes),
             presence.all().map { it.email }.distinct().size,
-            AdminOverviewSeats((accessPolicy.listed() + memberships.people()).distinct().size, SEAT_LIMIT),
+            AdminOverviewSeats((accessPolicy.bootstrapAdmins() + memberships.people()).distinct().size, SEAT_LIMIT),
             null,
         )
     }
@@ -89,7 +89,7 @@ class AdminOverviewService(
                 rs.getObject(5, OffsetDateTime::class.java),
                 rs.getBoolean(6),
                 rs.getInt(7),
-                AdminFamilyMemberships(byRole["developer"] ?: 0, byRole["editor"] ?: 0, byRole["visitor"] ?: 0),
+                AdminFamilyMemberships(byRole["owner"] ?: 0, byRole["editor"] ?: 0, byRole["visitor"] ?: 0),
             )
         }
     }

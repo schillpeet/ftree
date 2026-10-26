@@ -5,8 +5,8 @@ import com.github.bff.generated.model.UserLogin
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 
-// Everyone listed, in the order of the access file, then everyone else with a right in the database by email, then
-// everyone else who signed in, most recent first.
+// The bootstrap admins in their order, then everyone else with a right in the database by email, then everyone else
+// who signed in, most recent first.
 @RestController
 class UsersController(
     private val accessPolicy: AccessPolicy,
@@ -15,7 +15,7 @@ class UsersController(
 ) : UsersApi {
     override fun getUsers(): ResponseEntity<List<UserLogin>> {
         val logins = loginRecorder.logins()
-        val listed = (accessPolicy.listed() + memberships.people()).distinct()
+        val listed = (accessPolicy.bootstrapAdmins() + memberships.people()).distinct()
         val unlisted = (logins.keys - listed.toSet()).sortedWith(compareByDescending(nullsFirst()) { logins.getValue(it).lastSeen })
         return ResponseEntity.ok(
             listed.map { UserLogin(it, true, logins[it]?.firstSeen, logins[it]?.lastSeen) } +

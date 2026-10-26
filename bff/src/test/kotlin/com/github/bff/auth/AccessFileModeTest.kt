@@ -26,8 +26,9 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-// Two trees with their own people: the father edits "schiller-<run>"; the friend, a developer, edits "design-<run>",
-// where the viewer only looks, and sees the trees the friend creates.
+// Two trees with their own people in the database: the father edits "schiller-<run>"; the friend, who may create trees,
+// edits "design-<run>", where the viewer only looks, and owns the trees they create. The access file names only the
+// admin; the trees it lists for the father do not apply.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
@@ -42,6 +43,9 @@ class AccessFileModeTest {
     @Autowired
     private lateinit var familyService: FamilyService
 
+    @Autowired
+    private lateinit var memberships: Memberships
+
     private lateinit var schiller: UUID
     private lateinit var design: UUID
     private lateinit var other: UUID
@@ -53,6 +57,10 @@ class AccessFileModeTest {
         design = familyRepository.saveAndFlush(FamilyEntity(name = "Design $RUN", slug = "design-$RUN")).id
         other = familyRepository.saveAndFlush(FamilyEntity(name = "Other $RUN")).id
         test = (familyService.create(CreateFamilyRequest("Test $RUN", 1, 1, 0, 0)) as FamilyCreationResult.CREATED).summary.id
+        memberships.grant(schiller, "father@example.com", Role.EDITOR, null)
+        memberships.grant(design, "friend@example.com", Role.EDITOR, null)
+        memberships.grant(design, "viewer@example.com", Role.VISITOR, null)
+        memberships.grantFlags("friend@example.com", admin = false, canCreateTrees = true, grantedBy = null)
     }
 
     private fun families(email: String): Map<String, String> {
@@ -93,7 +101,7 @@ class AccessFileModeTest {
             contentType = MediaType.APPLICATION_JSON
             content = "{}"
         }.andExpect { status { isForbidden() } }
-        // Deleting stays with admins, and with developers in the trees they created.
+        // Deleting stays with admins, and with owners in their trees.
         listOf(schiller to "father@example.com", design to "friend@example.com").forEach { (family, email) ->
             mockMvc.delete("/families/$family/members/${UUID.randomUUID()}") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = email)) }
                 .andExpect { status { isForbidden() } }
@@ -114,16 +122,16 @@ class AccessFileModeTest {
     }
 
     @Test
-    fun `developers create trees that only they and admins see, and may delete them`() {
+    fun `whoever creates a tree owns it, only they and admins see it, and they may delete it`() {
         listOf("father@example.com", "viewer@example.com").forEach { email -> create(email).andExpect { status { isForbidden() } } }
         val json = create("friend@example.com").andExpect {
             status { isCreated() }
-            jsonPath("$.role") { value("developer") }
+            jsonPath("$.role") { value("owner") }
             jsonPath("$.permissions[5]") { value("family.delete") }
         }.andReturn().response.contentAsString
         val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
 
-        assertEquals("developer", families("friend@example.com")[own])
+        assertEquals("owner", families("friend@example.com")[own])
         assertEquals(null, families("father@example.com")[own])
         assertEquals("admin", families("admin@example.com")[own])
         mockMvc.delete("/families/$own") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "father@example.com")) }
@@ -133,30 +141,30 @@ class AccessFileModeTest {
     }
 
     @Test
-    fun `developers create empty trees that only they and admins see`() {
+    fun `whoever creates an empty tree owns it, and only they and admins see it`() {
         createEmpty("father@example.com").andExpect { status { isForbidden() } }
         val json = createEmpty("friend@example.com").andExpect {
             status { isCreated() }
             jsonPath("$.memberCount") { value(0) }
-            jsonPath("$.role") { value("developer") }
+            jsonPath("$.role") { value("owner") }
         }.andReturn().response.contentAsString
         val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
 
-        assertEquals("developer", families("friend@example.com")[own])
+        assertEquals("owner", families("friend@example.com")[own])
         assertEquals(null, families("father@example.com")[own])
         assertEquals("admin", families("admin@example.com")[own])
     }
 
     @Test
-    fun `me tells admins and developers apart and gives everyone the appearance`() {
+    fun `me tells admins and tree creators apart and gives everyone the appearance`() {
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "father@example.com")) }.andExpect {
             jsonPath("$.admin") { value(false) }
-            jsonPath("$.developer") { value(false) }
+            jsonPath("$.canCreateTrees") { value(false) }
             jsonPath("$.permissions.length()") { value(1) }
             jsonPath("$.permissions[0]") { value("tree.appearance") }
         }
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "friend@example.com")) }.andExpect {
-            jsonPath("$.developer") { value(true) }
+            jsonPath("$.canCreateTrees") { value(true) }
             jsonPath("$.permissions.length()") { value(3) }
             jsonPath("$.permissions[1]") { value("family.create") }
         }
@@ -198,13 +206,6 @@ class AccessFileModeTest {
                   - email: father@example.com
                     trees:
                       schiller-$RUN: editor
-                  - email: friend@example.com
-                    developer: true
-                    trees:
-                      design-$RUN: editor
-                  - email: viewer@example.com
-                    trees:
-                      design-$RUN: visitor
                 """.trimIndent(),
             )
             registry.add("app.access.file") { file.toString() }
