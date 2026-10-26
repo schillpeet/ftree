@@ -282,6 +282,13 @@ const en = {
     creating: 'Creating family …',
     submit: 'Save and show family',
   },
+  treeRoute: {
+    switch: 'Switch tree',
+    trees: 'Your trees',
+    notFound: 'Tree not found',
+    notFoundHint: 'This tree does not exist, or you have no access to it.',
+    backHome: 'Back to your tree',
+  },
 };
 
 const de: typeof en = {
@@ -561,6 +568,13 @@ const de: typeof en = {
     impossible: 'Diese Anzahl lässt sich mit den gewählten Generationen und Kinderzahlen nicht bilden.',
     creating: 'Familie wird angelegt …',
     submit: 'Familie speichern und anzeigen',
+  },
+  treeRoute: {
+    switch: 'Baum wechseln',
+    trees: 'Deine Bäume',
+    notFound: 'Baum nicht gefunden',
+    notFoundHint: 'Diesen Baum gibt es nicht, oder du hast keinen Zugriff darauf.',
+    backHome: 'Zurück zu deinem Baum',
   },
 };
 
