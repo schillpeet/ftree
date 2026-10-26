@@ -74,7 +74,7 @@ spec:
             - name: APP_ACCESS_FILE
               value: /config/access.yaml
             {{- end }}
-          # The BFF has no health endpoint yet, so the probes only check that the port is open.
+          # The probes still only check that the port is open; the Actuator probes on the management port (8081) are not wired in yet.
           readinessProbe:
             tcpSocket:
               port: http

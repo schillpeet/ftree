@@ -16,8 +16,10 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.annotation.Order
 import org.springframework.http.HttpMethod.DELETE
 import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpMethod.POST
@@ -44,6 +46,25 @@ class SecurityConfiguration(
     @Value("\${app.cors.allowed-origins:http://localhost:3000}")
     private val allowedOrigins: String,
 ) {
+    // Boot applies the security filters to the management port as well. EndpointRequest matches only there, because the
+    // port differs from the app's, so the app port keeps denying /actuator. Probes and the scraper send no user, and the
+    // port is never routed through the UI or the tunnel.
+    @Bean
+    @Order(0)
+    fun managementSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        http
+            .securityMatcher(EndpointRequest.toAnyEndpoint())
+            .csrf { it.disable() }
+            .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .formLogin { it.disable() }
+            .httpBasic { it.disable() }
+            .authorizeHttpRequests {
+                it.requestMatchers(EndpointRequest.to("health", "prometheus")).permitAll()
+                it.anyRequest().denyAll()
+            }
+        return http.build()
+    }
+
     @Bean
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
