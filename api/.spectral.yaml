@@ -1,0 +1,31 @@
+# Lints openapi.yaml with `pnpm --dir api lint`; CI fails on errors, warnings are shown only.
+extends:
+  - spectral:oas
+  - "@stoplight/spectral-owasp-ruleset"
+
+rules:
+  # The BFF answers these with problem details from ProblemAdvice, so every operation must document them.
+  operation-auth-responses:
+    description: Every operation documents 401, 403, and 500 through the shared responses.
+    severity: error
+    given: "$.paths[*][get,put,post,delete,patch]"
+    then:
+      - field: responses.401
+        function: truthy
+      - field: responses.403
+        function: truthy
+      - field: responses.500
+        function: truthy
+
+  # Size bounds would tighten the BFF's bean validation, so they are added deliberately per field, not to satisfy a rule.
+  owasp:api4:2023-string-limit: warn
+  owasp:api4:2023-array-limit: warn
+  owasp:api4:2023-integer-limit-legacy: warn
+  # A format would only change the generated Java and TypeScript types, which already use 32-bit numbers.
+  owasp:api4:2023-integer-format: warn
+  # Request rates are not part of this contract.
+  owasp:api4:2023-rate-limit: warn
+  # The UI reaches the BFF through its own origin; Spring sets CORS headers from configuration, not per response.
+  owasp:api8:2023-define-cors-origin: "off"
+  # The only server is the local BFF, which serves plain HTTP on localhost.
+  owasp:api8:2023-no-server-http: "off"

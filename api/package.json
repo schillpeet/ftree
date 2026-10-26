@@ -1,0 +1,13 @@
+{
+  "name": "ftree-api",
+  "private": true,
+  "description": "Lints the OpenAPI contract with Spectral and the OWASP API Security ruleset.",
+  "scripts": {
+    "lint": "spectral lint openapi.yaml --fail-severity=error"
+  },
+  "devDependencies": {
+    "@stoplight/spectral-cli": "6.17.0",
+    "@stoplight/spectral-owasp-ruleset": "2.0.1"
+  },
+  "packageManager": "pnpm@10.33.4"
+}

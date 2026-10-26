@@ -1,6 +1,6 @@
 name: CI
 
-# Always runs so `ci-ok` can be a required status check. The ui and bff jobs run only when
+# Always runs so `ci-ok` can be a required status check. The api, ui, and bff jobs run only when
 # files that affect them change (Markdown-only changes are skipped); `ci-ok` waits for them.
 # The image job also runs on release-please's release PR, so a release with fixable CRITICAL
 # vulnerabilities in its images cannot be merged and never gets a tag.
@@ -22,6 +22,7 @@ jobs:
   changes:
     runs-on: ubuntu-latest
     outputs:
+      api: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.api == 'true' }}
       ui: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.ui == 'true' }}
       bff: ${{ github.event_name == 'workflow_dispatch' || steps.filter.outputs.bff == 'true' }}
       image: ${{ github.event_name == 'workflow_dispatch' || startsWith(github.head_ref, 'release-please--') || steps.filter.outputs.image == 'true' }}
@@ -34,6 +35,9 @@ jobs:
         with:
           predicate-quantifier: every
           filters: |
+            api:
+              - "{api/**,.github/workflows/ci.yml}"
+              - "!**/*.md"
             ui:
               - "{ui/**,api/openapi.yaml,.github/workflows/ci.yml}"
               - "!**/*.md"
@@ -43,6 +47,39 @@ jobs:
             image:
               - "{bff/**,ui/**,api/openapi.yaml,.dockerignore,.github/workflows/ci.yml}"
               - "!**/*.md"
+
+  # Lints the contract with Spectral and the OWASP ruleset and, on pull requests, fails on breaking changes against the
+  # base branch unless the PR title marks one with `!`, so every breaking contract change shows up in the changelog.
+  api:
+    needs: changes
+    if: needs.changes.outputs.api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # the base branch's spec for oasdiff
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: api/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: api/pnpm-lock.yaml
+      - run: pnpm --dir api install --frozen-lockfile
+      - run: pnpm --dir api lint
+      - name: Fail on breaking changes
+        if: github.event_name == 'pull_request' && !contains(github.event.pull_request.title, '!:')
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        # The spec declares the sign-in that every operation has always required only since this check exists, so
+        # oasdiff's anonymous-access check is lowered until the base branch declares it too.
+        run: |
+          git show "origin/$BASE_REF:api/openapi.yaml" > "$RUNNER_TEMP/base.yaml"
+          echo "api-security-anonymous-access-removed info" > "$RUNNER_TEMP/severity-levels.txt"
+          docker run --rm -v "$RUNNER_TEMP:/base:ro" -v "$PWD/api:/revision:ro" \
+            tufin/oasdiff:v1.34.1@sha256:67a23cfea7d251e2ae34ee703ac8733c5d96bc2e7b90fd0f4d475ec99367b85f \
+            breaking /base/base.yaml /revision/openapi.yaml --fail-on ERR --severity-levels /base/severity-levels.txt
 
   ui:
     needs: changes
@@ -158,7 +195,7 @@ jobs:
 
   # Required status check: passes when every job above succeeded or was skipped.
   ci-ok:
-    needs: [changes, ui, bff, image]
+    needs: [changes, api, ui, bff, image]
     if: always()
     runs-on: ubuntu-latest
     steps:
