@@ -26,7 +26,6 @@ import com.github.bff.generated.model.Role as ApiRole
 class FamilyVisibility(private val familyRepository: FamilyRepository) {
     fun roleIn(familyId: UUID, user: CurrentUser? = CurrentUser.current()): Role? {
         user ?: return null
-        if (user.access.admin) return Role.ADMIN
         val family = familyRepository.findById(familyId).orElse(null) ?: return null
         return roleIn(family, user)
     }
@@ -50,6 +49,8 @@ class FamilyVisibility(private val familyRepository: FamilyRepository) {
     fun withCallerRole(family: FamilySummary): FamilySummary = family.withRole(roleIn(family.id) ?: Role.VISITOR)
 
     private fun roleIn(family: FamilyEntity, user: CurrentUser): Role? {
+        // A trashed family is invisible to everyone, admins included; only the trash endpoints reach it.
+        if (family.deletedAt != null) return null
         val access = user.access
         if (access.admin) return Role.ADMIN
         val role = listOfNotNull(
@@ -62,7 +63,7 @@ class FamilyVisibility(private val familyRepository: FamilyRepository) {
         return role?.takeIf { family.totalUsers == null || it == Role.DEVELOPER }
     }
 
-    private fun firstFamilyId() = familyRepository.findFirstByTotalUsersIsNullOrderByPositionAsc()?.id
+    private fun firstFamilyId() = familyRepository.findFirstByTotalUsersIsNullAndDeletedAtIsNullOrderByPositionAsc()?.id
 
     private fun FamilySummary.withRole(role: Role) = apply {
         this.role = ApiRole.fromValue(role.name.lowercase())

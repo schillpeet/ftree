@@ -33,6 +33,9 @@ class RelativesFamilyScopeTest {
     private lateinit var familyService: FamilyService
 
     @Autowired
+    private lateinit var trash: TrashService
+
+    @Autowired
     private lateinit var memberService: MemberService
 
     @Autowired
@@ -58,8 +61,7 @@ class RelativesFamilyScopeTest {
 
     @AfterTest
     fun deleteFamilies() {
-        familyService.delete(family)
-        familyService.delete(otherFamily)
+        listOf(family, otherFamily).forEach { trash.trash(it); trash.purge(it) }
     }
 
     private fun putRelatives(body: String) = mockMvc.put("/families/$family/members/$anna/relatives") {

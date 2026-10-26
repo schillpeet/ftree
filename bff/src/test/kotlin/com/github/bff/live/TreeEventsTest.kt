@@ -5,6 +5,7 @@ import com.github.bff.auth.CloudflareTestDecoder
 import com.github.bff.auth.CloudflareTestTokens.token
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
+import com.github.bff.member.TrashService
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -44,6 +45,9 @@ class TreeEventsTest {
     @Autowired
     private lateinit var jdbc: JdbcTemplate
 
+    @Autowired
+    private lateinit var trash: TrashService
+
     private lateinit var visible: UUID
     private lateinit var hidden: UUID
     private val created = mutableListOf<UUID>()
@@ -61,7 +65,11 @@ class TreeEventsTest {
     @AfterTest
     fun deleteFamilies() {
         broadcaster.closeAll()
-        created.forEach { id -> mockMvc.delete("/families/$id") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token()) } }
+        // Deleting only trashes, so the families are purged as well.
+        created.forEach { id ->
+            mockMvc.delete("/families/$id") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token()) }
+            trash.purge(id)
+        }
     }
 
     private fun stream(family: UUID, email: String, clientId: String = "tab-${email.substringBefore('@')}"): MvcResult =

@@ -19,6 +19,9 @@ class FamilyPhotoTest {
     private lateinit var familyService: FamilyService
 
     @Autowired
+    private lateinit var trash: TrashService
+
+    @Autowired
     private lateinit var familyRepository: FamilyRepository
 
     @Autowired
@@ -65,7 +68,8 @@ class FamilyPhotoTest {
     fun `deleting the family removes the photo`() {
         val family = createFamily()
         familyService.updatePhoto(family, "image/webp", bytes)
-        assertEquals(true, familyService.delete(family))
+        assertEquals(true, trash.trash(family))
+        assertEquals(true, trash.purge(family))
         familyRepository.flush()
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM family_photos WHERE family_id = ?", Int::class.java, family))
     }

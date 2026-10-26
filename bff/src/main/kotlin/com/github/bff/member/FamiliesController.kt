@@ -29,6 +29,7 @@ import java.util.UUID
 class FamiliesController(
     private val familyService: FamilyService,
     private val familyVisibility: FamilyVisibility,
+    private val trash: TrashService,
     // Request-scoped proxy; the generated interface does not pass the body's Content-Type.
     private val request: HttpServletRequest,
 ) : FamiliesApi {
@@ -39,14 +40,14 @@ class FamiliesController(
         when (val result = familyService.create(createFamilyRequest)) {
             is FamilyCreationResult.CREATED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
             FamilyCreationResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
-            FamilyCreationResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
+            FamilyCreationResult.NAME_TAKEN -> throw trash.nameTaken(createFamilyRequest.name)
         }
 
     override fun createEmptyFamily(createEmptyFamilyRequest: CreateEmptyFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.createEmpty(createEmptyFamilyRequest)) {
             is FamilyCreationResult.CREATED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
             FamilyCreationResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
-            FamilyCreationResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
+            FamilyCreationResult.NAME_TAKEN -> throw trash.nameTaken(createEmptyFamilyRequest.name)
         }
 
     override fun archiveFamily(familyId: UUID, archiveFamilyRequest: ArchiveFamilyRequest): ResponseEntity<FamilySummary> =
@@ -54,7 +55,7 @@ class FamiliesController(
             is FamilyArchiveResult.ARCHIVED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
             FamilyArchiveResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
             FamilyArchiveResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
-            FamilyArchiveResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
+            FamilyArchiveResult.NAME_TAKEN -> throw trash.nameTaken(archiveFamilyRequest.name)
         }
 
     override fun anonymizeFamily(familyId: UUID, anonymizeFamilyRequest: AnonymizeFamilyRequest): ResponseEntity<FamilySummary> =
@@ -62,14 +63,14 @@ class FamiliesController(
             is FamilyAnonymizeResult.ANONYMIZED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
             FamilyAnonymizeResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
             FamilyAnonymizeResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
-            FamilyAnonymizeResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
+            FamilyAnonymizeResult.NAME_TAKEN -> throw trash.nameTaken(anonymizeFamilyRequest.name)
         }
 
     override fun importFamily(importFamilyRequest: ImportFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.import(importFamilyRequest)) {
             is FamilyImportResult.IMPORTED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
             FamilyImportResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
-            FamilyImportResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
+            FamilyImportResult.NAME_TAKEN -> throw trash.nameTaken(importFamilyRequest.name)
         }
 
     override fun exportFamily(familyId: UUID): ResponseEntity<String> {
@@ -85,7 +86,7 @@ class FamiliesController(
         if (familyService.reorder(reorderFamiliesRequest)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.INVALID_REQUEST)
 
     override fun deleteFamily(familyId: UUID): ResponseEntity<Void> =
-        if (familyService.delete(familyId)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.NOT_FOUND)
+        if (trash.trash(familyId)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun uploadFamilyPhoto(familyId: UUID, body: Resource): ResponseEntity<Void> =
         when (familyService.updatePhoto(familyId, request.contentType, body.contentAsByteArray)) {
@@ -116,7 +117,7 @@ class FamiliesController(
             is FamilyRenameResult.RENAMED -> ResponseEntity.ok(familyVisibility.withCallerRole(result.summary))
             FamilyRenameResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
             FamilyRenameResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
-            FamilyRenameResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
+            FamilyRenameResult.NAME_TAKEN -> throw trash.nameTaken(renameFamilyRequest.name)
         }
 }
 

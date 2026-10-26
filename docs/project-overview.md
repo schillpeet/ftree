@@ -107,7 +107,7 @@ The "Zufallsfamilie generieren" button in the families board of the menu, shown 
 The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
 The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
-The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation.
+The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation, which moves it to the trash.
 The UI offers no archiving; the BFF's `POST /families/{familyId}/archive` stays available.
 The family card's edit mode renames the family via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
 Every family has a slug (lowercase ASCII words joined by `-`, at most 60 characters) that is made from its name when it is created, gets `-2`, `-3`, … when taken, and stays when the family is renamed; it names the family in the access file, and admins see it on the family card.
@@ -227,7 +227,7 @@ The UI sends the version it opened the edit form with, and the relatives the ver
 The UI calls a generated client.
 The BFF implements family-scoped member listing, creation, editing, deletion, parent/child and partner links (with siblings set through shared parents), card placement (pin or free position, rejecting a pin that is already taken), plus atomic generation, archiving (moving all members into a new named family), and deletion of whole sets against PostgreSQL; it rejects links that would make someone their own ancestor.
 Member photos (JPEG, PNG, or WebP up to 2 MB) are stored in PostgreSQL in their own `member_photos` table, so member listings never load the bytes; members carry `photoUpdatedAt`, which the UI appends to the photo URL so the year-long private cache never shows an outdated photo, and deleting a member or family removes their photos.
-Families can have one photo (JPEG, PNG, or WebP up to 2 MB) via `GET`, `PUT`, and `DELETE /families/{familyId}/photo`, stored in its own `family_photos` table; family summaries carry `photoUpdatedAt` for the same year-long private cache, and deleting a family removes its photo.
+Families can have one photo (JPEG, PNG, or WebP up to 2 MB) via `GET`, `PUT`, and `DELETE /families/{familyId}/photo`, stored in its own `family_photos` table; family summaries carry `photoUpdatedAt` for the same year-long private cache, and purging a trashed family removes its photo.
 Family summaries carry `photoFit` (`cover` fills the family card's title area, `original` shows the photo at its natural size, limited by the client), stored in `families.photo_fit` (migration V16), set via `PUT /families/{familyId}/photo-fit`, and `cover` for every new family.
 Partnership status and dates live in `member_partners` on both rows of a pair; members return them as `partnerships`, and the relatives endpoint replaces them only when its request includes `partnerships`.
 A relative, sibling, or partner id that is not a member of the family in the path is answered with 400 `INVALID_REQUEST` like an unknown id, and database triggers on `member_parents` and `member_partners` refuse links between members of different families.
@@ -270,7 +270,7 @@ The burger menu starts with "Profil" for everyone, a board with the email, the r
 Without `tree.appearance` only the experimental appearance can be chosen; the others are disabled and marked "Demnächst", and a stored other choice falls back to experimental.
 The Evolution button needs `tree.appearance`, so everyone sees it; its random-family generator needs `dev.tools`.
 Editing a person, their photo, relatives, and dragging cards to pins need `member.edit`; deleting a person needs `member.delete`.
-Editing the family card (name, photo, photo fit) needs `family.edit`, the GEDCOM download `family.export`, deleting a family `family.delete`, creating and importing families `family.create`, and the anonymized copy and reordering families `family.manage`.
+Editing the family card (name, photo, photo fit) needs `family.edit`, the GEDCOM download `family.export`, deleting (trashing) a family `family.delete`, creating and importing families `family.create`, and the anonymized copy and reordering families `family.manage`.
 A 403 from the API shows a friendly notice that the role does not allow it, and a 401 suggests reloading or signing in again.
 The UI tells errors apart by the problem `code` (for example `NAME_TAKEN` or `NOT_FOUND`), not by the status; only answers without a code, which come from Cloudflare Access or the proxy, fall back to the status for the 401/403 notice.
 A broader family-tree model (relationship types such as uncertain links) is not implemented.
@@ -328,7 +328,7 @@ The admin page and its tabs do not use these endpoints yet.
 It starts with a `presence` event listing every browser tab in the family (`clientId`, `email`, `initials`, `admin`, `viewing`, `editing`, `idle`, sorted by email) and sends a new one whenever someone arrives, leaves, or changes what they view, edit, or whether they are idle.
 After every saved change it sends `member-changed` or `member-deleted` (`memberId`, `by`) or `family-changed` (`familyId`, `by`), where `by` is the email of whoever made the change.
 The member and family services publish these as Spring events inside their transaction, and `TreeEventBroadcaster` sends them only after the commit (`@TransactionalEventListener`), so rolled-back changes are never announced.
-`family-changed` covers renaming, family photos and photo fit, archiving the members into another family, and deleting the family, after which its streams end and its presence is cleared.
+`family-changed` covers renaming, family photos and photo fit, archiving the members into another family, and trashing the family, after which its streams end and its presence is cleared.
 `PUT /families/{familyId}/presence` with `clientId`, `viewing`, `editing` (member ids or null), and `idle` updates the caller's tab and needs `tree.view` in the family.
 Presence naming a member of another family, or none, answers 400 `INVALID_REQUEST`, so it never reveals ids outside the family.
 Opening a stream adds the tab to the presence as well, and closing it removes the tab, unless the server ended it after its 30 minutes, because `EventSource` reconnects right away.
@@ -340,6 +340,18 @@ Presence and the open streams live in the BFF's memory (`PresenceRegistry`, `Tre
 `PresenceDirectory.all()` lists everyone present across families for a later admin overview.
 In dev mode the cookie `ftree-dev-email` signs the request in as that email instead of `app.auth.dev-email`, so two browser profiles can be two people locally; cloudflare mode ignores it.
 The UI does not use the stream or the presence yet.
+
+### Trash
+
+`DELETE /families/{familyId}` no longer removes a family: it sets `families.deleted_at` and `deleted_by` and moves the family, its members, photos, and memberships into a trash for 30 days.
+A trashed family is invisible to everyone, admins included: every family path answers 404, it is missing from `GET /families`, and it does not count as the first family or in a reorder.
+Its name and slug stay taken, so creating, importing, archiving, anonymizing, or renaming to that name answers 409 `NAME_TAKEN` with a detail that says the name is in the trash.
+`GET /admin/trash` lists the trashed families (`id`, `name`, `slug`, `deletedAt`, `deletedBy`, `purgeAt`, `memberCount`), the one deleted longest ago first.
+`POST /admin/trash/{familyId}/restore` brings a family back with everything it had, and `DELETE /admin/trash/{familyId}` removes it for good at once, photos included; both answer 404 for a family that is not in the trash.
+The three trash endpoints need `family.manage`, which only admins have, and the family visibility check skips `/admin/**`.
+`TrashPurger` runs daily at 03:30 (`app.trash.purge-cron`) and removes every family trashed 30 days ago or longer, using the clock in `TrashService`, which tests replace.
+Trashing, restoring, and purging write `family.trashed`, `family.restored`, and `family.purged` to the audit log with the family's name; the purger's entries have no actor and the detail `reason` `expired`.
+The UI still says "delete" and has no trash view yet.
 
 ## Code Map
 
@@ -383,6 +395,7 @@ The UI does not use the stream or the presence yet.
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
 - `bff/src/main/kotlin/com/github/bff/live/` holds the presence (`PresenceRegistry.kt`), the change events (`TreeEvent.kt`), the event streams (`TreeEventBroadcaster.kt`), and `LiveController.kt`; `PresenceRegistryTest` and `TreeEventsTest` cover them.
+- `bff/src/main/kotlin/com/github/bff/member/TrashService.kt` trashes, restores, and purges families and holds `TrashPurger`; `TrashController.kt` serves `/admin/trash`, and `TrashTest` covers it.
 - `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` gives each user their role per family and hides the others; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the legacy role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once.

@@ -22,6 +22,8 @@ tags:
     description: Who is in a family tree right now and what others change in it
   - name: admin
     description: Read-only overviews across all trees and people, for admins
+  - name: Trash
+    description: Deleted families, kept for 30 days before they are removed for good
 paths:
   /me:
     get:
@@ -130,6 +132,87 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  # Trash: deleted families, admin only.
+  /admin/trash:
+    get:
+      operationId: getTrash
+      tags:
+        - Trash
+      summary: List the trashed families
+      description: Lists the families in the trash, the one deleted longest ago first. `DELETE /families/{familyId}` moves a family here instead of deleting it; it disappears for everyone else, admins included, and keeps its name and slug. The BFF removes it for good at `purgeAt`, 30 days after it was deleted. Needs `family.manage`, which only admins have.
+      responses:
+        "200":
+          description: The trashed families.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrashedFamily"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/trash/{familyId}:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: purgeTrashedFamily
+      tags:
+        - Trash
+      summary: Delete a trashed family for good
+      description: Removes the trashed family with its members, links, and photos right away; this cannot be undone. Needs `family.manage`.
+      responses:
+        "204":
+          description: Family removed for good.
+        "404":
+          description: No trashed family with this id. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/trash/{familyId}/restore:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: restoreTrashedFamily
+      tags:
+        - Trash
+      summary: Restore a trashed family
+      description: Takes the family out of the trash with everything it had, memberships included. Needs `family.manage`.
+      responses:
+        "204":
+          description: Family restored.
+        "404":
+          description: No trashed family with this id. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /families:
     get:
       operationId: getFamilies
@@ -226,11 +309,11 @@ paths:
       operationId: deleteFamily
       tags:
         - Families
-      summary: Delete a family and all of its members
-      description: Any family, including the default family, can be deleted.
+      summary: Move a family to the trash
+      description: Any family, including the default family, can be deleted. The family and its members move to the trash for 30 days (see the Trash tag), where only admins can restore or remove them; until then its name and slug stay taken.
       responses:
         "204":
-          description: Family and its members deleted.
+          description: Family moved to the trash.
         "404":
           description: Family not found. Code `NOT_FOUND`.
           content:
@@ -1243,7 +1326,7 @@ components:
         - `FORBIDDEN` (403): signed in, but not allowed.
         - `NOT_FOUND` (404): the family, member, or photo does not exist or is not visible.
         - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
-        - `NAME_TAKEN` (409): a family with this name already exists.
+        - `NAME_TAKEN` (409): a family with this name already exists, possibly in the trash.
         - `PIN_TAKEN` (409): another member is already pinned to this place.
         - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
         - `PHOTO_TOO_LARGE` (413): the photo is too large.
@@ -1515,6 +1598,38 @@ components:
         - family.manage
         - dev.tools
         - users.view
+    TrashedFamily:
+      type: object
+      required:
+        - id
+        - name
+        - slug
+        - deletedAt
+        - deletedBy
+        - purgeAt
+        - memberCount
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+        deletedAt:
+          type: string
+          format: date-time
+        deletedBy:
+          type: string
+          nullable: true
+          description: The email of whoever deleted the family, trimmed and lowercased; null when unknown.
+        purgeAt:
+          type: string
+          format: date-time
+          description: When the BFF removes the family for good.
+        memberCount:
+          type: integer
+          minimum: 0
     FamilySummary:
       type: object
       required:

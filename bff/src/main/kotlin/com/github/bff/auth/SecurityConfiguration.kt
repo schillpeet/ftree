@@ -64,6 +64,10 @@ class SecurityConfiguration(
             .httpBasic { it.disable() }
             .authorizeHttpRequests {
                 it.requestMatchers(EndpointRequest.to("health", "prometheus")).permitAll()
+                // Trash: deleted families, admins only.
+                it.requestMatchers(GET, "/admin/trash").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(POST, "/admin/trash/*/restore").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(DELETE, "/admin/trash/*").hasAuthority(FAMILY_MANAGE.key)
                 it.anyRequest().denyAll()
             }
         return http.build()
@@ -135,6 +139,10 @@ class SecurityConfiguration(
                 // Live: presence and change events of one family.
                 it.requestMatchers(GET, "/families/{familyId}/events").access(inFamily(TREE_VIEW))
                 it.requestMatchers(PUT, "/families/{familyId}/presence").access(inFamily(TREE_VIEW))
+                // Trash: deleted families, admins only.
+                it.requestMatchers(GET, "/admin/trash").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(POST, "/admin/trash/*/restore").hasAuthority(FAMILY_MANAGE.key)
+                it.requestMatchers(DELETE, "/admin/trash/*").hasAuthority(FAMILY_MANAGE.key)
                 it.anyRequest().denyAll()
             }
         when (authProperties.mode) {

@@ -9,7 +9,8 @@ import java.net.URI
 
 // Thrown by controllers and interceptors; ProblemAdvice answers it as problem details. The generated interfaces return
 // typed ResponseEntity<T>, so throwing is the only way to send a problem body from a controller.
-class ApiProblem(val code: ProblemCode) : RuntimeException(code.value, null, false, false)
+// detail replaces the code's fixed sentence where the caller can act on more, for example a name held by the trash.
+class ApiProblem(val code: ProblemCode, val detail: String? = null) : RuntimeException(code.value, null, false, false)
 
 val ProblemCode.status: HttpStatus
     get() = when (this) {
@@ -60,8 +61,9 @@ fun problemDetail(
     path: String,
     errors: List<FieldError> = emptyList(),
     status: HttpStatusCode = code.status,
+    detail: String? = null,
 ): ProblemDetail =
-    ProblemDetail.forStatusAndDetail(status, code.detail).apply {
+    ProblemDetail.forStatusAndDetail(status, detail ?: code.detail).apply {
         type = URI.create("urn:ftree:problem:" + code.name.lowercase().replace('_', '-'))
         instance = runCatching { URI.create(path) }.getOrNull()
         setProperty("code", code.value)
