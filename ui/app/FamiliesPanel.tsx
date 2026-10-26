@@ -6,6 +6,7 @@ import { importFamily, reorderFamilies, type FamilySummary } from '../lib/api/ge
 import RandomFamilyPanel from './RandomFamilyPanel';
 import { useT } from './i18n';
 import { useCan } from './Permissions';
+import { problemCode } from './problems';
 
 export default function FamiliesPanel({
   families,
@@ -81,15 +82,12 @@ export default function FamiliesPanel({
     setImportError(null);
     try {
       const response = await importFamily({ name, gedcom: await file.text() });
-      if (response.status === 409) {
-        setImportError(t.familyExists(name));
-        return;
+      if (response.status !== 201) {
+        const code = problemCode(response.data);
+        if (code === 'NAME_TAKEN') return setImportError(t.familyExists(name));
+        if (code === 'INVALID_REQUEST' || code === 'VALIDATION_FAILED') return setImportError(t.families.importInvalid);
+        throw new Error('Unexpected import response');
       }
-      if (response.status === 400) {
-        setImportError(t.families.importInvalid);
-        return;
-      }
-      if (response.status !== 201) throw new Error('Unexpected import response');
       onAdded(response.data);
     } catch {
       setImportError(t.families.importFailed);

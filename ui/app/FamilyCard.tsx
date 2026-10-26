@@ -22,6 +22,7 @@ import { PanelShell, RelativeChip, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
 import { toJpeg, usePhotoPreview } from './MemberFields';
 import { Can, useCan } from './Permissions';
+import { problemCode } from './problems';
 
 export type FamilyCardMode = 'view' | 'edit' | 'create';
 
@@ -109,8 +110,9 @@ export default function FamilyCard({
     try {
       if (next && next !== family.name) {
         const response = await renameFamily(family.id, { name: next });
-        if (response.status === 409) return setError(t.familyExists(next));
-        if (response.status === 404) return setError(t.families.gone);
+        const code = problemCode(response.data);
+        if (code === 'NAME_TAKEN') return setError(t.familyExists(next));
+        if (code === 'NOT_FOUND') return setError(t.families.gone);
         if (response.status !== 200) return setError(t.families.renameFailed);
       }
       if (photoFile) {
@@ -139,7 +141,7 @@ export default function FamilyCard({
     let created: FamilySummary;
     try {
       const response = await createEmptyFamily({ name: next });
-      if (response.status === 409) return setError(t.familyExists(next));
+      if (problemCode(response.data) === 'NAME_TAKEN') return setError(t.familyExists(next));
       if (response.status !== 201) return setError(t.familyCard.createFailed);
       created = response.data;
     } catch {
@@ -168,8 +170,9 @@ export default function FamilyCard({
     setError(null);
     try {
       const response = await anonymizeFamily(family.id, { name: copy });
-      if (response.status === 409) return setError(t.familyExists(copy));
-      if (response.status === 404) return setError(t.families.gone);
+      const code = problemCode(response.data);
+      if (code === 'NAME_TAKEN') return setError(t.familyExists(copy));
+      if (code === 'NOT_FOUND') return setError(t.families.gone);
       if (response.status !== 201) throw new Error(`HTTP ${response.status}`);
       onCreated(response.data);
     } catch {

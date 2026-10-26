@@ -5,6 +5,7 @@ import { getMe, type FamilySummary, type Me, type Permission } from '../lib/api/
 import { useT } from './i18n';
 import { CloseIcon } from './icons';
 import { authProblemOf, can, type AuthProblem } from './access';
+import { responseProblemCode } from './problems';
 
 // undefined while `/me` is loading, null when it failed.
 const MeContext = createContext<Me | null | undefined>(undefined);
@@ -28,9 +29,12 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     const original = window.fetch;
     window.fetch = async (input, init) => {
       const response = await original(input, init);
+      if (response.ok) return response;
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-      const found = authProblemOf(url, response.status, window.location.origin);
-      if (found) setProblem(found);
+      void responseProblemCode(response).then((code) => {
+        const found = authProblemOf(url, response.status, code, window.location.origin);
+        if (found) setProblem(found);
+      });
       return response;
     };
     let current = true;

@@ -252,6 +252,7 @@ The Evolution button needs `tree.appearance`, so everyone sees it; its random-fa
 Editing a person, their photo, relatives, and dragging cards to pins need `member.edit`; deleting a person needs `member.delete`.
 Editing the family card (name, photo, photo fit) needs `family.edit`, the GEDCOM download `family.export`, deleting a family `family.delete`, creating and importing families `family.create`, and the anonymized copy and reordering families `family.manage`.
 A 403 from the API shows a friendly notice that the role does not allow it, and a 401 suggests reloading or signing in again.
+The UI tells errors apart by the problem `code` (for example `NAME_TAKEN` or `NOT_FOUND`), not by the status; only answers without a code, which come from Cloudflare Access or the proxy, fall back to the status for the 401/403 notice.
 A broader family-tree model (relationship types such as uncertain links) is not implemented.
 The BFF serves Actuator on its own management port, `management.server.port` (env `MANAGEMENT_PORT`, default 8081), so the UI's `/api` rewrite and the tunnel, which forward to port 8080, never reach it.
 The management port exposes only `/actuator/health` (without details or components), `/actuator/health/liveness`, `/actuator/health/readiness`, and `/actuator/prometheus`, without a user; other Actuator endpoints answer 403 or 404, and `/actuator/**` on port 8080 stays denied like any unknown endpoint (`managementSecurityFilterChain` in `SecurityConfiguration.kt`).
@@ -259,6 +260,10 @@ The chart does not use the Actuator probes or expose the management port yet.
 `http.server.requests` metrics are labelled with the matched URI template, for example `/families/{familyId}/members`, or `UNKNOWN`, never with ids, emails, or names from the path.
 The BFF logs JSON in the Elastic Common Schema (`logging.structured.format.console=ecs`), also locally under `start.sh`; log statements must not contain names, emails, or ids of people.
 The PostgreSQL driver runs with `logServerErrorDetail=false`, so database errors such as constraint violations do not quote row values in exceptions and logs.
+Every BFF error is an RFC 9457 problem details body (`application/problem+json`, schema `Problem` in `api/openapi.yaml`) with `type` (`urn:ftree:problem:<code>`), `title`, `status`, a fixed `detail`, `instance` (the request path), and a machine-readable `code`.
+The codes are `VALIDATION_FAILED` and `INVALID_REQUEST` (400), `UNAUTHENTICATED` (401), `FORBIDDEN` (403), `NOT_FOUND` (404), `METHOD_NOT_ALLOWED` (405), `NAME_TAKEN` and `PIN_TAKEN` (409), `PHOTO_TOO_LARGE` (413), `UNSUPPORTED_MEDIA_TYPE` (415), and `INTERNAL_ERROR` (500); `VALIDATION_FAILED` lists the rejected fields in `errors`.
+`ProblemAdvice` (a `@RestControllerAdvice` on Spring's `ProblemDetail`) writes them for controllers, interceptors, Spring MVC's own errors, and the 401/403 of the security filters; responses never contain exception messages or stack traces, and unexpected errors are logged with their type only.
+The CORS filter's 403 for a foreign `Origin` has no body; browsers hide it from scripts anyway.
 
 The repository separates the Next.js UI from a Kotlin Backend for Frontend (BFF).
 The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
@@ -289,7 +294,9 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
 - `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, pin, "⋯", and close, draggable by the header), its read-only view with the relatives, and the shared relative chip.
 - `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport, reads a stored pin, and places a panel beside another; `ui/app/panelPosition.check.mjs` is its self-check.
-- `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `<OpenFamily>`, `useCan(permission)` (outside any family or in the open one), `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and error-status rules, with `ui/app/access.check.mjs` as its self-check.
+- `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `<OpenFamily>`, `useCan(permission)` (outside any family or in the open one), `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and sign-in-problem rules, with `ui/app/access.check.mjs` as its self-check.
+- `ui/app/problems.ts` reads the `code` of a problem details answer from the BFF; `ui/app/problems.check.mjs` is its self-check.
+- `bff/src/main/kotlin/com/github/bff/problem/` holds `ApiProblem` (thrown with a `ProblemCode`, mapped to status and detail) and `ProblemAdvice`, which answers every error as problem details.
 - `ui/app/i18n.ts` holds every UI text in English and German (TypeScript enforces both have the same keys) and the `useT`/`useLanguage` hooks; components read their texts from `useT()`.
 - `ui/app/relatives.ts` lists a member's parents, children, and partners and derives siblings and half-siblings from shared parents; `ui/app/relatives.check.mjs` is its self-check (`node app/relatives.check.mjs` in `ui/`).
 - `ui/app/RandomFamilyPanel.tsx` creates named random family sets from its form in the families board ("Zufallsfamilie generieren"); `ui/app/FamiliesPanel.tsx` selects, summarizes, and deletes them; `ui/app/testFamilyPlan.ts` plans exact generation sizes and parent-child links, with `ui/app/testFamilyPlan.check.mjs` as its self-check.
@@ -349,7 +356,7 @@ These decisions have not been implemented:
 - The broader person and family-tree domain model, including how uncertain or conflicting information is represented.
 - Relationship types beyond parent/child and partners (for example uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data deletion behavior.
 - Data export beyond the per-family GEDCOM export, which leaves out photos and card placement.
-- Remaining BFF API operations, error format, and deployment shape.
+- Remaining BFF API operations and deployment shape.
 - Authentication, family membership, invitations, authorization, and account recovery.
 - How concurrent edits are handled and whether an audit/history model is needed.
 - Which parts of the current 3D prototype remain in the product and how family data is navigated or edited.

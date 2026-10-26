@@ -13,6 +13,7 @@ import com.github.bff.member.FamilyVisibility
 import com.github.bff.parseOrigins
 import jakarta.servlet.DispatcherType
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -32,9 +33,12 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.oauth2.server.resource.web.HeaderBearerTokenResolver
+import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.access.AccessDeniedHandler
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter
+import org.springframework.web.servlet.HandlerExceptionResolver
 import java.util.UUID
 
 @Configuration
@@ -66,8 +70,22 @@ class SecurityConfiguration(
     }
 
     @Bean
-    fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
+    fun securityFilterChain(
+        http: HttpSecurity,
+        @Qualifier("handlerExceptionResolver") exceptionResolver: HandlerExceptionResolver,
+    ): SecurityFilterChain {
+        // ProblemAdvice answers the 401 and 403 of these filters, so they carry the same problem details as the controllers.
+        val entryPoint = AuthenticationEntryPoint { request, response, exception ->
+            exceptionResolver.resolveException(request, response, null, exception)
+        }
+        val accessDeniedHandler = AccessDeniedHandler { request, response, exception ->
+            exceptionResolver.resolveException(request, response, null, exception)
+        }
         http
+            .exceptionHandling {
+                it.authenticationEntryPoint(entryPoint)
+                it.accessDeniedHandler(accessDeniedHandler)
+            }
             // Cloudflare Access turns its CF_Authorization cookie into the JWT header, so the browser authenticates
             // requests that other sites start. Instead of tokens, which the UI would have to send, Spring's CSRF
             // protection applies only to writes that Fetch Metadata or Origin mark as coming from another site, and
@@ -121,6 +139,8 @@ class SecurityConfiguration(
             AuthMode.CLOUDFLARE -> http.oauth2ResourceServer {
                 // HeaderBearerTokenResolver reads the raw header; DefaultBearerTokenResolver would require "Bearer ".
                 it.bearerTokenResolver(HeaderBearerTokenResolver(CLOUDFLARE_ACCESS_JWT_HEADER))
+                it.authenticationEntryPoint(entryPoint)
+                it.accessDeniedHandler(accessDeniedHandler)
                 it.jwt { jwt -> jwt.jwtAuthenticationConverter(CloudflareAccessAuthenticationConverter(accessPolicy)) }
             }
             AuthMode.DEV -> {

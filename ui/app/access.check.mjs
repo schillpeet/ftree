@@ -27,12 +27,17 @@ assert.equal(allowedAppearance('junk', true), 'organic');
 // While `/me` loads, the stored choice stays, so the tree does not switch.
 assert.equal(allowedAppearance('organicExperimental', null), 'organicExperimental');
 
-// Only this app's own API answers count.
+// Only this app's own API answers count, by their problem code.
 const origin = 'https://ftree.example.org';
-assert.equal(authProblemOf('/api/families', 403, origin), 'forbidden');
-assert.equal(authProblemOf(`${origin}/api/me`, 401, origin), 'signedOut');
-assert.equal(authProblemOf('/api/families', 404, origin), null);
-assert.equal(authProblemOf('/api/families', 200, origin), null);
-assert.equal(authProblemOf('/apix', 403, origin), null);
-assert.equal(authProblemOf('/other/api/x', 403, origin), null);
-assert.equal(authProblemOf('https://elsewhere.example.org/api/x', 403, origin), null);
+assert.equal(authProblemOf('/api/families', 403, 'FORBIDDEN', origin), 'forbidden');
+assert.equal(authProblemOf(`${origin}/api/me`, 401, 'UNAUTHENTICATED', origin), 'signedOut');
+assert.equal(authProblemOf('/api/families/x', 404, 'NOT_FOUND', origin), null);
+assert.equal(authProblemOf('/api/families', 409, 'NAME_TAKEN', origin), null);
+assert.equal(authProblemOf('/api/families', 200, null, origin), null);
+assert.equal(authProblemOf('/apix', 403, 'FORBIDDEN', origin), null);
+assert.equal(authProblemOf('/other/api/x', 403, 'FORBIDDEN', origin), null);
+assert.equal(authProblemOf('https://elsewhere.example.org/api/x', 403, 'FORBIDDEN', origin), null);
+// Answers without a code (Cloudflare Access, the proxy) fall back to the status.
+assert.equal(authProblemOf('/api/families', 403, null, origin), 'forbidden');
+assert.equal(authProblemOf('/api/me', 401, null, origin), 'signedOut');
+assert.equal(authProblemOf('/api/families', 404, null, origin), null);

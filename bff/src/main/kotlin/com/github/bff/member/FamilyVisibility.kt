@@ -5,9 +5,10 @@ import com.github.bff.auth.Permission
 import com.github.bff.auth.Role
 import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.FamilySummary
+import com.github.bff.generated.model.ProblemCode
+import com.github.bff.problem.ApiProblem
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
-import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
 import org.springframework.web.servlet.HandlerMapping
@@ -64,14 +65,13 @@ class FamilyVisibility(private val familyRepository: FamilyRepository) {
     }
 }
 
-// Answers 404 for every /families/{familyId}/... request to a family the user may not see.
+// Answers 404 (NOT_FOUND) for every /families/{familyId}/... request to a family the user may not see.
 @Component
 class FamilyVisibilityInterceptor(private val familyVisibility: FamilyVisibility) : HandlerInterceptor {
     override fun preHandle(request: HttpServletRequest, response: HttpServletResponse, handler: Any): Boolean {
         val variables = request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE) as? Map<*, *>
         val familyId = (variables?.get("familyId") as? String)?.let { runCatching { UUID.fromString(it) }.getOrNull() }
         if (familyId == null || familyVisibility.isVisible(familyId)) return true
-        response.status = HttpStatus.NOT_FOUND.value()
-        return false
+        throw ApiProblem(ProblemCode.NOT_FOUND)
     }
 }

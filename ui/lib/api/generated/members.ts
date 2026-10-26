@@ -3,8 +3,65 @@
  * Do not edit manually.
  * ftree BFF API
  * API contract for the ftree UI and Backend for Frontend.
- * OpenAPI spec version: 0.5.0
+ * OpenAPI spec version: 0.6.0
  */
+/**
+ * What went wrong, for clients to act on:
+ * - `VALIDATION_FAILED` (400): the body or a parameter breaks the schema or is not readable JSON.
+ * - `INVALID_REQUEST` (400): the request is well-formed but not possible, for example an infeasible generation or a cycle of ancestors.
+ * - `UNAUTHENTICATED` (401): no valid sign-in.
+ * - `FORBIDDEN` (403): signed in, but not allowed.
+ * - `NOT_FOUND` (404): the family, member, or photo does not exist or is not visible.
+ * - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
+ * - `NAME_TAKEN` (409): a family with this name already exists.
+ * - `PIN_TAKEN` (409): another member is already pinned to this place.
+ * - `PHOTO_TOO_LARGE` (413): the photo is too large.
+ * - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
+ * - `INTERNAL_ERROR` (500): an unexpected error on the server.
+ */
+export type ProblemCode = typeof ProblemCode[keyof typeof ProblemCode];
+
+
+export const ProblemCode = {
+  VALIDATION_FAILED: 'VALIDATION_FAILED',
+  INVALID_REQUEST: 'INVALID_REQUEST',
+  UNAUTHENTICATED: 'UNAUTHENTICATED',
+  FORBIDDEN: 'FORBIDDEN',
+  NOT_FOUND: 'NOT_FOUND',
+  METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
+  NAME_TAKEN: 'NAME_TAKEN',
+  PIN_TAKEN: 'PIN_TAKEN',
+  PHOTO_TOO_LARGE: 'PHOTO_TOO_LARGE',
+  UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+} as const;
+
+export interface FieldError {
+  /** The field's path in the body, for example `firstName`. */
+  field: string;
+  /** Why the value is not accepted. */
+  message: string;
+}
+
+/**
+ * An error as RFC 9457 problem details, sent as `application/problem+json`. Clients switch on `code`, never on `detail` or `title`.
+ */
+export interface Problem {
+  /** A URN naming the kind of problem, `urn:ftree:problem:` followed by the code in kebab case. */
+  type: string;
+  /** The HTTP status phrase. */
+  title: string;
+  /** The HTTP status code. */
+  status: number;
+  /** A fixed English explanation for people; it never contains internals or the request's data. */
+  detail?: string;
+  /** The path of the request that failed. */
+  instance?: string;
+  code: ProblemCode;
+  /** The fields that broke the schema, only with `VALIDATION_FAILED`. */
+  errors?: FieldError[];
+}
+
 export type Permission = typeof Permission[keyof typeof Permission];
 
 
@@ -407,7 +464,7 @@ export type getMeResponse200 = {
 }
 
 export type getMeResponse401 = {
-  data: void
+  data: Problem
   status: 401
 }
 
@@ -458,12 +515,12 @@ export type getUsersResponse200 = {
 }
 
 export type getUsersResponse401 = {
-  data: void
+  data: Problem
   status: 401
 }
 
 export type getUsersResponse403 = {
-  data: void
+  data: Problem
   status: 403
 }
 
@@ -558,7 +615,7 @@ export type createMemberResponse201 = {
 }
 
 export type createMemberResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
@@ -622,12 +679,12 @@ export type updateMemberResponse200 = {
 }
 
 export type updateMemberResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type updateMemberResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -693,7 +750,7 @@ export type deleteMemberResponse204 = {
 }
 
 export type deleteMemberResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -743,12 +800,12 @@ export type updateMemberRelativesResponse204 = {
 }
 
 export type updateMemberRelativesResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type updateMemberRelativesResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -857,12 +914,12 @@ export type createFamilyResponse201 = {
 }
 
 export type createFamilyResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type createFamilyResponse409 = {
-  data: void
+  data: Problem
   status: 409
 }
 
@@ -926,7 +983,7 @@ export type reorderFamiliesResponse204 = {
 }
 
 export type reorderFamiliesResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
@@ -990,7 +1047,7 @@ export type deleteFamilyResponse204 = {
 }
 
 export type deleteFamilyResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1041,17 +1098,17 @@ export type renameFamilyResponse200 = {
 }
 
 export type renameFamilyResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type renameFamilyResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
 export type renameFamilyResponse409 = {
-  data: void
+  data: Problem
   status: 409
 }
 
@@ -1117,17 +1174,17 @@ export type archiveFamilyResponse201 = {
 }
 
 export type archiveFamilyResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type archiveFamilyResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
 export type archiveFamilyResponse409 = {
-  data: void
+  data: Problem
   status: 409
 }
 
@@ -1193,17 +1250,17 @@ export type anonymizeFamilyResponse201 = {
 }
 
 export type anonymizeFamilyResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type anonymizeFamilyResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
 export type anonymizeFamilyResponse409 = {
-  data: void
+  data: Problem
   status: 409
 }
 
@@ -1269,12 +1326,12 @@ export type createEmptyFamilyResponse201 = {
 }
 
 export type createEmptyFamilyResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type createEmptyFamilyResponse409 = {
-  data: void
+  data: Problem
   status: 409
 }
 
@@ -1339,12 +1396,12 @@ export type importFamilyResponse201 = {
 }
 
 export type importFamilyResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type importFamilyResponse409 = {
-  data: void
+  data: Problem
   status: 409
 }
 
@@ -1409,7 +1466,7 @@ export type exportFamilyResponse200 = {
 }
 
 export type exportFamilyResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1470,7 +1527,7 @@ export type getFamilyPhotoResponse200ImageWebp = {
 }
 
 export type getFamilyPhotoResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1520,22 +1577,22 @@ export type uploadFamilyPhotoResponse204 = {
 }
 
 export type uploadFamilyPhotoResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type uploadFamilyPhotoResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
 export type uploadFamilyPhotoResponse413 = {
-  data: void
+  data: Problem
   status: 413
 }
 
 export type uploadFamilyPhotoResponse415 = {
-  data: void
+  data: Problem
   status: 415
 }
 
@@ -1601,7 +1658,7 @@ export type deleteFamilyPhotoResponse204 = {
 }
 
 export type deleteFamilyPhotoResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1651,12 +1708,12 @@ export type setFamilyPhotoFitResponse200 = {
 }
 
 export type setFamilyPhotoFitResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type setFamilyPhotoFitResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1721,7 +1778,7 @@ export type getFamilyMembersResponse200 = {
 }
 
 export type getFamilyMembersResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1771,12 +1828,12 @@ export type createFamilyMemberResponse201 = {
 }
 
 export type createFamilyMemberResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type createFamilyMemberResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1841,12 +1898,12 @@ export type updateFamilyMemberResponse200 = {
 }
 
 export type updateFamilyMemberResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type updateFamilyMemberResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1914,7 +1971,7 @@ export type deleteFamilyMemberResponse204 = {
 }
 
 export type deleteFamilyMemberResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -1966,12 +2023,12 @@ export type updateFamilyMemberRelativesResponse204 = {
 }
 
 export type updateFamilyMemberRelativesResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type updateFamilyMemberRelativesResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -2039,17 +2096,17 @@ export type updateFamilyMemberPlacementResponse204 = {
 }
 
 export type updateFamilyMemberPlacementResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type updateFamilyMemberPlacementResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
 export type updateFamilyMemberPlacementResponse409 = {
-  data: void
+  data: Problem
   status: 409
 }
 
@@ -2127,7 +2184,7 @@ export type getFamilyMemberPhotoResponse200ImageWebp = {
 }
 
 export type getFamilyMemberPhotoResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
@@ -2179,22 +2236,22 @@ export type uploadFamilyMemberPhotoResponse204 = {
 }
 
 export type uploadFamilyMemberPhotoResponse400 = {
-  data: void
+  data: Problem
   status: 400
 }
 
 export type uploadFamilyMemberPhotoResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 
 export type uploadFamilyMemberPhotoResponse413 = {
-  data: void
+  data: Problem
   status: 413
 }
 
 export type uploadFamilyMemberPhotoResponse415 = {
-  data: void
+  data: Problem
   status: 415
 }
 
@@ -2262,7 +2319,7 @@ export type deleteFamilyMemberPhotoResponse204 = {
 }
 
 export type deleteFamilyMemberPhotoResponse404 = {
-  data: void
+  data: Problem
   status: 404
 }
 

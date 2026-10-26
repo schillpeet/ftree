@@ -7,9 +7,11 @@ import com.github.bff.generated.model.CreateEmptyFamilyRequest
 import com.github.bff.generated.model.CreateFamilyRequest
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
+import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.SetFamilyPhotoFitRequest
+import com.github.bff.problem.ApiProblem
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -36,42 +38,42 @@ class FamiliesController(
     override fun createFamily(createFamilyRequest: CreateFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.create(createFamilyRequest)) {
             is FamilyCreationResult.CREATED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
-            FamilyCreationResult.INVALID -> ResponseEntity.badRequest().build()
-            FamilyCreationResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+            FamilyCreationResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            FamilyCreationResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
         }
 
     override fun createEmptyFamily(createEmptyFamilyRequest: CreateEmptyFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.createEmpty(createEmptyFamilyRequest)) {
             is FamilyCreationResult.CREATED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
-            FamilyCreationResult.INVALID -> ResponseEntity.badRequest().build()
-            FamilyCreationResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+            FamilyCreationResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            FamilyCreationResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
         }
 
     override fun archiveFamily(familyId: UUID, archiveFamilyRequest: ArchiveFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.archive(familyId, archiveFamilyRequest)) {
             is FamilyArchiveResult.ARCHIVED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
-            FamilyArchiveResult.INVALID -> ResponseEntity.badRequest().build()
-            FamilyArchiveResult.NOT_FOUND -> ResponseEntity.notFound().build()
-            FamilyArchiveResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+            FamilyArchiveResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            FamilyArchiveResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
+            FamilyArchiveResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
         }
 
     override fun anonymizeFamily(familyId: UUID, anonymizeFamilyRequest: AnonymizeFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.anonymize(familyId, anonymizeFamilyRequest)) {
             is FamilyAnonymizeResult.ANONYMIZED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
-            FamilyAnonymizeResult.INVALID -> ResponseEntity.badRequest().build()
-            FamilyAnonymizeResult.NOT_FOUND -> ResponseEntity.notFound().build()
-            FamilyAnonymizeResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+            FamilyAnonymizeResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            FamilyAnonymizeResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
+            FamilyAnonymizeResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
         }
 
     override fun importFamily(importFamilyRequest: ImportFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.import(importFamilyRequest)) {
             is FamilyImportResult.IMPORTED -> ResponseEntity.status(HttpStatus.CREATED).body(familyVisibility.withCallerRole(result.summary))
-            FamilyImportResult.INVALID -> ResponseEntity.badRequest().build()
-            FamilyImportResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+            FamilyImportResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            FamilyImportResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
         }
 
     override fun exportFamily(familyId: UUID): ResponseEntity<String> {
-        val export = familyService.export(familyId) ?: return ResponseEntity.notFound().build()
+        val export = familyService.export(familyId) ?: throw ApiProblem(ProblemCode.NOT_FOUND)
         val fileName = export.name.replace(UNSAFE_FILE_NAME_CHARS, "_") + ".ged"
         return ResponseEntity.ok()
             .contentType(MediaType("text", "plain", Charsets.UTF_8))
@@ -80,18 +82,18 @@ class FamiliesController(
     }
 
     override fun reorderFamilies(reorderFamiliesRequest: ReorderFamiliesRequest): ResponseEntity<Void> =
-        if (familyService.reorder(reorderFamiliesRequest)) ResponseEntity.noContent().build() else ResponseEntity.badRequest().build()
+        if (familyService.reorder(reorderFamiliesRequest)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.INVALID_REQUEST)
 
     override fun deleteFamily(familyId: UUID): ResponseEntity<Void> =
-        if (familyService.delete(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+        if (familyService.delete(familyId)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun uploadFamilyPhoto(familyId: UUID, body: Resource): ResponseEntity<Void> =
         when (familyService.updatePhoto(familyId, request.contentType, body.contentAsByteArray)) {
             PhotoResult.UPDATED -> ResponseEntity.noContent().build()
-            PhotoResult.INVALID -> ResponseEntity.badRequest().build()
-            PhotoResult.NOT_FOUND -> ResponseEntity.notFound().build()
-            PhotoResult.TOO_LARGE -> ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build()
-            PhotoResult.UNSUPPORTED_TYPE -> ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build()
+            PhotoResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            PhotoResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
+            PhotoResult.TOO_LARGE -> throw ApiProblem(ProblemCode.PHOTO_TOO_LARGE)
+            PhotoResult.UNSUPPORTED_TYPE -> throw ApiProblem(ProblemCode.UNSUPPORTED_MEDIA_TYPE)
         }
 
     override fun getFamilyPhoto(familyId: UUID): ResponseEntity<Resource> =
@@ -101,20 +103,20 @@ class FamiliesController(
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePrivate())
                 .header("X-Content-Type-Options", "nosniff")
                 .body<Resource>(ByteArrayResource(photo.data))
-        } ?: ResponseEntity.notFound().build()
+        } ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun deleteFamilyPhoto(familyId: UUID): ResponseEntity<Void> =
-        if (familyService.deletePhoto(familyId)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+        if (familyService.deletePhoto(familyId)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun setFamilyPhotoFit(familyId: UUID, setFamilyPhotoFitRequest: SetFamilyPhotoFitRequest): ResponseEntity<FamilySummary> =
-        familyService.setPhotoFit(familyId, setFamilyPhotoFitRequest.photoFit)?.let { ResponseEntity.ok(familyVisibility.withCallerRole(it)) } ?: ResponseEntity.notFound().build()
+        familyService.setPhotoFit(familyId, setFamilyPhotoFitRequest.photoFit)?.let { ResponseEntity.ok(familyVisibility.withCallerRole(it)) } ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun renameFamily(familyId: UUID, renameFamilyRequest: RenameFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.rename(familyId, renameFamilyRequest)) {
             is FamilyRenameResult.RENAMED -> ResponseEntity.ok(familyVisibility.withCallerRole(result.summary))
-            FamilyRenameResult.INVALID -> ResponseEntity.badRequest().build()
-            FamilyRenameResult.NOT_FOUND -> ResponseEntity.notFound().build()
-            FamilyRenameResult.NAME_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+            FamilyRenameResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            FamilyRenameResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
+            FamilyRenameResult.NAME_TAKEN -> throw ApiProblem(ProblemCode.NAME_TAKEN)
         }
 }
 

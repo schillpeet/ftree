@@ -4,7 +4,9 @@ import com.github.bff.generated.api.MembersApi
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
 import com.github.bff.generated.model.Placement
+import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.Relatives
+import com.github.bff.problem.ApiProblem
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.ByteArrayResource
 import org.springframework.core.io.Resource
@@ -28,28 +30,28 @@ class MembersController(
     override fun createMember(createMemberRequest: CreateMemberRequest): ResponseEntity<Member> =
         memberService.createDefaultFamilyMember(createMemberRequest)
             ?.let { ResponseEntity.status(HttpStatus.CREATED).body(it) }
-            ?: ResponseEntity.notFound().build()
+            ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun updateMember(id: UUID, createMemberRequest: CreateMemberRequest): ResponseEntity<Member> =
         memberService.updateDefaultFamilyMember(id, createMemberRequest)?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+            ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun updateMemberRelatives(id: UUID, relatives: Relatives): ResponseEntity<Void> =
         relativesResponse(memberService.updateDefaultFamilyMemberRelatives(id, relatives))
 
     override fun deleteMember(id: UUID): ResponseEntity<Void> =
         if (memberService.deleteDefaultFamilyMember(id)) ResponseEntity.noContent().build()
-        else ResponseEntity.notFound().build()
+        else throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun getFamilyMembers(familyId: UUID): ResponseEntity<List<Member>> =
-        memberService.findAll(familyId)?.let { ResponseEntity.ok(it) } ?: ResponseEntity.notFound().build()
+        memberService.findAll(familyId)?.let { ResponseEntity.ok(it) } ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun createFamilyMember(
         familyId: UUID,
         createMemberRequest: CreateMemberRequest,
     ): ResponseEntity<Member> =
         memberService.create(familyId, createMemberRequest)?.let { ResponseEntity.status(HttpStatus.CREATED).body(it) }
-            ?: ResponseEntity.notFound().build()
+            ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun updateFamilyMember(
         familyId: UUID,
@@ -57,7 +59,7 @@ class MembersController(
         createMemberRequest: CreateMemberRequest,
     ): ResponseEntity<Member> =
         memberService.update(familyId, id, createMemberRequest)?.let { ResponseEntity.ok(it) }
-            ?: ResponseEntity.notFound().build()
+            ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun updateFamilyMemberRelatives(
         familyId: UUID,
@@ -73,18 +75,18 @@ class MembersController(
     ): ResponseEntity<Void> =
         when (memberService.updatePlacement(familyId, id, placement)) {
             PlacementResult.UPDATED -> ResponseEntity.noContent().build()
-            PlacementResult.INVALID -> ResponseEntity.badRequest().build()
-            PlacementResult.NOT_FOUND -> ResponseEntity.notFound().build()
-            PlacementResult.PIN_TAKEN -> ResponseEntity.status(HttpStatus.CONFLICT).build()
+            PlacementResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            PlacementResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
+            PlacementResult.PIN_TAKEN -> throw ApiProblem(ProblemCode.PIN_TAKEN)
         }
 
     override fun uploadFamilyMemberPhoto(familyId: UUID, id: UUID, body: Resource): ResponseEntity<Void> =
         when (memberService.updatePhoto(familyId, id, request.contentType, body.contentAsByteArray)) {
             PhotoResult.UPDATED -> ResponseEntity.noContent().build()
-            PhotoResult.INVALID -> ResponseEntity.badRequest().build()
-            PhotoResult.NOT_FOUND -> ResponseEntity.notFound().build()
-            PhotoResult.TOO_LARGE -> ResponseEntity.status(HttpStatus.CONTENT_TOO_LARGE).build()
-            PhotoResult.UNSUPPORTED_TYPE -> ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).build()
+            PhotoResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            PhotoResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
+            PhotoResult.TOO_LARGE -> throw ApiProblem(ProblemCode.PHOTO_TOO_LARGE)
+            PhotoResult.UNSUPPORTED_TYPE -> throw ApiProblem(ProblemCode.UNSUPPORTED_MEDIA_TYPE)
         }
 
     override fun getFamilyMemberPhoto(familyId: UUID, id: UUID): ResponseEntity<Resource> =
@@ -94,18 +96,18 @@ class MembersController(
                 .cacheControl(CacheControl.maxAge(Duration.ofDays(365)).cachePrivate())
                 .header("X-Content-Type-Options", "nosniff")
                 .body<Resource>(ByteArrayResource(photo.data))
-        } ?: ResponseEntity.notFound().build()
+        } ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun deleteFamilyMemberPhoto(familyId: UUID, id: UUID): ResponseEntity<Void> =
-        if (memberService.deletePhoto(familyId, id)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+        if (memberService.deletePhoto(familyId, id)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun deleteFamilyMember(familyId: UUID, id: UUID): ResponseEntity<Void> =
-        if (memberService.delete(familyId, id)) ResponseEntity.noContent().build() else ResponseEntity.notFound().build()
+        if (memberService.delete(familyId, id)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.NOT_FOUND)
 
     private fun relativesResponse(result: RelativesResult): ResponseEntity<Void> =
         when (result) {
             RelativesResult.UPDATED -> ResponseEntity.noContent().build()
-            RelativesResult.INVALID -> ResponseEntity.badRequest().build()
-            RelativesResult.NOT_FOUND -> ResponseEntity.notFound().build()
+            RelativesResult.INVALID -> throw ApiProblem(ProblemCode.INVALID_REQUEST)
+            RelativesResult.NOT_FOUND -> throw ApiProblem(ProblemCode.NOT_FOUND)
         }
 }
