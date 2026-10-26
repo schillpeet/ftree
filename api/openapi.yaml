@@ -694,13 +694,15 @@ paths:
       tags:
         - Members
       summary: Update a member in a family
-      description: Replaces the member's fields. Parents and children stay unchanged.
+      description: >-
+        Replaces the member's fields. Parents and children stay unchanged. With a version, the update is rejected when
+        the member changed since that version was read; without one, it overwrites whatever is stored.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateMemberRequest"
+              $ref: "#/components/schemas/UpdateMemberRequest"
       responses:
         "200":
           description: Member updated.
@@ -720,6 +722,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "409":
+          $ref: "#/components/responses/EditConflict"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -773,7 +777,9 @@ paths:
         parents: each listed sibling gets exactly the given parents of this member, and other
         members outside these sets lose the parents they share with this member. Rejects unknown members,
         the member itself, a member in more than one set, siblings sharing no or other parents,
-        and links that would make someone their own ancestor.
+        and links that would make someone their own ancestor. With a version, the change is rejected when the member
+        changed since that version was read. The change raises the version of every member whose own parent, child, or
+        partner links it adds, removes, or alters, including this member; derived siblings do not count.
       requestBody:
         required: true
         content:
@@ -795,6 +801,8 @@ paths:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "409":
+          $ref: "#/components/responses/EditConflict"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1105,6 +1113,14 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/Problem"
+    EditConflict:
+      description: >-
+        Someone else saved the member since the sent version was read. Code `EDIT_CONFLICT`; reload the members to see
+        the current state, then save again with its version, or without a version to overwrite it.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/Problem"
     InternalError:
       description: An unexpected error on the server; the body names no internals. Code `INTERNAL_ERROR`.
       content:
@@ -1162,6 +1178,7 @@ components:
         - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
         - `NAME_TAKEN` (409): a family with this name already exists.
         - `PIN_TAKEN` (409): another member is already pinned to this place.
+        - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
         - `PHOTO_TOO_LARGE` (413): the photo is too large.
         - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
         - `INTERNAL_ERROR` (500): an unexpected error on the server.
@@ -1174,6 +1191,7 @@ components:
         - METHOD_NOT_ALLOWED
         - NAME_TAKEN
         - PIN_TAKEN
+        - EDIT_CONFLICT
         - PHOTO_TOO_LARGE
         - UNSUPPORTED_MEDIA_TYPE
         - INTERNAL_ERROR
@@ -1456,10 +1474,19 @@ components:
         - parentLinks
         - partnerIds
         - partnerships
+        - version
       properties:
         id:
           type: string
           format: uuid
+          readOnly: true
+        version:
+          description: >-
+            Raised whenever the member's fields or its own parent, child, or partner links change; moving its card
+            or changing its photo leaves it alone. Send it back with an update to have it rejected if someone else saved first.
+          type: integer
+          format: int64
+          minimum: 0
           readOnly: true
         firstName:
           type: string
@@ -1572,6 +1599,12 @@ components:
         - childIds
         - partnerIds
       properties:
+        version:
+          description: The member's version the change is based on; when absent, the change applies whatever is stored.
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true
         parentIds:
           type: array
           items:
@@ -1824,3 +1857,53 @@ components:
       type: object
       description: >-
         A `text/event-stream` body; each event has an `event` name and one line of JSON `data` holding a `PresenceEvent`, `MemberEvent`, or `FamilyEvent`.
+    UpdateMemberRequest:
+      description: The fields of CreateMemberRequest plus the version the update is based on.
+      type: object
+      required:
+        - firstName
+        - lastName
+      properties:
+        firstName:
+          type: string
+          minLength: 0
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 0
+          maxLength: 100
+        birthName:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Surname at birth, for example a maiden name that was given up.
+        birthDate:
+          type: string
+          format: date
+          nullable: true
+        birthPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        deathDate:
+          type: string
+          format: date
+          nullable: true
+        deathPlace:
+          type: string
+          maxLength: 200
+          nullable: true
+        note:
+          type: string
+          maxLength: 5000
+          nullable: true
+        photoUrl:
+          type: string
+          format: uri
+          nullable: true
+        version:
+          description: The member's version the update is based on; when absent, the update overwrites whatever is stored.
+          type: integer
+          format: int64
+          minimum: 0
+          nullable: true

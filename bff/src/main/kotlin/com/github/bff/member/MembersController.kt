@@ -6,6 +6,7 @@ import com.github.bff.generated.model.Member
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.Relatives
+import com.github.bff.generated.model.UpdateMemberRequest
 import com.github.bff.problem.ApiProblem
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.ByteArrayResource
@@ -37,9 +38,9 @@ class MembersController(
     override fun updateFamilyMember(
         familyId: UUID,
         id: UUID,
-        createMemberRequest: CreateMemberRequest,
+        updateMemberRequest: UpdateMemberRequest,
     ): ResponseEntity<Member> =
-        memberService.update(familyId, id, createMemberRequest)?.let { ResponseEntity.ok(it) }
+        memberService.update(familyId, id, updateMemberRequest.toCreateRequest(), updateMemberRequest.version)?.let { ResponseEntity.ok(it) }
             ?: throw ApiProblem(ProblemCode.NOT_FOUND)
 
     override fun updateFamilyMemberRelatives(
@@ -84,6 +85,17 @@ class MembersController(
 
     override fun deleteFamilyMember(familyId: UUID, id: UUID): ResponseEntity<Void> =
         if (memberService.delete(familyId, id)) ResponseEntity.noContent().build() else throw ApiProblem(ProblemCode.NOT_FOUND)
+
+    // The generator flattens UpdateMemberRequest instead of extending CreateMemberRequest.
+    private fun UpdateMemberRequest.toCreateRequest() =
+        CreateMemberRequest(firstName, lastName)
+            .birthName(birthName)
+            .birthDate(birthDate)
+            .birthPlace(birthPlace)
+            .deathDate(deathDate)
+            .deathPlace(deathPlace)
+            .note(note)
+            .photoUrl(photoUrl)
 
     private fun relativesResponse(result: RelativesResult): ResponseEntity<Void> =
         when (result) {

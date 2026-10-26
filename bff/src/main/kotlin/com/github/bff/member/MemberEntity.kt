@@ -8,7 +8,9 @@ import jakarta.persistence.JoinTable
 import jakarta.persistence.ManyToMany
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.Version
 import jakarta.persistence.FetchType
+import org.hibernate.annotations.OptimisticLock
 import java.time.LocalDate
 import java.util.UUID
 
@@ -38,13 +40,24 @@ class MemberEntity(
     @Column(length = 2048)
     var photoUrl: String? = null,
     // Either pinned (pinId) or placed freely (posX/posY/posZ); both null when not placed yet.
+    // Moving a card is no edit of the person, so it leaves the version alone.
+    @OptimisticLock(excluded = true)
     var pinId: Int? = null,
+    @OptimisticLock(excluded = true)
     @Column(name = "pos_x")
     var posX: Double? = null,
+    @OptimisticLock(excluded = true)
     @Column(name = "pos_y")
     var posY: Double? = null,
+    @OptimisticLock(excluded = true)
     @Column(name = "pos_z")
     var posZ: Double? = null,
+    // Raised by Hibernate when the fields change and by MemberService when the relatives change; null until saved,
+    // which tells Spring Data that the entity is new.
+    @Version
+    var version: Long? = null,
+    // The links are versioned by MemberService, which raises every member whose links changed, not only the owner.
+    @OptimisticLock(excluded = true)
     @ManyToMany
     @JoinTable(
         name = "member_parents",
@@ -53,6 +66,7 @@ class MemberEntity(
     )
     var parents: MutableSet<MemberEntity> = mutableSetOf(),
     // Kept symmetric by MemberService: if A lists B, B lists A.
+    @OptimisticLock(excluded = true)
     @ManyToMany
     @JoinTable(
         name = "member_partners",

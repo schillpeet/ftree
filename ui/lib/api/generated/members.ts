@@ -15,6 +15,7 @@
  * - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
  * - `NAME_TAKEN` (409): a family with this name already exists.
  * - `PIN_TAKEN` (409): another member is already pinned to this place.
+ * - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
  * - `PHOTO_TOO_LARGE` (413): the photo is too large.
  * - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
  * - `INTERNAL_ERROR` (500): an unexpected error on the server.
@@ -31,6 +32,7 @@ export const ProblemCode = {
   METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
   NAME_TAKEN: 'NAME_TAKEN',
   PIN_TAKEN: 'PIN_TAKEN',
+  EDIT_CONFLICT: 'EDIT_CONFLICT',
   PHOTO_TOO_LARGE: 'PHOTO_TOO_LARGE',
   UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
@@ -323,6 +325,11 @@ export interface Position {
 export interface Member {
   readonly id: string;
   /**
+     * Raised whenever the member's fields or its own parent, child, or partner links change; moving its card or changing its photo leaves it alone. Send it back with an update to have it rejected if someone else saved first.
+     * @minimum 0
+     */
+  readonly version: number;
+  /**
      * @minLength 0
      * @maxLength 100
      */
@@ -398,6 +405,12 @@ export interface Sibling {
 }
 
 export interface Relatives {
+  /**
+     * The member's version the change is based on; when absent, the change applies whatever is stored.
+     * @minimum 0
+     * @nullable
+     */
+  version?: number | null;
   parentIds: string[];
   /**
      * Kinds of the parents in parentIds; parents left out are "biological", and when absent, existing kinds stay unchanged.
@@ -541,6 +554,55 @@ export interface FamilyEvent {
 export interface EventStream { [key: string]: unknown }
 
 /**
+ * The fields of CreateMemberRequest plus the version the update is based on.
+ */
+export interface UpdateMemberRequest {
+  /**
+     * @minLength 0
+     * @maxLength 100
+     */
+  firstName: string;
+  /**
+     * @minLength 0
+     * @maxLength 100
+     */
+  lastName: string;
+  /**
+     * Surname at birth, for example a maiden name that was given up.
+     * @maxLength 100
+     * @nullable
+     */
+  birthName?: string | null;
+  /** @nullable */
+  birthDate?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  birthPlace?: string | null;
+  /** @nullable */
+  deathDate?: string | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  deathPlace?: string | null;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  note?: string | null;
+  /** @nullable */
+  photoUrl?: string | null;
+  /**
+     * The member's version the update is based on; when absent, the update overwrites whatever is stored.
+     * @minimum 0
+     * @nullable
+     */
+  version?: number | null;
+}
+
+/**
  * No valid sign-in. Code `UNAUTHENTICATED`.
  */
 export type UnauthorizedResponse = Problem;
@@ -549,6 +611,11 @@ export type UnauthorizedResponse = Problem;
  * Signed in, but the caller's role lacks the permission, or a browser write came from another site. Code `FORBIDDEN`.
  */
 export type ForbiddenResponse = Problem;
+
+/**
+ * Someone else saved the member since the sent version was read. Code `EDIT_CONFLICT`; reload the members to see the current state, then save again with its version, or without a version to overwrite it.
+ */
+export type EditConflictResponse = Problem;
 
 /**
  * An unexpected error on the server; the body names no internals. Code `INTERNAL_ERROR`.
@@ -1978,6 +2045,11 @@ export type updateFamilyMemberResponse404 = {
   status: 404
 }
 
+export type updateFamilyMemberResponse409 = {
+  data: EditConflictResponse
+  status: 409
+}
+
 export type updateFamilyMemberResponse500 = {
   data: InternalErrorResponse
   status: 500
@@ -1986,7 +2058,7 @@ export type updateFamilyMemberResponse500 = {
 export type updateFamilyMemberResponseSuccess = (updateFamilyMemberResponse200) & {
   headers: Headers;
 };
-export type updateFamilyMemberResponseError = (updateFamilyMemberResponse400 | updateFamilyMemberResponse401 | updateFamilyMemberResponse403 | updateFamilyMemberResponse404 | updateFamilyMemberResponse500) & {
+export type updateFamilyMemberResponseError = (updateFamilyMemberResponse400 | updateFamilyMemberResponse401 | updateFamilyMemberResponse403 | updateFamilyMemberResponse404 | updateFamilyMemberResponse409 | updateFamilyMemberResponse500) & {
   headers: Headers;
 };
 
@@ -2002,12 +2074,12 @@ export const getUpdateFamilyMemberUrl = (familyId: string,
 }
 
 /**
- * Replaces the member's fields. Parents and children stay unchanged.
+ * Replaces the member's fields. Parents and children stay unchanged. With a version, the update is rejected when the member changed since that version was read; without one, it overwrites whatever is stored.
  * @summary Update a member in a family
  */
 export const updateFamilyMember = async (familyId: string,
     id: string,
-    createMemberRequest: CreateMemberRequest, options?: RequestInit): Promise<updateFamilyMemberResponse> => {
+    updateMemberRequest: UpdateMemberRequest, options?: RequestInit): Promise<updateFamilyMemberResponse> => {
 
     const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
     if (!h) return {};
@@ -2028,7 +2100,7 @@ const res = await fetch(getUpdateFamilyMemberUrl(familyId,id),
     ...options,
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(createMemberRequest)
+    body: JSON.stringify(updateMemberRequest)
   }
 )
 
@@ -2133,6 +2205,11 @@ export type updateFamilyMemberRelativesResponse404 = {
   status: 404
 }
 
+export type updateFamilyMemberRelativesResponse409 = {
+  data: EditConflictResponse
+  status: 409
+}
+
 export type updateFamilyMemberRelativesResponse500 = {
   data: InternalErrorResponse
   status: 500
@@ -2141,7 +2218,7 @@ export type updateFamilyMemberRelativesResponse500 = {
 export type updateFamilyMemberRelativesResponseSuccess = (updateFamilyMemberRelativesResponse204) & {
   headers: Headers;
 };
-export type updateFamilyMemberRelativesResponseError = (updateFamilyMemberRelativesResponse400 | updateFamilyMemberRelativesResponse401 | updateFamilyMemberRelativesResponse403 | updateFamilyMemberRelativesResponse404 | updateFamilyMemberRelativesResponse500) & {
+export type updateFamilyMemberRelativesResponseError = (updateFamilyMemberRelativesResponse400 | updateFamilyMemberRelativesResponse401 | updateFamilyMemberRelativesResponse403 | updateFamilyMemberRelativesResponse404 | updateFamilyMemberRelativesResponse409 | updateFamilyMemberRelativesResponse500) & {
   headers: Headers;
 };
 
@@ -2157,7 +2234,7 @@ export const getUpdateFamilyMemberRelativesUrl = (familyId: string,
 }
 
 /**
- * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual, so the partners list this member too. Parent links carry a kind (biological, adoptive, step, or foster); parents without one are biological, and when parentLinks is absent, stored kinds stay unchanged. Siblings are not stored but derived from shared parents: each listed sibling gets exactly the given parents of this member, and other members outside these sets lose the parents they share with this member. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor.
+ * Replaces all three sets, and the siblings when they are sent. Partnerships are mutual, so the partners list this member too. Parent links carry a kind (biological, adoptive, step, or foster); parents without one are biological, and when parentLinks is absent, stored kinds stay unchanged. Siblings are not stored but derived from shared parents: each listed sibling gets exactly the given parents of this member, and other members outside these sets lose the parents they share with this member. Rejects unknown members, the member itself, a member in more than one set, siblings sharing no or other parents, and links that would make someone their own ancestor. With a version, the change is rejected when the member changed since that version was read. The change raises the version of every member whose own parent, child, or partner links it adds, removes, or alters, including this member; derived siblings do not count.
  * @summary Replace a family member's parents, children, partners, and siblings
  */
 export const updateFamilyMemberRelatives = async (familyId: string,

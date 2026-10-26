@@ -9,7 +9,10 @@ import com.github.bff.generated.model.Position
 import com.github.bff.generated.model.Relatives
 import com.github.bff.live.TreeEvent
 import org.springframework.context.ApplicationEventPublisher
+import jakarta.persistence.EntityManager
+import jakarta.persistence.LockModeType
 import org.springframework.jdbc.core.JdbcTemplate
+import org.springframework.orm.ObjectOptimisticLockingFailureException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URI
@@ -24,6 +27,7 @@ class MemberService(
     private val memberRepository: MemberRepository,
     private val jdbc: JdbcTemplate,
     private val events: ApplicationEventPublisher,
+    private val entityManager: EntityManager,
 ) {
     fun findAll(familyId: UUID): List<Member>? {
         if (!familyRepository.existsById(familyId)) return null
@@ -53,10 +57,14 @@ class MemberService(
         ).also { changed(familyId, it.id) }.toResponse(null, emptyList(), emptyList())
     }
 
-    /** Replaces the member's fields but keeps its parent/child links; null when it is not in the family. */
+    /**
+     * Replaces the member's fields but keeps its parent/child links; null when it is not in the family. With a version,
+     * throws ObjectOptimisticLockingFailureException when the member changed since then.
+     */
     @Transactional
-    fun update(familyId: UUID, id: UUID, request: CreateMemberRequest): Member? {
+    fun update(familyId: UUID, id: UUID, request: CreateMemberRequest, version: Long? = null): Member? {
         val entity = memberRepository.findByIdAndFamilyId(id, familyId) ?: return null
+        entity.requireVersion(version)
         entity.firstName = request.firstName.trim()
         entity.lastName = request.lastName.trim()
         entity.birthName = request.birthName
@@ -67,6 +75,8 @@ class MemberService(
         entity.note = request.note
         entity.photoUrl = request.photoUrl?.toString()
         changed(familyId, id)
+        // Writes now, so the answer carries the raised version.
+        memberRepository.flush()
         return entity.toResponse(
             photoTimes(familyId)[id],
             partnerships(familyId)[id].orEmpty(),
@@ -78,6 +88,7 @@ class MemberService(
     fun updateRelatives(familyId: UUID, id: UUID, relatives: Relatives): RelativesResult {
         val all = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(familyId).associateBy { it.id }
         val member = all[id] ?: return RelativesResult.NOT_FOUND
+        member.requireVersion(relatives.version)
         val parentIds = relatives.parentIds.toSet()
         val childIds = relatives.childIds.toSet()
         val partnerIds = relatives.partnerIds.toSet()
@@ -118,6 +129,7 @@ class MemberService(
         }
         if (hasCycle(parentsOf)) return RelativesResult.INVALID
 
+        val linksBefore = linksByMember(familyId)
         all.values.forEach { other ->
             if (other.id in childIds) other.parents.add(member) else other.parents.remove(member)
             if (takesSiblingParents(other.id)) {
@@ -163,7 +175,31 @@ class MemberService(
             }
         }
         changed(familyId, id)
+        // Everyone whose own links changed sees different relatives now, so an edit they had open is stale. Fails
+        // when one of them was saved by someone else in the meantime.
+        val linksAfter = linksByMember(familyId)
+        (linksBefore.keys + linksAfter.keys).filter { linksBefore[it] != linksAfter[it] }.forEach { changedId ->
+            entityManager.lock(all.getValue(changedId), LockModeType.PESSIMISTIC_FORCE_INCREMENT)
+        }
         return RelativesResult.UPDATED
+    }
+
+    private fun MemberEntity.requireVersion(expected: Long?) {
+        if (expected != null && expected != version) throw ObjectOptimisticLockingFailureException(MemberEntity::class.java, id)
+    }
+
+    // Per member everything about its own links that its relatives form shows: its parents and children with their
+    // kinds, and its partners with status and dates.
+    private fun linksByMember(familyId: UUID): Map<UUID, Set<Any>> {
+        val links = mutableMapOf<UUID, MutableSet<Any>>()
+        parentLinks(familyId).forEach { (childId, parents) ->
+            parents.forEach { link ->
+                links.getOrPut(childId, ::mutableSetOf).add(link)
+                links.getOrPut(link.parentId, ::mutableSetOf).add(childId to link.kind)
+            }
+        }
+        partnerships(familyId).forEach { (memberId, partnerships) -> links.getOrPut(memberId, ::mutableSetOf).addAll(partnerships) }
+        return links
     }
 
     private companion object {
@@ -293,6 +329,7 @@ class MemberService(
         parentLinks: List<ParentLink>,
     ) = Member().apply {
         id = this@toResponse.id
+        version = this@toResponse.version ?: 0
         firstName = this@toResponse.firstName
         lastName = this@toResponse.lastName
         birthName = this@toResponse.birthName
