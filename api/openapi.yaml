@@ -45,7 +45,7 @@ paths:
       tags:
         - Users
       summary: List sign-ins
-      description: Lists everyone the access file (or the `app.roles` lists) names, in its order, with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
+      description: Lists everyone the access file (or the `app.roles` lists) names, in its order, then everyone else the database gives a right (admin, creating trees, or a role in a tree) by email, each with when they first and last signed in, followed by anyone who signed in without being listed, most recent first. Sign-ins are recorded at most every few minutes per person. Needs `users.view`, which only admins have.
       responses:
         "200":
           description: The listed and signed-in users.
@@ -1128,7 +1128,7 @@ components:
           description: The email, trimmed and lowercased.
         listed:
           type: boolean
-          description: True when the access file (or the `app.roles` lists) names the email.
+          description: True when the access file (or the `app.roles` lists) names the email or the database gives it a right.
         firstSeen:
           type: string
           format: date-time

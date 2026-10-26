@@ -5,10 +5,15 @@ import org.springframework.stereotype.Component
 import java.nio.file.Path
 import kotlin.io.path.readText
 
-// Who may see what, read once at startup: from the access file when APP_ACCESS_FILE is set, otherwise from the
-// app.roles lists, where admins see every family and everyone else only the first one.
+// Who may see what. The rights in the database (see Memberships) add to the bootstrap rights read once at startup:
+// from the access file when APP_ACCESS_FILE is set, otherwise from the app.roles lists, where admins see every family
+// and everyone else only the first one. Admins of either source are admins.
 @Component
-class AccessPolicy(accessProperties: AccessProperties, private val roleProperties: RoleProperties) {
+class AccessPolicy(
+    accessProperties: AccessProperties,
+    private val roleProperties: RoleProperties,
+    private val grants: AccessGrants,
+) {
     private val people: Map<String, Access>? = accessProperties.file?.trim()?.takeIf { it.isNotEmpty() }?.let { file ->
         check((roleProperties.admins + roleProperties.editors).all { it.isBlank() }) {
             "Both app.access.file (APP_ACCESS_FILE) and app.roles are set; list the admins and editors in the access file only."
@@ -17,13 +22,25 @@ class AccessPolicy(accessProperties: AccessProperties, private val rolePropertie
     }
     private val roleResolver = RoleResolver(roleProperties)
 
-    // Someone the access file does not list sees no family.
-    fun accessOf(email: String): Access =
-        if (people != null) people[email.normalizedEmail()] ?: Access.NONE
+    // Someone listed nowhere sees no family.
+    fun accessOf(email: String): Access {
+        val bootstrap = if (people != null) people[email.normalizedEmail()] ?: Access.NONE
         else when (val role = roleResolver.resolve(email)) {
             Role.ADMIN -> Access(admin = true)
             else -> Access(admin = false, firstFamily = role)
         }
+        val granted = grants.of(email)
+        if (bootstrap.admin || granted.admin) return Access(admin = true)
+        return bootstrap.copy(developer = bootstrap.developer || granted.canCreateTrees, memberships = granted.families)
+    }
+
+    // The people of the access file by email, in its order; empty with the app.roles lists.
+    fun accessFile(): Map<String, Access> = people.orEmpty()
+
+    // The admins of the access file in its order, or of the app.roles lists; they stay admins whatever the database says.
+    fun bootstrapAdmins(): List<String> =
+        people?.filterValues { it.admin }?.keys?.toList()
+            ?: roleProperties.admins.map { it.normalizedEmail() }.filter { it.isNotEmpty() }.distinct()
 
     // Everyone the access file lists, in its order, or the admins and then the editors of the app.roles lists.
     fun listed(): List<String> =
