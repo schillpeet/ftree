@@ -41,7 +41,7 @@ for service in bff ui; do
 done
 
 port_in_use=0
-for port in 3000 8080 4010; do
+for port in 3000 8080 8081 4010; do
   if lsof -nP -iTCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
     echo "Port $port is already in use; refusing to start services:" >&2
     lsof -nP -iTCP:"$port" -sTCP:LISTEN >&2 || true
