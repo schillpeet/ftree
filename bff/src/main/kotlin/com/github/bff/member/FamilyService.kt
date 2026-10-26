@@ -15,6 +15,8 @@ import com.github.bff.generated.model.PhotoFit
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.TestFamilySettings
+import com.github.bff.live.TreeEvent
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -30,6 +32,7 @@ class FamilyService(
     private val memberRepository: MemberRepository,
     private val jdbc: JdbcTemplate,
     private val memberships: Memberships,
+    private val events: ApplicationEventPublisher,
 ) {
     fun findAll(): List<FamilySummary> {
         val photos = photoTimes()
@@ -116,6 +119,7 @@ class FamilyService(
         val archived = saveNew(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
         members.forEach { it.family = archived }
         memberRepository.flush()
+        changed(id)
         return FamilyArchiveResult.ARCHIVED(archived.toSummary(members))
     }
 
@@ -241,6 +245,7 @@ class FamilyService(
         }
         family.name = name
         familyRepository.flush()
+        changed(id)
         val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         return FamilyRenameResult.RENAMED(family.toSummary(members, photoTimes()[id]))
     }
@@ -250,6 +255,7 @@ class FamilyService(
         val family = familyRepository.findById(id).orElse(null) ?: return null
         family.photoFit = fit.value
         familyRepository.flush()
+        changed(id)
         return family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id), photoTimes()[id])
     }
 
@@ -288,6 +294,7 @@ class FamilyService(
         memberRepository.flush()
         memberRepository.deleteAll(members)
         familyRepository.delete(family)
+        events.publishEvent(TreeEvent.FamilyDeleted(id))
         return true
     }
 
@@ -307,6 +314,7 @@ class FamilyService(
             """,
             id, type, data,
         )
+        changed(id)
         return PhotoResult.UPDATED
     }
 
@@ -318,7 +326,14 @@ class FamilyService(
         ).firstOrNull()
 
     @Transactional
-    fun deletePhoto(id: UUID): Boolean = jdbc.update("DELETE FROM family_photos WHERE family_id = ?", id) > 0
+    fun deletePhoto(id: UUID): Boolean {
+        val deleted = jdbc.update("DELETE FROM family_photos WHERE family_id = ?", id) > 0
+        if (deleted) changed(id)
+        return deleted
+    }
+
+    // The family's event streams get it once the transaction has committed.
+    private fun changed(id: UUID) = events.publishEvent(TreeEvent.FamilyChanged(id))
 
     // One query for all families instead of one per family; never loads the bytes.
     private fun photoTimes(): Map<UUID, OffsetDateTime> =

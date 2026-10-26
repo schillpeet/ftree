@@ -101,6 +101,8 @@ class SecurityConfiguration(
             .authorizeHttpRequests {
                 // Error pages render the status of a request that already passed or failed these rules.
                 it.dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                // An event stream ends with an async dispatch of the request that already passed these rules.
+                it.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 it.requestMatchers(GET, "/me").authenticated()
                 it.requestMatchers(GET, "/users").hasAuthority(USERS_VIEW.key)
                 // Lists only the families the user may see.
@@ -130,6 +132,9 @@ class SecurityConfiguration(
                     "/families/{familyId}/members/*/photo",
                 ).access(inFamily(MEMBER_EDIT))
                 it.requestMatchers(DELETE, "/families/{familyId}/members/*/photo").access(inFamily(MEMBER_EDIT))
+                // Live: presence and change events of one family.
+                it.requestMatchers(GET, "/families/{familyId}/events").access(inFamily(TREE_VIEW))
+                it.requestMatchers(PUT, "/families/{familyId}/presence").access(inFamily(TREE_VIEW))
                 it.anyRequest().denyAll()
             }
         when (authProperties.mode) {
@@ -142,9 +147,14 @@ class SecurityConfiguration(
             }
             AuthMode.DEV -> {
                 val email = authProperties.devEmail
-                log.warn("Auth mode is dev: every request runs as {} without verification. Never use this in production.", email)
+                log.warn(
+                    "Auth mode is dev: every request runs as {}, or as the email in the {} cookie, without verification. " +
+                        "Never use this in production.",
+                    email,
+                    DevAuthenticationFilter.DEV_EMAIL_COOKIE,
+                )
                 http.addFilterBefore(
-                    DevAuthenticationFilter { CurrentUser(email, accessPolicy.accessOf(email), verified = false) },
+                    DevAuthenticationFilter(email) { CurrentUser(it, accessPolicy.accessOf(it), verified = false) },
                     AnonymousAuthenticationFilter::class.java,
                 )
             }

@@ -3,6 +3,7 @@ package com.github.bff.problem
 import com.github.bff.generated.model.FieldError
 import com.github.bff.generated.model.ProblemCode
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatusCode
@@ -30,6 +31,16 @@ class ProblemAdvice : ResponseEntityExceptionHandler() {
 
     @ExceptionHandler(AccessDeniedException::class)
     fun handleAccessDenied(request: HttpServletRequest) = answer(ProblemCode.FORBIDDEN, request)
+
+    // A query or path parameter that breaks the schema; the generated interfaces validate them with @Validated.
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolation(exception: ConstraintViolationException, request: HttpServletRequest): ResponseEntity<ProblemDetail> {
+        val errors = exception.constraintViolations.map { violation ->
+            FieldError(violation.propertyPath.lastOrNull()?.name ?: "", violation.message ?: "is invalid")
+        }
+        val code = ProblemCode.VALIDATION_FAILED
+        return ResponseEntity.status(code.status).body(problemDetail(code, request.requestURI, errors))
+    }
 
     // The message and the stack trace stay in the log, which must not name people, so only the type and place are logged.
     @ExceptionHandler(Exception::class)

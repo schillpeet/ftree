@@ -18,6 +18,8 @@ tags:
     description: The signed-in user and their permissions
   - name: Users
     description: Who may sign in and who has signed in
+  - name: Live
+    description: Who is in a family tree right now and what others change in it
 paths:
   /me:
     get:
@@ -981,6 +983,104 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  # Live: presence and change events of one family tree.
+  /families/{familyId}/events:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: streamFamilyEvents
+      tags:
+        - Live
+      summary: Stream presence and changes in a family
+      description: >-
+        A server-sent event stream for `EventSource`; needs `tree.view` in the family.
+        It starts with a `presence` event and sends one whenever someone arrives, leaves, or changes what they view, edit, or whether they are idle.
+        After every saved change it sends `member-changed`, `member-deleted`, or `family-changed`, each naming who made it in `by`; the `data` of every event is one JSON object.
+        A comment line every 20 seconds keeps proxies from closing the stream, and the server ends it after 30 minutes so `EventSource` reconnects with a fresh sign-in.
+        Opening the stream adds the client to the family's presence like `PUT /families/{familyId}/presence`, and closing it removes the client.
+        Presence lives in the memory of the single BFF replica.
+      parameters:
+        - name: clientId
+          in: query
+          required: true
+          description: A random id the browser tab chooses once, the same it sends to `PUT /families/{familyId}/presence`.
+          schema:
+            $ref: "#/components/schemas/ClientId"
+      responses:
+        "200":
+          description: >-
+            The event stream; `Cache-Control: no-transform` keeps proxies, including the UI's `/api` rewrite, from compressing and buffering it.
+            Events are `presence` (`PresenceEvent`), `member-changed` and `member-deleted` (`MemberEvent`), and `family-changed` (`FamilyEvent`).
+          content:
+            text/event-stream:
+              schema:
+                $ref: "#/components/schemas/EventStream"
+        "400":
+          description: The client id is missing or malformed. Code `VALIDATION_FAILED`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /families/{familyId}/presence:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateFamilyPresence
+      tags:
+        - Live
+      summary: Say what this client views or edits in a family
+      description: >-
+        Clients send it whenever their state changes and at least every 30 seconds; a client without either for 60 seconds leaves the presence.
+        Needs `tree.view` in the family; every stream of the family then gets a new `presence` event if anything changed.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PresenceUpdate"
+      responses:
+        "204":
+          description: Presence updated.
+        "400":
+          description: The body breaks the schema (`VALIDATION_FAILED`), or `viewing` or `editing` names no member of this family (`INVALID_REQUEST`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
     cloudflareAccess:
@@ -1619,3 +1719,108 @@ components:
           type: string
           format: uri
           nullable: true
+    # Live: presence and change events of one family tree.
+    ClientId:
+      type: string
+      description: A random id of one browser tab, chosen by the client.
+      minLength: 1
+      maxLength: 64
+      pattern: "^[A-Za-z0-9_-]+$"
+    PresenceUpdate:
+      type: object
+      required:
+        - clientId
+        - idle
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        viewing:
+          type: string
+          format: uuid
+          nullable: true
+          description: The member whose profile the client shows, if any.
+        editing:
+          type: string
+          format: uuid
+          nullable: true
+          description: The member the client edits, if any.
+        idle:
+          type: boolean
+          description: Whether the tab is hidden or the user has been inactive for a while.
+    PresentClient:
+      type: object
+      description: One browser tab in the family; a user with two tabs appears twice.
+      required:
+        - clientId
+        - email
+        - initials
+        - admin
+        - idle
+      properties:
+        clientId:
+          $ref: "#/components/schemas/ClientId"
+        email:
+          type: string
+          maxLength: 320
+        initials:
+          type: string
+          maxLength: 2
+          description: Up to two capital letters taken from the email's local part, for the avatar.
+          example: MM
+        admin:
+          type: boolean
+          description: Whether the user is an admin, who may be in any family.
+        viewing:
+          type: string
+          format: uuid
+          nullable: true
+        editing:
+          type: string
+          format: uuid
+          nullable: true
+        idle:
+          type: boolean
+    PresenceEvent:
+      type: object
+      description: The data of a `presence` event, everyone in the family right now, sorted by email.
+      required:
+        - present
+      properties:
+        present:
+          type: array
+          maxItems: 1000
+          items:
+            $ref: "#/components/schemas/PresentClient"
+    MemberEvent:
+      type: object
+      description: The data of a `member-changed` or `member-deleted` event; a change to a member's relatives may change the members it links as well.
+      required:
+        - memberId
+        - by
+      properties:
+        memberId:
+          type: string
+          format: uuid
+        by:
+          type: string
+          maxLength: 320
+          description: The email of whoever saved the change.
+    FamilyEvent:
+      type: object
+      description: >-
+        The data of a `family-changed` event: the family's name, photo, or photo fit changed, its members were archived into another family, or it was deleted, after which the stream ends.
+      required:
+        - familyId
+        - by
+      properties:
+        familyId:
+          type: string
+          format: uuid
+        by:
+          type: string
+          maxLength: 320
+          description: The email of whoever saved the change.
+    EventStream:
+      type: object
+      description: >-
+        A `text/event-stream` body; each event has an `event` name and one line of JSON `data` holding a `PresenceEvent`, `MemberEvent`, or `FamilyEvent`.

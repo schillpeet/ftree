@@ -2,6 +2,7 @@ package com.github.bff.auth
 
 import com.github.bff.auth.CloudflareTestTokens.token
 import com.nimbusds.jose.jwk.gen.RSAKeyGenerator
+import jakarta.servlet.http.Cookie
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -36,6 +37,19 @@ class CloudflareModeTest {
                 jsonPath("$.permissions[0]") { value("tree.appearance") }
             }
         }
+    }
+
+    @Test
+    fun `the dev email cookie is ignored`() {
+        val cookie = Cookie(DevAuthenticationFilter.DEV_EMAIL_COOKIE, "admin@example.com")
+        mockMvc.get("/me") {
+            header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "someone@example.com"))
+            cookie(cookie)
+        }.andExpect {
+            jsonPath("$.email") { value("someone@example.com") }
+            jsonPath("$.admin") { value(false) }
+        }
+        mockMvc.get("/me") { cookie(cookie) }.andExpect { status { isUnauthorized() } }
     }
 
     @Test

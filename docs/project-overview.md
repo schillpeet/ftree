@@ -301,6 +301,25 @@ Whoever creates, imports, archives, or anonymizes a family gets a developer memb
 `GET /users` lists the access file's people first and then everyone else with a right in the database, by email, with `listed` true, before the people who only signed in.
 There is no API to change memberships or rights yet; until then they come from the seed and from creating families, and the access file keeps applying next to them.
 
+### Presence
+
+`GET /families/{familyId}/events?clientId=<id>` is a server-sent event stream (Spring MVC `SseEmitter`) for `EventSource` that needs `tree.view` in the family and answers 404 for families the user cannot see, like every family path.
+It starts with a `presence` event listing every browser tab in the family (`clientId`, `email`, `initials`, `admin`, `viewing`, `editing`, `idle`, sorted by email) and sends a new one whenever someone arrives, leaves, or changes what they view, edit, or whether they are idle.
+After every saved change it sends `member-changed` or `member-deleted` (`memberId`, `by`) or `family-changed` (`familyId`, `by`), where `by` is the email of whoever made the change.
+The member and family services publish these as Spring events inside their transaction, and `TreeEventBroadcaster` sends them only after the commit (`@TransactionalEventListener`), so rolled-back changes are never announced.
+`family-changed` covers renaming, family photos and photo fit, archiving the members into another family, and deleting the family, after which its streams end and its presence is cleared.
+`PUT /families/{familyId}/presence` with `clientId`, `viewing`, `editing` (member ids or null), and `idle` updates the caller's tab and needs `tree.view` in the family.
+Presence naming a member of another family, or none, answers 400 `INVALID_REQUEST`, so it never reveals ids outside the family.
+Opening a stream adds the tab to the presence as well, and closing it removes the tab, unless the server ended it after its 30 minutes, because `EventSource` reconnects right away.
+A tab that neither opens a stream nor sends presence for 60 seconds leaves; clients send presence at least every 30 seconds, and each user keeps at most 10 tabs per family.
+Every 20 seconds each stream gets a heartbeat comment, which keeps proxies from closing it and finds streams whose browser has gone; a stream whose user lost `tree.view` in the family ends then.
+The stream answers with `Cache-Control: no-cache, no-transform`, because without `no-transform` the UI's `/api` rewrite gzips it and holds every event until the stream ends (checked with Next 16.4.2 in `next dev` and the standalone build).
+Whether Cloudflare Access and cloudflared deliver the events without delay is not verified yet; if not, a cloudflared ingress rule can route `/api/families/*/events` straight to the BFF.
+Presence and the open streams live in the BFF's memory (`PresenceRegistry`, `TreeEventBroadcaster`), so they work only while the BFF runs as a single replica; with more replicas the events would have to go through PostgreSQL `LISTEN/NOTIFY`.
+`PresenceDirectory.all()` lists everyone present across families for a later admin overview.
+In dev mode the cookie `ftree-dev-email` signs the request in as that email instead of `app.auth.dev-email`, so two browser profiles can be two people locally; cloudflare mode ignores it.
+The UI does not use the stream or the presence yet.
+
 ## Code Map
 
 - `ui/app/layout.tsx` wraps every page in `PermissionsProvider`; `ui/app/(tree)/layout.tsx` renders the scene for `/` and `/<slug>` (`ui/app/(tree)/page.tsx`, `ui/app/(tree)/[slug]/page.tsx`); `ui/app/slugRoute.ts` resolves slugs and where `/` leads, with `ui/app/slugRoute.check.mjs` as its self-check.
@@ -342,6 +361,7 @@ There is no API to change memberships or rights yet; until then they come from t
 - `ui/` contains the Next.js app, package manifest, pnpm lockfile/workspace settings, TypeScript, ESLint, and Next.js configuration.
 - `bff/` contains the Kotlin/Spring Boot BFF scaffold, datasource configuration, and Gradle build.
 - `bff/src/main/kotlin/com/github/bff/member/` contains the family and member JPA entities, repositories, services, and controllers implementing the generated API.
+- `bff/src/main/kotlin/com/github/bff/live/` holds the presence (`PresenceRegistry.kt`), the change events (`TreeEvent.kt`), the event streams (`TreeEventBroadcaster.kt`), and `LiveController.kt`; `PresenceRegistryTest` and `TreeEventsTest` cover them.
 - `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` gives each user their role per family and hides the others; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the legacy role resolver, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once.

@@ -70,6 +70,8 @@ openApiGenerate {
 			"useTags" to "true",
 		),
 	)
+	// The events stream returns an SseEmitter, which Spring MVC writes as text/event-stream.
+	schemaMappings.set(mapOf("EventStream" to "org.springframework.web.servlet.mvc.method.annotation.SseEmitter"))
 	globalProperties.set(
 		mapOf(
 			"apis" to "",

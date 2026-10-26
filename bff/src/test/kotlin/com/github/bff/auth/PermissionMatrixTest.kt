@@ -68,6 +68,9 @@ class PermissionMatrixTest {
         Endpoint(POST, "/families/import", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/archive", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/$family/anonymize", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
+        // Live: presence and change events.
+        Endpoint(GET, "/families/$family/events?clientId=matrix", TREE_VIEW),
+        Endpoint(PUT, "/families/$family/presence", TREE_VIEW, MediaType.APPLICATION_JSON),
         // DELETE /families/{id} last: it removes the family the other requests use.
         Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )
