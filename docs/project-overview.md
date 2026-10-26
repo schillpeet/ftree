@@ -331,6 +331,10 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 - `.github/workflows/pinact.yml` runs `actionlint` on all GitHub Actions workflows and uses Pinact to fail when an action is not pinned to a commit SHA or its version comment does not match. It runs on pull requests that change workflow files. Pin a new action locally with `pinact run`; Dependabot updates the SHAs afterwards.
 - `.github/workflows/release-images.yml` builds the UI and BFF images for arm64 on every published release and pushes them to `ghcr.io/schillpeet/ftree-ui` and `ghcr.io/schillpeet/ftree-bff`, tagged with the release version (for example `0.14.0`) and `sha-<commit>`; it can also be run manually, which only adds the `sha-` tag, and never pushes `latest`.
 - `.github/workflows/release-images.yml` also packages the Helm chart in `deploy/ftree/` on every published release, with the release version as chart and app version, and pushes it to `oci://ghcr.io/schillpeet/charts/ftree`; manual runs skip the chart.
+- `.github/workflows/release-images.yml` scans each image with Trivy before pushing it, uploads all fixable findings to GitHub code scanning, and stops the release (no image push, no chart) on fixable CRITICAL vulnerabilities.
+- `.github/workflows/trivy.yml` runs Trivy on every pull request and push to `main`: it fails on any secret in the repository, on fixable CRITICAL vulnerabilities in the UI's dependencies, and on CRITICAL misconfigurations in the rendered Helm chart.
+- `trivy.yml` does not cover the BFF's Gradle dependencies, since the BFF has no Gradle lockfile; the release image scan covers them.
+- Trivy actions are pinned by commit SHA to releases made after the March 2026 tag hijacking of `aquasecurity/trivy-action` and `setup-trivy`, and the Trivy version is set explicitly.
 - The chart's `bff.auth.*` and `bff.roles.*` values become the BFF's `APP_AUTH_*` and `APP_ROLES_*` variables, and `bff.access` becomes the mounted access file in `APP_ACCESS_FILE`; in cloudflare mode the chart refuses to render without `bff.auth.teamDomain` and `bff.auth.audience` (see `deploy/README.md`).
 
 The procedural scene is presentation code.
