@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.27.0](https://github.com/schillpeet/ftree/compare/v0.26.0...v0.27.0) (2026-10-27)
+
+
+### Features
+
+* **bff:** manage tree access and invitations ([#243](https://github.com/schillpeet/ftree/issues/243)) ([6b147e3](https://github.com/schillpeet/ftree/commit/6b147e385a5b6df9f6d1b5c2e6e580533d5af01b))
+* **bff:** sync invited people to cloudflare access ([#246](https://github.com/schillpeet/ftree/issues/246)) ([f508805](https://github.com/schillpeet/ftree/commit/f508805c510d1b1f171b4b8ba6e5df30702701e1))
+* **ui:** delete users, end sessions and transfer ownership ([#247](https://github.com/schillpeet/ftree/issues/247)) ([c5d8a34](https://github.com/schillpeet/ftree/commit/c5d8a34f28eaa5925152975c5f240bebe7bbecbb))
+* **ui:** manage people and invitations in the admin page ([#245](https://github.com/schillpeet/ftree/issues/245)) ([fc030eb](https://github.com/schillpeet/ftree/commit/fc030eb8327822a73566f4c6a58949cef37735cf))
+* **ui:** refresh the tree live when others save ([#241](https://github.com/schillpeet/ftree/issues/241)) ([6cbc77f](https://github.com/schillpeet/ftree/commit/6cbc77f1cf57f0f61ff2aac5cd42b9d660918182))
+* **ui:** share a tree from its family card ([#248](https://github.com/schillpeet/ftree/issues/248)) ([248bf41](https://github.com/schillpeet/ftree/commit/248bf41d4ccc3e95be7d577cb1d4f0b76e4a2fbc))
+* **ui:** show who views or edits a person and follow them ([#244](https://github.com/schillpeet/ftree/issues/244)) ([efbedd8](https://github.com/schillpeet/ftree/commit/efbedd846b47ab21d2e2340189d93946333b1d31))
+
 ## [0.26.0](https://github.com/schillpeet/ftree/compare/v0.25.0...v0.26.0) (2026-10-26)
 
 
