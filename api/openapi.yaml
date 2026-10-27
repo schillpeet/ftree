@@ -24,6 +24,8 @@ tags:
     description: Read-only overviews across all trees and people, for admins
   - name: Trash
     description: Deleted families, kept for 30 days before they are removed for good
+  - name: access
+    description: Who may open which tree, invitations, and the people with access
 paths:
   /me:
     get:
@@ -39,6 +41,37 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Me"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: updateMe
+      tags:
+        - Me
+      summary: Set the signed-in user's display name
+      description: Others see the display name instead of the email where the UI names people; an empty or blank one removes it.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMeRequest"
+      responses:
+        "200":
+          description: The signed-in user after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: The body breaks the schema. Code `VALIDATION_FAILED`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "401":
           $ref: "#/components/responses/Unauthorized"
         "403":
@@ -1321,6 +1354,272 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  # Access: who may open a tree, invitations, and the people with access. Users are named by `users.id`, never by email in a URL.
+  /families/{familyId}/access:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getTreeAccess
+      tags:
+        - access
+      summary: List who has a role in a tree
+      description: >-
+        Everyone with a membership in the tree, owners first, then by name; admins reach every tree without a membership and are not listed.
+        Needs `family.share` (owners of the tree and admins); editors and visitors get 403, and a tree the caller cannot see answers 404.
+      responses:
+        "200":
+          description: The people with a role in the tree.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TreeAccessEntry"
+        "404":
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      operationId: shareTree
+      tags:
+        - access
+      summary: Invite someone to a tree or change their role
+      description: >-
+        Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have.
+        Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`.
+        Demoting the last owner answers 400 `INVALID_REQUEST`. Needs `family.share`; every change is written to the audit log.
+      parameters:
+        - name: Accept-Language
+          in: header
+          required: false
+          description: The language of the invitation text; German (`de`) or English (`en`, also the fallback).
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShareTreeRequest"
+      responses:
+        "200":
+          description: The person's access and the invitation text.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreeInvitation"
+        "400":
+          description: The body breaks the schema or the email is not valid (`VALIDATION_FAILED`), or the change would leave the tree without an owner (`INVALID_REQUEST`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /families/{familyId}/access/{userId}:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    delete:
+      operationId: revokeTreeAccess
+      tags:
+        - access
+      summary: Remove someone from a tree
+      description: >-
+        Removes the person's membership in the tree; their `users` row and their roles in other trees stay.
+        Removing the last owner answers 400 `INVALID_REQUEST`. Needs `family.share`.
+      responses:
+        "204":
+          description: Access removed.
+        "400":
+          description: The person is the tree's last owner. Code `INVALID_REQUEST`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found, or the person has no role in it. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /families/{familyId}/owner:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: transferTreeOwnership
+      tags:
+        - access
+      summary: Hand a tree over to another owner
+      description: >-
+        Makes the person, who must already have a role in the tree, its only owner; everyone who owned it before becomes an editor.
+        Needs `family.share`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferOwnershipRequest"
+      responses:
+        "204":
+          description: Ownership handed over.
+        "400":
+          description: The body breaks the schema. Code `VALIDATION_FAILED`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found, or the person has no role in it. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/users:
+    get:
+      operationId: getAdminUsers
+      tags:
+        - access
+      summary: List every person with their rights and trees
+      description: >-
+        Everyone with a `users` row, that is everyone who signed in or was invited, by name, with their global rights, their roles in the trees outside the trash, and whether they signed in yet.
+        Needs `users.view`, which only admins have.
+      responses:
+        "200":
+          description: The people.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminUser"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/users/{userId}:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: updateAdminUser
+      tags:
+        - access
+      summary: Change a person's global rights or display name
+      description: >-
+        Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says.
+        Needs `users.manage`, which only admins have; every change is written to the audit log.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAdminUserRequest"
+      responses:
+        "200":
+          description: The person after the change.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminUser"
+        "400":
+          description: The body breaks the schema (`VALIDATION_FAILED`), or an admin took away their own admin right (`INVALID_REQUEST`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: No person with this id. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/invitations:
+    get:
+      operationId: getAdminInvitations
+      tags:
+        - access
+      summary: List the open invitations
+      description: >-
+        Every membership in a tree outside the trash of someone who never signed in, newest first. Needs `users.view`.
+      responses:
+        "200":
+          description: The open invitations.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminInvitation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
     cloudflareAccess:
@@ -1442,15 +1741,30 @@ components:
     Me:
       type: object
       required:
+        - id
         - email
+        - displayName
+        - customName
         - admin
         - canCreateTrees
         - permissions
         - verified
       properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: The user's `users.id`; null only before their sign-in was first recorded.
         email:
           type: string
           description: The email address the user signed in with.
+        displayName:
+          type: string
+          description: The display name, or the part of the email before the `@`.
+        customName:
+          type: string
+          nullable: true
+          description: The display name the user or an admin set; null while `displayName` falls back to the email.
         admin:
           type: boolean
           description: True for admins, who are admins in every family.
@@ -2433,3 +2747,224 @@ components:
           format: int64
           minimum: 0
           nullable: true
+    # Access: memberships, invitations, and people.
+    TreeRole:
+      type: string
+      description: A role someone can be given in one tree; admins have every tree without a role.
+      enum:
+        - owner
+        - editor
+        - visitor
+    AccessStatus:
+      type: string
+      description: "`invited` until the person signs in for the first time, then `active`."
+      enum:
+        - invited
+        - active
+    TreeAccessEntry:
+      type: object
+      required:
+        - userId
+        - email
+        - displayName
+        - role
+        - status
+        - grantedAt
+        - lastSeen
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+          description: The display name, or the part of the email before the `@`.
+        role:
+          $ref: "#/components/schemas/TreeRole"
+        status:
+          $ref: "#/components/schemas/AccessStatus"
+        grantedAt:
+          type: string
+          format: date-time
+          description: When the role was given or last changed.
+        lastSeen:
+          type: string
+          format: date-time
+          nullable: true
+          description: The latest recorded sign-in, accurate to a few minutes; null until the person signs in.
+    ShareTreeRequest:
+      type: object
+      required:
+        - email
+        - role
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 320
+          description: The email the person signs in with; trimmed and lowercased.
+        role:
+          $ref: "#/components/schemas/TreeRole"
+    TreeInvitation:
+      type: object
+      required:
+        - access
+        - link
+        - text
+      properties:
+        access:
+          $ref: "#/components/schemas/TreeAccessEntry"
+        link:
+          type: string
+          format: uri
+          description: The tree's address, `https://<host>/<slug>`.
+        text:
+          type: string
+          description: An invitation to copy and send yourself, with the link and how to sign in with a one-time code.
+    TransferOwnershipRequest:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: string
+          format: uuid
+          description: The person who becomes the tree's only owner.
+    AdminUserTree:
+      type: object
+      required:
+        - familyId
+        - familyName
+        - familySlug
+        - role
+      properties:
+        familyId:
+          type: string
+          format: uuid
+        familyName:
+          type: string
+        familySlug:
+          type: string
+        role:
+          $ref: "#/components/schemas/TreeRole"
+    AdminUser:
+      type: object
+      required:
+        - id
+        - email
+        - displayName
+        - customName
+        - admin
+        - bootstrapAdmin
+        - canCreateTrees
+        - status
+        - invitedAt
+        - invitedBy
+        - firstSeen
+        - lastSeen
+        - trees
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+          description: The display name, or the part of the email before the `@`.
+        customName:
+          type: string
+          nullable: true
+          description: The display name the person or an admin set; null while `displayName` falls back to the email.
+        admin:
+          type: boolean
+          description: True for admins, from `users.admin` or as a bootstrap admin.
+        bootstrapAdmin:
+          type: boolean
+          description: True for the admins of the access file or `app.roles.admins`, who stay admins whatever `users.admin` says.
+        canCreateTrees:
+          type: boolean
+        status:
+          $ref: "#/components/schemas/AccessStatus"
+        invitedAt:
+          type: string
+          format: date-time
+          nullable: true
+        invitedBy:
+          type: string
+          nullable: true
+          description: The email of whoever first gave the person a right; null when the BFF did or they signed in first.
+        firstSeen:
+          type: string
+          format: date-time
+          nullable: true
+        lastSeen:
+          type: string
+          format: date-time
+          nullable: true
+        trees:
+          type: array
+          description: The person's roles in the trees outside the trash, by tree name.
+          items:
+            $ref: "#/components/schemas/AdminUserTree"
+    UpdateAdminUserRequest:
+      type: object
+      description: Every field is optional; absent fields stay as they are.
+      properties:
+        admin:
+          type: boolean
+        canCreateTrees:
+          type: boolean
+        displayName:
+          type: string
+          maxLength: 100
+          description: The new display name; an empty or blank one removes it, so the email's local part shows again.
+    AdminInvitation:
+      type: object
+      required:
+        - userId
+        - email
+        - displayName
+        - familyId
+        - familyName
+        - familySlug
+        - role
+        - invitedAt
+        - invitedBy
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+          description: The display name, or the part of the email before the `@`.
+        familyId:
+          type: string
+          format: uuid
+        familyName:
+          type: string
+        familySlug:
+          type: string
+        role:
+          $ref: "#/components/schemas/TreeRole"
+        invitedAt:
+          type: string
+          format: date-time
+          description: When the role in this tree was given.
+        invitedBy:
+          type: string
+          nullable: true
+          description: The email of whoever gave the role; null when the BFF did.
+    UpdateMeRequest:
+      type: object
+      required:
+        - displayName
+      properties:
+        displayName:
+          type: string
+          maxLength: 100
+          description: The new display name; an empty or blank one removes it, so the email's local part shows again.

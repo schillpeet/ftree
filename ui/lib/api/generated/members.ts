@@ -84,8 +84,20 @@ export const Permission = {
 } as const;
 
 export interface Me {
+  /**
+     * The user's `users.id`; null only before their sign-in was first recorded.
+     * @nullable
+     */
+  id: string | null;
   /** The email address the user signed in with. */
   email: string;
+  /** The display name, or the part of the email before the `@`. */
+  displayName: string;
+  /**
+     * The display name the user or an admin set; null while `displayName` falls back to the email.
+     * @nullable
+     */
+  customName: string | null;
   /** True for admins, who are admins in every family. */
   admin: boolean;
   /** True for people who may create trees, becoming the owner of each tree they create; admins may always. */
@@ -789,6 +801,145 @@ export interface UpdateMemberRequest {
 }
 
 /**
+ * A role someone can be given in one tree; admins have every tree without a role.
+ */
+export type TreeRole = typeof TreeRole[keyof typeof TreeRole];
+
+
+export const TreeRole = {
+  owner: 'owner',
+  editor: 'editor',
+  visitor: 'visitor',
+} as const;
+
+/**
+ * `invited` until the person signs in for the first time, then `active`.
+ */
+export type AccessStatus = typeof AccessStatus[keyof typeof AccessStatus];
+
+
+export const AccessStatus = {
+  invited: 'invited',
+  active: 'active',
+} as const;
+
+export interface TreeAccessEntry {
+  userId: string;
+  email: string;
+  /** The display name, or the part of the email before the `@`. */
+  displayName: string;
+  role: TreeRole;
+  status: AccessStatus;
+  /** When the role was given or last changed. */
+  grantedAt: string;
+  /**
+     * The latest recorded sign-in, accurate to a few minutes; null until the person signs in.
+     * @nullable
+     */
+  lastSeen: string | null;
+}
+
+export interface ShareTreeRequest {
+  /**
+     * The email the person signs in with; trimmed and lowercased.
+     * @minLength 3
+     * @maxLength 320
+     */
+  email: string;
+  role: TreeRole;
+}
+
+export interface TreeInvitation {
+  access: TreeAccessEntry;
+  /** The tree's address, `https://<host>/<slug>`. */
+  link: string;
+  /** An invitation to copy and send yourself, with the link and how to sign in with a one-time code. */
+  text: string;
+}
+
+export interface TransferOwnershipRequest {
+  /** The person who becomes the tree's only owner. */
+  userId: string;
+}
+
+export interface AdminUserTree {
+  familyId: string;
+  familyName: string;
+  familySlug: string;
+  role: TreeRole;
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  /** The display name, or the part of the email before the `@`. */
+  displayName: string;
+  /**
+     * The display name the person or an admin set; null while `displayName` falls back to the email.
+     * @nullable
+     */
+  customName: string | null;
+  /** True for admins, from `users.admin` or as a bootstrap admin. */
+  admin: boolean;
+  /** True for the admins of the access file or `app.roles.admins`, who stay admins whatever `users.admin` says. */
+  bootstrapAdmin: boolean;
+  canCreateTrees: boolean;
+  status: AccessStatus;
+  /** @nullable */
+  invitedAt: string | null;
+  /**
+     * The email of whoever first gave the person a right; null when the BFF did or they signed in first.
+     * @nullable
+     */
+  invitedBy: string | null;
+  /** @nullable */
+  firstSeen: string | null;
+  /** @nullable */
+  lastSeen: string | null;
+  /** The person's roles in the trees outside the trash, by tree name. */
+  trees: AdminUserTree[];
+}
+
+/**
+ * Every field is optional; absent fields stay as they are.
+ */
+export interface UpdateAdminUserRequest {
+  admin?: boolean;
+  canCreateTrees?: boolean;
+  /**
+     * The new display name; an empty or blank one removes it, so the email's local part shows again.
+     * @maxLength 100
+     */
+  displayName?: string;
+}
+
+export interface AdminInvitation {
+  userId: string;
+  email: string;
+  /** The display name, or the part of the email before the `@`. */
+  displayName: string;
+  familyId: string;
+  familyName: string;
+  familySlug: string;
+  role: TreeRole;
+  /** When the role in this tree was given. */
+  invitedAt: string;
+  /**
+     * The email of whoever gave the role; null when the BFF did.
+     * @nullable
+     */
+  invitedBy: string | null;
+}
+
+export interface UpdateMeRequest {
+  /**
+     * The new display name; an empty or blank one removes it, so the email's local part shows again.
+     * @maxLength 100
+     */
+  displayName: string;
+}
+
+/**
  * No valid sign-in. Code `UNAUTHENTICATED`.
  */
 export type UnauthorizedResponse = Problem;
@@ -899,6 +1050,86 @@ export const getMe = async ( options?: RequestInit): Promise<getMeResponse> => {
 
   const data: getMeResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getMeResponse
+}
+
+
+
+export type updateMeResponse200 = {
+  data: Me
+  status: 200
+}
+
+export type updateMeResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type updateMeResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateMeResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateMeResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type updateMeResponseSuccess = (updateMeResponse200) & {
+  headers: Headers;
+};
+export type updateMeResponseError = (updateMeResponse400 | updateMeResponse401 | updateMeResponse403 | updateMeResponse500) & {
+  headers: Headers;
+};
+
+export type updateMeResponse = (updateMeResponseSuccess | updateMeResponseError)
+
+export const getUpdateMeUrl = () => {
+
+
+
+
+  return `/api/me`
+}
+
+/**
+ * Others see the display name instead of the email where the UI names people; an empty or blank one removes it.
+ * @summary Set the signed-in user's display name
+ */
+export const updateMe = async (updateMeRequest: UpdateMeRequest, options?: RequestInit): Promise<updateMeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateMeUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateMeRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateMeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateMeResponse
 }
 
 
@@ -3493,4 +3724,523 @@ const res = await fetch(getUpdateFamilyPresenceUrl(familyId),
 
   const data: updateFamilyPresenceResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as updateFamilyPresenceResponse
+}
+
+
+
+export type getTreeAccessResponse200 = {
+  data: TreeAccessEntry[]
+  status: 200
+}
+
+export type getTreeAccessResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getTreeAccessResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getTreeAccessResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getTreeAccessResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getTreeAccessResponseSuccess = (getTreeAccessResponse200) & {
+  headers: Headers;
+};
+export type getTreeAccessResponseError = (getTreeAccessResponse401 | getTreeAccessResponse403 | getTreeAccessResponse404 | getTreeAccessResponse500) & {
+  headers: Headers;
+};
+
+export type getTreeAccessResponse = (getTreeAccessResponseSuccess | getTreeAccessResponseError)
+
+export const getGetTreeAccessUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/access`
+}
+
+/**
+ * Everyone with a membership in the tree, owners first, then by name; admins reach every tree without a membership and are not listed. Needs `family.share` (owners of the tree and admins); editors and visitors get 403, and a tree the caller cannot see answers 404.
+ * @summary List who has a role in a tree
+ */
+export const getTreeAccess = async (familyId: string, options?: RequestInit): Promise<getTreeAccessResponse> => {
+
+  const res = await fetch(getGetTreeAccessUrl(familyId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getTreeAccessResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getTreeAccessResponse
+}
+
+
+
+export type shareTreeResponse200 = {
+  data: TreeInvitation
+  status: 200
+}
+
+export type shareTreeResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type shareTreeResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type shareTreeResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type shareTreeResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type shareTreeResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type shareTreeResponseSuccess = (shareTreeResponse200) & {
+  headers: Headers;
+};
+export type shareTreeResponseError = (shareTreeResponse400 | shareTreeResponse401 | shareTreeResponse403 | shareTreeResponse404 | shareTreeResponse500) & {
+  headers: Headers;
+};
+
+export type shareTreeResponse = (shareTreeResponseSuccess | shareTreeResponseError)
+
+export const getShareTreeUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/access`
+}
+
+/**
+ * Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have. Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`. Demoting the last owner answers 400 `INVALID_REQUEST`. Needs `family.share`; every change is written to the audit log.
+ * @summary Invite someone to a tree or change their role
+ */
+export const shareTree = async (familyId: string,
+    shareTreeRequest: ShareTreeRequest, options?: RequestInit): Promise<shareTreeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getShareTreeUrl(familyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(shareTreeRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: shareTreeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as shareTreeResponse
+}
+
+
+
+export type revokeTreeAccessResponse204 = {
+  data: void
+  status: 204
+}
+
+export type revokeTreeAccessResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type revokeTreeAccessResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type revokeTreeAccessResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type revokeTreeAccessResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type revokeTreeAccessResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type revokeTreeAccessResponseSuccess = (revokeTreeAccessResponse204) & {
+  headers: Headers;
+};
+export type revokeTreeAccessResponseError = (revokeTreeAccessResponse400 | revokeTreeAccessResponse401 | revokeTreeAccessResponse403 | revokeTreeAccessResponse404 | revokeTreeAccessResponse500) & {
+  headers: Headers;
+};
+
+export type revokeTreeAccessResponse = (revokeTreeAccessResponseSuccess | revokeTreeAccessResponseError)
+
+export const getRevokeTreeAccessUrl = (familyId: string,
+    userId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/access/${userId}`
+}
+
+/**
+ * Removes the person's membership in the tree; their `users` row and their roles in other trees stay. Removing the last owner answers 400 `INVALID_REQUEST`. Needs `family.share`.
+ * @summary Remove someone from a tree
+ */
+export const revokeTreeAccess = async (familyId: string,
+    userId: string, options?: RequestInit): Promise<revokeTreeAccessResponse> => {
+
+  const res = await fetch(getRevokeTreeAccessUrl(familyId,userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: revokeTreeAccessResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as revokeTreeAccessResponse
+}
+
+
+
+export type transferTreeOwnershipResponse204 = {
+  data: void
+  status: 204
+}
+
+export type transferTreeOwnershipResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type transferTreeOwnershipResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type transferTreeOwnershipResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type transferTreeOwnershipResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type transferTreeOwnershipResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type transferTreeOwnershipResponseSuccess = (transferTreeOwnershipResponse204) & {
+  headers: Headers;
+};
+export type transferTreeOwnershipResponseError = (transferTreeOwnershipResponse400 | transferTreeOwnershipResponse401 | transferTreeOwnershipResponse403 | transferTreeOwnershipResponse404 | transferTreeOwnershipResponse500) & {
+  headers: Headers;
+};
+
+export type transferTreeOwnershipResponse = (transferTreeOwnershipResponseSuccess | transferTreeOwnershipResponseError)
+
+export const getTransferTreeOwnershipUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/owner`
+}
+
+/**
+ * Makes the person, who must already have a role in the tree, its only owner; everyone who owned it before becomes an editor. Needs `family.share`.
+ * @summary Hand a tree over to another owner
+ */
+export const transferTreeOwnership = async (familyId: string,
+    transferOwnershipRequest: TransferOwnershipRequest, options?: RequestInit): Promise<transferTreeOwnershipResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getTransferTreeOwnershipUrl(familyId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(transferOwnershipRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: transferTreeOwnershipResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as transferTreeOwnershipResponse
+}
+
+
+
+export type getAdminUsersResponse200 = {
+  data: AdminUser[]
+  status: 200
+}
+
+export type getAdminUsersResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminUsersResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminUsersResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminUsersResponseSuccess = (getAdminUsersResponse200) & {
+  headers: Headers;
+};
+export type getAdminUsersResponseError = (getAdminUsersResponse401 | getAdminUsersResponse403 | getAdminUsersResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminUsersResponse = (getAdminUsersResponseSuccess | getAdminUsersResponseError)
+
+export const getGetAdminUsersUrl = () => {
+
+
+
+
+  return `/api/admin/users`
+}
+
+/**
+ * Everyone with a `users` row, that is everyone who signed in or was invited, by name, with their global rights, their roles in the trees outside the trash, and whether they signed in yet. Needs `users.view`, which only admins have.
+ * @summary List every person with their rights and trees
+ */
+export const getAdminUsers = async ( options?: RequestInit): Promise<getAdminUsersResponse> => {
+
+  const res = await fetch(getGetAdminUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminUsersResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminUsersResponse
+}
+
+
+
+export type updateAdminUserResponse200 = {
+  data: AdminUser
+  status: 200
+}
+
+export type updateAdminUserResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type updateAdminUserResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type updateAdminUserResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type updateAdminUserResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type updateAdminUserResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type updateAdminUserResponseSuccess = (updateAdminUserResponse200) & {
+  headers: Headers;
+};
+export type updateAdminUserResponseError = (updateAdminUserResponse400 | updateAdminUserResponse401 | updateAdminUserResponse403 | updateAdminUserResponse404 | updateAdminUserResponse500) & {
+  headers: Headers;
+};
+
+export type updateAdminUserResponse = (updateAdminUserResponseSuccess | updateAdminUserResponseError)
+
+export const getUpdateAdminUserUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}`
+}
+
+/**
+ * Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says. Needs `users.manage`, which only admins have; every change is written to the audit log.
+ * @summary Change a person's global rights or display name
+ */
+export const updateAdminUser = async (userId: string,
+    updateAdminUserRequest: UpdateAdminUserRequest, options?: RequestInit): Promise<updateAdminUserResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getUpdateAdminUserUrl(userId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(updateAdminUserRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: updateAdminUserResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as updateAdminUserResponse
+}
+
+
+
+export type getAdminInvitationsResponse200 = {
+  data: AdminInvitation[]
+  status: 200
+}
+
+export type getAdminInvitationsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminInvitationsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminInvitationsResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminInvitationsResponseSuccess = (getAdminInvitationsResponse200) & {
+  headers: Headers;
+};
+export type getAdminInvitationsResponseError = (getAdminInvitationsResponse401 | getAdminInvitationsResponse403 | getAdminInvitationsResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminInvitationsResponse = (getAdminInvitationsResponseSuccess | getAdminInvitationsResponseError)
+
+export const getGetAdminInvitationsUrl = () => {
+
+
+
+
+  return `/api/admin/invitations`
+}
+
+/**
+ * Every membership in a tree outside the trash of someone who never signed in, newest first. Needs `users.view`.
+ * @summary List the open invitations
+ */
+export const getAdminInvitations = async ( options?: RequestInit): Promise<getAdminInvitationsResponse> => {
+
+  const res = await fetch(getGetAdminInvitationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminInvitationsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminInvitationsResponse
 }

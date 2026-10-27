@@ -39,6 +39,9 @@ class MembershipSeedTest {
     @Autowired
     private lateinit var jdbc: JdbcTemplate
 
+    @Autowired
+    private lateinit var accessEvents: AccessEvents
+
     private lateinit var lab: UUID
     private lateinit var own: UUID
     private lateinit var plain: UUID
@@ -46,7 +49,7 @@ class MembershipSeedTest {
     @BeforeTest
     fun forgetTheSeed() {
         val policy = AccessPolicy(AccessProperties(accessFile().toString()), RoleProperties(), memberships)
-        seed = MembershipSeed(jdbc, policy, memberships, MembershipService(jdbc, memberships, auditLog), auditLog, transactions)
+        seed = MembershipSeed(jdbc, policy, memberships, MembershipService(jdbc, memberships, auditLog, accessEvents), auditLog, transactions)
         jdbc.update("DELETE FROM family_memberships")
         jdbc.update("DELETE FROM audit_log")
         lab = familyRepository.saveAndFlush(FamilyEntity(name = "Lab $RUN", slug = "lab-$RUN", createdBy = BUILDER)).id
