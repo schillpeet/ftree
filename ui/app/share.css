@@ -1,0 +1,132 @@
+/* Share dialog: a person panel listing the people with access, an invitation form, and the text to copy. */
+.share-panel {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.share-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+}
+
+.share-who {
+  display: grid;
+  min-width: 0;
+}
+
+.share-name,
+.share-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-email {
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.share-badge,
+.share-status {
+  font-size: 11px;
+  color: var(--glass-muted);
+}
+
+.share-badge {
+  margin-left: 6px;
+}
+
+.share-status[data-status='invited'] {
+  color: var(--glass-accent);
+}
+
+.share-select,
+.share-invite select {
+  box-sizing: border-box;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  color-scheme: dark;
+  font: inherit;
+}
+
+.share-row-tools {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.share-row-tools:empty {
+  display: none;
+}
+
+.share-confirm {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.share-confirm p {
+  flex: 1 1 100%;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.share-invite {
+  display: grid;
+  gap: 10px;
+}
+
+.share-invite-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 10px;
+}
+
+.share-invite .family-card-button {
+  justify-self: end;
+}
+
+.share-text {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.share-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.share-button {
+  margin-left: auto;
+}

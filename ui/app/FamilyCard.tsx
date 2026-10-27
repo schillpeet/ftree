@@ -17,12 +17,13 @@ import {
 } from '../lib/api/generated/members';
 import { generationRows } from './generations';
 import { useT } from './i18n';
-import { CopyIcon, DownloadIcon, PhotoIcon, PhotoOffIcon, TrashIcon, UploadIcon, UsersIcon } from './icons';
+import { CopyIcon, DownloadIcon, PhotoIcon, PhotoOffIcon, ShareIcon, TrashIcon, UploadIcon, UsersIcon } from './icons';
 import { PanelShell, RelativeChip, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
 import { toJpeg, usePhotoPreview } from './MemberFields';
 import { Can, useCan } from './Permissions';
 import { problemCode } from './problems';
+import ShareDialog from './ShareDialog';
 
 export type FamilyCardMode = 'view' | 'edit' | 'create';
 
@@ -61,6 +62,8 @@ export default function FamilyCard({
   const t = useT();
   const canEdit = useCan('family.edit');
   const canExport = useCan('family.export');
+  const canShare = useCan('family.share');
+  const [sharing, setSharing] = useState(false);
   const [pin, setPin] = usePanelPin('ftree.familyPanelPin');
   const [moved, setMoved] = useState<Offset>(CENTRE);
   const creating = mode === 'create' || !family;
@@ -200,6 +203,7 @@ export default function FamilyCard({
   }
 
   return (
+    <>
     <PanelShell
       label={creating ? t.familyCard.newTitle : t.familyCard.title}
       hideLabel
@@ -347,6 +351,12 @@ export default function FamilyCard({
               </Can>
             </p>
           </div>
+          <Can permission="family.share">
+            <button type="button" className="family-card-button share-button" onClick={() => setSharing(true)}>
+              <ShareIcon />
+              {t.share.button}
+            </button>
+          </Can>
           {loadError && (
             <p className="person-error" role="alert">
               {loadError}{' '}
@@ -381,5 +391,9 @@ export default function FamilyCard({
         </>
       )}
     </PanelShell>
+    {sharing && family && canShare && (
+      <ShareDialog family={family} onClose={() => setSharing(false)} onChanged={onChanged} />
+    )}
+    </>
   );
 }

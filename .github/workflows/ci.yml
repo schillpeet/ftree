@@ -126,6 +126,7 @@ jobs:
       - run: node app/access.check.mjs
       - run: node app/slugRoute.check.mjs
       - run: node app/conflict.check.mjs
+      - run: node app/share.check.mjs
       - run: node app/admin/adminData.check.mjs
       - run: node app/live/presence.check.mjs
       - run: node app/live/liveEvents.check.mjs
