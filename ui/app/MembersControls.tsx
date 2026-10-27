@@ -17,6 +17,7 @@ import {
 import ConflictDialog from './ConflictDialog';
 import { isEditConflict, withVersion } from './conflict';
 import { useT } from './i18n';
+import { onLiveEvent } from './live/liveBus';
 import { useCan } from './Permissions';
 import { initialsOf, nameOf } from './names';
 import { dateProblem } from './partnerships';
@@ -26,6 +27,9 @@ import RelativesFields, { type Relation } from './RelativesFields';
 import { EMPTY_FORM, MemberHero, MemberLifeFields, NewMemberPanel, toForm, toJpeg, toRequest, usePhotoPreview, type MemberForm } from './MemberFields';
 import type { Focus } from './Scene';
 import FamilyCard, { type FamilyCardMode } from './FamilyCard';
+
+// Waits this long for more events before the members are loaded again.
+const LIVE_REFETCH_MS = 300;
 
 export function formatDate(value?: string | null) {
   if (!value) return null;
@@ -124,6 +128,20 @@ export default function MembersControls({
       setRequestError(t.members.loadFailed);
     }
   }
+
+  // Others saved a person, or the stream reopened: load the members again, once for a burst of events.
+  const onLive = useEffectEvent(() => void reloadMembers());
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const stop = onLiveEvent(() => {
+      clearTimeout(timer);
+      timer = setTimeout(onLive, LIVE_REFETCH_MS);
+    });
+    return () => {
+      stop();
+      clearTimeout(timer);
+    };
+  }, []);
 
   const onLoadFailed = useEffectEvent(() => setRequestError(t.members.familyLoadFailed));
 

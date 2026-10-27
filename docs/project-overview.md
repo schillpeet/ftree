@@ -368,7 +368,16 @@ A tab is idle while it is hidden (`visibilitychange`) or after 5 minutes without
 The presence bar under the family name shows everyone in the open tree to everyone with access, one round avatar per person with the initials the BFF derives from the email, the own avatar first and outlined, then active people, then idle people faded, each group by email.
 A person with several tabs counts once, idle only when every tab is, and admins carry a shield mark.
 Hovering or focusing an avatar shows a tooltip with the email, the admin role, and whether the person looks at the tree, views or edits a named person, or is away; beyond six people the rest collapse into a "+n" avatar.
-The UI ignores `member-changed`, `member-deleted`, and `family-changed` so far; live refresh, avatars at persons, and following someone are planned.
+The UI handles the three saved-change events in `ui/app/live/useTreeEvents.ts`, which parses them (`liveEvents.ts`) and hands them to subscribers through `liveBus.ts`.
+`MembersControls` loads the members again and `FamilyTree` quietly loads the families again, without a page reload, 300 ms after the last event of a burst; the shown person's form keeps its own copy, so nothing typed is lost.
+Every event refetches, the tab's own saves included, so a second tab of the same user stays current.
+After the stream reopens, the UI refetches once, because events may have been missed meanwhile.
+`LiveToasts` shows a glass toast for changes by other people only, matching `by` against the own email case-insensitively: "Manuel hat Oma Erna geändert", "… gelöscht", or "… hat den Baum geändert".
+The name is the email's local part up to the first dot, dash, plus, or underscore, so no address appears on screen.
+The person's name is read when the event arrives, so a deleted person still has one; a person the UI does not know yet is "eine Person".
+When someone else saves the person whose form is open here, the toast adds that saving will ask how to resolve the conflict (409 `EDIT_CONFLICT`).
+Toasts vanish after 6 seconds or on a click, and at most three are stacked.
+Avatars at persons and following someone are planned.
 
 ### Trash
 

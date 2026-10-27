@@ -1,7 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import {
   getFamilies,
   updateFamilyMemberPlacement,
@@ -16,6 +16,8 @@ import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
 import Scene, { type Focus } from './Scene';
 import { useT } from './i18n';
+import LiveToasts from './live/LiveToasts';
+import { onLiveEvent } from './live/liveBus';
 import PresenceBar from './live/PresenceBar';
 import { useTreeEvents } from './live/useTreeEvents';
 import { OpenFamily, useCan, useMe } from './Permissions';
@@ -75,9 +77,12 @@ export default function FamilyTree() {
     setAddRequest(null);
   }
 
-  async function loadFamilies() {
-    setIsLoadingFamilies(true);
-    setFamiliesError(false);
+  // `quiet` keeps the board as it is while the families load again.
+  async function loadFamilies(quiet = false) {
+    if (!quiet) {
+      setIsLoadingFamilies(true);
+      setFamiliesError(false);
+    }
     try {
       const response = await getFamilies();
       if (response.status !== 200 || !Array.isArray(response.data)) {
@@ -91,11 +96,21 @@ export default function FamilyTree() {
         router.replace(homePath(loaded) ?? '/');
       }
     } catch {
-      setFamiliesError(true);
+      if (!quiet) setFamiliesError(true);
     } finally {
-      setIsLoadingFamilies(false);
+      if (!quiet) setIsLoadingFamilies(false);
     }
   }
+
+  // Someone renamed, restyled, or deleted the open tree, or the stream reopened: the family list may have changed.
+  const onFamilyLive = useEffectEvent(() => void loadFamilies(true));
+  useEffect(
+    () =>
+      onLiveEvent((event) => {
+        if (event.kind === 'family-changed' || event.kind === 'resync') onFamilyLive();
+      }),
+    [],
+  );
 
   useEffect(() => {
     let current = true;
@@ -208,6 +223,7 @@ export default function FamilyTree() {
         }}
       />
       {activeFamilyId && <PresenceBar members={members ?? []} />}
+      {activeFamilyId && <LiveToasts members={members ?? []} editingId={isEditingShown ? shownId : null} />}
       {notFound && <TreeNotFound home={homePath(families)} />}
       <MemberSearch
         members={members ?? []}

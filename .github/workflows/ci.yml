@@ -128,6 +128,7 @@ jobs:
       - run: node app/conflict.check.mjs
       - run: node app/admin/adminData.check.mjs
       - run: node app/live/presence.check.mjs
+      - run: node app/live/liveEvents.check.mjs
       - run: node app/experimental/model.check.mjs
       - run: node app/experimental/route.check.mjs
       - run: node app/experimental/families.check.mjs

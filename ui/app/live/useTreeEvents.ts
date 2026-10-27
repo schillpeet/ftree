@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { getStreamFamilyEventsUrl, updateFamilyPresence, type PresentClient } from '../../lib/api/generated/members';
+import { emitLiveEvent } from './liveBus';
+import { parseLiveEvent } from './liveEvents';
 import { HEARTBEAT_MS, isIdle, parsePresence, reconnectDelay } from './presence';
 
 // The presence lives outside React: drei's <Html> renders the scrolls in another root, which gets no context, so every
@@ -30,6 +32,9 @@ function ownClientId() {
   return clientId;
 }
 
+// The events that tell about saved changes; see liveEvents.ts.
+const SAVED_EVENTS = ['member-changed', 'member-deleted', 'family-changed'] as const;
+
 const ACTIVITY_EVENTS = ['pointerdown', 'pointermove', 'keydown', 'wheel', 'touchstart'] as const;
 
 // Joins the tree's event stream while a family is open and keeps this tab's presence there: what it views or edits
@@ -51,6 +56,8 @@ export function useTreeEvents(familyId: string | null, viewing: string | null, e
     let sent = '';
     // Nothing is sent before the stream opens, which sends the whole state anyway.
     let joined = false;
+    // Whether the stream was open before: opening it again means events may have been missed.
+    let wasOpen = false;
 
     function send(force = false) {
       const update = { clientId: ownClientId(), viewing: state.current.viewing, editing: state.current.editing, idle };
@@ -80,7 +87,15 @@ export function useTreeEvents(familyId: string | null, viewing: string | null, e
         joined = true;
         // Opening the stream joins the tree as active and viewing nothing; correct that at once.
         send(true);
+        if (wasOpen) emitLiveEvent({ kind: 'resync' });
+        wasOpen = true;
       });
+      for (const name of SAVED_EVENTS) {
+        source.addEventListener(name, (event) => {
+          const saved = parseLiveEvent(name, (event as MessageEvent<string>).data);
+          if (saved) emitLiveEvent(saved);
+        });
+      }
       source.addEventListener('presence', (event) => {
         const next = parsePresence((event as MessageEvent<string>).data);
         if (next) setPresent(next);

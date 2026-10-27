@@ -395,6 +395,14 @@ const en = {
     unknownPerson: 'an unnamed person',
     more: (count: number) => `${count} more`,
   },
+  live: {
+    changed: (who: string, name: string) => `${who} changed ${name}`,
+    deleted: (who: string, name: string) => `${who} deleted ${name}`,
+    family: (who: string) => `${who} changed the tree`,
+    conflict: 'Saving your changes will ask you how to resolve the conflict.',
+    unknownPerson: 'a person',
+    dismiss: 'Dismiss',
+  },
 };
 
 const de: typeof en = {
@@ -783,6 +791,14 @@ const de: typeof en = {
     someone: 'eine Person',
     unknownPerson: 'eine unbenannte Person',
     more: (count) => `${count} weitere`,
+  },
+  live: {
+    changed: (who, name) => `${who} hat ${name} geändert`,
+    deleted: (who, name) => `${who} hat ${name} gelöscht`,
+    family: (who) => `${who} hat den Baum geändert`,
+    conflict: 'Beim Speichern deiner Änderungen wirst du gefragt, wie der Konflikt gelöst werden soll.',
+    unknownPerson: 'eine Person',
+    dismiss: 'Schließen',
   },
 };
 
