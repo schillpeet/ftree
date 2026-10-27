@@ -24,6 +24,7 @@ import org.springframework.http.HttpMethod.GET
 import org.springframework.http.HttpMethod.POST
 import org.springframework.http.HttpMethod.PUT
 import org.springframework.http.MediaType
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request
 import org.springframework.transaction.annotation.Transactional
@@ -44,6 +45,9 @@ class PermissionMatrixTest {
 
     @Autowired
     private lateinit var memberships: Memberships
+
+    @Autowired
+    private lateinit var jdbc: JdbcTemplate
 
     // null means any signed-in user.
     private data class Endpoint(val method: HttpMethod, val path: String, val permission: Permission?, val body: MediaType? = null)
@@ -97,6 +101,7 @@ class PermissionMatrixTest {
         Endpoint(GET, "/admin/users", USERS_VIEW),
         Endpoint(GET, "/admin/invitations", USERS_VIEW),
         Endpoint(PUT, "/admin/users/$member", USERS_MANAGE, MediaType.APPLICATION_JSON),
+        Endpoint(POST, "/admin/users/$member/sessions/revoke", USERS_MANAGE),
         // DELETE /families/{id} last: it removes the family the other requests use.
         Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )
@@ -189,6 +194,24 @@ class PermissionMatrixTest {
         assertEquals(403, share(own, "visitor@example.com"))
         assertEquals(200, share(own, "owner@example.com"))
         assertEquals(200, share(other, "admin@example.com"))
+    }
+
+    // Ending sessions: only admins, for people who exist; the tests run with the noop gateway, so Cloudflare is
+    // unavailable and nothing goes into the audit log.
+    @Test
+    fun `only admins end someone's sessions`() {
+        visibleFamily()
+        val owner = jdbc.queryForObject("SELECT id FROM users WHERE email = 'owner@example.com'", UUID::class.java)
+        fun revoke(user: UUID, email: String) = status(Endpoint(POST, "/admin/users/$user/sessions/revoke", USERS_MANAGE), email)
+
+        assertEquals(403, revoke(owner!!, "owner@example.com"))
+        assertEquals(403, revoke(owner, "creator@example.com"))
+        assertEquals(404, revoke(UUID.randomUUID(), "admin@example.com"))
+        assertEquals(503, revoke(owner, "admin@example.com"))
+        assertEquals(
+            0,
+            jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'user.sessions.revoked' AND target_id = 'owner@example.com'", Int::class.java),
+        )
     }
 
     @Test

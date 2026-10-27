@@ -328,13 +328,24 @@ People are named by `users.id` in every path, so no email appears in a URL or lo
 `PUT /admin/users/{userId}` (`users.manage`) sets the present fields of `admin`, `canCreateTrees`, and `displayName` (blank removes it), writing `user.admin.granted` or `.revoked`, `user.can-create-trees.granted` or `.revoked`, and `user.display-name.changed` or `.removed` to the audit log; admins cannot take away their own admin right (400 `INVALID_REQUEST`).
 `GET /admin/invitations` (`users.view`) lists every membership of someone who never signed in, in trees outside the trash, newest first.
 `PUT /me` with `{displayName}` sets the caller's own display name, and `GET /me` now also returns `id`, `displayName` (the name, else the email before the `@`), and `customName`.
-Every change of a role or a global right publishes `AccessChanged` (the email and the tree, or null for a global right) once the transaction commits, through `AccessEvents`; nothing listens yet, and the planned Cloudflare Access group sync will.
+Every change of a role or a global right publishes `AccessChanged` (the email and the tree, or null for a global right) once the transaction commits, through `AccessEvents`; `AccessSync` listens to it.
+`AccessSync` (`bff/.../auth/access/`) keeps the Cloudflare Access group `ftree users` equal to everyone with access: the bootstrap admins, `users.admin`, `can_create_trees`, and everyone with a membership, also in a tree in the trash until it is purged.
+It runs on its own thread after every `AccessChanged` and every 10 minutes, and a PostgreSQL advisory lock lets only one run at a time work across BFF instances; a run that finds the lock taken is retried a few seconds later.
+Every run reads the group and, when it differs, writes the complete email list with `PUT /accounts/{account}/access/groups/{group}`, keeping the group's name and its rules other than emails.
+People removed from the group have their Access sessions ended with `POST /accounts/{account}/access/organizations/revoke_user`, so they lose access at once instead of within 24 hours.
+A run that would remove more than `ACCESS_SYNC_MAX_REMOVALS` (default 5) addresses or more than half of the group is refused and logged unless `ACCESS_SYNC_FORCE=true`.
+`ACCESS_SYNC_DRY_RUN=true` only logs how many addresses a run would add and remove; the sync logs counts only, never emails.
+The sync needs `CLOUDFLARE_API_TOKEN` (the Secret `ftree-cloudflare`, key `api-token`, a token with "Access: Organizations, Identity Providers, and Groups Edit"), `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_ACCESS_GROUP_ID` (`terraform output access_group_id` in ftree-infra).
+Without all three the BFF logs once at startup that the sync is off and runs with the noop gateway, as in development and tests, which never call Cloudflare.
+Seats are limited to `ACCESS_SYNC_SEAT_LIMIT` (default 50, the Cloudflare free plan): inviting someone without a seat, or giving them `admin` or `can_create_trees`, answers 409 `SEATS_EXHAUSTED` before anything is written, while people with a seat can still change roles.
+`POST /admin/users/{userId}/sessions/revoke` (`users.manage`) ends a person's Access sessions and writes `user.sessions.revoked` to the audit log; without the token or when Cloudflare fails it answers 503 `ACCESS_UNAVAILABLE`.
 
 ### Administration
 
 `GET /admin/overview`, `GET /admin/presence`, and `GET /admin/families` need `users.view`, so only admins read them, and change nothing; they live in `bff/.../admin/` under the OpenAPI tag `admin`.
 The overview counts `families` (test families included), `members`, `users` (`total`, `signedIn`, and `invited` for people named but never signed in), `photos` (`count` and `bytes` of family and member photos together), and `online` (distinct people with a tab in any tree, from the presence registry).
-`seats.used` counts the distinct people who currently have access, that is the bootstrap admins plus everyone with an admin or can-create-trees flag or a membership in the database, and `seats.limit` is the fixed 50 of the Cloudflare free plan; Cloudflare is not asked yet.
+`seats.used` counts the distinct people who currently have access, that is the bootstrap admins plus everyone with an admin or can-create-trees flag or a membership in the database, and `seats.limit` is `ACCESS_SYNC_SEAT_LIMIT` (default 50, the Cloudflare free plan).
+`accessSync` reports this BFF instance's last group sync (`at`, `result` such as `synced`, `dry_run`, `blocked`, `failed`, or `disabled`, and the counts `members`, `added`, and `removed`) and is missing before the first run.
 `lastBackupAt` is always null for now.
 `GET /admin/presence` lists one entry per browser tab from `PresenceDirectory.all()`: `userId` (null without a `users` row), `email`, `displayName` (the display name, else the email before the `@`), `admin`, the tree's `familyId`, `familySlug`, and `familyName`, `viewing`, `editing`, `idle`, and `since`.
 `GET /admin/families` lists every family in the saved order, test families and families without any role of the caller included, with `createdBy`, `createdAt`, `test`, `memberCount`, and `memberships` (how many people hold the `owner`, `editor`, and `visitor` role; admins hold none).
@@ -500,6 +511,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `trivy.yml` does not cover the BFF's Gradle dependencies, since the BFF has no Gradle lockfile; the release image scan covers them.
 - Trivy actions are pinned by commit SHA to releases made after the March 2026 tag hijacking of `aquasecurity/trivy-action` and `setup-trivy`, and the Trivy version is set explicitly.
 - The chart's `bff.auth.*` and `bff.roles.admins` values become the BFF's `APP_AUTH_*` and `APP_ROLES_ADMINS` variables, and `bff.access` becomes the mounted access file in `APP_ACCESS_FILE`; in cloudflare mode the chart refuses to render without `bff.auth.teamDomain` and `bff.auth.audience` (see `deploy/README.md`).
+- With `bff.cloudflare.existingSecret` set, the chart passes its `api-token` key as `CLOUDFLARE_API_TOKEN`, `bff.cloudflare.accountId` and `bff.cloudflare.accessGroupId` as `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_ACCESS_GROUP_ID`, and `bff.cloudflare.dryRun` as `ACCESS_SYNC_DRY_RUN`.
 
 The procedural scene is presentation code.
 It is not a family-tree domain model or a persistence layer.

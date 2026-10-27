@@ -4,6 +4,7 @@ import com.github.bff.auth.CLOUDFLARE_ACCESS_JWT_HEADER
 import com.github.bff.auth.CloudflareTestDecoder
 import com.github.bff.auth.CloudflareTestTokens.token
 import com.github.bff.auth.Role
+import com.github.bff.auth.access.AccessSeats
 import com.github.bff.live.Presence
 import com.github.bff.live.PresenceRegistry
 import com.github.bff.member.FamilyEntity
@@ -35,6 +36,9 @@ import kotlin.test.assertTrue
 @Import(CloudflareTestDecoder::class)
 @Transactional
 class AdminOverviewTest {
+    @Autowired
+    private lateinit var seats: AccessSeats
+
     @Autowired
     private lateinit var mockMvc: MockMvc
 
@@ -99,7 +103,7 @@ class AdminOverviewTest {
         assertEquals(1, after["photos"]["count"].asInt() - before["photos"]["count"].asInt())
         assertEquals(10, after["photos"]["bytes"].asLong() - before["photos"]["bytes"].asLong())
         assertEquals(2, after["online"].asInt(), "two people with three tabs")
-        assertEquals(50, after["seats"]["limit"].asInt())
+        assertEquals(seats.limit, after["seats"]["limit"].asInt())
         // The new admin has access; the other new user has none.
         assertEquals(1, after["seats"]["used"].asInt() - before["seats"]["used"].asInt())
         assertNull(after["lastBackupAt"].takeUnless { it.isNull })

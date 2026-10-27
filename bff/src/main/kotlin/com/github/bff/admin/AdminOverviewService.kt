@@ -1,7 +1,8 @@
 package com.github.bff.admin
 
 import com.github.bff.auth.AccessPolicy
-import com.github.bff.auth.Memberships
+import com.github.bff.auth.access.AccessSeats
+import com.github.bff.auth.access.AccessSync
 import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AdminFamily
 import com.github.bff.generated.model.AdminFamilyMemberships
@@ -23,7 +24,8 @@ class AdminOverviewService(
     private val jdbc: JdbcTemplate,
     private val presence: PresenceDirectory,
     private val accessPolicy: AccessPolicy,
-    private val memberships: Memberships,
+    private val seats: AccessSeats,
+    private val accessSync: AccessSync,
 ) {
     fun overview(): AdminOverview {
         val signedIn = jdbc.queryForList("SELECT email FROM users WHERE first_seen IS NOT NULL", String::class.java).toSet()
@@ -43,9 +45,9 @@ class AdminOverviewService(
             AdminOverviewUsers(known.size, signedIn.size, known.size - signedIn.size),
             AdminOverviewPhotos(photoCount, photoBytes),
             presence.all().map { it.email }.distinct().size,
-            AdminOverviewSeats((accessPolicy.bootstrapAdmins() + memberships.people()).distinct().size, SEAT_LIMIT),
+            AdminOverviewSeats(seats.people().size, seats.limit),
             null,
-        )
+        ).accessSync(accessSync.status)
     }
 
     fun presence(): List<AdminPresence> {
@@ -99,10 +101,5 @@ class AdminOverviewService(
                 AdminFamilyMemberships(byRole["owner"] ?: 0, byRole["editor"] ?: 0, byRole["visitor"] ?: 0),
             )
         }
-    }
-
-    companion object {
-        // The Cloudflare Zero Trust free plan; later read from Cloudflare.
-        const val SEAT_LIMIT = 50
     }
 }

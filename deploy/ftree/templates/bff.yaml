@@ -72,6 +72,22 @@ spec:
             - name: APP_ACCESS_FILE
               value: /config/access.yaml
             {{- end }}
+            {{- with .Values.bff.cloudflare }}
+            {{- if .existingSecret }}
+            # Without all three the BFF runs with the noop gateway and syncs no Access group.
+            - name: CLOUDFLARE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .existingSecret }}
+                  key: api-token
+            - name: CLOUDFLARE_ACCOUNT_ID
+              value: {{ .accountId | quote }}
+            - name: CLOUDFLARE_ACCESS_GROUP_ID
+              value: {{ .accessGroupId | quote }}
+            - name: ACCESS_SYNC_DRY_RUN
+              value: {{ .dryRun | quote }}
+            {{- end }}
+            {{- end }}
           # Actuator probes on the management port; readiness includes the database, liveness does not.
           # The startup probe gives the JVM and Flyway up to two minutes before liveness may restart the pod.
           startupProbe:

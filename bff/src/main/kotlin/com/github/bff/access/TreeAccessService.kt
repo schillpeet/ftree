@@ -3,6 +3,7 @@ package com.github.bff.access
 import com.github.bff.auth.AuditLog
 import com.github.bff.auth.MembershipService
 import com.github.bff.auth.Role
+import com.github.bff.auth.access.AccessSeats
 import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AccessStatus
 import com.github.bff.generated.model.ProblemCode
@@ -26,17 +27,19 @@ class TreeAccessService(
     private val jdbc: JdbcTemplate,
     private val membershipService: MembershipService,
     private val auditLog: AuditLog,
+    private val seats: AccessSeats,
     @Value("\${app.public-url:http://localhost:3000}")
     private val publicUrl: String,
 ) {
     // Owners first, then by name.
     fun list(familyId: UUID): List<TreeAccessEntry> = entries(familyId, null)
 
-    // Invites the person or changes their role, and returns the text to send them.
+    // Invites the person or changes their role, and returns the text to send them. Someone new needs a free seat.
     @Transactional
     fun share(familyId: UUID, email: String, role: TreeRole, actor: String, language: String?): TreeInvitation {
         val key = email.normalizedEmail()
         if (!EMAIL.matches(key)) throw ApiProblem(ProblemCode.VALIDATION_FAILED)
+        seats.requireSeatFor(key)
         membershipService.setRole(familyId, key, Role.valueOf(role.name), actor)
         val access = entries(familyId, key).single()
         val (name, slug) = jdbc.query("SELECT name, slug FROM families WHERE id = ?", { rs, _ -> rs.getString(1) to rs.getString(2) }, familyId)

@@ -1400,7 +1400,8 @@ paths:
       description: >-
         Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have.
         Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`.
-        Demoting the last owner answers 400 `INVALID_REQUEST`. Needs `family.share`; every change is written to the audit log.
+        Demoting the last owner answers 400 `INVALID_REQUEST`; someone new while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`.
+        Needs `family.share`; every change is written to the audit log.
       parameters:
         - name: Accept-Language
           in: header
@@ -1430,6 +1431,12 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "404":
           description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Every Cloudflare Access seat is taken, so nobody new can get access. Code `SEATS_EXHAUSTED`; nothing was changed.
           content:
             application/problem+json:
               schema:
@@ -1565,6 +1572,7 @@ paths:
       summary: Change a person's global rights or display name
       description: >-
         Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says.
+        Granting a right to someone without a seat while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`.
         Needs `users.manage`, which only admins have; every change is written to the audit log.
       requestBody:
         required: true
@@ -1587,6 +1595,49 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "404":
           description: No person with this id. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The person has no seat yet and every Cloudflare Access seat is taken. Code `SEATS_EXHAUSTED`; nothing was changed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /admin/users/{userId}/sessions/revoke:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: revokeAdminUserSessions
+      tags:
+        - access
+      summary: End a person's Cloudflare Access sessions
+      description: >-
+        Signs the person out of Cloudflare Access at once, so they have to enter a new one-time PIN; their rights stay as they are.
+        Needs `users.manage`, which only admins have; the revocation is written to the audit log.
+      responses:
+        "204":
+          description: Cloudflare ended the sessions.
+        "404":
+          description: No person with this id. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "503":
+          description: The BFF has no Cloudflare API token, or Cloudflare did not answer. Code `ACCESS_UNAVAILABLE`.
           content:
             application/problem+json:
               schema:
@@ -1710,9 +1761,11 @@ components:
         - `NAME_TAKEN` (409): a family with this name already exists, possibly in the trash.
         - `PIN_TAKEN` (409): another member is already pinned to this place.
         - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
+        - `SEATS_EXHAUSTED` (409): every Cloudflare Access seat is taken, so nobody new can be given access.
         - `PHOTO_TOO_LARGE` (413): the photo is too large.
         - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
         - `INTERNAL_ERROR` (500): an unexpected error on the server.
+        - `ACCESS_UNAVAILABLE` (503): Cloudflare Access cannot be reached or the BFF has no API token for it.
       enum:
         - VALIDATION_FAILED
         - INVALID_REQUEST
@@ -1723,9 +1776,11 @@ components:
         - NAME_TAKEN
         - PIN_TAKEN
         - EDIT_CONFLICT
+        - SEATS_EXHAUSTED
         - PHOTO_TOO_LARGE
         - UNSUPPORTED_MEDIA_TYPE
         - INTERNAL_ERROR
+        - ACCESS_UNAVAILABLE
     FieldError:
       type: object
       required:
@@ -1876,6 +1931,51 @@ components:
           format: date-time
           nullable: true
           description: Always null until backups are reported.
+        accessSync:
+          $ref: "#/components/schemas/AccessSyncStatus"
+    AccessSyncStatus:
+      type: object
+      description: The last sync of the Cloudflare Access group `ftree users` by this BFF instance; missing before the first run.
+      required:
+        - at
+        - result
+        - members
+        - added
+        - removed
+      properties:
+        at:
+          type: string
+          format: date-time
+        result:
+          $ref: "#/components/schemas/AccessSyncResult"
+        members:
+          type: integer
+          minimum: 0
+          description: People the database gives access, and so the group should list.
+        added:
+          type: integer
+          minimum: 0
+          description: Addresses added to the group, or that would have been in a dry run or a blocked run.
+        removed:
+          type: integer
+          minimum: 0
+          description: Addresses removed from the group, or that would have been in a dry run or a blocked run.
+    AccessSyncResult:
+      type: string
+      description: |-
+        - `synced`: the group now lists exactly the people with access.
+        - `unchanged`: the group already did.
+        - `dry_run`: dry-run mode; the group was left as it is.
+        - `blocked`: the change would remove too many people at once and was refused; set `ACCESS_SYNC_FORCE` to allow it.
+        - `failed`: Cloudflare did not answer or refused the change.
+        - `disabled`: no Cloudflare API token or group configured; nothing is synced.
+      enum:
+        - synced
+        - unchanged
+        - dry_run
+        - blocked
+        - failed
+        - disabled
     AdminPresence:
       type: object
       required:

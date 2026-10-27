@@ -3,6 +3,7 @@ package com.github.bff.access
 import com.github.bff.auth.AccessEvents
 import com.github.bff.auth.AccessPolicy
 import com.github.bff.auth.AuditLog
+import com.github.bff.auth.access.AccessSeats
 import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AdminInvitation
 import com.github.bff.generated.model.AdminUser
@@ -25,6 +26,7 @@ class PeopleService(
     private val accessPolicy: AccessPolicy,
     private val auditLog: AuditLog,
     private val accessEvents: AccessEvents,
+    private val seats: AccessSeats,
 ) {
     data class Profile(val id: UUID?, val displayName: String, val customName: String?)
 
@@ -38,12 +40,13 @@ class PeopleService(
             .sortedWith(compareBy({ it.displayName.lowercase() }, { it.email }))
     }
 
-    // Sets the present fields; an admin cannot take away their own admin right.
+    // Sets the present fields; an admin cannot take away their own admin right, and a new right needs a free seat.
     @Transactional
     fun update(userId: UUID, request: UpdateAdminUserRequest, actor: String): AdminUser {
         val before = userRows(userId).singleOrNull() ?: throw ApiProblem(ProblemCode.NOT_FOUND)
         val email = before.email
         if (request.admin == false && email == actor.normalizedEmail()) throw ApiProblem(ProblemCode.INVALID_REQUEST, OWN_ADMIN)
+        if ((request.admin == true && !before.admin) || (request.canCreateTrees == true && !before.canCreateTrees)) seats.requireSeatFor(email)
         var rightsChanged = false
         request.admin?.takeIf { it != before.admin }?.let { admin ->
             jdbc.update("UPDATE users SET admin = ? WHERE email = ?", admin, email)
