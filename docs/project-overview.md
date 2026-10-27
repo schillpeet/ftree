@@ -335,6 +335,7 @@ Every run reads the group and, when it differs, writes the complete email list w
 People removed from the group have their Access sessions ended with `POST /accounts/{account}/access/organizations/revoke_user`, so they lose access at once instead of within 24 hours.
 A run that would remove more than `ACCESS_SYNC_MAX_REMOVALS` (default 5) addresses or more than half of the group is refused and logged unless `ACCESS_SYNC_FORCE=true`.
 `ACCESS_SYNC_DRY_RUN=true` only logs how many addresses a run would add and remove; the sync logs counts only, never emails.
+A run that finds nothing to change logs that once, until the result changes again.
 The sync needs `CLOUDFLARE_API_TOKEN` (the Secret `ftree-cloudflare`, key `api-token`, a token with "Access: Organizations, Identity Providers, and Groups Edit"), `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_ACCESS_GROUP_ID` (`terraform output access_group_id` in ftree-infra).
 Without all three the BFF logs once at startup that the sync is off and runs with the noop gateway, as in development and tests, which never call Cloudflare.
 Seats are limited to `ACCESS_SYNC_SEAT_LIMIT` (default 50, the Cloudflare free plan): inviting someone without a seat, or giving them `admin` or `can_create_trees`, answers 409 `SEATS_EXHAUSTED` before anything is written, while people with a seat can still change roles.
