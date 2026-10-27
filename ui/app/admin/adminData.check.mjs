@@ -1,6 +1,20 @@
-// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, and people.
+// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, people, and deleting them.
 import assert from 'node:assert/strict';
-import { accessProblem, auditDetails, confirmsName, daysLeft, formatBytes, onlineTrees, personStatus, presenceRows, sortedPeople } from './adminData.ts';
+import {
+  accessProblem,
+  auditDetails,
+  confirmsName,
+  confirmsPerson,
+  daysLeft,
+  deleteProblem,
+  formatBytes,
+  onlineTrees,
+  ownerCandidates,
+  personStatus,
+  presenceRows,
+  soleOwnedTrees,
+  sortedPeople,
+} from './adminData.ts';
 
 const now = Date.parse('2026-10-26T12:00:00Z');
 
@@ -103,5 +117,47 @@ assert.equal(accessProblem('NOT_FOUND'), 'notFound');
 assert.equal(accessProblem('FORBIDDEN'), 'forbidden');
 assert.equal(accessProblem('INTERNAL_ERROR'), 'failed');
 assert.equal(accessProblem(null), 'failed');
+assert.equal(accessProblem('ACCESS_UNAVAILABLE'), 'unavailable');
+
+// Deleting: INVALID_REQUEST is the caller or a file admin here, USER_OWNS_TREES names the trees to hand over.
+assert.equal(deleteProblem('INVALID_REQUEST'), 'cannotDelete');
+assert.equal(deleteProblem('USER_OWNS_TREES'), 'ownsTrees');
+assert.equal(deleteProblem('NOT_FOUND'), 'notFound');
+assert.equal(deleteProblem(null), 'failed');
+
+// Only trees without another owner need a new one; a tree the families do not list counts too.
+const tree = (familyId, role) => ({ familyId, familyName: familyId.toUpperCase(), familySlug: familyId, role });
+const owner = { trees: [tree('a', 'owner'), tree('b', 'owner'), tree('c', 'editor'), tree('d', 'owner')] };
+const families = [
+  { id: 'a', memberships: { owner: 1, editor: 0, visitor: 0 } },
+  { id: 'b', memberships: { owner: 2, editor: 0, visitor: 0 } },
+  { id: 'c', memberships: { owner: 1, editor: 1, visitor: 0 } },
+];
+assert.deepEqual(soleOwnedTrees(owner, families).map((entry) => entry.familyId), ['a', 'd']);
+assert.deepEqual(soleOwnedTrees({ trees: [] }, families), []);
+
+// Candidates for a tree: everyone else in it, editors before visitors, then by name.
+const member = (id, displayName, trees) => ({ id, displayName, trees });
+const people = [
+  member('u1', 'Ada', [tree('a', 'owner')]),
+  member('u2', 'Zoe', [tree('a', 'editor')]),
+  member('u3', 'Ben', [tree('a', 'visitor'), tree('b', 'owner')]),
+  member('u4', 'Cleo', [tree('a', 'editor')]),
+  member('u5', 'Dan', [tree('b', 'editor')]),
+];
+assert.deepEqual(ownerCandidates(people, 'u1', 'a').map((entry) => [entry.id, entry.role]), [
+  ['u4', 'editor'],
+  ['u2', 'editor'],
+  ['u3', 'visitor'],
+]);
+assert.deepEqual(ownerCandidates(people, 'u1', 'zzz'), []);
+
+// The person's name as shown, or their email in any case, confirms the deletion; nothing else does.
+const ada = { displayName: 'Ada Lovelace', email: 'ada@example.org' };
+assert.equal(confirmsPerson('Ada Lovelace', ada), true);
+assert.equal(confirmsPerson('  ADA@example.org ', ada), true);
+assert.equal(confirmsPerson('ada lovelace', ada), false);
+assert.equal(confirmsPerson('', ada), false);
+assert.equal(confirmsPerson(null, ada), false);
 
 console.log('adminData checks passed');

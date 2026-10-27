@@ -1611,6 +1611,44 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: deleteAdminUser
+      tags:
+        - access
+      summary: Delete a person
+      description: >-
+        Removes the person's roles in every tree and their `users` row, ends their Cloudflare Access sessions as far as Cloudflare answers, and lets the Access group sync drop their address unless a bootstrap admin file names it.
+        The persons they created in trees stay; so do the names in the audit log.
+        Refuses while the person is the only owner of a tree outside the trash (409 `USER_OWNS_TREES`, `trees` names them), so hand those over first with `transferTreeOwnership`.
+        Bootstrap admins and the caller themselves cannot be deleted.
+        Needs `users.manage`, which only admins have; the deletion is written to the audit log.
+      responses:
+        "204":
+          description: The person is deleted.
+        "400":
+          description: The person is the caller or a bootstrap admin. Code `INVALID_REQUEST`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: No person with this id. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: The person is the only owner of the trees in `trees`. Code `USER_OWNS_TREES`; nothing was changed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /admin/users/{userId}/sessions/revoke:
     parameters:
       - name: userId
@@ -1748,6 +1786,11 @@ components:
           description: The fields that broke the schema, only with `VALIDATION_FAILED`.
           items:
             $ref: "#/components/schemas/FieldError"
+        trees:
+          type: array
+          description: The trees the person is the only owner of, only with `USER_OWNS_TREES`.
+          items:
+            $ref: "#/components/schemas/OwnedTree"
     ProblemCode:
       type: string
       description: |-
@@ -1762,6 +1805,7 @@ components:
         - `PIN_TAKEN` (409): another member is already pinned to this place.
         - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
         - `SEATS_EXHAUSTED` (409): every Cloudflare Access seat is taken, so nobody new can be given access.
+        - `USER_OWNS_TREES` (409): the person is the only owner of trees, which need a new owner before the person can be deleted.
         - `PHOTO_TOO_LARGE` (413): the photo is too large.
         - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
         - `INTERNAL_ERROR` (500): an unexpected error on the server.
@@ -1777,10 +1821,22 @@ components:
         - PIN_TAKEN
         - EDIT_CONFLICT
         - SEATS_EXHAUSTED
+        - USER_OWNS_TREES
         - PHOTO_TOO_LARGE
         - UNSUPPORTED_MEDIA_TYPE
         - INTERNAL_ERROR
         - ACCESS_UNAVAILABLE
+    OwnedTree:
+      type: object
+      required:
+        - familyId
+        - familyName
+      properties:
+        familyId:
+          type: string
+          format: uuid
+        familyName:
+          type: string
     FieldError:
       type: object
       required:

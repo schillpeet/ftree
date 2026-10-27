@@ -17,6 +17,7 @@ import { Can, useCan } from '../Permissions';
 import { pathOf } from '../slugRoute';
 import { confirmsName, daysLeft } from './adminData';
 import { LoadError } from './OverviewTab';
+import TransferOwnership from './TransferOwnership';
 import { useAdminLoad } from './useAdminLoad';
 
 // Every tree with who created it and how many hold each role, and below it the trash, where trees wait 30 days.
@@ -31,6 +32,8 @@ export default function TreesTab() {
   // The id of the tree an action runs for, so its buttons wait.
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [transferring, setTransferring] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   // Days are counted from when the page opened; a day passing while it stays open is not worth a re-render.
   const [now] = useState(() => Date.now());
   const date = (value: string) => new Date(value).toLocaleDateString(locale, { dateStyle: 'medium' });
@@ -39,6 +42,7 @@ export default function TreesTab() {
   async function act(id: string, run: () => Promise<{ status: number }>, failed: string) {
     setBusy(id);
     setError(null);
+    setNotice(null);
     try {
       if ((await run()).status !== 204) throw new Error('failed');
     } catch {
@@ -72,6 +76,11 @@ export default function TreesTab() {
       {error && (
         <p className="admin-error" role="alert">
           {error}
+        </p>
+      )}
+      {notice && (
+        <p className="admin-status" role="status">
+          {notice}
         </p>
       )}
       <section className="glass admin-card" aria-labelledby="admin-trees">
@@ -118,6 +127,14 @@ export default function TreesTab() {
                     </Link>
                     <button
                       type="button"
+                      className="family-card-button"
+                      disabled={busy === family.id}
+                      onClick={() => setTransferring(transferring === family.id ? null : family.id)}
+                    >
+                      {t.admin.ownership.transfer}
+                    </button>
+                    <button
+                      type="button"
                       className="family-card-button family-card-danger"
                       disabled={busy === family.id}
                       onClick={() => moveToTrash(family)}
@@ -125,6 +142,18 @@ export default function TreesTab() {
                       <TrashIcon />
                       {t.admin.trees.trash}
                     </button>
+                    {transferring === family.id && (
+                      <TransferOwnership
+                        familyId={family.id}
+                        familyName={family.name}
+                        onClose={() => setTransferring(null)}
+                        onDone={(message) => {
+                          setTransferring(null);
+                          setNotice(message);
+                          families.reload();
+                        }}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}

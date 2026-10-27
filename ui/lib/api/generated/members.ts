@@ -17,6 +17,7 @@
  * - `PIN_TAKEN` (409): another member is already pinned to this place.
  * - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
  * - `SEATS_EXHAUSTED` (409): every Cloudflare Access seat is taken, so nobody new can be given access.
+ * - `USER_OWNS_TREES` (409): the person is the only owner of trees, which need a new owner before the person can be deleted.
  * - `PHOTO_TOO_LARGE` (413): the photo is too large.
  * - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
  * - `INTERNAL_ERROR` (500): an unexpected error on the server.
@@ -36,6 +37,7 @@ export const ProblemCode = {
   PIN_TAKEN: 'PIN_TAKEN',
   EDIT_CONFLICT: 'EDIT_CONFLICT',
   SEATS_EXHAUSTED: 'SEATS_EXHAUSTED',
+  USER_OWNS_TREES: 'USER_OWNS_TREES',
   PHOTO_TOO_LARGE: 'PHOTO_TOO_LARGE',
   UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
@@ -47,6 +49,11 @@ export interface FieldError {
   field: string;
   /** Why the value is not accepted. */
   message: string;
+}
+
+export interface OwnedTree {
+  familyId: string;
+  familyName: string;
 }
 
 /**
@@ -66,6 +73,8 @@ export interface Problem {
   code: ProblemCode;
   /** The fields that broke the schema, only with `VALIDATION_FAILED`. */
   errors?: FieldError[];
+  /** The trees the person is the only owner of, only with `USER_OWNS_TREES`. */
+  trees?: OwnedTree[];
 }
 
 export type Permission = typeof Permission[keyof typeof Permission];
@@ -4240,6 +4249,82 @@ const res = await fetch(getUpdateAdminUserUrl(userId),
 
   const data: updateAdminUserResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as updateAdminUserResponse
+}
+
+
+
+export type deleteAdminUserResponse204 = {
+  data: void
+  status: 204
+}
+
+export type deleteAdminUserResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type deleteAdminUserResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type deleteAdminUserResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type deleteAdminUserResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type deleteAdminUserResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type deleteAdminUserResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type deleteAdminUserResponseSuccess = (deleteAdminUserResponse204) & {
+  headers: Headers;
+};
+export type deleteAdminUserResponseError = (deleteAdminUserResponse400 | deleteAdminUserResponse401 | deleteAdminUserResponse403 | deleteAdminUserResponse404 | deleteAdminUserResponse409 | deleteAdminUserResponse500) & {
+  headers: Headers;
+};
+
+export type deleteAdminUserResponse = (deleteAdminUserResponseSuccess | deleteAdminUserResponseError)
+
+export const getDeleteAdminUserUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}`
+}
+
+/**
+ * Removes the person's roles in every tree and their `users` row, ends their Cloudflare Access sessions as far as Cloudflare answers, and lets the Access group sync drop their address unless a bootstrap admin file names it. The persons they created in trees stay; so do the names in the audit log. Refuses while the person is the only owner of a tree outside the trash (409 `USER_OWNS_TREES`, `trees` names them), so hand those over first with `transferTreeOwnership`. Bootstrap admins and the caller themselves cannot be deleted. Needs `users.manage`, which only admins have; the deletion is written to the audit log.
+ * @summary Delete a person
+ */
+export const deleteAdminUser = async (userId: string, options?: RequestInit): Promise<deleteAdminUserResponse> => {
+
+  const res = await fetch(getDeleteAdminUserUrl(userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: deleteAdminUserResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as deleteAdminUserResponse
 }
 
 

@@ -13,9 +13,11 @@ import {
   type UpdateAdminUserRequest,
 } from '../../lib/api/generated/members';
 import { useLanguage, useT } from '../i18n';
+import { TrashIcon } from '../icons';
 import { useMe } from '../Permissions';
-import { revoke, share } from './accessActions';
+import { endSessions, revoke, share } from './accessActions';
 import { onlineTrees, personStatus, sortedPeople, type PersonStatus } from './adminData';
+import DeleteUser from './DeleteUser';
 import InvitePerson from './InvitePerson';
 import { LoadError } from './OverviewTab';
 import RolePicker from './RolePicker';
@@ -36,6 +38,8 @@ export default function PeopleTab() {
   // The id of the person an action runs for, so their controls wait.
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
   const people = users.data && sortedPeople(users.data);
   const online = presence.data ? onlineTrees(presence.data) : new Map<string, string[]>();
@@ -44,6 +48,7 @@ export default function PeopleTab() {
   async function act(id: string, run: () => Promise<{ ok: boolean; problem?: keyof typeof t.admin.problems }>) {
     setBusy(id);
     setError(null);
+    setNotice(null);
     const result = await run();
     if (!result.ok) setError(t.admin.problems[result.problem ?? 'failed']);
     setBusy(null);
@@ -71,6 +76,22 @@ export default function PeopleTab() {
       const result = await revoke(familyId, user.id);
       return result.ok ? { ok: true } : { ok: false, problem: result.problem };
     });
+  }
+
+  async function signOut(user: AdminUser) {
+    if (!window.confirm(t.admin.people.confirmEndSessions(user.displayName))) return;
+    await act(user.id, async () => {
+      const result = await endSessions(user.id);
+      if (result.ok) setNotice(t.admin.people.sessionsEnded(user.displayName));
+      return result.ok ? { ok: true } : { ok: false, problem: result.problem };
+    });
+  }
+
+  function deleted(name: string) {
+    setDeleting(null);
+    setNotice(t.admin.deletion.done(name));
+    users.reload();
+    families.reload();
   }
 
   async function saveName(user: AdminUser) {
@@ -103,6 +124,21 @@ export default function PeopleTab() {
           {error}
         </p>
       )}
+      {notice && (
+        <p className="admin-status" role="status">
+          {notice}
+        </p>
+      )}
+      {people && families.data && deleting && people.some((user) => user.id === deleting) && (
+        <DeleteUser
+          key={deleting}
+          user={people.find((user) => user.id === deleting)!}
+          users={people}
+          families={families.data}
+          onClose={() => setDeleting(null)}
+          onDeleted={deleted}
+        />
+      )}
       <section className="glass admin-card" aria-labelledby="admin-people">
         <h2 id="admin-people">{t.admin.people.title}</h2>
         {users.failed && !people && <LoadError text={t.admin.people.failed} onRetry={users.reload} />}
@@ -116,6 +152,9 @@ export default function PeopleTab() {
                 <th scope="col">{t.admin.people.status}</th>
                 <th scope="col">{t.admin.people.rights}</th>
                 <th scope="col">{t.admin.people.trees}</th>
+                <th scope="col">
+                  <span className="admin-hidden">{t.admin.trees.actions}</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -208,6 +247,20 @@ export default function PeopleTab() {
                           </button>
                         </div>
                       ))}
+                    </td>
+                    <td className="admin-actions">
+                      <button type="button" className="family-card-button" disabled={wait} onClick={() => void signOut(user)}>
+                        {t.admin.people.endSessions}
+                      </button>
+                      <button
+                        type="button"
+                        className="family-card-button family-card-danger"
+                        disabled={wait || self || user.bootstrapAdmin || !families.data}
+                        onClick={() => setDeleting(user.id)}
+                      >
+                        <TrashIcon />
+                        {t.admin.people.delete}
+                      </button>
                     </td>
                   </tr>
                 );

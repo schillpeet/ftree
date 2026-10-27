@@ -102,6 +102,7 @@ class PermissionMatrixTest {
         Endpoint(GET, "/admin/invitations", USERS_VIEW),
         Endpoint(PUT, "/admin/users/$member", USERS_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/admin/users/$member/sessions/revoke", USERS_MANAGE),
+        Endpoint(DELETE, "/admin/users/$member", USERS_MANAGE),
         // DELETE /families/{id} last: it removes the family the other requests use.
         Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )
@@ -211,6 +212,31 @@ class PermissionMatrixTest {
         assertEquals(
             0,
             jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'user.sessions.revoked' AND target_id = 'owner@example.com'", Int::class.java),
+        )
+    }
+
+    // Deleting a person: only admins, for people who exist, never themselves or someone who alone owns a tree.
+    @Test
+    fun `only admins delete people`() {
+        val family = visibleFamily()
+        val owner = jdbc.queryForObject("SELECT id FROM users WHERE email = 'owner@example.com'", UUID::class.java)!!
+        memberships.grantFlags("admin@example.com", admin = true, canCreateTrees = false, grantedBy = null)
+        val admin = jdbc.queryForObject("SELECT id FROM users WHERE email = 'admin@example.com'", UUID::class.java)!!
+        fun delete(user: UUID, email: String) = status(Endpoint(DELETE, "/admin/users/$user", USERS_MANAGE), email)
+
+        assertEquals(403, delete(owner, "owner@example.com"))
+        assertEquals(403, delete(owner, "creator@example.com"))
+        assertEquals(404, delete(UUID.randomUUID(), "admin@example.com"))
+        assertEquals(400, delete(admin, "admin@example.com"))
+        assertEquals(409, delete(owner, "admin@example.com"))
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = 'owner@example.com'", Int::class.java))
+
+        memberships.grant(family, "admin@example.com", Role.OWNER, null)
+        assertEquals(204, delete(owner, "admin@example.com"))
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = 'owner@example.com'", Int::class.java))
+        assertEquals(
+            1,
+            jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'user.deleted' AND target_id = 'owner@example.com'", Int::class.java),
         )
     }
 

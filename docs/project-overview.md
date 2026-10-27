@@ -374,6 +374,17 @@ Each tree has a role menu (`PUT /families/{familyId}/access`) and "Entfernen" af
 "Text kopieren" asks `PUT /families/{familyId}/access` again with the same role, which changes nothing and returns the invitation text in the page language, and copies it; "Zurückziehen" removes the person from that tree after a confirmation.
 "Person einladen" (in both tabs) takes an email, a tree, and a role, calls the same endpoint, and shows the text to copy; nothing is sent.
 The BFF has no problem code of its own for the last owner, so the UI reads `INVALID_REQUEST` from these calls as "a tree needs an owner" and shows readable messages for the other codes.
+`DELETE /admin/users/{userId}` needs `users.manage` and removes the person's `users` row, which cascades to their roles in every tree.
+It answers 400 `INVALID_REQUEST` for yourself and for admins of the access file, and 404 for an unknown id.
+While the person is the only owner of a tree outside the trash it answers 409 `USER_OWNS_TREES` with `trees` (`familyId`, `familyName`) in the problem body and changes nothing.
+The persons they created in trees stay, and the audit log keeps the names of its entries.
+After the deletion it ends their Access sessions best effort, since Cloudflare may be unavailable, announces `AccessChanged` so the Access group sync drops their address, and writes `user.deleted` to the audit log.
+`ApiProblem` can carry extra members of the problem body for such lists.
+"Sessions beenden" in "Personen" asks for a confirmation and calls `POST /admin/users/{userId}/sessions/revoke`; without a Cloudflare API token, as locally, it shows that the sessions were not ended.
+"Löschen" in "Personen" is disabled for yourself and for admins of the access file.
+It opens a panel; if the person is the only owner of trees, the panel first asks for a new owner of each tree among the other people with a role in it, and says so when nobody else has one.
+The panel enables "Person löschen" once the person's name or email is typed; it then calls `POST /families/{familyId}/owner` for each tree and `DELETE /admin/users/{userId}`, and stops at the first failure.
+"Besitz übertragen" in "Bäume" loads `GET /families/{familyId}/access` for the tree, offers its people with their roles, and calls `POST /families/{familyId}/owner` after a confirmation.
 
 ### Presence
 

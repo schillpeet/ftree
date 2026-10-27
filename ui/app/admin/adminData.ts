@@ -1,5 +1,5 @@
 // Pure helpers of the admin page, so `adminData.check.mjs` can test them without Next.
-import type { AdminPresence, AdminUser } from '../../lib/api/generated/members';
+import type { AdminFamily, AdminPresence, AdminUser, TreeRole } from '../../lib/api/generated/members';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -96,7 +96,7 @@ export function sortedPeople<T extends Pick<AdminUser, 'displayName' | 'email'>>
   return [...users].sort((a, b) => a.displayName.localeCompare(b.displayName) || a.email.localeCompare(b.email));
 }
 
-export type AccessProblem = 'lastOwner' | 'notFound' | 'invalid' | 'forbidden' | 'failed';
+export type AccessProblem = 'lastOwner' | 'notFound' | 'invalid' | 'forbidden' | 'unavailable' | 'ownsTrees' | 'cannotDelete' | 'failed';
 
 // What went wrong when sharing or removing, from the problem code of the answer (null without one). The BFF has no
 // code of its own for the last owner: demoting or removing them answers `INVALID_REQUEST`, and nothing else in these
@@ -111,7 +111,47 @@ export function accessProblem(code: string | null): AccessProblem {
       return 'notFound';
     case 'FORBIDDEN':
       return 'forbidden';
+    case 'ACCESS_UNAVAILABLE':
+      return 'unavailable';
     default:
       return 'failed';
   }
+}
+
+// Deleting a person: `INVALID_REQUEST` means the caller or an admin of the access file, not a last owner, and the
+// BFF names the trees that need a new owner first with `USER_OWNS_TREES`.
+export function deleteProblem(code: string | null): AccessProblem {
+  if (code === 'INVALID_REQUEST') return 'cannotDelete';
+  if (code === 'USER_OWNS_TREES') return 'ownsTrees';
+  return accessProblem(code);
+}
+
+// The trees only this person owns, which need a new owner before they can be deleted. A tree missing from the
+// families counts as theirs, since leaving it out would only make the BFF refuse later.
+export function soleOwnedTrees(user: Pick<AdminUser, 'trees'>, families: readonly Pick<AdminFamily, 'id' | 'memberships'>[]) {
+  return user.trees.filter((tree) => {
+    if (tree.role !== 'owner') return false;
+    const family = families.find((candidate) => candidate.id === tree.familyId);
+    return !family || family.memberships.owner <= 1;
+  });
+}
+
+export type OwnerCandidate = { id: string; displayName: string; role: TreeRole };
+
+// Who could own the tree instead of the person: everyone else with a role in it, editors before visitors, then by name.
+export function ownerCandidates(users: readonly AdminUser[], userId: string, familyId: string): OwnerCandidate[] {
+  const rank = (role: TreeRole) => ['owner', 'editor', 'visitor'].indexOf(role);
+  return users
+    .filter((other) => other.id !== userId)
+    .flatMap((other) => {
+      const tree = other.trees.find((candidate) => candidate.familyId === familyId);
+      return tree ? [{ id: other.id, displayName: other.displayName, role: tree.role }] : [];
+    })
+    .sort((a, b) => rank(a.role) - rank(b.role) || a.displayName.localeCompare(b.displayName));
+}
+
+// Deleting a person needs their name or their email typed; case and surrounding spaces do not matter for the email.
+export function confirmsPerson(typed: string | null | undefined, user: Pick<AdminUser, 'displayName' | 'email'>): boolean {
+  const value = typed?.trim();
+  return !!value && (value === user.displayName || value.toLowerCase() === user.email.toLowerCase());
 }
