@@ -10,8 +10,11 @@ import com.github.bff.generated.model.ProblemCode
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
 import com.github.bff.problem.ApiProblem
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Transactional
@@ -128,6 +131,16 @@ class AccessSyncTest {
         gateway.group = people()
         assertEquals(AccessSyncResult.UNCHANGED, sync().run()?.result)
         assertEquals(emptyList(), gateway.replaced)
+    }
+
+    @Test
+    @ExtendWith(OutputCaptureExtension::class)
+    fun `a group that stays unchanged is logged once`(output: CapturedOutput) {
+        gateway.group = people()
+        val sync = sync()
+        sync.run()
+        sync.run()
+        assertEquals(1, Regex("Access sync: nothing to change").findAll(output.all).count())
     }
 
     @Test

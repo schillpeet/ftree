@@ -80,7 +80,11 @@ class AccessSync(
         }
         val added = wanted - current
         val removed = current - wanted
-        if (added.isEmpty() && removed.isEmpty()) return record(AccessSyncResult.UNCHANGED, wanted.size, 0, 0)
+        if (added.isEmpty() && removed.isEmpty()) {
+            // Logged once, not on every scheduled run, so the log still shows that the sync works.
+            if (last?.result != AccessSyncResult.UNCHANGED) log.info("Access sync: nothing to change, {} in total", wanted.size)
+            return record(AccessSyncResult.UNCHANGED, wanted.size, 0, 0)
+        }
         if (!properties.force && (removed.size > properties.maxRemovals || removed.size * 2 > current.size)) {
             log.warn(
                 "Access sync blocked: it would remove {} of {} addresses, more than {} or half; set ACCESS_SYNC_FORCE=true to allow it",
