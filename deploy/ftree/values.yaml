@@ -24,6 +24,14 @@ bff:
   # database.
   roles:
     admins: []
+  # The Cloudflare Access group the BFF keeps equal to everyone with access. existingSecret names a Secret whose
+  # "api-token" key holds a token with "Access: Organizations, Identity Providers, and Groups Edit"; unset, nothing is
+  # synced. dryRun only logs how many addresses a sync would add and remove.
+  cloudflare:
+    existingSecret: ""
+    accountId: ""
+    accessGroupId: ""
+    dryRun: false
   resources:
     requests: { memory: 512Mi }
     limits: { memory: 512Mi }

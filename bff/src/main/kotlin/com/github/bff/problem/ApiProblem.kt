@@ -19,10 +19,11 @@ val ProblemCode.status: HttpStatus
         ProblemCode.FORBIDDEN -> HttpStatus.FORBIDDEN
         ProblemCode.NOT_FOUND -> HttpStatus.NOT_FOUND
         ProblemCode.METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED
-        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT -> HttpStatus.CONFLICT
+        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT, ProblemCode.SEATS_EXHAUSTED -> HttpStatus.CONFLICT
         ProblemCode.PHOTO_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE
         ProblemCode.UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE
         ProblemCode.INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
+        ProblemCode.ACCESS_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE
     }
 
 // Fixed sentences only: never an exception message, which may name internals or echo the request's data.
@@ -37,9 +38,11 @@ private val ProblemCode.detail: String
         ProblemCode.NAME_TAKEN -> "A family with this name already exists."
         ProblemCode.PIN_TAKEN -> "Another member is already pinned to this place."
         ProblemCode.EDIT_CONFLICT -> "Someone else changed this member in the meantime; reload it and save again."
+        ProblemCode.SEATS_EXHAUSTED -> "Every Cloudflare Access seat is taken; remove someone's access before inviting someone new."
         ProblemCode.PHOTO_TOO_LARGE -> "The photo is too large."
         ProblemCode.UNSUPPORTED_MEDIA_TYPE -> "The content type is not supported."
         ProblemCode.INTERNAL_ERROR -> "An unexpected error occurred."
+        ProblemCode.ACCESS_UNAVAILABLE -> "Cloudflare Access cannot be reached right now."
     }
 
 // The code for a status that Spring itself answers, for example 405 or a body it cannot read.

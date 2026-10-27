@@ -10,6 +10,9 @@ Set `bff.corsAllowedOrigins` to the origin the browser opens the UI on (for exam
 Its `admin: true` entries are the bootstrap admins, who always stay admins; the BFF imports everything else into the database once (`developer: true` as permission to create trees), and the database alone decides from then on.
 The chart puts it into the ConfigMap `ftree-bff-access`, mounts it as `/config/access.yaml`, sets `APP_ACCESS_FILE`, and restarts the BFF when it changes (checksum annotation).
 Without `bff.access`, `bff.roles.admins` lists the bootstrap admins' emails, and everyone else Access lets in sees only the trees the database gives them; the chart refuses to render with both set.
+
+`bff.cloudflare.existingSecret` names a Secret whose `api-token` key holds the BFF's Cloudflare API token (Access: Organizations, Identity Providers, and Groups Edit); with `bff.cloudflare.accountId` and `bff.cloudflare.accessGroupId` the BFF then keeps the Access group equal to everyone with access, and `bff.cloudflare.dryRun: true` only logs the counts it would change.
+Without the Secret the BFF runs with a noop gateway and changes nothing at Cloudflare.
 The chart passes the other values to the BFF as `APP_AUTH_MODE`, `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, and `APP_ROLES_ADMINS` (joined with `,`), leaving unset values out.
 Running ftree in a cluster (Flux manifests, the kubectl, kind, Helm, and Flux cheatsheet, and the plan for a local kind cluster) lives in the private [`schillpeet/ftree-infra`](https://github.com/schillpeet/ftree-infra) repository.
 

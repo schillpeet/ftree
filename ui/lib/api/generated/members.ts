@@ -16,9 +16,11 @@
  * - `NAME_TAKEN` (409): a family with this name already exists, possibly in the trash.
  * - `PIN_TAKEN` (409): another member is already pinned to this place.
  * - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
+ * - `SEATS_EXHAUSTED` (409): every Cloudflare Access seat is taken, so nobody new can be given access.
  * - `PHOTO_TOO_LARGE` (413): the photo is too large.
  * - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
  * - `INTERNAL_ERROR` (500): an unexpected error on the server.
+ * - `ACCESS_UNAVAILABLE` (503): Cloudflare Access cannot be reached or the BFF has no API token for it.
  */
 export type ProblemCode = typeof ProblemCode[keyof typeof ProblemCode];
 
@@ -33,9 +35,11 @@ export const ProblemCode = {
   NAME_TAKEN: 'NAME_TAKEN',
   PIN_TAKEN: 'PIN_TAKEN',
   EDIT_CONFLICT: 'EDIT_CONFLICT',
+  SEATS_EXHAUSTED: 'SEATS_EXHAUSTED',
   PHOTO_TOO_LARGE: 'PHOTO_TOO_LARGE',
   UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
+  ACCESS_UNAVAILABLE: 'ACCESS_UNAVAILABLE',
 } as const;
 
 export interface FieldError {
@@ -160,6 +164,49 @@ export type AdminOverviewSeats = {
   limit: number;
 };
 
+/**
+ * - `synced`: the group now lists exactly the people with access.
+ * - `unchanged`: the group already did.
+ * - `dry_run`: dry-run mode; the group was left as it is.
+ * - `blocked`: the change would remove too many people at once and was refused; set `ACCESS_SYNC_FORCE` to allow it.
+ * - `failed`: Cloudflare did not answer or refused the change.
+ * - `disabled`: no Cloudflare API token or group configured; nothing is synced.
+ */
+export type AccessSyncResult = typeof AccessSyncResult[keyof typeof AccessSyncResult];
+
+
+export const AccessSyncResult = {
+  synced: 'synced',
+  unchanged: 'unchanged',
+  dry_run: 'dry_run',
+  blocked: 'blocked',
+  failed: 'failed',
+  disabled: 'disabled',
+} as const;
+
+/**
+ * The last sync of the Cloudflare Access group `ftree users` by this BFF instance; missing before the first run.
+ */
+export interface AccessSyncStatus {
+  at: string;
+  result: AccessSyncResult;
+  /**
+     * People the database gives access, and so the group should list.
+     * @minimum 0
+     */
+  members: number;
+  /**
+     * Addresses added to the group, or that would have been in a dry run or a blocked run.
+     * @minimum 0
+     */
+  added: number;
+  /**
+     * Addresses removed from the group, or that would have been in a dry run or a blocked run.
+     * @minimum 0
+     */
+  removed: number;
+}
+
 export interface AdminOverview {
   /**
      * Trees, test families included and trashed ones left out.
@@ -185,6 +232,7 @@ export interface AdminOverview {
      * @nullable
      */
   lastBackupAt: string | null;
+  accessSync?: AccessSyncStatus;
 }
 
 export interface AdminPresence {
@@ -3819,6 +3867,11 @@ export type shareTreeResponse404 = {
   status: 404
 }
 
+export type shareTreeResponse409 = {
+  data: Problem
+  status: 409
+}
+
 export type shareTreeResponse500 = {
   data: InternalErrorResponse
   status: 500
@@ -3827,7 +3880,7 @@ export type shareTreeResponse500 = {
 export type shareTreeResponseSuccess = (shareTreeResponse200) & {
   headers: Headers;
 };
-export type shareTreeResponseError = (shareTreeResponse400 | shareTreeResponse401 | shareTreeResponse403 | shareTreeResponse404 | shareTreeResponse500) & {
+export type shareTreeResponseError = (shareTreeResponse400 | shareTreeResponse401 | shareTreeResponse403 | shareTreeResponse404 | shareTreeResponse409 | shareTreeResponse500) & {
   headers: Headers;
 };
 
@@ -3842,7 +3895,7 @@ export const getShareTreeUrl = (familyId: string,) => {
 }
 
 /**
- * Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have. Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`. Demoting the last owner answers 400 `INVALID_REQUEST`. Needs `family.share`; every change is written to the audit log.
+ * Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have. Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`. Demoting the last owner answers 400 `INVALID_REQUEST`; someone new while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `family.share`; every change is written to the audit log.
  * @summary Invite someone to a tree or change their role
  */
 export const shareTree = async (familyId: string,
@@ -4125,6 +4178,11 @@ export type updateAdminUserResponse404 = {
   status: 404
 }
 
+export type updateAdminUserResponse409 = {
+  data: Problem
+  status: 409
+}
+
 export type updateAdminUserResponse500 = {
   data: InternalErrorResponse
   status: 500
@@ -4133,7 +4191,7 @@ export type updateAdminUserResponse500 = {
 export type updateAdminUserResponseSuccess = (updateAdminUserResponse200) & {
   headers: Headers;
 };
-export type updateAdminUserResponseError = (updateAdminUserResponse400 | updateAdminUserResponse401 | updateAdminUserResponse403 | updateAdminUserResponse404 | updateAdminUserResponse500) & {
+export type updateAdminUserResponseError = (updateAdminUserResponse400 | updateAdminUserResponse401 | updateAdminUserResponse403 | updateAdminUserResponse404 | updateAdminUserResponse409 | updateAdminUserResponse500) & {
   headers: Headers;
 };
 
@@ -4148,7 +4206,7 @@ export const getUpdateAdminUserUrl = (userId: string,) => {
 }
 
 /**
- * Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says. Needs `users.manage`, which only admins have; every change is written to the audit log.
+ * Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says. Granting a right to someone without a seat while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `users.manage`, which only admins have; every change is written to the audit log.
  * @summary Change a person's global rights or display name
  */
 export const updateAdminUser = async (userId: string,
@@ -4182,6 +4240,77 @@ const res = await fetch(getUpdateAdminUserUrl(userId),
 
   const data: updateAdminUserResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as updateAdminUserResponse
+}
+
+
+
+export type revokeAdminUserSessionsResponse204 = {
+  data: void
+  status: 204
+}
+
+export type revokeAdminUserSessionsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type revokeAdminUserSessionsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type revokeAdminUserSessionsResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type revokeAdminUserSessionsResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type revokeAdminUserSessionsResponse503 = {
+  data: Problem
+  status: 503
+}
+
+export type revokeAdminUserSessionsResponseSuccess = (revokeAdminUserSessionsResponse204) & {
+  headers: Headers;
+};
+export type revokeAdminUserSessionsResponseError = (revokeAdminUserSessionsResponse401 | revokeAdminUserSessionsResponse403 | revokeAdminUserSessionsResponse404 | revokeAdminUserSessionsResponse500 | revokeAdminUserSessionsResponse503) & {
+  headers: Headers;
+};
+
+export type revokeAdminUserSessionsResponse = (revokeAdminUserSessionsResponseSuccess | revokeAdminUserSessionsResponseError)
+
+export const getRevokeAdminUserSessionsUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/sessions/revoke`
+}
+
+/**
+ * Signs the person out of Cloudflare Access at once, so they have to enter a new one-time PIN; their rights stay as they are. Needs `users.manage`, which only admins have; the revocation is written to the audit log.
+ * @summary End a person's Cloudflare Access sessions
+ */
+export const revokeAdminUserSessions = async (userId: string, options?: RequestInit): Promise<revokeAdminUserSessionsResponse> => {
+
+  const res = await fetch(getRevokeAdminUserSessionsUrl(userId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: revokeAdminUserSessionsResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as revokeAdminUserSessionsResponse
 }
 
 
