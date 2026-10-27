@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.27.1](https://github.com/schillpeet/ftree/compare/v0.27.0...v0.27.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **bff:** log when the access sync finds nothing to change ([#249](https://github.com/schillpeet/ftree/issues/249)) ([f5c6c6c](https://github.com/schillpeet/ftree/commit/f5c6c6c6d44db646648faf0734749dee2332e566))
+* **ui:** notice when access ends the session ([#251](https://github.com/schillpeet/ftree/issues/251)) ([70baedc](https://github.com/schillpeet/ftree/commit/70baedc06f35867740edf8a1972586b9df31f3e7))
+
 ## [0.27.0](https://github.com/schillpeet/ftree/compare/v0.26.0...v0.27.0) (2026-10-27)
 
 
