@@ -387,7 +387,12 @@ The name is the email's local part up to the first dot, dash, plus, or underscor
 The person's name is read when the event arrives, so a deleted person still has one; a person the UI does not know yet is "eine Person".
 When someone else saves the person whose form is open here, the toast adds that saving will ask how to resolve the conflict (409 `EDIT_CONFLICT`).
 Toasts vanish after 6 seconds or on a click, and at most three are stacked.
-Avatars at persons and following someone are planned.
+While someone else views or edits a person, a mini avatar with their initials sits on that person's card or name in every view, a "+n" for more people, an orange ring and pencil while anyone edits, faded while all of them are idle.
+The person's profile and edit form say "Manuel bearbeitet das gerade" for an editor (also an idle one, whose form may still be saved) or else "Manuel sieht sich das auch an" for active viewers.
+These hints, the mini avatar's tooltip, and the follow chip name people like the toasts do (`whoOf`), so no address appears there.
+The UI shares the signed-in email with these markers through a small store (`live/people.ts`), because drei's `<Html>` roots get no React context.
+Clicking someone else's avatar in the presence bar follows them: the camera flies to the person they edit or view and opens the profile, as the search does, and again whenever they move on.
+A "Du folgst Manuel" chip at the bottom centre stops following, and so do clicking the avatar again, opening or searching another person, adding one, closing or leaving the shown profile, switching trees, and the followed person leaving the tree.
 
 ### Trash
 

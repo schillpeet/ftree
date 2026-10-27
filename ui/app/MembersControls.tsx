@@ -18,6 +18,7 @@ import ConflictDialog from './ConflictDialog';
 import { isEditConflict, withVersion } from './conflict';
 import { useT } from './i18n';
 import { onLiveEvent } from './live/liveBus';
+import PresenceHint from './live/PresenceHint';
 import { useCan } from './Permissions';
 import { initialsOf, nameOf } from './names';
 import { dateProblem } from './partnerships';
@@ -460,6 +461,7 @@ export default function MembersControls({
                 </button>
               )}
             </MemberHero>
+            {editing && <PresenceHint memberId={editing.id} />}
             <div className="person-tabs" role="tablist">
               {(['data', 'relations'] as const).map((id) => (
                 <button

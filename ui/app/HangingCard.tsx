@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
+import { Html } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
 import { AdditiveBlending, CanvasTexture, Group, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { Member } from '../lib/api/generated/members';
 import { drawScroll, drawSign, papyrus, seedOf, wood, type CardText } from './cardTextures';
 import { formatDate, photoSrc } from './MembersControls';
 import { useT } from './i18n';
+import { useOthersAt } from './live/people';
+import PresenceDot from './live/PresenceDot';
 import { isNameless, nameOf } from './names';
 import type { Point } from './pins';
 import { seededRandom } from './random';
@@ -258,6 +261,17 @@ function GlowOrbs({ width, rope, seed, evening }: { width: number; rope: number;
   );
 }
 
+// The presence dot at a card's upper right corner, only mounted while someone is there: every <Html> follows its
+// card on each frame.
+function CardPresence({ memberId, position }: { memberId: string; position: Point }) {
+  if (useOthersAt(memberId).length === 0) return null;
+  return (
+    <Html position={position} center zIndexRange={[3, 0]}>
+      <PresenceDot memberId={memberId} floating />
+    </Html>
+  );
+}
+
 // Papyrus scroll with a rod on top and a rolled-up bottom edge, written on both sides. 'label'
 // turns to the camera and glows a little, so it stays readable against the low sun.
 export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode, evening }: CardProps & { mode: 'scroll' | 'label'; evening: number }) {
@@ -271,6 +285,7 @@ export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode, e
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
+      <CardPresence memberId={member.id} position={[width / 2, -rope - 0.2, 0.15]} />
       <Rope from={[0, 0, 0]} to={[-width / 2 - 0.05, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 + 0.05, -rope, 0]} />
       <mesh position={[0, -rope, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
@@ -310,6 +325,7 @@ export function SignCard({ member, familyId, position, onOpen, onDrag, evening }
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
+      <CardPresence memberId={member.id} position={[width / 2, -rope, depth]} />
       <Rope from={[0, 0, 0]} to={[-width / 2 + 0.15, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 - 0.15, -rope, 0]} />
       <mesh position={[0, -rope - height / 2, 0]} castShadow receiveShadow>

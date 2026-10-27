@@ -57,6 +57,33 @@ export function stateOf(person: PresentPerson): PresenceState {
   return 'here';
 }
 
+// Everyone else at a member, editors first, then active people, then idle ones.
+export function othersAt(people: readonly PresentPerson[], memberId: string): PresentPerson[] {
+  const rank = (person: PresentPerson) => (person.editing === memberId ? 0 : person.idle ? 2 : 1);
+  // A stable sort keeps the `peopleOf` order within each rank.
+  return people
+    .filter((person) => !person.me && (person.viewing === memberId || person.editing === memberId))
+    .sort((a, b) => rank(a) - rank(b));
+}
+
+export type PresenceHint = { kind: 'editing' | 'viewing'; email: string; more: number };
+
+// What a person's panel says about the others there: who edits them, else who else views them. Idle viewers do not
+// count, an idle editor does, because their open form may still be saved.
+export function hintAt(others: readonly PresentPerson[], memberId: string): PresenceHint | null {
+  const editors = others.filter((person) => person.editing === memberId);
+  const viewers = others.filter((person) => !person.idle);
+  const [kind, list] = editors.length > 0 ? (['editing', editors] as const) : (['viewing', viewers] as const);
+  return list.length > 0 ? { kind, email: list[0].email, more: list.length - 1 } : null;
+}
+
+// Where following `email` leads: the member they edit or view, null while they look at none, undefined once they left
+// the tree (or for nobody).
+export function followTarget(people: readonly PresentPerson[], email: string | null): string | null | undefined {
+  const person = email ? people.find((candidate) => candidate.email === email && !candidate.me) : undefined;
+  return person && (person.editing ?? person.viewing);
+}
+
 // The `present` list of a `presence` event, or null for anything malformed.
 export function parsePresence(data: string): PresentClient[] | null {
   try {
