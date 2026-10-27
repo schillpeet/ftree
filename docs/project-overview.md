@@ -276,6 +276,7 @@ The Evolution button needs `tree.appearance`, so everyone sees it; its random-fa
 Editing a person, their photo, relatives, and dragging cards to pins need `member.edit`; deleting a person needs `member.delete`.
 Editing the family card (name, photo, photo fit) needs `family.edit`, the GEDCOM download `family.export`, deleting (trashing) a family `family.delete`, creating and importing families `family.create`, and the anonymized copy and reordering families `family.manage`.
 A 403 from the API shows a friendly notice that the role does not allow it, and a 401 suggests reloading or signing in again.
+An ended Access session (signed out elsewhere, or "Sessions beenden" in `/admin`) turns the next API call into a redirect to the Cloudflare sign-in, which `fetch` reports as a network error; the UI then probes `/api/me` without following redirects and, on a redirect, shows the same notice.
 The UI tells errors apart by the problem `code` (for example `NAME_TAKEN` or `NOT_FOUND`), not by the status; only answers without a code, which come from Cloudflare Access or the proxy, fall back to the status for the 401/403 notice.
 A broader family-tree model (relationship types such as uncertain links) is not implemented.
 The BFF serves Actuator on its own management port, `management.server.port` (env `MANAGEMENT_PORT`, default 8081), so the UI's `/api` rewrite and the tunnel, which forward to port 8080, never reach it.
@@ -389,6 +390,7 @@ The persons they created in trees stay, and the audit log keeps the names of its
 After the deletion it ends their Access sessions best effort, since Cloudflare may be unavailable, announces `AccessChanged` so the Access group sync drops their address, and writes `user.deleted` to the audit log.
 `ApiProblem` can carry extra members of the problem body for such lists.
 "Sessions beenden" in "Personen" asks for a confirmation and calls `POST /admin/users/{userId}/sessions/revoke`; without a Cloudflare API token, as locally, it shows that the sessions were not ended.
+Ending the sessions signs the person out, but someone who still has access can sign in again with a new one-time PIN at once; to keep someone out, delete them or take away their roles.
 "Löschen" in "Personen" is disabled for yourself and for admins of the access file.
 It opens a panel; if the person is the only owner of trees, the panel first asks for a new owner of each tree among the other people with a role in it, and says so when nobody else has one.
 The panel enables "Person löschen" once the person's name or email is typed; it then calls `POST /families/{familyId}/owner` for each tree and `DELETE /admin/users/{userId}`, and stops at the first failure.

@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { getMe, type FamilySummary, type Me, type Permission } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { CloseIcon } from './icons';
-import { authProblemOf, can, type AuthProblem } from './access';
+import { authProblemOf, can, failedCallNeedsProbe, signedOutByProbe, type AuthProblem } from './access';
 import { responseProblemCode } from './problems';
 
 // undefined while `/me` is loading, null when it failed.
@@ -18,7 +18,8 @@ export function OpenFamily({ family, children }: { family: FamilySummary | null;
 }
 
 // Loads `/me` once; until it answers (or when it fails) nothing beyond viewing is shown.
-// It also notices 401/403 answers of any API call and explains them in a small banner.
+// It also notices 401/403 answers of any API call, and an ended Access session behind a failed one, and explains them
+// in a small banner.
 export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [problem, setProblem] = useState<AuthProblem | null>(null);
@@ -27,10 +28,29 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     // The generated client calls the global fetch, so watching it here covers every call
     // without changing the call sites; the response itself is passed on untouched.
     const original = window.fetch;
+    let probing = false;
+    const probe = () => {
+      if (probing) return;
+      probing = true;
+      void original('/api/me', { redirect: 'manual', cache: 'no-store' })
+        .then((answer) => {
+          if (signedOutByProbe(answer.type)) setProblem('signedOut');
+        })
+        .catch(() => {})
+        .finally(() => {
+          probing = false;
+        });
+    };
     window.fetch = async (input, init) => {
-      const response = await original(input, init);
-      if (response.ok) return response;
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      let response: Response;
+      try {
+        response = await original(input, init);
+      } catch (error) {
+        if (failedCallNeedsProbe(url, window.location.origin)) probe();
+        throw error;
+      }
+      if (response.ok) return response;
       void responseProblemCode(response).then((code) => {
         const found = authProblemOf(url, response.status, code, window.location.origin);
         if (found) setProblem(found);

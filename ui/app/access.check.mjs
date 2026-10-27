@@ -1,7 +1,7 @@
 // Run with `node app/access.check.mjs`: permission checks, the appearance fallback without `tree.appearance`,
 // and which API answers count as a sign-in or permission problem.
 import assert from 'node:assert/strict';
-import { APPEARANCES, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can } from './access.ts';
+import { APPEARANCES, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can, failedCallNeedsProbe, signedOutByProbe } from './access.ts';
 
 const me = { email: 'x@example.org', admin: false, canCreateTrees: false, permissions: ['tree.appearance'], verified: true };
 const visited = { role: 'visitor', permissions: ['tree.view'] };
@@ -41,3 +41,10 @@ assert.equal(authProblemOf('https://elsewhere.example.org/api/x', 403, 'FORBIDDE
 assert.equal(authProblemOf('/api/families', 403, null, origin), 'forbidden');
 assert.equal(authProblemOf('/api/me', 401, null, origin), 'signedOut');
 assert.equal(authProblemOf('/api/families', 404, null, origin), null);
+
+// A failed own API call is probed; a redirect to the Access sign-in means signed out, anything else does not.
+assert.ok(failedCallNeedsProbe('/api/families', origin));
+assert.ok(!failedCallNeedsProbe('https://elsewhere.example/api/x', origin));
+assert.ok(signedOutByProbe('opaqueredirect'));
+assert.ok(!signedOutByProbe('basic'));
+assert.ok(!signedOutByProbe('error'));

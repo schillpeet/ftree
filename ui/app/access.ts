@@ -33,6 +33,17 @@ export function authProblemOf(url: string, status: number, code: ProblemCode | n
   return null;
 }
 
+// A failed `/api/*` call (a network error, not an answer) is probed with `/api/me` without following redirects. Cloudflare
+// Access answers an ended or revoked session with a redirect to its sign-in page on another origin, which `fetch` can only
+// report as a network error; the probe tells that apart from the network being down.
+export function failedCallNeedsProbe(url: string, origin: string) {
+  return isApiUrl(url, origin);
+}
+
+export function signedOutByProbe(type: ResponseType) {
+  return type === 'opaqueredirect';
+}
+
 function isApiUrl(url: string, origin: string) {
   try {
     const parsed = new URL(url, origin);
