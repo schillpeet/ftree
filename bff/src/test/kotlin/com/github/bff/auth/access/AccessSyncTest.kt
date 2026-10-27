@@ -10,6 +10,7 @@ import com.github.bff.generated.model.ProblemCode
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
 import com.github.bff.problem.ApiProblem
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -75,12 +76,13 @@ class AccessSyncTest {
     }
 
     private val gateway = FakeGateway()
+    private val meters = SimpleMeterRegistry()
     private val syncs = mutableListOf<AccessSync>()
 
     private fun seats(properties: AccessSyncProperties = AccessSyncProperties()) = AccessSeats(jdbc, accessPolicy, memberships, properties)
 
     private fun sync(properties: AccessSyncProperties = AccessSyncProperties(), accessGateway: AccessGateway = gateway) =
-        AccessSync(jdbc, transactionManager, seats(properties), accessGateway, properties, Duration.ofMillis(50)).also { syncs += it }
+        AccessSync(jdbc, transactionManager, seats(properties), accessGateway, properties, meters, Duration.ofMillis(50)).also { syncs += it }
 
     private fun people() = seats().people().toSet()
 
@@ -109,6 +111,9 @@ class AccessSyncTest {
         assertEquals(listOf(stranger), gateway.revoked)
         assertEquals(Triple(people().size, 1, 1), Triple(status.members, status.added, status.removed))
         assertEquals(status, sync.status)
+        assertEquals(1.0, meters.counter("ftree.access.sync.runs", "result", "synced").count())
+        assertEquals(1.0, meters.counter("ftree.access.sync.changes", "change", "added").count())
+        assertEquals(1.0, meters.counter("ftree.access.sync.changes", "change", "removed").count())
     }
 
     @Test
@@ -167,6 +172,9 @@ class AccessSyncTest {
         assertEquals(1 to 2, status.added to status.removed)
         assertEquals(emptyList(), gateway.replaced)
         assertEquals(emptyList(), gateway.revoked)
+        assertEquals(1.0, meters.counter("ftree.access.sync.runs", "result", "dry_run").count())
+        assertEquals(0.0, meters.counter("ftree.access.sync.changes", "change", "added").count())
+        assertEquals(0.0, meters.counter("ftree.access.sync.changes", "change", "removed").count())
     }
 
     @Test

@@ -53,6 +53,16 @@ class ManagementPortTest {
     }
 
     @Test
+    fun `prometheus scrape has request buckets, active users per window, and access sync counters`() {
+        get(appPort, "/me")
+        val scrape = get(managementPort, "/actuator/prometheus").body()
+        assertTrue(scrape.contains("http_server_requests_seconds_bucket"), scrape)
+        listOf("1d", "7d", "30d").forEach { assertTrue(scrape.contains("ftree_users_active{window=\"$it\"}"), scrape) }
+        assertTrue(scrape.contains("ftree_access_sync_runs_total{result=\"synced\"}"), scrape)
+        assertTrue(scrape.contains("ftree_access_sync_changes_total{change=\"added\"}"), scrape)
+    }
+
+    @Test
     fun `other actuator endpoints are not exposed`() {
         listOf("/actuator/env", "/actuator/beans", "/actuator/metrics").forEach { path ->
             assertTrue(get(managementPort, path).statusCode() in listOf(403, 404), path)
