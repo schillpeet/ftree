@@ -339,6 +339,13 @@ The sync needs `CLOUDFLARE_API_TOKEN` (the Secret `ftree-cloudflare`, key `api-t
 Without all three the BFF logs once at startup that the sync is off and runs with the noop gateway, as in development and tests, which never call Cloudflare.
 Seats are limited to `ACCESS_SYNC_SEAT_LIMIT` (default 50, the Cloudflare free plan): inviting someone without a seat, or giving them `admin` or `can_create_trees`, answers 409 `SEATS_EXHAUSTED` before anything is written, while people with a seat can still change roles.
 `POST /admin/users/{userId}/sessions/revoke` (`users.manage`) ends a person's Access sessions and writes `user.sessions.revoked` to the audit log; without the token or when Cloudflare fails it answers 503 `ACCESS_UNAVAILABLE`.
+The family card shows a "Teilen" button for everyone with `family.share` (owners of the tree and admins); editors and visitors do not see it.
+The button opens the share dialog (`ShareDialog.tsx`), a draggable, pinnable panel beside the card that loads `GET /families/{familyId}/access`.
+The dialog lists the people with access with name, email, role, and status (invited or active); an owner who is the only one cannot be demoted or removed there.
+Each row changes the role with a menu (editor or visitor), removes the access, hands the tree over after a confirmation ("Besitz übertragen", `POST /families/{familyId}/owner`), and, while the person is only invited, shows the invitation text again.
+The form invites by email with the role editor or visitor; ownership is only given by the transfer.
+After an invitation the dialog shows the text with the tree's link and a copy button; nothing is sent.
+Problem codes are explained in the dialog's language; `INVALID_REQUEST` means the last owner, `SEATS_EXHAUSTED` that no seat is left for someone new, and `share.ts` holds this mapping and the row rules, tested by `share.check.mjs`.
 
 ### Administration
 

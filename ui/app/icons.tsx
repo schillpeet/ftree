@@ -207,3 +207,12 @@ export const LogoIcon = () => (
     <path d="M0 0 C12 -10.2 12 -24.48 0 -34 C-12 -24.48 -12 -10.2 0 0Z" fill="#D9A93A" transform="translate(92 22) rotate(62)" />
   </svg>
 );
+
+export const ShareIcon = () => (
+  <Icon>
+    <circle cx="18" cy="5" r="3" />
+    <circle cx="6" cy="12" r="3" />
+    <circle cx="18" cy="19" r="3" />
+    <path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" />
+  </Icon>
+);
