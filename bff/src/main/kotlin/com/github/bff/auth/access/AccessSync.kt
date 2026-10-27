@@ -3,6 +3,8 @@ package com.github.bff.auth.access
 import com.github.bff.auth.AccessChanged
 import com.github.bff.generated.model.AccessSyncResult
 import com.github.bff.generated.model.AccessSyncStatus
+import io.micrometer.core.instrument.Counter
+import io.micrometer.core.instrument.MeterRegistry
 import jakarta.annotation.PreDestroy
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -29,12 +31,18 @@ class AccessSync(
     private val seats: AccessSeats,
     private val gateway: AccessGateway,
     private val properties: AccessSyncProperties,
+    meters: MeterRegistry,
     @Value("\${app.access-sync.retry-delay:5s}")
     private val retryDelay: Duration = Duration.ofSeconds(5),
 ) {
     private val transactions = TransactionTemplate(transactionManager)
     private val executor = Executors.newSingleThreadScheduledExecutor { Thread(it, "access-sync").apply { isDaemon = true } }
     private val requested = AtomicBoolean(false)
+
+    // Registered up front, so every series exists from the first scrape and rate() has a start.
+    private val runs = AccessSyncResult.entries.associateWith { Counter.builder("ftree.access.sync.runs").tag("result", it.value).register(meters) }
+    private val added = Counter.builder("ftree.access.sync.changes").tag("change", "added").register(meters)
+    private val removed = Counter.builder("ftree.access.sync.changes").tag("change", "removed").register(meters)
 
     @Volatile
     private var last: AccessSyncStatus? = null
@@ -114,7 +122,15 @@ class AccessSync(
     }
 
     private fun record(result: AccessSyncResult, members: Int, added: Int, removed: Int) =
-        AccessSyncStatus(OffsetDateTime.now(ZoneOffset.UTC), result, members, added, removed).also { last = it }
+        AccessSyncStatus(OffsetDateTime.now(ZoneOffset.UTC), result, members, added, removed).also {
+            last = it
+            runs.getValue(result).increment()
+            // Only what was written; a dry run or a blocked run changed nothing.
+            if (result == AccessSyncResult.SYNCED) {
+                this.added.increment(added.toDouble())
+                this.removed.increment(removed.toDouble())
+            }
+        }
 
     @PreDestroy
     fun stop() {
