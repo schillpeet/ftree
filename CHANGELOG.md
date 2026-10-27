@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.28.0](https://github.com/schillpeet/ftree/compare/v0.27.1...v0.28.0) (2026-10-27)
+
+
+### Features
+
+* **bff:** expose latency histogram, active users, and access sync metrics ([#252](https://github.com/schillpeet/ftree/issues/252)) ([367f0a2](https://github.com/schillpeet/ftree/commit/367f0a260807df44ace059c04b84acfa4eddcce5))
+
 ## [0.27.1](https://github.com/schillpeet/ftree/compare/v0.27.0...v0.27.1) (2026-10-27)
 
 
