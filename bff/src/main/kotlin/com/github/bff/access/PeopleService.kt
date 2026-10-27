@@ -3,6 +3,8 @@ package com.github.bff.access
 import com.github.bff.auth.AccessEvents
 import com.github.bff.auth.AccessPolicy
 import com.github.bff.auth.AuditLog
+import com.github.bff.auth.access.AccessGateway
+import com.github.bff.auth.access.AccessGatewayException
 import com.github.bff.auth.access.AccessSeats
 import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AdminInvitation
@@ -12,6 +14,7 @@ import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.TreeRole
 import com.github.bff.generated.model.UpdateAdminUserRequest
 import com.github.bff.problem.ApiProblem
+import org.slf4j.LoggerFactory
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -27,6 +30,7 @@ class PeopleService(
     private val auditLog: AuditLog,
     private val accessEvents: AccessEvents,
     private val seats: AccessSeats,
+    private val gateway: AccessGateway,
 ) {
     data class Profile(val id: UUID?, val displayName: String, val customName: String?)
 
@@ -62,6 +66,40 @@ class PeopleService(
         if (rightsChanged) accessEvents.changed(email, null)
         return users().single { it.id == userId }
     }
+
+    // Removes the person's roles and users row, which leaves the persons they created and the audit log's names alone.
+    // Trees that would lose their only owner stop it. The Access group sync, announced like any change of rights, drops
+    // the address and ends the sessions of whoever has no seat left; ending them here as well is best effort, since the
+    // person is gone either way.
+    @Transactional
+    fun delete(userId: UUID, actor: String) {
+        val user = userRows(userId).singleOrNull() ?: throw ApiProblem(ProblemCode.NOT_FOUND)
+        val email = user.email
+        if (email == actor.normalizedEmail()) throw ApiProblem(ProblemCode.INVALID_REQUEST, OWN_ACCOUNT)
+        if (email in accessPolicy.bootstrapAdmins()) throw ApiProblem(ProblemCode.INVALID_REQUEST, BOOTSTRAP_ADMIN)
+        val owned = soleOwnerOf(email)
+        if (owned.isNotEmpty()) {
+            throw ApiProblem(ProblemCode.USER_OWNS_TREES, properties = mapOf("trees" to owned.map { mapOf("familyId" to it.first, "familyName" to it.second) }))
+        }
+        jdbc.update("DELETE FROM users WHERE email = ?", email)
+        auditLog.record(actor, "user.deleted", "user", email)
+        try {
+            gateway.revokeSessions(email)
+        } catch (exception: AccessGatewayException) {
+            log.warn("Ending Access sessions of a deleted person failed: {}", exception.message)
+        }
+        accessEvents.changed(email, null)
+    }
+
+    // The trees outside the trash in which the person is the only owner, by name.
+    private fun soleOwnerOf(email: String): List<Pair<UUID, String>> =
+        jdbc.query(
+            "SELECT f.id, f.name FROM family_memberships m JOIN families f ON f.id = m.family_id " +
+                "WHERE m.email = ? AND m.role = 'owner' AND f.deleted_at IS NULL AND NOT EXISTS (" +
+                "SELECT 1 FROM family_memberships o WHERE o.family_id = m.family_id AND o.role = 'owner' AND o.email <> m.email) " +
+                "ORDER BY lower(f.name), f.id",
+            { rs, _ -> rs.getObject(1, UUID::class.java) to rs.getString(2) }, email,
+        )
 
     // Every membership of someone who never signed in, in a tree outside the trash, newest first.
     fun invitations(): List<AdminInvitation> =
@@ -150,7 +188,10 @@ class PeopleService(
     }
 
     companion object {
+        const val OWN_ACCOUNT = "You cannot delete yourself; ask another admin."
+        const val BOOTSTRAP_ADMIN = "Bootstrap admins come from the configuration and cannot be deleted."
         const val OWN_ADMIN = "You cannot take away your own admin right; ask another admin."
         private const val MAX_NAME = 100
+        private val log = LoggerFactory.getLogger(PeopleService::class.java)
     }
 }

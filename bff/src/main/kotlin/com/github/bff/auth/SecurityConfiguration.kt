@@ -149,6 +149,7 @@ class SecurityConfiguration(
                 it.requestMatchers(POST, "/families/{familyId}/owner").access(inFamily(FAMILY_SHARE))
                 it.requestMatchers(GET, "/admin/users", "/admin/invitations").hasAuthority(USERS_VIEW.key)
                 it.requestMatchers(PUT, "/admin/users/*").hasAuthority(USERS_MANAGE.key)
+                it.requestMatchers(DELETE, "/admin/users/*").hasAuthority(USERS_MANAGE.key)
                 it.requestMatchers(POST, "/admin/users/*/sessions/revoke").hasAuthority(USERS_MANAGE.key)
                 // Trash: deleted families, admins only.
                 it.requestMatchers(GET, "/admin/trash").hasAuthority(FAMILY_MANAGE.key)

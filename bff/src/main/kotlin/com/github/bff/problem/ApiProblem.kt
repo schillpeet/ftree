@@ -9,8 +9,10 @@ import java.net.URI
 
 // Thrown by controllers and interceptors; ProblemAdvice answers it as problem details. The generated interfaces return
 // typed ResponseEntity<T>, so throwing is the only way to send a problem body from a controller.
-// detail replaces the code's fixed sentence where the caller can act on more, for example a name held by the trash.
-class ApiProblem(val code: ProblemCode, val detail: String? = null) : RuntimeException(code.value, null, false, false)
+// detail replaces the code's fixed sentence where the caller can act on more, for example a name held by the trash;
+// properties are extra members of the problem body, for example the trees that stop a person from being deleted.
+class ApiProblem(val code: ProblemCode, val detail: String? = null, val properties: Map<String, Any> = emptyMap()) :
+    RuntimeException(code.value, null, false, false)
 
 val ProblemCode.status: HttpStatus
     get() = when (this) {
@@ -19,7 +21,7 @@ val ProblemCode.status: HttpStatus
         ProblemCode.FORBIDDEN -> HttpStatus.FORBIDDEN
         ProblemCode.NOT_FOUND -> HttpStatus.NOT_FOUND
         ProblemCode.METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED
-        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT, ProblemCode.SEATS_EXHAUSTED -> HttpStatus.CONFLICT
+        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT, ProblemCode.SEATS_EXHAUSTED, ProblemCode.USER_OWNS_TREES -> HttpStatus.CONFLICT
         ProblemCode.PHOTO_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE
         ProblemCode.UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE
         ProblemCode.INTERNAL_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR
@@ -39,6 +41,7 @@ private val ProblemCode.detail: String
         ProblemCode.PIN_TAKEN -> "Another member is already pinned to this place."
         ProblemCode.EDIT_CONFLICT -> "Someone else changed this member in the meantime; reload it and save again."
         ProblemCode.SEATS_EXHAUSTED -> "Every Cloudflare Access seat is taken; remove someone's access before inviting someone new."
+        ProblemCode.USER_OWNS_TREES -> "The person is the only owner of trees; hand them over before deleting the person."
         ProblemCode.PHOTO_TOO_LARGE -> "The photo is too large."
         ProblemCode.UNSUPPORTED_MEDIA_TYPE -> "The content type is not supported."
         ProblemCode.INTERNAL_ERROR -> "An unexpected error occurred."
@@ -65,10 +68,12 @@ fun problemDetail(
     errors: List<FieldError> = emptyList(),
     status: HttpStatusCode = code.status,
     detail: String? = null,
+    properties: Map<String, Any> = emptyMap(),
 ): ProblemDetail =
     ProblemDetail.forStatusAndDetail(status, detail ?: code.detail).apply {
         type = URI.create("urn:ftree:problem:" + code.name.lowercase().replace('_', '-'))
         instance = runCatching { URI.create(path) }.getOrNull()
         setProperty("code", code.value)
+        properties.forEach { (name, value) -> setProperty(name, value) }
         if (errors.isNotEmpty()) setProperty("errors", errors.map { mapOf("field" to it.field, "message" to it.message) })
     }

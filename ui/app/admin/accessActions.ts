@@ -1,7 +1,15 @@
-import { type TreeInvitation, type TreeRole, revokeTreeAccess, shareTree } from '../../lib/api/generated/members';
+import {
+  type TreeInvitation,
+  type TreeRole,
+  deleteAdminUser,
+  revokeAdminUserSessions,
+  revokeTreeAccess,
+  shareTree,
+  transferTreeOwnership,
+} from '../../lib/api/generated/members';
 import type { Language } from '../i18n';
 import { problemCode } from '../problems';
-import { accessProblem, type AccessProblem } from './adminData';
+import { accessProblem, deleteProblem, type AccessProblem } from './adminData';
 
 export type AccessResult<T> = { ok: true; data: T } | { ok: false; problem: AccessProblem };
 
@@ -22,6 +30,39 @@ export async function revoke(familyId: string, userId: string): Promise<AccessRe
     const response = await revokeTreeAccess(familyId, userId);
     if (response.status === 204) return { ok: true, data: null };
     return { ok: false, problem: accessProblem(problemCode(response.data)) };
+  } catch {
+    return { ok: false, problem: 'failed' };
+  }
+}
+
+// Hands the tree to the person, who must have a role in it; everyone who owned it before becomes an editor.
+export async function transfer(familyId: string, userId: string): Promise<AccessResult<null>> {
+  try {
+    const response = await transferTreeOwnership(familyId, { userId });
+    if (response.status === 204) return { ok: true, data: null };
+    return { ok: false, problem: accessProblem(problemCode(response.data)) };
+  } catch {
+    return { ok: false, problem: 'failed' };
+  }
+}
+
+// Signs the person out of Cloudflare Access; their rights stay.
+export async function endSessions(userId: string): Promise<AccessResult<null>> {
+  try {
+    const response = await revokeAdminUserSessions(userId);
+    if (response.status === 204) return { ok: true, data: null };
+    return { ok: false, problem: accessProblem(problemCode(response.data)) };
+  } catch {
+    return { ok: false, problem: 'failed' };
+  }
+}
+
+// Deletes the person; the BFF refuses while they are the only owner of a tree.
+export async function deleteUser(userId: string): Promise<AccessResult<null>> {
+  try {
+    const response = await deleteAdminUser(userId);
+    if (response.status === 204) return { ok: true, data: null };
+    return { ok: false, problem: deleteProblem(problemCode(response.data)) };
   } catch {
     return { ok: false, problem: 'failed' };
   }

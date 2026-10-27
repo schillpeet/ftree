@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 // SecurityConfiguration requires family.share in the tree for /families/{familyId}/..., users.view to read the
-// /admin paths, and users.manage to change a person or end their sessions.
+// /admin paths, and users.manage to change or delete a person or end their sessions.
 @RestController
 class AccessController(
     private val trees: TreeAccessService,
@@ -43,6 +43,11 @@ class AccessController(
 
     override fun updateAdminUser(userId: UUID, updateAdminUserRequest: UpdateAdminUserRequest): ResponseEntity<AdminUser> =
         ResponseEntity.ok(people.update(userId, updateAdminUserRequest, actor()))
+
+    override fun deleteAdminUser(userId: UUID): ResponseEntity<Void> {
+        people.delete(userId, actor())
+        return ResponseEntity.noContent().build()
+    }
 
     override fun revokeAdminUserSessions(userId: UUID): ResponseEntity<Void> {
         sessions.revoke(userId, actor())

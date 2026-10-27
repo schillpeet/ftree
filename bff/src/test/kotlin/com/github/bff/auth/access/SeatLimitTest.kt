@@ -51,7 +51,7 @@ class SeatLimitTest {
 
     private val noSeats by lazy { AccessSeats(jdbc, accessPolicy, memberships, AccessSyncProperties(seatLimit = 0)) }
     private val trees by lazy { TreeAccessService(jdbc, membershipService, auditLog, noSeats, "http://localhost:3000") }
-    private val people by lazy { PeopleService(jdbc, accessPolicy, auditLog, accessEvents, noSeats) }
+    private val people by lazy { PeopleService(jdbc, accessPolicy, auditLog, accessEvents, noSeats, NoopAccessGateway) }
 
     private fun assertSeatsExhausted(block: () -> Unit) =
         assertEquals(ProblemCode.SEATS_EXHAUSTED, assertFailsWith<ApiProblem> { block() }.code)

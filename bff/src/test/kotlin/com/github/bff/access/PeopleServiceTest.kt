@@ -1,7 +1,13 @@
 package com.github.bff.access
 
+import com.github.bff.auth.AccessEvents
+import com.github.bff.auth.AccessPolicy
+import com.github.bff.auth.AuditLog
 import com.github.bff.auth.Memberships
 import com.github.bff.auth.Role
+import com.github.bff.auth.access.AccessGateway
+import com.github.bff.auth.access.AccessSeats
+import com.github.bff.auth.access.NoopAccessGateway
 import com.github.bff.generated.model.AccessStatus
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.TreeRole
@@ -30,6 +36,18 @@ class PeopleServiceTest {
 
     @Autowired
     private lateinit var memberships: Memberships
+
+    @Autowired
+    private lateinit var accessPolicy: AccessPolicy
+
+    @Autowired
+    private lateinit var auditLog: AuditLog
+
+    @Autowired
+    private lateinit var accessEvents: AccessEvents
+
+    @Autowired
+    private lateinit var seats: AccessSeats
 
     @Autowired
     private lateinit var familyRepository: FamilyRepository
@@ -111,6 +129,73 @@ class PeopleServiceTest {
         assertEquals(listOf("user.display-name.changed $GUEST"), audit(GUEST))
         assertEquals(GUEST.substringBefore('@'), people.setOwnDisplayName(GUEST, "").displayName)
         assertEquals(ProblemCode.VALIDATION_FAILED, assertFailsWith<ApiProblem> { people.setOwnDisplayName(GUEST, "x".repeat(101)) }.code)
+    }
+
+    @Test
+    fun `deleting a person removes their roles and row, keeps what they created, and ends their sessions`() {
+        val tree = familyRepository.saveAndFlush(FamilyEntity(name = "People $RUN", slug = "people-$RUN")).id
+        memberships.grant(tree, ADMIN, Role.OWNER, null)
+        memberships.grant(tree, GUEST, Role.EDITOR, ADMIN)
+        jdbc.update("UPDATE families SET created_by = ? WHERE id = ?", GUEST, tree)
+        val revoked = mutableListOf<String>()
+        val gateway = object : AccessGateway by NoopAccessGateway {
+            override fun revokeSessions(email: String) {
+                revoked += email
+            }
+        }
+        val service = PeopleService(jdbc, accessPolicy, auditLog, accessEvents, seats, gateway)
+
+        service.delete(idOf(GUEST), ADMIN)
+
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = ?", Int::class.java, GUEST))
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM family_memberships WHERE email = ?", Int::class.java, GUEST))
+        assertEquals(GUEST, jdbc.queryForObject("SELECT created_by FROM families WHERE id = ?", String::class.java, tree))
+        assertEquals(listOf(GUEST), revoked)
+        assertEquals(listOf("user.deleted $ADMIN"), audit(GUEST))
+        assertEquals(ProblemCode.NOT_FOUND, assertFailsWith<ApiProblem> { service.delete(UUID.randomUUID(), ADMIN) }.code)
+    }
+
+    @Test
+    fun `deleting still works while Cloudflare cannot end the sessions`() {
+        memberships.grantFlags(GUEST, admin = false, canCreateTrees = false, grantedBy = null)
+        people.delete(idOf(GUEST), ADMIN)
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = ?", Int::class.java, GUEST))
+    }
+
+    @Test
+    fun `a person who is the only owner of a tree cannot be deleted until it has another owner`() {
+        val sole = familyRepository.saveAndFlush(FamilyEntity(name = "People sole $RUN", slug = "people-sole-$RUN")).id
+        val shared = familyRepository.saveAndFlush(FamilyEntity(name = "People shared $RUN", slug = "people-shared-$RUN")).id
+        val trashed = familyRepository.saveAndFlush(FamilyEntity(name = "People trashed $RUN", slug = "people-trashed-$RUN", deletedAt = Instant.now())).id
+        memberships.grant(sole, GUEST, Role.OWNER, null)
+        memberships.grant(shared, GUEST, Role.OWNER, null)
+        memberships.grant(shared, ADMIN, Role.OWNER, null)
+        memberships.grant(trashed, GUEST, Role.OWNER, null)
+
+        val problem = assertFailsWith<ApiProblem> { people.delete(idOf(GUEST), ADMIN) }
+
+        assertEquals(ProblemCode.USER_OWNS_TREES, problem.code)
+        assertEquals(listOf(mapOf("familyId" to sole, "familyName" to "People sole $RUN")), problem.properties["trees"])
+        assertEquals(1, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = ?", Int::class.java, GUEST))
+        assertEquals(emptyList(), audit(GUEST))
+
+        jdbc.update("UPDATE family_memberships SET role = 'editor' WHERE family_id = ? AND email = ?", sole, GUEST)
+        memberships.grant(sole, ADMIN, Role.OWNER, null)
+        people.delete(idOf(GUEST), ADMIN)
+        assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = ?", Int::class.java, GUEST))
+    }
+
+    @Test
+    fun `admins cannot delete themselves or bootstrap admins`() {
+        memberships.grantFlags(ADMIN, admin = true, canCreateTrees = false, grantedBy = null)
+        val own = assertFailsWith<ApiProblem> { people.delete(idOf(ADMIN), ADMIN.uppercase()) }
+        assertEquals(ProblemCode.INVALID_REQUEST, own.code)
+        assertEquals(PeopleService.OWN_ACCOUNT, own.detail)
+
+        val bootstrap = accessPolicy.bootstrapAdmins().firstOrNull() ?: return
+        memberships.grantFlags(bootstrap, admin = false, canCreateTrees = false, grantedBy = null)
+        val problem = assertFailsWith<ApiProblem> { people.delete(idOf(bootstrap), ADMIN) }
+        assertEquals(PeopleService.BOOTSTRAP_ADMIN, problem.detail)
     }
 
     companion object {
