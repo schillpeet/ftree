@@ -305,7 +305,7 @@ pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF u
 
 Roles per tree live in PostgreSQL (V20): `family_memberships` holds one role per family and normalized email (`owner`, `editor`, or `visitor`, with its own `id`, `granted_by`, and `granted_at`) and disappears with its family or its `users` row.
 `users` also stands for people who have access but never signed in (`first_seen` and `last_seen` null) and carries the global rights `admin` and `can_create_trees`, plus `invited_at` and `invited_by`, which are set when a grant adds the row.
-`users.id` is a UUID that names a person without their email, and `users.display_name` is empty until people can set it.
+`users.id` is a UUID that names a person without their email, and `users.display_name` is the name people set themselves with `PUT /me` or admins set for them; without one the UI shows the part of the email before the `@`.
 `audit_log` records who granted which right when (`actor`, `action`, `target_type`, `target_id`, and `details` as JSON), with a null actor for the BFF itself.
 At the first start with V20, `MembershipSeed` copies the rights into the database once: the creator of every family (`created_by`) becomes its owner, the trees of the access file become memberships, `developer: true` becomes `can_create_trees`, and `admin: true` becomes `admin`, each written to the audit log.
 At every start, every family without an owner, such as those without `created_by`, gets the first bootstrap admin (the first admin of the access file, or of `app.roles.admins`) as owner, written to the audit log with the source `bootstrap-admin`; a family that has an owner is left alone, so this runs idempotently.
@@ -317,8 +317,18 @@ Whoever creates, imports, archives, or anonymizes a family gets an owner members
 V24 turns every `developer` membership into `owner`, and the `developer` role, the global developer flag of `GET /me`, and the `app.roles.editors` fallback (everyone else a visitor in the first real family) are gone, a breaking change released as `feat(bff)!`.
 `MembershipService` sets and revokes roles in a tree, locking the family row so concurrent changes run one after another, and writes `membership.granted`, `membership.changed`, or `membership.revoked` to the audit log.
 Every tree keeps at least one owner: `MembershipService` refuses to demote or remove the last one with 400 `INVALID_REQUEST`.
-`family.share` (owners and admins) and `users.manage` (admins) exist in the permission set, but no endpoint uses them yet.
-There is no API to change memberships or rights yet; until then they come from the seed, from creating families, and from `MembershipService` inside the BFF.
+`family.share` (owners of the tree and admins) guards the access endpoints of a tree, and `users.manage` (admins) guards changes to people; the endpoints live in `bff/.../access/` under the OpenAPI tag `access`.
+`GET /families/{familyId}/access` lists everyone with a membership in the tree, owners first, with `userId`, `email`, `displayName`, `role`, `status` (`invited` until the first sign-in, then `active`), `grantedAt`, and `lastSeen`; admins reach every tree without a membership and are not listed.
+`PUT /families/{familyId}/access` with `{email, role}` invites the person, adding a `users` row with `invited_at` and `invited_by` when they are new, or changes their role.
+Inviting sends no email: the answer carries the tree's link `<app.public-url>/<slug>` and an invitation text to copy, in German or English by `Accept-Language` (English otherwise), that tells the person to sign in with their email and the one-time code Cloudflare Access mails them.
+`app.public-url` (`APP_PUBLIC_URL`, default `http://localhost:3000`) is the address people open the UI at.
+`DELETE /families/{familyId}/access/{userId}` removes the person's membership and keeps their `users` row; `POST /families/{familyId}/owner` with `{userId}` makes the person, who must already have a role in the tree, its only owner and every previous owner an editor, and writes `family.ownership.transferred`.
+People are named by `users.id` in every path, so no email appears in a URL or log; a `userId` without a role in the tree answers 404 `NOT_FOUND`, like a tree the caller cannot see, while editors and visitors of the tree get 403.
+`GET /admin/users` (`users.view`) lists everyone with a `users` row by name, with `admin`, `bootstrapAdmin`, `canCreateTrees`, `status`, invitation and sign-in times, and their roles in the trees outside the trash.
+`PUT /admin/users/{userId}` (`users.manage`) sets the present fields of `admin`, `canCreateTrees`, and `displayName` (blank removes it), writing `user.admin.granted` or `.revoked`, `user.can-create-trees.granted` or `.revoked`, and `user.display-name.changed` or `.removed` to the audit log; admins cannot take away their own admin right (400 `INVALID_REQUEST`).
+`GET /admin/invitations` (`users.view`) lists every membership of someone who never signed in, in trees outside the trash, newest first.
+`PUT /me` with `{displayName}` sets the caller's own display name, and `GET /me` now also returns `id`, `displayName` (the name, else the email before the `@`), and `customName`.
+Every change of a role or a global right publishes `AccessChanged` (the email and the tree, or null for a global right) once the transaction commits, through `AccessEvents`; nothing listens yet, and the planned Cloudflare Access group sync will.
 
 ### Administration
 
@@ -441,6 +451,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once and gives every tree without an owner the first bootstrap admin.
 - `bff/src/main/kotlin/com/github/bff/auth/MembershipService.kt` sets and revokes roles in a tree and keeps at least one owner; `MembershipServiceTest` covers it.
+- `bff/src/main/kotlin/com/github/bff/access/` holds `TreeAccessService` (sharing a tree), `PeopleService` (people, invitations, and display names), the invitation text, and `AccessController`; `TreeAccessServiceTest`, `PeopleServiceTest`, and `AccessEventsTest` cover them.
 - `bff/src/main/kotlin/com/github/bff/admin/AdminOverviewService.kt` reads the admin overview, presence, and family lists, which `AdminController.kt` serves.
 - `bff/src/main/kotlin/com/github/bff/auth/LoginRecorder.kt` records sign-ins with an in-memory throttle and `UsersController.kt` serves `GET /users`, which the UI does not show at the moment.
 - `bff/src/test/kotlin/com/github/bff/ManagementPortTest.kt` checks the management port, that the app port does not serve Actuator, metric labels, and JSON logs.

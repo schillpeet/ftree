@@ -5,9 +5,11 @@ import com.github.bff.auth.Permission.FAMILY_DELETE
 import com.github.bff.auth.Permission.FAMILY_EDIT
 import com.github.bff.auth.Permission.FAMILY_EXPORT
 import com.github.bff.auth.Permission.FAMILY_MANAGE
+import com.github.bff.auth.Permission.FAMILY_SHARE
 import com.github.bff.auth.Permission.MEMBER_DELETE
 import com.github.bff.auth.Permission.MEMBER_EDIT
 import com.github.bff.auth.Permission.TREE_VIEW
+import com.github.bff.auth.Permission.USERS_MANAGE
 import com.github.bff.auth.Permission.USERS_VIEW
 import com.github.bff.member.FamilyVisibility
 import com.github.bff.parseOrigins
@@ -139,6 +141,14 @@ class SecurityConfiguration(
                 // Live: presence and change events of one family.
                 it.requestMatchers(GET, "/families/{familyId}/events").access(inFamily(TREE_VIEW))
                 it.requestMatchers(PUT, "/families/{familyId}/presence").access(inFamily(TREE_VIEW))
+                // Access: owners share their own trees, admins every tree and manage people; everyone names themselves.
+                it.requestMatchers(PUT, "/me").authenticated()
+                it.requestMatchers(GET, "/families/{familyId}/access").access(inFamily(FAMILY_SHARE))
+                it.requestMatchers(PUT, "/families/{familyId}/access").access(inFamily(FAMILY_SHARE))
+                it.requestMatchers(DELETE, "/families/{familyId}/access/*").access(inFamily(FAMILY_SHARE))
+                it.requestMatchers(POST, "/families/{familyId}/owner").access(inFamily(FAMILY_SHARE))
+                it.requestMatchers(GET, "/admin/users", "/admin/invitations").hasAuthority(USERS_VIEW.key)
+                it.requestMatchers(PUT, "/admin/users/*").hasAuthority(USERS_MANAGE.key)
                 // Trash: deleted families, admins only.
                 it.requestMatchers(GET, "/admin/trash").hasAuthority(FAMILY_MANAGE.key)
                 it.requestMatchers(POST, "/admin/trash/*/restore").hasAuthority(FAMILY_MANAGE.key)

@@ -6,9 +6,11 @@ import com.github.bff.auth.Permission.FAMILY_DELETE
 import com.github.bff.auth.Permission.FAMILY_EDIT
 import com.github.bff.auth.Permission.FAMILY_EXPORT
 import com.github.bff.auth.Permission.FAMILY_MANAGE
+import com.github.bff.auth.Permission.FAMILY_SHARE
 import com.github.bff.auth.Permission.MEMBER_DELETE
 import com.github.bff.auth.Permission.MEMBER_EDIT
 import com.github.bff.auth.Permission.TREE_VIEW
+import com.github.bff.auth.Permission.USERS_MANAGE
 import com.github.bff.auth.Permission.USERS_VIEW
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
@@ -85,6 +87,16 @@ class PermissionMatrixTest {
         Endpoint(GET, "/admin/audit", USERS_VIEW),
         Endpoint(GET, "/admin/audit?limit=5&action=family.trashed", USERS_VIEW),
         Endpoint(GET, "/admin/audit/filters", USERS_VIEW),
+        // Access: owners share their own tree, admins every tree and manage people. The bodies are empty, so allowed
+        // writes answer 400 and unknown people 404.
+        Endpoint(PUT, "/me", null, MediaType.APPLICATION_JSON),
+        Endpoint(GET, "/families/$family/access", FAMILY_SHARE),
+        Endpoint(PUT, "/families/$family/access", FAMILY_SHARE, MediaType.APPLICATION_JSON),
+        Endpoint(DELETE, "/families/$family/access/$member", FAMILY_SHARE),
+        Endpoint(POST, "/families/$family/owner", FAMILY_SHARE, MediaType.APPLICATION_JSON),
+        Endpoint(GET, "/admin/users", USERS_VIEW),
+        Endpoint(GET, "/admin/invitations", USERS_VIEW),
+        Endpoint(PUT, "/admin/users/$member", USERS_MANAGE, MediaType.APPLICATION_JSON),
         // DELETE /families/{id} last: it removes the family the other requests use.
         Endpoint(DELETE, "/families/$family", FAMILY_DELETE),
     )
@@ -155,6 +167,28 @@ class PermissionMatrixTest {
         assertEquals("owner", Regex(""""role":"(\w+)"""").find(json)?.groupValues?.get(1), json)
         val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
         assertEquals(204, status(Endpoint(DELETE, "/families/$own", FAMILY_DELETE), "creator@example.com"))
+    }
+
+    // Access: an owner shares only their own tree, which another tree does not exist for, and editors and visitors may
+    // neither see nor change who has access to theirs.
+    @Test
+    fun `owners share only their own tree`() {
+        val own = visibleFamily()
+        val other = familyRepository.saveAndFlush(FamilyEntity(name = "Matrix other ${UUID.randomUUID()}")).id
+        fun share(family: UUID, email: String) = mockMvc.perform(
+            request(PUT, "/families/$family/access")
+                .header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = email))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"email":"guest@example.com","role":"visitor"}"""),
+        ).andReturn().response.status
+
+        assertEquals(404, status(Endpoint(GET, "/families/$other/access", FAMILY_SHARE), "owner@example.com"))
+        assertEquals(404, share(other, "owner@example.com"))
+        assertEquals(403, status(Endpoint(GET, "/families/$own/access", FAMILY_SHARE), "editor@example.com"))
+        assertEquals(403, share(own, "editor@example.com"))
+        assertEquals(403, share(own, "visitor@example.com"))
+        assertEquals(200, share(own, "owner@example.com"))
+        assertEquals(200, share(other, "admin@example.com"))
     }
 
     @Test

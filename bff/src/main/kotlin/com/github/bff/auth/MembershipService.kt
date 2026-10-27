@@ -8,22 +8,24 @@ import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
 
 // Changes the roles in a tree. Every tree keeps at least one owner, so the last owner can neither lose the role nor be
-// removed, and every change is written to the audit log.
+// removed, and every change is written to the audit log and announced as AccessChanged after the commit.
 @Service
 class MembershipService(
     private val jdbc: JdbcTemplate,
     private val memberships: Memberships,
     private val auditLog: AuditLog,
+    private val accessEvents: AccessEvents,
 ) {
-    // Gives the person the role in the family, granting a new membership or changing the one they have.
+    // Gives the person the role in the family, granting a new membership or changing the one they have; false when they
+    // had the role already.
     @Transactional
-    fun setRole(familyId: UUID, email: String, role: Role, actor: String?, source: String? = null) {
+    fun setRole(familyId: UUID, email: String, role: Role, actor: String?, source: String? = null): Boolean {
         require(role != Role.ADMIN) { "Admins are admins in every family; set users.admin instead" }
         val key = email.normalizedEmail()
         val before = lockedRoleOf(familyId, key)
         when (before) {
             null -> memberships.grant(familyId, key, role, actor, source)
-            role -> Unit
+            role -> return false
             else -> {
                 if (before == Role.OWNER) requireAnotherOwner(familyId, key)
                 jdbc.update(
@@ -36,6 +38,8 @@ class MembershipService(
                 )
             }
         }
+        accessEvents.changed(key, familyId)
+        return true
     }
 
     // Removes the person's membership in the family; false when they had none.
@@ -46,6 +50,7 @@ class MembershipService(
         if (before == Role.OWNER) requireAnotherOwner(familyId, key)
         jdbc.update("DELETE FROM family_memberships WHERE family_id = ? AND email = ?", familyId, key)
         auditLog.record(actor, "membership.revoked", "family", familyId.toString(), mapOf("email" to key, "role" to before.name.lowercase()))
+        accessEvents.changed(key, familyId)
         return true
     }
 
