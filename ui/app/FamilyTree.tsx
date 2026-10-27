@@ -18,7 +18,10 @@ import Scene, { type Focus } from './Scene';
 import { useT } from './i18n';
 import LiveToasts from './live/LiveToasts';
 import { onLiveEvent } from './live/liveBus';
+import FollowChip from './live/FollowChip';
+import { usePeople, useShareOwnEmail } from './live/people';
 import PresenceBar from './live/PresenceBar';
+import { followTarget } from './live/presence';
 import { useTreeEvents } from './live/useTreeEvents';
 import { OpenFamily, useCan, useMe } from './Permissions';
 import { can } from './access';
@@ -57,6 +60,25 @@ export default function FamilyTree() {
     setIsEditingShown(editing);
   }, []);
 
+  useShareOwnEmail(me?.email);
+  const people = usePeople();
+  // The email whose person the camera follows, the member last flown to for them, and whether the panel showed it
+  // since: once it did, showing anyone else is the user's own navigation and ends following.
+  const [following, setFollowing] = useState<{ email: string; flownTo: string | null; arrived: boolean } | null>(null);
+  const target = following && followTarget(people, following.email);
+  if (following && target === undefined) {
+    setFollowing(null);
+  } else if (following && target && target !== following.flownTo) {
+    setFollowing({ ...following, flownTo: target, arrived: false });
+    setFocus({ id: target });
+    setProfile({ id: target });
+  } else if (following?.flownTo && !following.arrived && shownId === following.flownTo) {
+    setFollowing({ ...following, arrived: true });
+  } else if (following?.arrived && shownId !== following.flownTo) {
+    setFollowing(null);
+  }
+  const stopFollowing = () => setFollowing(null);
+
   if (pending && pending.slug === urlSlug) setPending(null);
   const slug = pending ? pending.slug : urlSlug;
   const activeFamily = families ? familyOfSlug(families, slug) : null;
@@ -75,6 +97,7 @@ export default function FamilyTree() {
     setProfile(null);
     setFamilyCard(null);
     setAddRequest(null);
+    setFollowing(null);
   }
 
   // `quiet` keeps the board as it is while the families load again.
@@ -197,7 +220,10 @@ export default function FamilyTree() {
         members={members ?? []}
         focus={focus}
         highlight={shownId}
-        onOpen={(id) => setProfile({ id })}
+        onOpen={(id) => {
+          stopFollowing();
+          setProfile({ id });
+        }}
         onPlace={canPlace ? (id, placement) => void placeMember(id, placement) : undefined}
       />
       <Dashboard
@@ -211,6 +237,7 @@ export default function FamilyTree() {
         }}
         onPanel={(next) => setPanel((current) => (current === next ? null : next))}
         onAddMember={() => {
+          stopFollowing();
           setIsMenuOpen(false);
           setPanel(null);
           setAddRequest({});
@@ -222,12 +249,20 @@ export default function FamilyTree() {
           setPanel('families');
         }}
       />
-      {activeFamilyId && <PresenceBar members={members ?? []} />}
+      {activeFamilyId && (
+        <PresenceBar
+          members={members ?? []}
+          following={following?.email ?? null}
+          onFollow={(email) => setFollowing((current) => (current?.email === email ? null : { email, flownTo: null, arrived: false }))}
+        />
+      )}
+      {activeFamilyId && following && <FollowChip email={following.email} onStop={stopFollowing} />}
       {activeFamilyId && <LiveToasts members={members ?? []} editingId={isEditingShown ? shownId : null} />}
       {notFound && <TreeNotFound home={homePath(families)} />}
       <MemberSearch
         members={members ?? []}
         onSelect={(id) => {
+          stopFollowing();
           setIsMenuOpen(false);
           setPanel(null);
           setFocus({ id });

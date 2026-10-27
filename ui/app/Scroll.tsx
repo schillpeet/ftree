@@ -4,6 +4,7 @@ import { useRef, type PointerEvent } from 'react';
 import { Html } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
 import { useT } from './i18n';
+import PresenceDot from './live/PresenceDot';
 import { formatDate, photoSrc } from './MembersControls';
 import { isNameless, nameOf } from './names';
 
@@ -72,6 +73,7 @@ export default function Scroll({
           {member.note && <p className="scroll-note">{member.note}</p>}
         </div>
         <div className="scroll-curl" />
+        <PresenceDot memberId={member.id} />
       </div>
     </Html>
   );

@@ -1325,6 +1325,7 @@ a.dashboard-nav-item {
 
 /* Floating names in the experimental view. */
 .simple-name {
+  position: relative;
   padding: 2px 6px;
   border: 0;
   border-radius: 4px;

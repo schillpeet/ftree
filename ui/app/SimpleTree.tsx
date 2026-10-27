@@ -8,6 +8,7 @@ import { bloodLinks, coreFamilyLinks, linkKey } from './experimental/highlight';
 import { buildModel } from './experimental/model';
 import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
+import PresenceDot from './live/PresenceDot';
 import { isNameless, nameOf, shortFirstName } from './names';
 import type { Point } from './pins';
 import { simpleLayout } from './simpleLayout';
@@ -198,6 +199,7 @@ export default function SimpleTree({
                 {member.lastName}
               </>
             )}
+            <PresenceDot memberId={member.id} />
           </button>
         </Html>
       ))}

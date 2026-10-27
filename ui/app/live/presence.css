@@ -1,4 +1,5 @@
-/* Presence: who is in the open tree, as a row of avatars under the centred family name. */
+/* Presence: who is in the open tree, as a row of avatars under the centred family name, mini avatars at the persons
+   they view or edit, a hint in the person's panel, and the chip while following someone. */
 
 .presence-bar {
   position: fixed;
@@ -45,7 +46,23 @@
   opacity: 0.45;
 }
 
-.presence-person:focus-visible .person-avatar {
+.presence-follow {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+
+.presence-person[data-following] .person-avatar {
+  border-color: var(--glass-accent);
+  box-shadow: 0 0 0 2px var(--glass-accent), 0 4px 14px rgba(0, 0, 0, 0.3);
+}
+
+.presence-person:focus-visible .person-avatar,
+.presence-follow:focus-visible .person-avatar {
   outline: 2px solid var(--glass-accent);
   outline-offset: 2px;
 }
@@ -92,11 +109,154 @@
 }
 
 .presence-person:hover .presence-tooltip,
-.presence-person:focus-visible .presence-tooltip {
+.presence-person:focus-visible .presence-tooltip,
+.presence-person:has(:focus-visible) .presence-tooltip {
   display: flex;
 }
 
+/* The camera follows someone: at the bottom centre above the version, where the opened profile leaves it visible,
+   with a button that stops it. */
+.presence-follow-chip {
+  position: fixed;
+  z-index: 4;
+  bottom: 56px;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 4px 4px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  transform: translateX(-50%);
+}
+
+.presence-follow-stop {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  place-items: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.presence-follow-stop:hover,
+.presence-follow-stop:focus-visible {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.presence-follow-stop .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* A mini avatar at a person someone else views, on the upper right corner of their card or name. */
+.presence-dot {
+  position: absolute;
+  z-index: 1;
+  top: -10px;
+  right: -12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border: 2px solid #8fd3ff;
+  border-radius: 999px;
+  background: rgba(12, 18, 27, 0.85);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  color: #fff;
+  font: 600 10px/1 Arial, sans-serif;
+  text-shadow: none;
+  white-space: nowrap;
+  pointer-events: auto;
+  transition: opacity 0.3s;
+}
+
+.presence-dot[data-editing] {
+  border-color: #ffb347;
+}
+
+.presence-dot[data-idle] {
+  opacity: 0.5;
+}
+
+.presence-dot-initials {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.presence-dot-more {
+  padding-right: 3px;
+}
+
+.presence-dot-pencil {
+  display: grid;
+  width: 18px;
+  height: 18px;
+  place-items: center;
+  border-radius: 50%;
+  background: #ffb347;
+  color: #0c121b;
+}
+
+.presence-dot-pencil .icon {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.4;
+}
+
+/* Outside the corner of a name in the experimental view, smaller, so the name stays readable. */
+.simple-name .presence-dot {
+  top: auto;
+  right: auto;
+  bottom: calc(100% - 6px);
+  left: calc(100% - 6px);
+  transform: scale(0.75);
+  transform-origin: bottom left;
+}
+
+/* On its own <Html> at a 3D card, which centres it on the corner. */
+.presence-dot-floating {
+  position: static;
+}
+
+/* In a person's panel: who else edits or views them. */
+.presence-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(143, 211, 255, 0.12);
+  color: var(--glass-muted);
+  font-size: 13px;
+}
+
+.person-form > .presence-hint {
+  margin: 0;
+}
+
+.presence-hint[data-editing] {
+  background: rgba(255, 179, 71, 0.16);
+  color: #ffd29a;
+}
+
+.presence-hint .icon {
+  flex: none;
+  width: 15px;
+  height: 15px;
+}
+
 @media (max-width: 700px) {
+
   /* Below the row of scene buttons, which takes the line under the family name here. */
   .presence-bar {
     top: 116px;

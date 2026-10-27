@@ -5,6 +5,7 @@ import type { Member } from '../lib/api/generated/members';
 import { birthNameOf, formatDate, initialsOf } from './MembersControls';
 import { ChevronIcon, ChevronLeftIcon, CloseIcon, PencilIcon, PinIcon, TrashIcon } from './icons';
 import { onStorage, useT } from './i18n';
+import PresenceHint from './live/PresenceHint';
 import { nameOf } from './names';
 import { sortPartners } from './partnerships';
 import { clampOffset, parsePin, type Offset } from './panelPosition';
@@ -471,6 +472,7 @@ export function PersonView({
           )}
         </div>
       </section>
+      <PresenceHint memberId={member.id} />
       {(birth || death) && (
         <dl className="person-facts">
           {birth && (
