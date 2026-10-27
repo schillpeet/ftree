@@ -1,5 +1,5 @@
 // Pure helpers of the admin page, so `adminData.check.mjs` can test them without Next.
-import type { AdminPresence } from '../../lib/api/generated/members';
+import type { AdminPresence, AdminUser } from '../../lib/api/generated/members';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -62,4 +62,56 @@ const DETAIL_ORDER = ['email', 'role', 'name', 'reason', 'source'];
 export function auditDetails(details: Record<string, string>): [string, string][] {
   const rank = (key: string) => (DETAIL_ORDER.includes(key) ? DETAIL_ORDER.indexOf(key) : DETAIL_ORDER.length);
   return Object.entries(details).sort(([a], [b]) => rank(a) - rank(b) || a.localeCompare(b));
+}
+
+// Which trees each person has a tab open in right now, by user id; people without a `users` row have none.
+export function onlineTrees(entries: readonly AdminPresence[]): Map<string, string[]> {
+  const trees = new Map<string, string[]>();
+  for (const entry of entries) {
+    if (!entry.userId) continue;
+    const names = trees.get(entry.userId) ?? [];
+    if (!names.includes(entry.familyName)) names.push(entry.familyName);
+    trees.set(entry.userId, names);
+  }
+  return trees;
+}
+
+export type PersonStatus =
+  | { kind: 'online'; trees: string[] }
+  | { kind: 'seen'; at: string }
+  | { kind: 'invited'; at: string | null }
+  | { kind: 'never' };
+
+// Online beats everything; else the last sign-in; else invited (named, never signed in) or, when somebody was added
+// without an invitation, simply never signed in.
+export function personStatus(user: Pick<AdminUser, 'status' | 'lastSeen' | 'invitedAt'>, online: readonly string[] | undefined): PersonStatus {
+  if (online?.length) return { kind: 'online', trees: [...online] };
+  if (user.lastSeen) return { kind: 'seen', at: user.lastSeen };
+  if (user.status === 'invited') return { kind: 'invited', at: user.invitedAt };
+  return { kind: 'never' };
+}
+
+// By display name, then by email, so two people with the same name keep a stable order.
+export function sortedPeople<T extends Pick<AdminUser, 'displayName' | 'email'>>(users: readonly T[]): T[] {
+  return [...users].sort((a, b) => a.displayName.localeCompare(b.displayName) || a.email.localeCompare(b.email));
+}
+
+export type AccessProblem = 'lastOwner' | 'notFound' | 'invalid' | 'forbidden' | 'failed';
+
+// What went wrong when sharing or removing, from the problem code of the answer (null without one). The BFF has no
+// code of its own for the last owner: demoting or removing them answers `INVALID_REQUEST`, and nothing else in these
+// calls can be invalid in that way, since the email is checked by `VALIDATION_FAILED`.
+export function accessProblem(code: string | null): AccessProblem {
+  switch (code) {
+    case 'INVALID_REQUEST':
+      return 'lastOwner';
+    case 'VALIDATION_FAILED':
+      return 'invalid';
+    case 'NOT_FOUND':
+      return 'notFound';
+    case 'FORBIDDEN':
+      return 'forbidden';
+    default:
+      return 'failed';
+  }
 }

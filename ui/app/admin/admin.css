@@ -250,3 +250,88 @@
     padding-top: 6px;
   }
 }
+
+/* People and invitations: the invite form and its text, the per-tree roles, and the rights toggles. */
+.admin-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.admin-toolbar .admin-card {
+  width: 100%;
+}
+
+.admin-invite-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: end;
+  gap: 12px;
+}
+
+.admin-invite-form label {
+  display: grid;
+  gap: 4px;
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.admin-invite-form .admin-actions,
+.admin-invite-form .admin-error {
+  grid-column: 1 / -1;
+}
+
+.admin-invite-result {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-invite-text {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  background: rgb(255 255 255 / 8%);
+  color: #fff;
+  font: inherit;
+  resize: vertical;
+}
+
+.admin-tree-role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+}
+
+.admin-tree-role > span {
+  min-width: 100px;
+}
+
+.admin-role {
+  min-width: 0;
+}
+
+.admin-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.admin-rename {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-inline {
+  margin-left: 8px;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+
+.admin-table td[data-online] {
+  color: var(--glass-accent);
+}

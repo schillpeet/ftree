@@ -6,15 +6,19 @@ import { useLanguage, useT } from '../i18n';
 import { ChevronLeftIcon, LanguageIcon } from '../icons';
 import { useCan, useMeLoaded } from '../Permissions';
 import AuditTab from './AuditTab';
+import InvitationsTab from './InvitationsTab';
 import OverviewTab from './OverviewTab';
+import PeopleTab from './PeopleTab';
 import TreesTab from './TreesTab';
 
-// One entry per tab; people and invitations follow as tabs of their own.
-const TABS = ['overview', 'trees', 'audit'] as const;
+// One entry per tab.
+const TABS = ['overview', 'people', 'invitations', 'trees', 'audit'] as const;
 type Tab = (typeof TABS)[number];
 
 const PANELS: Record<Tab, () => ReactNode> = {
   overview: () => <OverviewTab />,
+  people: () => <PeopleTab />,
+  invitations: () => <InvitationsTab />,
   trees: () => <TreesTab />,
   audit: () => <AuditTab />,
 };
