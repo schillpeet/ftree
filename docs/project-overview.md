@@ -341,7 +341,7 @@ The overview counts `families` (test families included), `members`, `users` (`to
 Trashed families appear only in `GET /admin/trash`: `GET /admin/families` leaves them out, and the overview counts neither them nor their members and photos.
 `/admin` is a full page outside the tree's route group, so it has no 3D scene, in the dashboard's glass style with "Zurück zum Baum" (to `/`) and the language switch.
 The admin page shows its tabs only with `users.view` and otherwise "Kein Zugriff"; the BFF enforces the rights of every endpoint it calls.
-The admin page has the tabs "Übersicht", "Bäume", and "Protokoll"; people and invitations are planned as further tabs.
+The admin page has the tabs "Übersicht", "Personen", "Einladungen", "Bäume", and "Protokoll".
 "Übersicht" shows tiles for online now, access seats (used of limit, with signed-in and invited people), trees, persons, and photos with their storage size, from `GET /admin/overview`.
 Below the tiles, "Gerade aktiv" lists `GET /admin/presence` with one row per person and tree however many tabs they have there: name, email, admin mark, the tree as a link, editing or idle marks, and since when.
 "Übersicht" refreshes its tiles and the active list every 15 seconds.
@@ -354,6 +354,15 @@ The query takes `limit` (1 to 100, default 50), `before` (an entry id), and the 
 `GET /admin/audit/filters` lists the people with a `users` row who appear in the log and the actions it contains, for the filter menus.
 "Protokoll" shows the log as a table with time, who, action (a readable label, the raw action when unknown), target, and details, newest first, and "Mehr laden" appends the next 50 entries.
 Its menus filter by person, tree (`GET /admin/families`), and action; changing one starts the list again.
+"Personen" lists `GET /admin/users` with name, email, status, rights, and the person's trees with their roles.
+The status is "Online in <trees>" from `GET /admin/presence` (refreshed every 15 seconds), else the last sign-in, else "Eingeladen, noch nicht angemeldet", else "Noch nie angemeldet".
+The toggles "Darf Bäume anlegen" and "Administrator" call `PUT /admin/users/{userId}`; the admin toggle is disabled for yourself and for admins of the access file.
+"Umbenennen" sets the display name through the same call, and an empty name shows the email's local part again.
+Each tree has a role menu (`PUT /families/{familyId}/access`) and "Entfernen" after a confirmation (`DELETE /families/{familyId}/access/{userId}`); users are addressed by id, never by email in a URL.
+"Einladungen" lists `GET /admin/invitations`, the people who never signed in, one row per tree with role, who invited them, and when.
+"Text kopieren" asks `PUT /families/{familyId}/access` again with the same role, which changes nothing and returns the invitation text in the page language, and copies it; "Zurückziehen" removes the person from that tree after a confirmation.
+"Person einladen" (in both tabs) takes an email, a tree, and a role, calls the same endpoint, and shows the text to copy; nothing is sent.
+The BFF has no problem code of its own for the last owner, so the UI reads `INVALID_REQUEST` from these calls as "a tree needs an owner" and shows readable messages for the other codes.
 
 ### Presence
 
