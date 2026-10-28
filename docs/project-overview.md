@@ -286,6 +286,8 @@ The chart's BFF startup, liveness, and readiness probes call these endpoints on 
 The management port is a container port only; the chart's BFF Service still exposes just port 8080.
 The UI answers `GET /healthz` with `ok` without calling the BFF (`ui/app/healthz/route.ts`), and the chart's UI probes use it instead of rendering the home page.
 `http.server.requests` metrics are labelled with the matched URI template, for example `/families/{familyId}/members`, or `UNKNOWN`, never with ids, emails, or names from the path.
+`ftree.users.active{window=1d|7d|30d}` counts the people whose last sign-in falls within the window (`ActiveUsersMetrics`); it queries the database at most once a minute and never names anyone.
+`ftree.access.sync.runs{result}` counts Access sync runs by result, and `ftree.access.sync.changes{change=added|removed}` the people a sync added to or removed from the Access group.
 The BFF logs JSON in the Elastic Common Schema (`logging.structured.format.console=ecs`), also locally under `start.sh`; log statements must not contain names, emails, or ids of people.
 The PostgreSQL driver runs with `logServerErrorDetail=false`, so database errors such as constraint violations do not quote row values in exceptions and logs.
 Every BFF error is an RFC 9457 problem details body (`application/problem+json`, schema `Problem` in `api/openapi.yaml`) with `type` (`urn:ftree:problem:<code>`), `title`, `status`, a fixed `detail`, `instance` (the request path), and a machine-readable `code`.
@@ -558,7 +560,7 @@ These decisions have not been implemented:
 - Relationship types beyond parent/child and partners (for example uncertain links) and schema beyond the `families`, `members` (including card placement), `member_parents`, `member_partners`, and `member_photos` tables, plus backups and data deletion behavior.
 - Data export beyond the per-family GEDCOM export, which leaves out photos and card placement.
 - Remaining BFF API operations and deployment shape.
-- Authentication, family membership, invitations, authorization, and account recovery.
+- Account recovery, and an own login instead of Cloudflare Access; Access stays until ftree needs more than its free plan's 50 seats or public sign-up.
 - How concurrent edits are handled and whether an audit/history model is needed.
 - Which parts of the current 3D prototype remain in the product and how family data is navigated or edited.
 

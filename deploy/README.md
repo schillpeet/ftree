@@ -13,6 +13,7 @@ Without `bff.access`, `bff.roles.admins` lists the bootstrap admins' emails, and
 
 `bff.cloudflare.existingSecret` names a Secret whose `api-token` key holds the BFF's Cloudflare API token (Access: Organizations, Identity Providers, and Groups Edit); with `bff.cloudflare.accountId` and `bff.cloudflare.accessGroupId` the BFF then keeps the Access group equal to everyone with access, and `bff.cloudflare.dryRun: true` only logs the counts it would change.
 Without the Secret the BFF runs with a noop gateway and changes nothing at Cloudflare.
+The BFF container also exposes the port `management` (8081, not part of the Service) with `/actuator/prometheus`, which a PodMonitor can scrape.
 The chart passes the other values to the BFF as `APP_AUTH_MODE`, `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, and `APP_ROLES_ADMINS` (joined with `,`), leaving unset values out.
 Running ftree in a cluster (Flux manifests, the kubectl, kind, Helm, and Flux cheatsheet, and the plan for a local kind cluster) lives in the private [`schillpeet/ftree-infra`](https://github.com/schillpeet/ftree-infra) repository.
 
@@ -58,7 +59,7 @@ Each published release pushes it to `oci://ghcr.io/schillpeet/charts/ftree` with
 ### Publish the chart (phase 1c)
 
 - [x] `release-images.yml` runs `helm package --version <release> --app-version <release>` and `helm push` to `oci://ghcr.io/schillpeet/charts` after the images are built
-- [ ] Optional: Spring Actuator for a real BFF health check instead of the TCP probes
+- [x] Spring Actuator probes on the BFF's management port instead of the TCP probes
 
 ### Next phases
 
@@ -66,4 +67,4 @@ Each published release pushes it to `oci://ghcr.io/schillpeet/charts/ftree` with
 2. Terraform in `ftree-infra`: state in Hetzner Object Storage, a CAX21 server with k3s via cloud-init, a firewall, and a Cloudflare Tunnel, DNS record, and Access application; then a workflow that plans on pull requests and applies after review.
 3. Production: point Flux at the Hetzner cluster, run PostgreSQL with CloudNativePG, encrypt Secrets with SOPS and age, run `cloudflared` in the cluster, and set up backups with a tested restore.
 
-Cloudflare Access keeps the site private until ftree itself has authentication and authorization.
+All three run in production; Cloudflare Access signs people in, and the BFF decides what each of them may see and change.
