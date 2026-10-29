@@ -5,5 +5,5 @@ ROOT="$(cd "$(dirname "$0")" && pwd)"
 
 # bootRun recompiles the BFF on start; install picks up pulled UI dependency changes.
 "$ROOT/stop.sh"
-pnpm --dir "$ROOT/ui" install
+(cd "$ROOT/ui" && pnpm install)
 "$ROOT/start.sh"
