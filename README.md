@@ -21,7 +21,7 @@ You need [Node.js 22](https://nodejs.org) with [pnpm](https://pnpm.io) (`corepac
 ```bash
 git clone https://github.com/schillpeet/ftree.git
 cd ftree
-pnpm --dir ui install
+(cd ui && pnpm install)
 ./start.sh
 ```
 
@@ -53,7 +53,7 @@ Start the parts individually:
 ```bash
 docker compose up -d --wait         # PostgreSQL and Swagger UI
 (cd bff && ./gradlew bootRun)       # backend
-pnpm --dir ui dev                   # UI
+(cd ui && pnpm dev)                 # UI
 ```
 
 For the managed start/stop lifecycle, use `./start.sh`, `./stop.sh`, and `./restart.sh`.
@@ -61,13 +61,13 @@ For the managed start/stop lifecycle, use `./start.sh`, `./stop.sh`, and `./rest
 After changing `api/openapi.yaml`, regenerate the UI client (the backend regenerates on build):
 
 ```bash
-pnpm --dir ui api:generate
+(cd ui && pnpm api:generate)
 ```
 
 Run the same checks as CI before opening a pull request:
 
 ```bash
-pnpm --dir ui lint && pnpm --dir ui typecheck && pnpm --dir ui build
+(cd ui && pnpm lint && pnpm typecheck && pnpm build)
 (cd bff && ./gradlew build)         # needs the database running
 ```
 

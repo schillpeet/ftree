@@ -69,7 +69,7 @@ start_service() {
       nohup bash -c 'cd "$1" || exit; exec ./gradlew --no-daemon bootRun' _ "$ROOT/bff" \
       >"$log_file" 2>&1 </dev/null &
   else
-    nohup bash -c 'cd "$1" || exit; exec pnpm --dir ui dev' _ "$ROOT" \
+    nohup bash -c 'cd "$1/ui" || exit; exec pnpm dev' _ "$ROOT" \
       >"$log_file" 2>&1 </dev/null &
   fi
 
