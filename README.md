@@ -16,12 +16,12 @@
 
 ## Quick Start
 
-You need [Node.js 22](https://nodejs.org) with [pnpm](https://pnpm.io) (`corepack enable` installs the pinned version), [Java 21](https://adoptium.net), and [Docker](https://www.docker.com).
+You need [Node.js 22](https://nodejs.org) with [pnpm](https://pnpm.io) (any current version; inside `ui/` it switches to the version pinned in `ui/package.json` by itself), [Java 21](https://adoptium.net), and [Docker](https://www.docker.com).
 
 ```bash
 git clone https://github.com/schillpeet/ftree.git
 cd ftree
-(cd ui && pnpm install)
+./setup.sh   # checks the tools above, tells you how to install missing ones, installs UI dependencies
 ./start.sh
 ```
 
@@ -34,6 +34,8 @@ cd ftree
 Run `./stop.sh` to stop all services. PostgreSQL data is retained. Logs and process state are stored under `.local/dev/`.
 After pulling changes, run `./restart.sh`: it stops all services, installs UI dependencies, and starts again. The backend is recompiled on start.
 If a required port is already occupied, `start.sh` reports the process and exits without stopping it.
+
+Want to contribute? See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## What's Inside
 
