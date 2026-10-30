@@ -599,11 +599,11 @@ Merging the release PR updates `CHANGELOG.md` and creates the tag and GitHub rel
 Each published release triggers `.github/workflows/readme-preview.yml`, which starts the stack with the fictional demo family from `docs/preview/demo.ged` and attaches a `preview.png` screenshot to the release; the README embeds the latest release's preview, and the workflow can be run manually for an existing tag.
 Release PRs are titled `chore(repo): release X.Y.Z` (`pull-request-title-pattern`) so they pass the PR-title check, and are created with the fine-grained personal access token in the `RELEASE_PLEASE_TOKEN` secret (this repository only; Contents and Pull requests read/write), because PRs opened with `GITHUB_TOKEN` do not trigger workflows and their required checks would never run.
 
-Pull requests are squash-merged by default, so the PR title becomes the only commit message release-please sees for that PR.
-A PR with several independently releasable commits is merged with "Rebase and merge" instead, so each conventional commit lands on `main` and becomes its own changelog entry.
-Every independently releasable feature or fix must therefore have its own PR, with an accurate, lowercase Conventional Commit title such as `feat(ui): add family visibility toggle` or `fix(repo): manage local services`.
-Do not bundle independent features into one PR or expect their branch commits to preserve separate release notes.
-The PR-title workflow rejects titles that do not follow the lowercase `<type>(<scope>): <message>` convention.
+Pull requests are squash-merged, the only merge method, so the PR title (with the PR number GitHub appends) becomes the commit message release-please sees for that PR; the title is an accurate, lowercase Conventional Commit such as `feat(ui): add family visibility toggle`.
+A PR that bundles several independently releasable changes lists them in a `BEGIN_COMMIT_OVERRIDE` … `END_COMMIT_OVERRIDE` block in its description, one Conventional Commit line per change ending with ` (#<PR number>)`; release-please then writes one linked changelog entry per line instead of the title, and the block can be edited until the release without a new CI run.
+The commits inside a PR do not reach `main` and need no particular format.
+The PR-title workflow runs `.githooks/commit-msg` on the title and on every line of a commit override, rejecting messages that do not follow the lowercase `<type>(<scope>): <message>` convention.
+`./setup.sh` sets `core.hooksPath` to `.githooks`, so the same hook rejects such commit messages locally.
 Configure its status check as required in GitHub branch protection so invalid titles cannot be merged.
 A malformed or capitalized title can be ignored by release-please even when the commits inside the PR contain valid conventional commit messages, resulting in a missing version bump or changelog entry.
 Merge commits would list each change twice, because release-please also parses the PR title in the merge commit body.
