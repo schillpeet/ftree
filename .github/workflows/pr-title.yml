@@ -4,22 +4,35 @@ on:
   pull_request:
     types: [opened, edited, synchronize, reopened]
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
   validate:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: .githooks
+          persist-credentials: false
+
+      # The title becomes the commit on main when the pull request is squash-merged.
       - name: Validate conventional lowercase title
         env:
           PR_TITLE: ${{ github.event.pull_request.title }}
-        run: |
-          if [[ "$PR_TITLE" =~ [[:upper:]] ]]; then
-            echo "Pull request titles must be entirely lowercase."
-            exit 1
-          fi
+          STRICT: "1"
+        run: .githooks/commit-msg <(printf '%s\n' "$PR_TITLE")
 
-          if [[ ! "$PR_TITLE" =~ ^(feat|fix|chore|docs|refactor|test|build|ci|deps)\((ui|bff|db|repo)\)!?:\ [a-z0-9] ]]; then
-            echo "Use <type>(<scope>): <lowercase message>, for example: feat(ui): add family visibility toggle."
-            exit 1
-          fi
+      # A pull request with several releasable changes lists them for release-please in its description.
+      - name: Validate commit override lines
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          STRICT: "1"
+        run: |
+          status=0
+          while IFS= read -r line; do
+            line="${line%$'\r'}"
+            [[ -z "$line" ]] && continue
+            .githooks/commit-msg <(printf '%s\n' "$line") || status=1
+          done < <(printf '%s\n' "$PR_BODY" | sed -n '/^BEGIN_COMMIT_OVERRIDE/,/^END_COMMIT_OVERRIDE/{/_COMMIT_OVERRIDE/d;p;}')
+          exit $status

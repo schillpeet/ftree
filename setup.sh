@@ -99,6 +99,10 @@ else
   exit 1
 fi
 
+# The commit-msg hook checks every commit message against the convention in CONTRIBUTING.md.
+git -C "$ROOT" config core.hooksPath .githooks
+ok "git hooks enabled (.githooks)"
+
 cat <<'EOF'
 
 Ready: all requirements are in place.

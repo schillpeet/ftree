@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Checks a commit message (or, in CI, a pull request title) against the project convention:
+# <type>(<scope>): <message>, entirely lowercase. Usage: commit-msg <file with the message>.
+# Enabled locally by ./setup.sh (git config core.hooksPath .githooks).
+set -euo pipefail
+
+subject="$(head -n 1 "$1")"
+
+# Locally, merge commits and the fixup!/squash! commits of `git commit --fixup` are rewritten before they reach main;
+# CI sets STRICT=1 for pull request titles.
+[[ -z "${STRICT:-}" && "$subject" =~ ^(Merge\ |fixup!\ |squash!\ |amend!\ ) ]] && exit 0
+
+if [[ "$subject" =~ [[:upper:]] || ! "$subject" =~ ^(feat|fix|chore|docs|refactor|test|build|ci|deps)\((ui|bff|db|repo)\)!?:\ [a-z0-9] ]]; then
+  echo "Not a valid commit message or pull request title: $subject" >&2
+  echo "Use <type>(<scope>): <lowercase message>, for example: feat(ui): add family visibility toggle." >&2
+  exit 1
+fi
