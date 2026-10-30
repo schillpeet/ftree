@@ -6,8 +6,10 @@ import com.github.bff.generated.model.ParentLink
 import com.github.bff.generated.model.Partnership
 import com.github.bff.generated.model.Placement
 import com.github.bff.generated.model.Position
+import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.Relatives
 import com.github.bff.live.TreeEvent
+import com.github.bff.problem.ApiProblem
 import org.springframework.context.ApplicationEventPublisher
 import jakarta.persistence.EntityManager
 import jakarta.persistence.LockModeType
@@ -41,6 +43,7 @@ class MemberService(
     @Transactional
     fun create(familyId: UUID, request: CreateMemberRequest): Member? {
         val family = familyRepository.findById(familyId).orElse(null) ?: return null
+        if (memberRepository.countByFamilyId(familyId) >= MAX_MEMBERS_PER_FAMILY) throw ApiProblem(ProblemCode.MEMBER_LIMIT_REACHED)
         return memberRepository.save(
             MemberEntity(
                 firstName = request.firstName.trim(),

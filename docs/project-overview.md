@@ -104,7 +104,7 @@ The preview is not saved, and cards cannot be dragged while it is on.
 
 A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
 The "Zufallsfamilie generieren" button in the families board of the menu, shown to admins and people who may create trees below "GEDCOM importieren", unfolds the random family form below it.
-The random family board creates a named family set with up to 250 generated members across 1–10 generations and 0–3 children per parent.
+The random family board creates a named family set with up to 100 generated members across 1–10 generations and 0–3 children per parent.
 The family selector is the "Familien" entry of the burger menu in the upper-left corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
 The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation, which moves it to the trash.
@@ -127,6 +127,7 @@ The family card's header downloads the family as GEDCOM, and its pencil switches
 The family photo fills the family card's cover; in edit mode the photo field takes a new photo by choosing a file or dropping an image, which the browser scales to at most 800 px as JPEG and uploads on save, and "Familienfoto entfernen" deletes it on save.
 "Neue Familie" at the top of the families board, shown to admins and people who may create trees, closes the menu and opens the family card in create mode: the same photo field, name, and photo display as in edit mode, with "Abbrechen" and "Anlegen" and without the copy and delete buttons.
 "Anlegen" creates the empty family, uploads the picked photo to it, shows the new family, and switches its card to view mode.
+A non-admin owns at most 5 families outside the trash (creating, generating, importing, archiving, or copying a sixth answers `TREE_LIMIT_REACHED`), and a family holds at most 100 people (adding or importing more answers `MEMBER_LIMIT_REACHED`); the UI shows both as German or English messages.
 In edit mode a switch under the photo field chooses "Füllend" (the photo fills the cover) or "Originalgröße" (the photo keeps its own size, centred, at most 240 px high and as wide as the card, never scaled up); it is saved per family via `PUT /families/{familyId}/photo-fit`.
 
 ### Tree URLs
@@ -249,7 +250,7 @@ The GEDCOM import and export do not carry partnership status yet.
 `POST /families/{familyId}/anonymize` copies a family in one transaction into a new named family with the same members, dates, places, notes, links, partnership details, and placement but without photos, leaving the original untouched.
 The copy replaces first names at random and maps each distinct last name (birth names included) consistently to a random last name from fixed lists in `AnonymousNames.kt`, never reusing a name from the original; empty names stay empty.
 Anonymous copies keep the kinds of the parent links.
-The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 2000 people, and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
+The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 100 people (MEMBER_LIMIT_REACHED), and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
 The GEDCOM import also rejects text over 5 MiB or 200,000 lines, keeps at most 5000 characters of notes per person however often a shared NOTE is referenced, and answers malformed lines with 400 instead of 500.
 Roles apply per family: `visitor` (`tree.view`), `editor` (adds `member.edit`, `family.edit`, and `family.export`), `owner` (adds `member.delete`, `family.delete`, and `family.share`), and `admin` (the same as owner); admins are admins in every family and also have `family.create`, `family.manage`, `dev.tools`, `users.view`, and `users.manage`.
 People with `users.can_create_trees` have `family.create` and `dev.tools`, so they create and import families, and they become the owner of every family they create; every family stores the normalized email of who created it in `created_by` (null for families from before V18).

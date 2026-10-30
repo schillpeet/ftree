@@ -144,7 +144,9 @@ export default function FamilyCard({
     let created: FamilySummary;
     try {
       const response = await createEmptyFamily({ name: next });
-      if (problemCode(response.data) === 'NAME_TAKEN') return setError(t.familyExists(next));
+      const code = problemCode(response.data);
+      if (code === 'NAME_TAKEN') return setError(t.familyExists(next));
+      if (code === 'TREE_LIMIT_REACHED') return setError(t.treeLimit);
       if (response.status !== 201) return setError(t.familyCard.createFailed);
       created = response.data;
     } catch {
@@ -175,6 +177,7 @@ export default function FamilyCard({
       const response = await anonymizeFamily(family.id, { name: copy });
       const code = problemCode(response.data);
       if (code === 'NAME_TAKEN') return setError(t.familyExists(copy));
+      if (code === 'TREE_LIMIT_REACHED') return setError(t.treeLimit);
       if (code === 'NOT_FOUND') return setError(t.families.gone);
       if (response.status !== 201) throw new Error(`HTTP ${response.status}`);
       onCreated(response.data);
