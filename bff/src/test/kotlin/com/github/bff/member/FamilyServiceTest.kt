@@ -231,6 +231,24 @@ class FamilyServiceTest {
     }
 
     @Test
+    fun `refuses to import a gedcom text over 5 MiB`() {
+        val gedcom = "0 HEAD\n0 @I1@ INDI\n1 NOTE " + "A".repeat(5 * 1024 * 1024)
+        assertEquals(FamilyImportResult.INVALID, familyService.import(ImportFamilyRequest("Gross ${UUID.randomUUID()}", gedcom)))
+    }
+
+    @Test
+    fun `imports a chain of 250 generations`() {
+        val gedcom = buildString {
+            append("0 HEAD\n")
+            repeat(250) { append("0 @I$it@ INDI\n1 NAME Person$it /Kette/\n") }
+            repeat(249) { append("0 @F$it@ FAM\n1 HUSB @I$it@\n1 CHIL @I${it + 1}@\n") }
+            append("0 TRLR")
+        }
+        val result = familyService.import(ImportFamilyRequest("Kette ${UUID.randomUUID()}", gedcom))
+        assertEquals(250, (result as FamilyImportResult.IMPORTED).summary.generationCount)
+    }
+
+    @Test
     fun `creates an empty family without members or test settings`() {
         val name = "Leer ${UUID.randomUUID()}"
 

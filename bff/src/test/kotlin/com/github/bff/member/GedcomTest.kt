@@ -102,6 +102,26 @@ class GedcomTest {
     }
 
     @Test
+    fun `rejects too many people and malformed levels without throwing`() {
+        val twoPeople = "0 HEAD\n0 @I1@ INDI\n0 @I2@ INDI"
+        assertNull(parseGedcom(twoPeople, maxPeople = 1))
+        assertEquals(2, parseGedcom(twoPeople, maxPeople = 2)?.size)
+        assertNull(parseGedcom("0 HEAD\n99999999999 @I1@ INDI"))
+    }
+
+    @Test
+    fun `reads a shared note referenced many times only up to the note limit`() {
+        // About 1 MB of text that would otherwise expand to 40,000 copies of a 400,000-character note.
+        val text = buildString {
+            append("0 HEAD\n0 @N1@ NOTE ").append("A".repeat(400_000)).append("\n0 @I1@ INDI\n")
+            repeat(40_000) { append("1 NOTE @N1@\n") }
+            append("0 @I2@ INDI\n1 NOTE @N1@\n0 TRLR")
+        }
+        val people = assertNotNull(parseGedcom(text))
+        assertEquals(listOf(5000, 5000), people.map { it.note?.length })
+    }
+
+    @Test
     fun `writes what it reads back`() {
         val people = listOf(
             GedcomPerson("a", "Anna", "Alt", LocalDate.of(1900, 1, 2), "Berlin", LocalDate.of(1980, 12, 31), "Bonn", "Zeile 1\nZeile 2 mit @", partnerIds = setOf("b")),

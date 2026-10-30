@@ -129,7 +129,9 @@ class FamilyService(
     fun import(request: ImportFamilyRequest): FamilyImportResult {
         val name = request.name?.trim().orEmpty()
         if (name.isEmpty() || name.length > 100) return FamilyImportResult.INVALID
-        val people = parseGedcom(request.gedcom.orEmpty()) ?: return FamilyImportResult.INVALID
+        val gedcom = request.gedcom.orEmpty()
+        if (gedcom.length > MAX_GEDCOM_LENGTH) return FamilyImportResult.INVALID
+        val people = parseGedcom(gedcom, MAX_IMPORTED_PEOPLE) ?: return FamilyImportResult.INVALID
         if (people.isEmpty() || people.size > MAX_IMPORTED_PEOPLE) return FamilyImportResult.INVALID
         val ids = people.associate { it.id to UUID.randomUUID() }
         if (hasCycle(people.associate { person -> ids.getValue(person.id) to person.parentIds.map(ids::getValue).toSet() })) {
@@ -368,11 +370,12 @@ class FamilyService(
     private fun memberGenerations(members: List<MemberEntity>): Int {
         val memberById = members.associateBy { it.id }
         val depth = mutableMapOf<UUID, Int>()
-        fun generation(id: UUID, visiting: Set<UUID> = emptySet()): Int {
+        fun generation(id: UUID): Int {
             depth[id]?.let { return it }
-            if (id in visiting) return 0
+            // Marks the member as in progress, so a parent cycle ends here instead of recursing forever.
+            depth[id] = 0
             val parents = memberById[id]?.parents.orEmpty()
-            val result = if (parents.isEmpty()) 0 else parents.maxOf { generation(it.id, visiting + id) + 1 }
+            val result = if (parents.isEmpty()) 0 else parents.maxOf { generation(it.id) + 1 }
             depth[id] = result
             return result
         }
@@ -382,6 +385,8 @@ class FamilyService(
 
 internal const val DEFAULT_FAMILY_NAME = "default"
 private const val MAX_IMPORTED_PEOPLE = 2000
+// Bounds the parser's memory on the single BFF pod; the API schema allows longer text.
+private const val MAX_GEDCOM_LENGTH = 5 * 1024 * 1024
 
 sealed interface FamilyCreationResult {
     data class CREATED(val summary: FamilySummary) : FamilyCreationResult
