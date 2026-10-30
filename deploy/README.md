@@ -15,6 +15,7 @@ Without `bff.access`, `bff.roles.admins` lists the bootstrap admins' emails, and
 Without the Secret the BFF runs with a noop gateway and changes nothing at Cloudflare.
 The BFF container also exposes the port `management` (8081, not part of the Service) with `/actuator/prometheus`, which a PodMonitor can scrape.
 The chart passes the other values to the BFF as `APP_AUTH_MODE`, `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, and `APP_ROLES_ADMINS` (joined with `,`), leaving unset values out.
+`operator.name` and `operator.email` (default empty) name who runs the instance; the chart sets them on the UI container as `OPERATOR_NAME` and `OPERATOR_EMAIL`, which the UI reads per request for `/terms`, `/privacy`, and the menu's "Feedback" link, so changing them only needs a rollout, not a new image.
 Running ftree in a cluster (Flux manifests, the kubectl, kind, Helm, and Flux cheatsheet, and the plan for a local kind cluster) lives in the private [`schillpeet/ftree-infra`](https://github.com/schillpeet/ftree-infra) repository.
 
 ## Develop the chart

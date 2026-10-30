@@ -117,7 +117,7 @@ export interface Me {
   customName: string | null;
   /** True for admins, who are admins in every family. */
   admin: boolean;
-  /** True for people who may create trees, becoming the owner of each tree they create; admins may always. */
+  /** True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both. */
   canCreateTrees: boolean;
   /** The permissions outside any family; admins have every permission. */
   permissions: Permission[];

@@ -1,0 +1,54 @@
+/* `/terms` and `/privacy`: a scrolling text page over the admin page's night sky. */
+
+.legal-page {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 16px 16px 72px;
+  background: radial-gradient(ellipse at top, #24364a 0%, #111a26 55%, #0a0f16 100%);
+  color: #fff;
+  font: 15px/1.5 Arial, sans-serif;
+}
+
+.legal-page > * {
+  max-width: 760px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.legal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.legal-header a {
+  color: #fff;
+  text-decoration: none;
+}
+
+.legal-page h1 {
+  margin: 0 0 4px;
+  font: 500 28px/1.15 Georgia, 'Times New Roman', serif;
+}
+
+.legal-page h2 {
+  margin: 24px 0 6px;
+  font-size: 17px;
+}
+
+.legal-page p,
+.legal-page ul {
+  margin: 0 0 8px;
+}
+
+.legal-page li + li {
+  margin-top: 4px;
+}
+
+.legal-muted {
+  color: var(--glass-muted);
+  font-size: 13px;
+}

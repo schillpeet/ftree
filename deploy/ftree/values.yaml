@@ -1,5 +1,11 @@
 # GHCR packages are private until made public
 imagePullSecrets: []
+# Who runs this instance, shown on /terms and /privacy and as the "Feedback" address in the menu; the UI reads
+# OPERATOR_NAME and OPERATOR_EMAIL at request time, so changing them needs no new image. Unset, the legal pages say
+# "nicht hinterlegt" and the menu has no "Feedback" entry.
+operator:
+  name: ""
+  email: ""
 ui:
   image: { repository: ghcr.io/schillpeet/ftree-ui, tag: "", pullPolicy: IfNotPresent }
   resources:

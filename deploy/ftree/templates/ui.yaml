@@ -21,6 +21,17 @@ spec:
           ports:
             - name: http
               containerPort: 3000
+          {{- if or .Values.operator.name .Values.operator.email }}
+          env:
+            {{- with .Values.operator.name }}
+            - name: OPERATOR_NAME
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.operator.email }}
+            - name: OPERATOR_EMAIL
+              value: {{ . | quote }}
+            {{- end }}
+          {{- end }}
           readinessProbe:
             httpGet:
               path: /healthz

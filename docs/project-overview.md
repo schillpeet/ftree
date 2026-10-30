@@ -18,7 +18,7 @@ The UI is available in English (default) and German; the language button next to
 The burger menu's "Appearance" board switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
 The burger menu's entries are "Familien", "Mitglied hinzufügen", "Darstellung", and "Momentaufnahme", with a people, an add-person, a palette, and a camera icon.
 The burger menu's "Momentaufnahme" ("Snapshot") entry downloads the current view as `ftree-<family>-<yyyy-mm-dd>.png`, showing only the scene and the family name, without any controls.
-The burger menu ends with "Feedback", a `mailto:` link to `NEXT_PUBLIC_FEEDBACK_EMAIL` (read at build time; the placeholder `feedback@example.com` until the owner sets it).
+The burger menu ends with "Feedback", a `mailto:` link to `OPERATOR_EMAIL`, which the `(tree)` layout reads from the server's environment per request; without it the entry is hidden.
 The experimental view is a dark floor with a glowing grid and no cards yet; it is the starting point for a simpler family tree, and organic-only controls (time, pins, light orbs, card style, crown, bundling) are greyed out there.
 In the experimental view, the selected family appears as a flat family tree facing the start camera: one row per generation, partners side by side, and children hanging from a bar below their parents; a click on a floating name opens the profile.
 Positions in the experimental view follow from the stored relations alone (`ui/app/simpleLayout.ts`, models in `ui/app/experimental/model.ts`), so the same family always looks the same and nothing can be dragged there.
@@ -62,6 +62,11 @@ Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a p
 The family is centred on the front of the tree; when the wedges do not fit around the trunk, all tiers reach further out.
 The tiered tree is rebuilt when the family's generations change; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
+Next to the version, small links "Terms · Privacy" ("Nutzungsbedingungen · Datenschutz") open `/terms` and `/privacy` in the chosen language.
+`/terms` (Nutzungsbedingungen) and `/privacy` (Datenschutzhinweise) are server-rendered text pages in German (binding, the default) and English (`?lang=en`), with a back link and a language link (`ui/app/LegalPage.tsx`, texts in `ui/app/legalTexts.ts`).
+The legal pages call no BFF and do not need a signed-in user; `PermissionsProvider` (and so `/me`) lives in the `(tree)` and admin layouts instead of the root layout.
+The legal pages fill in the operator's name and email from `OPERATOR_NAME` and `OPERATOR_EMAIL`, read per request through `connection()` (`ui/app/operator.ts`), so they are never baked into the build; unset, they read "nicht hinterlegt".
+There is no Impressum page, since ftree is run privately and non-commercially for a closed group.
 
 ### Sky and time of day
 
@@ -115,7 +120,7 @@ Every family has a slug (lowercase ASCII words joined by `-`, at most 60 charact
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The legacy `/members` endpoints for the default family were removed; members are only reached through `/families/{familyId}/members`.
 "GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.
-`POST /families/empty` creates a family without members or test settings under a unique name of up to 100 characters; like generating and importing, it needs `family.create`, and whoever creates it is its owner.
+`POST /families/empty` creates a family without members or test settings under a unique name of up to 100 characters; like importing, it needs `family.create`, which every signed-in user has, and whoever creates it is its owner; generating test families (`POST /families`) needs `dev.tools`.
 The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names stay empty.
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
 The family card's download button exports the family as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
@@ -139,7 +144,8 @@ Every tree opens at `/<slug>`, its family's slug; deep links, reloads, and the b
 Choosing a tree in the families board or creating one navigates to its URL, and hiding the shown tree there goes back to `/` without leading on.
 A deleted tree's URL leads on like `/` once the families reload.
 A slug that names no visible family, is malformed, or is reserved shows "Baum nicht gefunden" with a link back to the first tree; unknown and forbidden trees look the same.
-The slugs `admin`, `api`, `healthz`, and `cdn-cgi` are reserved for routes of their own and never open a tree; the BFF does not prevent such slugs yet.
+The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `terms`, and `privacy` are reserved for routes of their own and never open a tree.
+The BFF never gives a new family a reserved slug (`RESERVED_SLUGS` in `FamilySlugs.kt`) but numbers it instead, for example `terms-2`; families that got one before keep it.
 Whoever sees more than one family gets a chevron beside the family name at the top centre that lists every visible tree by name, marks the open one, and links to each tree's URL; with one family the name looks as before.
 The scene lives in the `(tree)` route group's layout, so switching trees keeps the canvas and only swaps the family.
 
@@ -254,8 +260,8 @@ The copy replaces first names at random and maps each distinct last name (birth 
 Anonymous copies keep the kinds of the parent links.
 The BFF imports a GEDCOM file as a new family (rejecting unreadable files, links that would make someone their own ancestor, more than 100 people (MEMBER_LIMIT_REACHED), and taken names) and exports a family as GEDCOM, using its own parser and writer for a subset of the format.
 The GEDCOM import also rejects text over 5 MiB or 200,000 lines, keeps at most 5000 characters of notes per person however often a shared NOTE is referenced, and answers malformed lines with 400 instead of 500.
-Roles apply per family: `visitor` (`tree.view`), `editor` (adds `member.edit`, `family.edit`, and `family.export`), `owner` (adds `member.delete`, `family.delete`, and `family.share`), and `admin` (the same as owner); admins are admins in every family and also have `family.create`, `family.manage`, `dev.tools`, `users.view`, and `users.manage`.
-People with `users.can_create_trees` have `family.create` and `dev.tools`, so they create and import families, and they become the owner of every family they create; every family stores the normalized email of who created it in `created_by` (null for families from before V18).
+Roles apply per family: `visitor` (`tree.view`), `editor` (adds `member.edit`, `family.edit`, and `family.export`), `owner` (adds `member.delete`, `family.delete`, and `family.share`), and `admin` (the same as owner); every signed-in user has `tree.appearance` and `family.create`, and admins are admins in every family and also have `family.manage`, `dev.tools`, `users.view`, and `users.manage`.
+Every signed-in user may create and import up to 5 families and becomes the owner of every family they create, while `users.can_create_trees` (despite its name) now only grants `dev.tools`, the test-family generator; every family stores the normalized email of who created it in `created_by` (null for families from before V18).
 Everyone has `tree.appearance`, which offers every appearance and the Evolution panel with its view, line, and legend settings.
 `app.access.file` (env `APP_ACCESS_FILE`) points to the access file, a YAML list `people` in which every entry has an `email` and `admin: true`, `developer: true` (optionally with `trees`), or `trees` with exactly one family slug mapped to `editor` or `visitor`; the BFF reads it once at startup and refuses to start when it is malformed or set together with `app.roles.admins`.
 Only the access file's admins apply at runtime, as bootstrap admins who stay admins whatever the database says; `MembershipSeed` imports its other entries into the database once (see Sharing).
@@ -263,7 +269,7 @@ Without an access file, `app.roles.admins` (env `APP_ROLES_ADMINS`) lists the bo
 `GET /me` returns the signed-in user's `email`, `admin`, `canCreateTrees`, the `permissions` outside any family, and `verified`, or 401 without a user; every family in `GET /families` and in the answers of family writes carries the caller's `role` and `permissions` in it.
 `app.auth.mode` (env `APP_AUTH_MODE`) is `cloudflare` by default; `dev` signs every request in as `app.auth.dev-email` (default `dev@localhost`) with `verified` false and logs a warning at startup, and `start.sh` runs the BFF in dev mode with `dev@localhost` as admin.
 Spring Security runs stateless and enforces the permissions per method and path: every request needs a signed-in user (401 otherwise), `GET /me` needs nothing more, and any other request needs its permission (403 otherwise), taken from the role in the family of the path for `/families/{familyId}/...`, with unknown endpoints always denied.
-`tree.view` covers the reads (families, members, photos), `family.export` the GEDCOM export, `member.edit` creating and changing members, relatives, placement, and member photos, `member.delete` deleting members, `family.edit` renaming families, family photos, and the photo fit, `family.delete` deleting a family, `family.create` creating, generating, and importing families, and `family.manage` archiving, anonymizing, and reordering families.
+`tree.view` covers the reads (families, members, photos), `family.export` the GEDCOM export, `member.edit` creating and changing members, relatives, placement, and member photos, `member.delete` deleting members, `family.edit` renaming families, family photos, and the photo fit, `family.delete` deleting a family, `family.create` creating and importing families, `dev.tools` generating test families, and `family.manage` archiving, anonymizing, and reordering families.
 Every request that reaches a controller records its signed-in user in the `users` table (V19: trimmed, lowercased `email`, `first_seen`, `last_seen`), writing at most once per five minutes per person, which the BFF remembers in memory only.
 `GET /users` needs `users.view`, which only admins have, and lists the bootstrap admins in their order, with `listed` true and `firstSeen` and `lastSeen` (null when they never signed in), followed by everyone else who signed in, most recent first.
 Non-admins see only the families they have a role in: `GET /families` lists only those, and every `/families/{familyId}/...` request for another family answers 404, so test families are only for admins and their owners.
@@ -273,7 +279,7 @@ In cloudflare mode the BFF verifies the Cloudflare Access JWT from the `Cf-Acces
 A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` answers 401; an `Authorization: Bearer` header is ignored.
 The UI loads `GET /me` once at start and shows only what the permissions allow, those from `/me` together with those of the open family; it checks permissions, never role names, and the BFF still enforces them.
 The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator, otherwise the role in the open family: Eigentümer, Bearbeiter, or Gast), whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode), and a logout link to `/cdn-cgi/access/logout`.
-"Familien" needs `family.create` (admins and people who may create trees) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Mitglied hinzufügen" needs `member.edit` in the open family, and "Momentaufnahme" and "Darstellung" are for everyone.
+"Familien" needs `family.create` (every signed-in user) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Mitglied hinzufügen" needs `member.edit` in the open family, and "Momentaufnahme" and "Darstellung" are for everyone.
 "Verwaltung" ("Administration") needs `users.view` and links to the admin page at `/admin`; the former read-only "Anmeldungen" board of `GET /users` is gone until the admin page gets a people tab.
 Without `tree.appearance` only the experimental appearance can be chosen; the others are disabled and marked "Demnächst", and a stored other choice falls back to experimental.
 The Evolution button needs `tree.appearance`, so everyone sees it; its random-family generator needs `dev.tools`.
@@ -317,7 +323,7 @@ Roles per tree live in PostgreSQL (V20): `family_memberships` holds one role per
 At the first start with V20, `MembershipSeed` copies the rights into the database once: the creator of every family (`created_by`) becomes its owner, the trees of the access file become memberships, `developer: true` becomes `can_create_trees`, and `admin: true` becomes `admin`, each written to the audit log.
 At every start, every family without an owner, such as those without `created_by`, gets the first bootstrap admin (the first admin of the access file, or of `app.roles.admins`) as owner, written to the audit log with the source `bootstrap-admin`; a family that has an owner is left alone, so this runs idempotently.
 The seed runs only while no `access_file.imported` entry is in the audit log and `family_memberships` is empty, so it never runs again even after every membership was removed; it skips trees whose slug no family has yet and locks the table so a second BFF starting at the same time waits and then skips it.
-Every request reads the user's rights from the database alone: `users.admin` and the bootstrap admins are admins, `can_create_trees` allows creating trees, and in each family the role of the membership applies; without a membership a family does not exist for them.
+Every request reads the user's rights from the database alone: `users.admin` and the bootstrap admins are admins, everyone may create trees, `can_create_trees` adds the dev tools, and in each family the role of the membership applies; without a membership a family does not exist for them.
 Only an owner membership reaches a test family; editor and visitor memberships do not.
 Whoever creates, imports, archives, or anonymizes a family gets an owner membership in the new family, written to the audit log.
 `GET /users` lists the bootstrap admins first and then everyone else with a right in the database, by email, with `listed` true, before the people who only signed in.
@@ -382,7 +388,7 @@ The query takes `limit` (1 to 100, default 50), `before` (an entry id), and the 
 Its menus filter by person, tree (`GET /admin/families`), and action; changing one starts the list again.
 "Personen" lists `GET /admin/users` with name, email, status, rights, and the person's trees with their roles.
 The status is "Online in <trees>" from `GET /admin/presence` (refreshed every 15 seconds), else the last sign-in, else "Eingeladen, noch nicht angemeldet", else "Noch nie angemeldet".
-The toggles "Darf Bäume anlegen" and "Administrator" call `PUT /admin/users/{userId}`; the admin toggle is disabled for yourself and for admins of the access file.
+The toggles "Entwicklerwerkzeuge" (`canCreateTrees`) and "Administrator" call `PUT /admin/users/{userId}`; the admin toggle is disabled for yourself and for admins of the access file.
 "Umbenennen" sets the display name through the same call, and an empty name shows the email's local part again.
 Each tree has a role menu (`PUT /families/{familyId}/access`) and "Entfernen" after a confirmation (`DELETE /families/{familyId}/access/{userId}`); users are addressed by id, never by email in a URL.
 "Einladungen" lists `GET /admin/invitations`, the people who never signed in, one row per tree with role, who invited them, and when.
@@ -455,7 +461,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 
 ## Code Map
 
-- `ui/app/layout.tsx` wraps every page in `PermissionsProvider`; `ui/app/(tree)/layout.tsx` renders the scene for `/` and `/<slug>` (`ui/app/(tree)/page.tsx`, `ui/app/(tree)/[slug]/page.tsx`); `ui/app/slugRoute.ts` resolves slugs and where `/` leads, with `ui/app/slugRoute.check.mjs` as its self-check.
+- `ui/app/layout.tsx` holds the version badge with the legal links; `ui/app/(tree)/layout.tsx` and `ui/app/admin/layout.tsx` wrap their pages in `PermissionsProvider`; `ui/app/(tree)/layout.tsx` renders the scene for `/` and `/<slug>` (`ui/app/(tree)/page.tsx`, `ui/app/(tree)/[slug]/page.tsx`); `ui/app/slugRoute.ts` resolves slugs and where `/` leads, with `ui/app/slugRoute.check.mjs` as its self-check.
 - `ui/app/TreeSwitcher.tsx` lists the visible trees at the family name and `ui/app/TreeNotFound.tsx` answers unknown slugs, both styled in `ui/app/treeRoute.css`.
 - `ui/app/healthz/route.ts` answers the chart's UI probes.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay.

@@ -26,8 +26,8 @@ class RoleTest {
     }
 
     @Test
-    fun `everyone may change the appearance, people who may create trees create families, only admins manage them`() {
-        assertEquals(setOf(TREE_APPEARANCE), Access(admin = false).permissions)
+    fun `everyone may change the appearance and create trees, the flag adds the dev tools, only admins manage families`() {
+        assertEquals(setOf(TREE_APPEARANCE, FAMILY_CREATE), Access(admin = false).permissions)
         assertEquals(setOf(TREE_APPEARANCE, FAMILY_CREATE, DEV_TOOLS), Access(admin = false, canCreateTrees = true).permissions)
         assertEquals(Permission.entries.toSet(), Access(admin = true).permissions)
         assertEquals(
