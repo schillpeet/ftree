@@ -34,7 +34,7 @@ class FamiliesController(
     private val request: HttpServletRequest,
 ) : FamiliesApi {
     override fun getFamilies(): ResponseEntity<List<FamilySummary>> =
-        ResponseEntity.ok(familyVisibility.visible(familyService.findAll()))
+        ResponseEntity.ok(familyVisibility.visible(familyService.findAll(familyVisibility::isVisible)))
 
     override fun createFamily(createFamilyRequest: CreateFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.create(createFamilyRequest)) {

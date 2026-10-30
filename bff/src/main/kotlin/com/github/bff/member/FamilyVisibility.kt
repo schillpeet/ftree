@@ -30,6 +30,8 @@ class FamilyVisibility(private val familyRepository: FamilyRepository, private v
 
     fun isVisible(familyId: UUID): Boolean = roleIn(familyId) != null
 
+    fun isVisible(family: FamilyEntity): Boolean = CurrentUser.current()?.let { roleIn(family, it) } != null
+
     // Whether the user may do this in the family; a family they cannot see is left to FamilyVisibilityInterceptor's 404.
     fun allows(user: CurrentUser, familyId: UUID, permission: Permission): Boolean =
         roleIn(familyId, user)?.let { permission in it.permissions } ?: true
