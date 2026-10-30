@@ -25,7 +25,8 @@ import { followTarget } from './live/presence';
 import { useTreeEvents } from './live/useTreeEvents';
 import { OpenFamily, useCan, useMe } from './Permissions';
 import { can } from './access';
-import { familyOfSlug, firstFamily, homePath, pathOf } from './slugRoute';
+import { emptyTreeOf, familyOfSlug, firstFamily, homePath, pathOf } from './slugRoute';
+import EmptyTree from './EmptyTree';
 import TreeNotFound from './TreeNotFound';
 
 // Shares the members between the scene's scrolls and the list/form overlay. Rendered by the `(tree)` layout, so it
@@ -203,6 +204,13 @@ export default function FamilyTree() {
     }
   }
 
+  function addMember() {
+    stopFollowing();
+    setIsMenuOpen(false);
+    setPanel(null);
+    setAddRequest({});
+  }
+
   function addFamily(family: FamilySummary, card: FamilyCardMode | null = null) {
     setFamilies((current) => [...(current ?? []).filter((item) => item.id !== family.id), family]);
     openFamily(family, card);
@@ -210,6 +218,7 @@ export default function FamilyTree() {
 
   // An unknown, invisible or reserved slug says so instead of showing an empty tree.
   const notFound = families !== null && slug !== undefined && !activeFamily;
+  const emptyTree = emptyTreeOf(families, slug, activeFamily, members);
   const canPlace = can(me, 'member.edit', activeFamily);
   useTreeEvents(activeFamilyId, shownId, isEditingShown ? shownId : null);
 
@@ -236,12 +245,7 @@ export default function FamilyTree() {
           setPanel(null);
         }}
         onPanel={(next) => setPanel((current) => (current === next ? null : next))}
-        onAddMember={() => {
-          stopFollowing();
-          setIsMenuOpen(false);
-          setPanel(null);
-          setAddRequest({});
-        }}
+        onAddMember={addMember}
         onFamilyClick={() => {
           if (activeFamilyId) return setFamilyCard((current) => current ?? 'view');
           if (!canCreate) return;
@@ -259,6 +263,17 @@ export default function FamilyTree() {
       {activeFamilyId && following && <FollowChip email={following.email} onStop={stopFollowing} />}
       {activeFamilyId && <LiveToasts members={members ?? []} editingId={isEditingShown ? shownId : null} />}
       {notFound && <TreeNotFound home={homePath(families)} />}
+      {emptyTree && (
+        <EmptyTree
+          kind={emptyTree}
+          onCreate={() => setFamilyCard('create')}
+          onImport={() => {
+            setIsMenuOpen(true);
+            setPanel('families');
+          }}
+          onAddPerson={addMember}
+        />
+      )}
       <MemberSearch
         members={members ?? []}
         onSelect={(id) => {

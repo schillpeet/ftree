@@ -88,7 +88,8 @@
   box-shadow: inset 3px 0 0 var(--glass-accent);
 }
 
-.tree-not-found {
+.tree-not-found,
+.empty-tree {
   position: fixed;
   z-index: 5;
   top: 50%;
@@ -103,17 +104,32 @@
   transform: translate(-50%, -50%);
 }
 
-.tree-not-found h2 {
+.tree-not-found h2,
+.empty-tree h2 {
   margin: 0;
   font-size: 20px;
 }
 
-.tree-not-found p {
+.tree-not-found p,
+.empty-tree p {
   margin: 0;
   opacity: 0.85;
   line-height: 1.4;
 }
 
-.tree-not-found .glass-button {
+.tree-not-found .glass-button,
+.empty-tree .glass-button {
   text-decoration: none;
+}
+
+.empty-tree-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Steps aside while the menu, a board, or a person or family card is open, so the flows it starts stay unobstructed. */
+body:has(.dashboard-nav, .person-panel) .empty-tree {
+  display: none;
 }

@@ -12,7 +12,7 @@ const en = {
   treeLimit: 'You already own 5 families; delete one before creating another.',
   memberLimit: 'A family can hold at most 100 people.',
   language: { switch: 'Switch to German', short: 'EN' },
-  menu: { open: 'Open menu', close: 'Close menu', label: 'Menu', profile: 'Profile', families: 'Families', appearance: 'Appearance', snapshot: 'Snapshot', noFamily: 'No family', admin: 'Administration' },
+  menu: { open: 'Open menu', close: 'Close menu', label: 'Menu', profile: 'Profile', families: 'Families', appearance: 'Appearance', snapshot: 'Snapshot', feedback: 'Feedback', noFamily: 'No family', admin: 'Administration' },
   search: { open: 'Search members', label: 'Search members', placeholder: 'Search a member …', noResults: 'No matches' },
   appearance: { title: 'Appearance', close: 'Close appearance', organic: 'Organic tree', organicExperimental: 'Organic tree (experimental)', experimental: 'Experimental', comingSoon: 'Coming soon' },
   account: {
@@ -278,6 +278,15 @@ const en = {
     notFound: 'Tree not found',
     notFoundHint: 'This tree does not exist, or you have no access to it.',
     backHome: 'Back to your tree',
+  },
+  emptyTree: {
+    noTree: 'No family tree yet',
+    noTreeHint: 'Create an empty tree and add the first person, or import a GEDCOM file from another genealogy program.',
+    noTreeShared: 'As soon as someone shares a tree with you, it appears here.',
+    noPeople: 'This tree is still empty',
+    noPeopleHint: 'Add the first person, for example yourself; parents, partners and children are linked in their profile afterwards.',
+    noPeopleShared: 'As soon as someone adds people, they appear here.',
+    addFirst: 'Add the first person',
   },
   conflict: {
     title: 'Someone else changed this person',
@@ -557,7 +566,7 @@ const de: typeof en = {
   treeLimit: 'Du besitzt bereits 5 Familien; lösche eine, bevor du eine neue anlegst.',
   memberLimit: 'Eine Familie kann höchstens 100 Personen enthalten.',
   language: { switch: 'Auf Englisch umschalten', short: 'DE' },
-  menu: { open: 'Menü öffnen', close: 'Menü schließen', label: 'Menü', profile: 'Profil', families: 'Familien', appearance: 'Darstellung', snapshot: 'Momentaufnahme', noFamily: 'Keine Familie', admin: 'Verwaltung' },
+  menu: { open: 'Menü öffnen', close: 'Menü schließen', label: 'Menü', profile: 'Profil', families: 'Familien', appearance: 'Darstellung', snapshot: 'Momentaufnahme', feedback: 'Feedback', noFamily: 'Keine Familie', admin: 'Verwaltung' },
   search: { open: 'Mitglieder suchen', label: 'Mitglieder suchen', placeholder: 'Mitglied suchen …', noResults: 'Keine Treffer' },
   appearance: { title: 'Darstellung', close: 'Darstellung schließen', organic: 'Organischer Baum', organicExperimental: 'Organischer Baum (experimentell)', experimental: 'Experimentell', comingSoon: 'Demnächst' },
   account: {
@@ -822,6 +831,15 @@ const de: typeof en = {
     notFound: 'Baum nicht gefunden',
     notFoundHint: 'Diesen Baum gibt es nicht, oder du hast keinen Zugriff darauf.',
     backHome: 'Zurück zu deinem Baum',
+  },
+  emptyTree: {
+    noTree: 'Noch kein Stammbaum',
+    noTreeHint: 'Leg einen leeren Baum an und füge die erste Person hinzu, oder importiere eine GEDCOM-Datei aus einem anderen Ahnenprogramm.',
+    noTreeShared: 'Sobald jemand einen Baum mit dir teilt, erscheint er hier.',
+    noPeople: 'Dieser Baum ist noch leer',
+    noPeopleHint: 'Füge die erste Person hinzu, zum Beispiel dich selbst; Eltern, Partner und Kinder verknüpfst du danach in ihrem Profil.',
+    noPeopleShared: 'Sobald jemand Personen hinzufügt, erscheinen sie hier.',
+    addFirst: 'Erste Person hinzufügen',
   },
   conflict: {
     title: 'Jemand hat diese Person geändert',
