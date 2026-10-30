@@ -527,7 +527,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `setup.sh` checks for git, Node, pnpm, a running Docker daemon, and optionally Java, reading the required versions from `ui/Dockerfile`, `ui/package.json` (`packageManager`), and `bff/build.gradle.kts`, prints a link to the official installation guide for each missing tool, and installs the UI dependencies; it installs no tool itself.
 - pnpm switches to the version pinned in `ui/package.json` only when it runs inside `ui/`, so scripts and docs use `cd ui` instead of `pnpm --dir ui`.
 - Java is optional on a development machine, because Gradle downloads a JDK 21 for the BFF toolchain on the first build.
-- `CONTRIBUTING.md` describes branch naming, the commit and PR-title convention, the checks to run, and the required maintainer approval for pull requests.
+- `CONTRIBUTING.md` describes the fork workflow (contributors push to their fork and rebase on `upstream/main`), branch naming, the commit and PR-title convention, the checks to run, and the required maintainer approval for pull requests.
 - `api/openapi.yaml` defines family-set listing, generation, deletion, and family-scoped member operations as the shared API contract.
 - `ui/orval.config.ts` generates the typed UI client into `ui/lib/api/generated/members.ts` with the relative base URL `/api`.
 - `ui/next.config.ts` rewrites `/api/*` to the BFF at `BFF_URL` (default `http://localhost:8080`), so the browser only talks to the UI's origin; `BFF_URL` is read when the UI is built.
