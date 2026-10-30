@@ -34,9 +34,10 @@ class FamilyService(
     private val memberships: Memberships,
     private val events: ApplicationEventPublisher,
 ) {
-    fun findAll(): List<FamilySummary> {
+    // Members are loaded only for the families that pass `include`, so a user's list never reads other people's trees.
+    fun findAll(include: (FamilyEntity) -> Boolean = { true }): List<FamilySummary> {
         val photos = photoTimes()
-        return familyRepository.findAllByDeletedAtIsNullOrderByPositionAsc().map { family ->
+        return familyRepository.findAllByDeletedAtIsNullOrderByPositionAsc().filter(include).map { family ->
             family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(family.id), photos[family.id])
         }
     }
