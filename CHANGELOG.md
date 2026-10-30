@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.29.1](https://github.com/schillpeet/ftree/compare/v0.29.0...v0.29.1) (2026-10-30)
+
+
+### Bug Fixes
+
+* **bff:** close scorecard and codeql findings ([#270](https://github.com/schillpeet/ftree/issues/270)) ([e28f999](https://github.com/schillpeet/ftree/commit/e28f99945f8ecbe23b5480de003dc9a96c2d2020))
+* **bff:** give trees random urls and erase deleted users ([#265](https://github.com/schillpeet/ftree/issues/265)) ([62f7100](https://github.com/schillpeet/ftree/commit/62f71004d693e88288d42b5e3276a4e790ffafc5))
+* **ui:** default to the browser language and block browser translation ([#267](https://github.com/schillpeet/ftree/issues/267)) ([eb75aa4](https://github.com/schillpeet/ftree/commit/eb75aa454f717d1b58f84c131a50eb3f60d47ee6))
+
+
+### Dependencies
+
+* **ui:** bump eslint-config-next from 16.4.2 to 16.4.3 in /ui ([#264](https://github.com/schillpeet/ftree/issues/264)) ([dee400f](https://github.com/schillpeet/ftree/commit/dee400fd1880f997eb9375a24897a1c7d9ea7e94))
+* **ui:** bump next from 16.4.2 to 16.4.3 in /ui ([#263](https://github.com/schillpeet/ftree/issues/263)) ([6949919](https://github.com/schillpeet/ftree/commit/694991943e8c2aec0febbeb8781beeec30939b98))
+
 ## [0.29.0](https://github.com/schillpeet/ftree/compare/v0.28.0...v0.29.0) (2026-10-30)
 
 
