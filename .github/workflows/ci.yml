@@ -167,6 +167,8 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
+      # Checks bff/gradle/wrapper/gradle-wrapper.jar against Gradle's published checksums.
+      - uses: gradle/actions/wrapper-validation@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
       - run: ./gradlew build
 

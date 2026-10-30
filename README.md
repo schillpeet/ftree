@@ -8,6 +8,7 @@
   <a href="https://github.com/schillpeet/ftree/actions/workflows/ci.yml"><img src="https://github.com/schillpeet/ftree/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/schillpeet/ftree/tags"><img src="https://img.shields.io/github/v/tag/schillpeet/ftree?sort=semver&label=version" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://www.bestpractices.dev/projects/16096"><img src="https://www.bestpractices.dev/projects/16096/badge" alt="OpenSSF Best Practices"></a>
   <a href="https://scorecard.dev/viewer/?uri=github.com/schillpeet/ftree"><img src="https://api.scorecard.dev/projects/github.com/schillpeet/ftree/badge" alt="OpenSSF Scorecard"></a>
 </p>
 

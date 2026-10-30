@@ -69,6 +69,12 @@ class ManagementPortTest {
         }
     }
 
+    @Test
+    fun `the management port refuses writes`() {
+        val post = HttpRequest.newBuilder(URI("http://localhost:$managementPort/actuator/health")).POST(HttpRequest.BodyPublishers.noBody()).build()
+        assertEquals(403, client.send(post, HttpResponse.BodyHandlers.ofString()).statusCode())
+    }
+
     // The UI's /api rewrite forwards to the app port, so it must not reach the actuator there.
     @Test
     fun `the app port does not serve the actuator`() {

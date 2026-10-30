@@ -30,6 +30,17 @@ updates:
           - plugin.spring
           - plugin.jpa
 
+  # The base images are pinned by digest; Dependabot moves the digests and minor tags, never Node or Java majors.
+  - package-ecosystem: docker
+    directories: [/ui, /bff]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(repo)"
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
