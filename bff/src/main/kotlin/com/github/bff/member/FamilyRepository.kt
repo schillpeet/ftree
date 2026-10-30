@@ -9,7 +9,8 @@ interface FamilyRepository : JpaRepository<FamilyEntity, UUID> {
 
     fun findByNameIgnoreCase(name: String): FamilyEntity?
 
-    fun existsByNameIgnoreCase(name: String): Boolean
+    // A null createdBy matches the families from before V18, which have none.
+    fun existsByCreatedByAndNameIgnoreCase(createdBy: String?, name: String): Boolean
 
     fun existsBySlug(slug: String): Boolean
 
@@ -18,7 +19,7 @@ interface FamilyRepository : JpaRepository<FamilyEntity, UUID> {
 
     fun findAllByDeletedAtIsNotNullOrderByDeletedAtAsc(): List<FamilyEntity>
 
-    fun existsByNameIgnoreCaseAndDeletedAtIsNotNull(name: String): Boolean
+    fun existsByCreatedByAndNameIgnoreCaseAndDeletedAtIsNotNull(createdBy: String?, name: String): Boolean
 
     // Families outside the trash in which the person is an owner; family_memberships has no entity.
     @Query(

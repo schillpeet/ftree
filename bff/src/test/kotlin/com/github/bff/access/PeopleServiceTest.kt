@@ -149,9 +149,9 @@ class PeopleServiceTest {
 
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = ?", Int::class.java, GUEST))
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM family_memberships WHERE email = ?", Int::class.java, GUEST))
-        assertEquals(GUEST, jdbc.queryForObject("SELECT created_by FROM families WHERE id = ?", String::class.java, tree))
+        assertTrue(familyRepository.existsById(tree))
         assertEquals(listOf(GUEST), revoked)
-        assertEquals(listOf("user.deleted $ADMIN"), audit(GUEST))
+        assertEquals(emptyList(), audit(GUEST))
         assertEquals(ProblemCode.NOT_FOUND, assertFailsWith<ApiProblem> { service.delete(UUID.randomUUID(), ADMIN) }.code)
     }
 
@@ -183,6 +183,32 @@ class PeopleServiceTest {
         memberships.grant(sole, ADMIN, Role.OWNER, null)
         people.delete(idOf(GUEST), ADMIN)
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = ?", Int::class.java, GUEST))
+    }
+
+    @Test
+    fun `deleting a person replaces their email everywhere with a pseudonym`() {
+        val tree = familyRepository.saveAndFlush(FamilyEntity(name = "People erased $RUN", createdBy = GUEST, deletedBy = GUEST)).id
+        memberships.grant(tree, GUEST, Role.EDITOR, ADMIN)
+        memberships.grant(tree, ADMIN, Role.OWNER, GUEST)
+        auditLog.record(GUEST, "test.action", "user", GUEST, mapOf("email" to GUEST))
+        val id = idOf(GUEST)
+
+        people.delete(id, ADMIN)
+
+        val pseudonym = "deleted-${id.toString().take(8)}"
+        val kept = jdbc.queryForObject(
+            "SELECT count(*) FROM audit_log WHERE actor = ? OR target_id = ? OR strpos(details::text, ?) > 0", Int::class.java, GUEST, GUEST, GUEST,
+        )
+        assertEquals(0, kept)
+        assertEquals(listOf("test.action $pseudonym", "user.deleted $ADMIN"), audit(pseudonym))
+        assertEquals(
+            listOf(pseudonym, pseudonym, pseudonym),
+            listOf(
+                jdbc.queryForObject("SELECT created_by FROM families WHERE id = ?", String::class.java, tree),
+                jdbc.queryForObject("SELECT deleted_by FROM families WHERE id = ?", String::class.java, tree),
+                jdbc.queryForObject("SELECT granted_by FROM family_memberships WHERE family_id = ? AND email = ?", String::class.java, tree, ADMIN),
+            ),
+        )
     }
 
     @Test

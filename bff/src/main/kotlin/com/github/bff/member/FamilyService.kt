@@ -70,14 +70,14 @@ class FamilyService(
         ) {
             return FamilyCreationResult.INVALID
         }
-        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyCreationResult.NAME_TAKEN
+        if (nameTaken(name)) return FamilyCreationResult.NAME_TAKEN
         val plan = planFamily(totalUsers, generationCount, minChildren, maxChildren)
             ?: return FamilyCreationResult.INVALID
 
         val family = saveNew(
             FamilyEntity(
                 name = name,
-                slug = newSlug(name),
+                slug = newSlug(),
                 createdBy = creator(),
                 totalUsers = totalUsers,
                 generationCount = generationCount,
@@ -106,8 +106,8 @@ class FamilyService(
     fun createEmpty(request: CreateEmptyFamilyRequest): FamilyCreationResult {
         val name = request.name?.trim().orEmpty()
         if (name.isEmpty() || name.length > 100) return FamilyCreationResult.INVALID
-        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyCreationResult.NAME_TAKEN
-        val family = saveNew(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
+        if (nameTaken(name)) return FamilyCreationResult.NAME_TAKEN
+        val family = saveNew(FamilyEntity(name = name, slug = newSlug(), createdBy = creator()))
         return FamilyCreationResult.CREATED(family.toSummary(emptyList()))
     }
 
@@ -118,8 +118,8 @@ class FamilyService(
         val name = request.name?.trim().orEmpty()
         val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         if (name.isEmpty() || name.length > 100 || members.isEmpty()) return FamilyArchiveResult.INVALID
-        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyArchiveResult.NAME_TAKEN
-        val archived = saveNew(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
+        if (nameTaken(name)) return FamilyArchiveResult.NAME_TAKEN
+        val archived = saveNew(FamilyEntity(name = name, slug = newSlug(), createdBy = creator()))
         members.forEach { it.family = archived }
         memberRepository.flush()
         changed(id)
@@ -139,9 +139,9 @@ class FamilyService(
         if (hasCycle(people.associate { person -> ids.getValue(person.id) to person.parentIds.map(ids::getValue).toSet() })) {
             return FamilyImportResult.INVALID
         }
-        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyImportResult.NAME_TAKEN
+        if (nameTaken(name)) return FamilyImportResult.NAME_TAKEN
 
-        val family = saveNew(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
+        val family = saveNew(FamilyEntity(name = name, slug = newSlug(), createdBy = creator()))
         val saved = memberRepository.saveAll(
             people.map { person ->
                 MemberEntity(
@@ -182,11 +182,11 @@ class FamilyService(
         if (!familyRepository.existsById(id)) return FamilyAnonymizeResult.NOT_FOUND
         val name = request.name?.trim().orEmpty()
         if (name.isEmpty() || name.length > 100) return FamilyAnonymizeResult.INVALID
-        if (familyRepository.existsByNameIgnoreCase(name)) return FamilyAnonymizeResult.NAME_TAKEN
+        if (nameTaken(name)) return FamilyAnonymizeResult.NAME_TAKEN
 
         val originals = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         val names = AnonymousNames(originals)
-        val family = saveNew(FamilyEntity(name = name, slug = newSlug(name), createdBy = creator()))
+        val family = saveNew(FamilyEntity(name = name, slug = newSlug(), createdBy = creator()))
         val copies = memberRepository.saveAll(
             originals.map { member ->
                 MemberEntity(
@@ -245,7 +245,7 @@ class FamilyService(
         val family = familyRepository.findById(id).orElse(null) ?: return FamilyRenameResult.NOT_FOUND
         val name = request.name?.trim().orEmpty()
         if (name.isEmpty() || name.length > 100) return FamilyRenameResult.INVALID
-        if (!name.equals(family.name, ignoreCase = true) && familyRepository.existsByNameIgnoreCase(name)) {
+        if (!name.equals(family.name, ignoreCase = true) && nameTaken(name, family.createdBy)) {
             return FamilyRenameResult.NAME_TAKEN
         }
         family.name = name
@@ -340,7 +340,10 @@ class FamilyService(
             familyId,
         )
 
-    private fun newSlug(name: String) = uniqueSlug(name, familyRepository::existsBySlug)
+    private fun newSlug() = randomSlug(familyRepository::existsBySlug)
+
+    // Names are unique per creator only, so a name taken in someone else's tree tells nobody that tree exists.
+    private fun nameTaken(name: String, creator: String? = creator()) = familyRepository.existsByCreatedByAndNameIgnoreCase(creator, name)
 
     private fun creator() = CurrentUser.current()?.email?.normalizedEmail()
 
