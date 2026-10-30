@@ -28,22 +28,26 @@ private class GedcomLine(val level: Int, val xref: String?, val tag: String, val
 
     fun all(tag: String) = children.filter { it.tag == tag }
 
-    /** The value with its CONT (new line) and CONC (same line) continuations. */
-    fun text() = buildString {
-        append(value)
-        children.forEach {
+    /** The value with its CONT (new line) and CONC (same line) continuations, cut after about [limit] characters. */
+    fun text(limit: Int = Int.MAX_VALUE) = buildString {
+        append(value, 0, minOf(value.length, limit))
+        for (it in children) {
+            if (length >= limit) break
             when (it.tag) {
                 "CONT" -> append('\n').append(it.value)
                 "CONC" -> append(it.value)
             }
         }
-    }.replace("@@", "@")
+    }.take(limit).replace("@@", "@")
 }
 
 private val LINE = Regex("""^\s*(\d+)\s+(?:(@[^@\s]+@)\s+)?(\S+)(?: (.*))?$""")
 private val EXACT_DATE = Regex("""^(\d{1,2}) ([A-Z]{3}) (\d{1,4})$""")
 private val MONTHS = listOf("JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")
 private val BIRTH_NAME_TYPES = setOf("birth", "maiden")
+private const val MAX_NOTE_LENGTH = 5000
+// Every kept line costs about 150 bytes of heap; real files have a few dozen lines per person.
+private const val MAX_LINES = 200_000
 
 private fun GedcomLine.nameType() = child("TYPE")?.value?.trim()?.lowercase()
 
@@ -57,15 +61,18 @@ private fun GedcomLine?.nameParts(): Pair<String, String> {
 
 /**
  * Reads people, partners (HUSB/WIFE of a FAM) and parents (its CHIL) from a GEDCOM 5.5.1 or 7 file.
- * Unknown tags and references to missing records are ignored. Null when the text is not GEDCOM.
+ * Unknown tags and references to missing records are ignored. Null when the text is not GEDCOM, or has more than
+ * [maxPeople] people or [MAX_LINES] lines.
  */
-internal fun parseGedcom(text: String): List<GedcomPerson>? {
+internal fun parseGedcom(text: String, maxPeople: Int = Int.MAX_VALUE): List<GedcomPerson>? {
     val records = mutableListOf<GedcomLine>()
     val open = ArrayDeque<GedcomLine>()
-    for (raw in text.removePrefix("\uFEFF").lines()) {
+    var lineCount = 0
+    for (raw in text.removePrefix("\uFEFF").lineSequence()) {
         if (raw.isBlank()) continue
+        if (++lineCount > MAX_LINES) return null
         val (level, xref, tag, value) = LINE.matchEntire(raw)?.destructured ?: return null
-        val line = GedcomLine(level.toInt(), xref.ifEmpty { null }, tag.uppercase(), value)
+        val line = GedcomLine(level.toIntOrNull() ?: return null, xref.ifEmpty { null }, tag.uppercase(), value)
         while (open.isNotEmpty() && open.last().level >= line.level) open.removeLast()
         when {
             line.level == 0 -> records.add(line)
@@ -75,6 +82,7 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
         open.addLast(line)
     }
     if (records.firstOrNull()?.tag != "HEAD") return null
+    if (records.count { it.tag == "INDI" && it.xref != null } > maxPeople) return null
 
     val byXref = records.filter { it.xref != null }.associateBy { it.xref }
     val individuals = records.filter { it.tag == "INDI" && it.xref != null }.associateBy { it.xref!! }
@@ -101,6 +109,8 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
         kinds.toMap()
     }
 
+    // A shared NOTE record is read once, however many people refer to it how often.
+    val sharedNotes = mutableMapOf<String, String>()
     return individuals.map { (xref, person) ->
         // The current name is a NAME of TYPE married, else the first one not marked as birth name. The birth name
         // comes from a NAME of TYPE birth/maiden, or is the surname a _MARNM or a married NAME replaces.
@@ -121,7 +131,10 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
         val death = person.child("DEAT")
         val birthDate = birth?.child("DATE")?.value?.trim()
         val deathDate = death?.child("DATE")?.value?.trim()
-        val notes = person.children.filter { it.tag == "NOTE" || it.tag == "SNOTE" }.map { note -> byXref[note.value.trim()]?.text() ?: note.text() }
+        val notes = person.children.asSequence().filter { it.tag == "NOTE" || it.tag == "SNOTE" }.map { note ->
+            val shared = note.value.trim()
+            byXref[shared]?.let { sharedNotes.getOrPut(shared) { it.text(MAX_NOTE_LENGTH) } } ?: note.text(MAX_NOTE_LENGTH)
+        }
         // Imprecise dates are kept verbatim in the note instead of inventing a day.
         val dateNotes = listOfNotNull(
             birthDate?.takeIf { it.isNotEmpty() && exactDate(it) == null }?.let { "Geburt laut GEDCOM: $it" },
@@ -135,7 +148,14 @@ internal fun parseGedcom(text: String): List<GedcomPerson>? {
             birthPlace = birth?.child("PLAC")?.text()?.trim()?.ifEmpty { null }?.take(200),
             deathDate = deathDate?.let(::exactDate),
             deathPlace = death?.child("PLAC")?.text()?.trim()?.ifEmpty { null }?.take(200),
-            note = (notes + dateNotes).filter { it.isNotBlank() }.joinToString("\n").ifEmpty { null }?.take(5000),
+            note = buildString {
+                // Stops at the length limit, so many references to one note do not pile up.
+                for (part in (notes + dateNotes).filter { it.isNotBlank() }) {
+                    if (length >= MAX_NOTE_LENGTH) break
+                    if (isNotEmpty()) append('\n')
+                    append(part)
+                }
+            }.ifEmpty { null }?.take(MAX_NOTE_LENGTH),
             parentIds = parents.getValue(xref),
             partnerIds = partners.getValue(xref),
             birthName = birthName,
