@@ -96,9 +96,10 @@ class TrashService(
         return expired.count { purge(it.id, actor = null, reason = "expired") }
     }
 
-    // 409 NAME_TAKEN, which says so when the trash holds the name, since nobody else can see that family.
+    // 409 NAME_TAKEN, which says so when the caller's own trash holds the name, since they cannot see that family.
     fun nameTaken(name: String?): ApiProblem {
-        val inTrash = name != null && familyRepository.existsByNameIgnoreCaseAndDeletedAtIsNotNull(name.trim())
+        val creator = CurrentUser.current()?.email?.normalizedEmail()
+        val inTrash = name != null && familyRepository.existsByCreatedByAndNameIgnoreCaseAndDeletedAtIsNotNull(creator, name.trim())
         return ApiProblem(ProblemCode.NAME_TAKEN, if (inTrash) "A family with this name is in the trash; restore it or remove it for good first." else null)
     }
 

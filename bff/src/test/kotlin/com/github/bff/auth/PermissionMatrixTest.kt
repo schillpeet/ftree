@@ -243,7 +243,7 @@ class PermissionMatrixTest {
         assertEquals(0, jdbc.queryForObject("SELECT count(*) FROM users WHERE email = 'owner@example.com'", Int::class.java))
         assertEquals(
             1,
-            jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'user.deleted' AND target_id = 'owner@example.com'", Int::class.java),
+            jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'user.deleted' AND target_id = ?", Int::class.java, "deleted-${owner.toString().take(8)}"),
         )
     }
 

@@ -16,9 +16,9 @@ class FamilyEntity(
     var id: UUID = UUID.randomUUID(),
     @Column(nullable = false, length = 100)
     var name: String,
-    // Names the family in the access file; set once from the name and kept on rename. FamilyService picks a free one.
+    // The family's URL segment, also used by the access file; random and fixed for good. FamilyService picks a free one.
     @Column(nullable = false, updatable = false, length = MAX_SLUG_LENGTH)
-    var slug: String = slugOf(name),
+    var slug: String = randomSlug(),
     @Column(nullable = false, updatable = false)
     var createdAt: Instant = Instant.now(),
     // The trimmed, lowercased email of who created the family; null for families from before V18.
