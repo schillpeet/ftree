@@ -599,7 +599,8 @@ Merging the release PR updates `CHANGELOG.md` and creates the tag and GitHub rel
 Each published release triggers `.github/workflows/readme-preview.yml`, which starts the stack with the fictional demo family from `docs/preview/demo.ged` and attaches a `preview.png` screenshot to the release; the README embeds the latest release's preview, and the workflow can be run manually for an existing tag.
 Release PRs are titled `chore(repo): release X.Y.Z` (`pull-request-title-pattern`) so they pass the PR-title check, and are created with the fine-grained personal access token in the `RELEASE_PLEASE_TOKEN` secret (this repository only; Contents and Pull requests read/write), because PRs opened with `GITHUB_TOKEN` do not trigger workflows and their required checks would never run.
 
-Pull requests are squash-merged, so the PR title becomes the only commit message release-please sees for that PR; individual commits on the PR branch do not become separate changelog entries.
+Pull requests are squash-merged by default, so the PR title becomes the only commit message release-please sees for that PR.
+A PR with several independently releasable commits is merged with "Rebase and merge" instead, so each conventional commit lands on `main` and becomes its own changelog entry.
 Every independently releasable feature or fix must therefore have its own PR, with an accurate, lowercase Conventional Commit title such as `feat(ui): add family visibility toggle` or `fix(repo): manage local services`.
 Do not bundle independent features into one PR or expect their branch commits to preserve separate release notes.
 The PR-title workflow rejects titles that do not follow the lowercase `<type>(<scope>): <message>` convention.
