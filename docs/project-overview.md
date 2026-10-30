@@ -14,7 +14,8 @@ Selecting a member in the list moves the camera to their card (for the scrolls i
 The zoom slider in the Evolution panel, with its − and + steps, zooms in and out alongside mouse wheel and trackpad pinch.
 Below the zoom slider, "Front" flies the camera back to the start view in front of the tree and "Above" shows the tree from a bird's-eye view.
 "Orbit" circles the camera slowly around the tree until it is switched off, another view is chosen, or the user moves the camera.
-The UI is available in English (default) and German; the language button next to "Time" switches between them, and the choice is remembered per browser in `localStorage`.
+The UI is available in English and German; without a remembered choice it follows the browser language (German for `de`, English otherwise), the language button next to "Time" switches between them, and the choice is remembered per browser in `localStorage`.
+The page sets `<html lang>` to the shown language and `translate="no"`, so browsers do not machine-translate the texts the app already provides.
 The burger menu's "Appearance" board switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
 The burger menu's entries are "Familien", "Mitglied hinzufügen", "Darstellung", and "Momentaufnahme", with a people, an add-person, a palette, and a camera icon.
 The burger menu's "Momentaufnahme" ("Snapshot") entry downloads the current view as `ftree-<family>-<yyyy-mm-dd>.png`, showing only the scene and the family name, without any controls.

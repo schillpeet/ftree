@@ -1,6 +1,6 @@
 'use client';
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 
 // All UI texts; `de` has to provide every key of `en`. Texts with values are functions.
 const en = {
@@ -1117,10 +1117,13 @@ export const onStorage = (listener: () => void) => {
   return () => window.removeEventListener('storage', listener);
 };
 
-// Remembered per browser; the server render has no localStorage and starts in English.
+// Remembered per browser, else the browser's language; the server render has no localStorage and starts in English.
 export function useLanguage() {
-  const saved = useSyncExternalStore(onStorage, () => localStorage.getItem(LANGUAGE_KEY), () => null);
+  const saved = useSyncExternalStore(onStorage, () => localStorage.getItem(LANGUAGE_KEY) ?? navigator.language.slice(0, 2), () => null);
   const language: Language = saved === 'de' ? 'de' : 'en';
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
   const setLanguage = (next: Language) => {
     localStorage.setItem(LANGUAGE_KEY, next);
     // `storage` only fires in other tabs; tell this one too.
