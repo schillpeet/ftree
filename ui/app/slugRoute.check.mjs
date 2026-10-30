@@ -1,6 +1,6 @@
 // Run with `node app/slugRoute.check.mjs`: which tree a URL opens, where `/` leads, and the switcher's entries.
 import assert from 'node:assert/strict';
-import { RESERVED_SLUGS, familyOfSlug, firstFamily, homePath, isTreeSlug, pathOf, switcherEntries } from './slugRoute.ts';
+import { RESERVED_SLUGS, emptyTreeOf, familyOfSlug, firstFamily, homePath, isTreeSlug, pathOf, switcherEntries } from './slugRoute.ts';
 
 const marina = { id: 'm', name: 'Marina', slug: 'marina' };
 const other = { id: 'o', name: 'Schiller', slug: 'schiller-2' };
@@ -47,3 +47,12 @@ assert.deepEqual(
   switcherEntries([marina], null).map((entry) => entry.active),
   [false],
 );
+
+// The empty state: no tree at `/`, or an open tree without people; nothing while loading or when people exist.
+assert.equal(emptyTreeOf([], undefined, null, null), 'noTree');
+assert.equal(emptyTreeOf(null, undefined, null, null), null);
+assert.equal(emptyTreeOf([], 'marina', null, null), null);
+assert.equal(emptyTreeOf([marina], undefined, null, null), null);
+assert.equal(emptyTreeOf([marina], 'marina', marina, []), 'noPeople');
+assert.equal(emptyTreeOf([marina], 'marina', marina, null), null);
+assert.equal(emptyTreeOf([marina], 'marina', marina, [{ id: 'p' }]), null);

@@ -7,9 +7,13 @@ import type { FamilySummary } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance } from './appearance';
 import { PUBLIC_APPEARANCE } from './access';
 import { useT } from './i18n';
-import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, PaletteIcon, SettingsIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
+import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, MailIcon, PaletteIcon, SettingsIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
 import TreeSwitcher from './TreeSwitcher';
 import { Can, useCan, useMe, useMeLoaded } from './Permissions';
+
+// TODO(owner): set NEXT_PUBLIC_FEEDBACK_EMAIL at build time to the address testers should write to; the placeholder
+// below only keeps the link working until then.
+const FEEDBACK_EMAIL = process.env.NEXT_PUBLIC_FEEDBACK_EMAIL || 'feedback@example.com';
 
 export type DashboardPanel = 'profile' | 'families' | 'appearance';
 
@@ -130,6 +134,10 @@ export default function Dashboard({
               <CameraIcon />
               <span>{t.menu.snapshot}</span>
             </button>
+            <a className="dashboard-nav-item" href={`mailto:${FEEDBACK_EMAIL}?subject=ftree%20Feedback`}>
+              <MailIcon />
+              <span>{t.menu.feedback}</span>
+            </a>
           </nav>
         )}
         {isOpen && panel === 'profile' && (

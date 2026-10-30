@@ -38,3 +38,16 @@ export function switcherEntries(families: readonly Family[], activeId: string | 
     .sort((a, b) => a.name.localeCompare(b.name))
     .map((family) => ({ id: family.id, name: family.name, href: pathOf(family), active: family.id === activeId }));
 }
+
+// What a blank start shows instead of an empty board: 'noTree' at `/` while no tree is visible at all, 'noPeople' for an
+// open tree without members, null otherwise (still loading, a failed load, or a tree with people).
+export function emptyTreeOf(
+  families: readonly Family[] | null,
+  slug: string | undefined,
+  active: Family | null,
+  members: readonly unknown[] | null,
+): 'noTree' | 'noPeople' | null {
+  if (families?.length === 0 && slug === undefined) return 'noTree';
+  if (active && members?.length === 0) return 'noPeople';
+  return null;
+}
