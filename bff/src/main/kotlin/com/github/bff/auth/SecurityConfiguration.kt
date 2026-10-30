@@ -1,5 +1,6 @@
 package com.github.bff.auth
 
+import com.github.bff.auth.Permission.DEV_TOOLS
 import com.github.bff.auth.Permission.FAMILY_CREATE
 import com.github.bff.auth.Permission.FAMILY_DELETE
 import com.github.bff.auth.Permission.FAMILY_EDIT
@@ -122,7 +123,9 @@ class SecurityConfiguration(
                 ).access(inFamily(TREE_VIEW))
                 // Before PUT /families/{familyId}, which would match "order" as a family id.
                 it.requestMatchers(PUT, "/families/order").hasAuthority(FAMILY_MANAGE.key)
-                it.requestMatchers(POST, "/families", "/families/empty", "/families/import").hasAuthority(FAMILY_CREATE.key)
+                // Generating test families is a dev tool; every user may create empty trees and import GEDCOM.
+                it.requestMatchers(POST, "/families").hasAuthority(DEV_TOOLS.key)
+                it.requestMatchers(POST, "/families/empty", "/families/import").hasAuthority(FAMILY_CREATE.key)
                 it.requestMatchers(POST, "/families/*/archive", "/families/*/anonymize").hasAuthority(FAMILY_MANAGE.key)
                 it.requestMatchers(DELETE, "/families/{familyId}").access(inFamily(FAMILY_DELETE))
                 it.requestMatchers(PUT, "/families/{familyId}", "/families/{familyId}/photo", "/families/{familyId}/photo-fit")

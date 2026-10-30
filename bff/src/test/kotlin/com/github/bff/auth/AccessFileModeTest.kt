@@ -142,31 +142,33 @@ class AccessFileModeTest {
 
     @Test
     fun `whoever creates an empty tree owns it, and only they and admins see it`() {
-        createEmpty("father@example.com").andExpect { status { isForbidden() } }
-        val json = createEmpty("friend@example.com").andExpect {
+        // No flag needed: every signed-in user may create trees.
+        val json = createEmpty("father@example.com").andExpect {
             status { isCreated() }
             jsonPath("$.memberCount") { value(0) }
             jsonPath("$.role") { value("owner") }
         }.andReturn().response.contentAsString
         val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
 
-        assertEquals("owner", families("friend@example.com")[own])
-        assertEquals(null, families("father@example.com")[own])
+        assertEquals("owner", families("father@example.com")[own])
+        assertEquals(null, families("friend@example.com")[own])
         assertEquals("admin", families("admin@example.com")[own])
     }
 
     @Test
-    fun `me tells admins and tree creators apart and gives everyone the appearance`() {
+    fun `me gives everyone the appearance and creating trees, and the dev tools only to flag holders`() {
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "father@example.com")) }.andExpect {
             jsonPath("$.admin") { value(false) }
             jsonPath("$.canCreateTrees") { value(false) }
-            jsonPath("$.permissions.length()") { value(1) }
+            jsonPath("$.permissions.length()") { value(2) }
             jsonPath("$.permissions[0]") { value("tree.appearance") }
+            jsonPath("$.permissions[1]") { value("family.create") }
         }
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "friend@example.com")) }.andExpect {
             jsonPath("$.canCreateTrees") { value(true) }
             jsonPath("$.permissions.length()") { value(3) }
             jsonPath("$.permissions[1]") { value("family.create") }
+            jsonPath("$.permissions[2]") { value("dev.tools") }
         }
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "admin@example.com")) }
             .andExpect { jsonPath("$.admin") { value(true) } }

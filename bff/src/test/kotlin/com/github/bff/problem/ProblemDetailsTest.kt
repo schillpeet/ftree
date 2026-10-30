@@ -79,11 +79,12 @@ class ProblemDetailsTest {
 
     @Test
     fun `a missing permission is forbidden`() {
-        mockMvc.post("/families/empty") {
+        // Generating test families needs dev.tools, which a plain user lacks.
+        mockMvc.post("/families") {
             header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "visitor@example.com"))
             contentType = MediaType.APPLICATION_JSON
             content = """{"name":"Forbidden"}"""
-        }.problem(ProblemCode.FORBIDDEN, 403, "/families/empty")
+        }.problem(ProblemCode.FORBIDDEN, 403, "/families")
     }
 
     @Test

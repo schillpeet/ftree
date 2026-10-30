@@ -1885,7 +1885,7 @@ components:
           description: True for admins, who are admins in every family.
         canCreateTrees:
           type: boolean
-          description: True for people who may create trees, becoming the owner of each tree they create; admins may always.
+          description: True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both.
         permissions:
           type: array
           description: The permissions outside any family; admins have every permission.

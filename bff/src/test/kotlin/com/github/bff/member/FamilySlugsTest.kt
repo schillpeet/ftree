@@ -34,4 +34,11 @@ class FamilySlugsTest {
         val long = "a".repeat(MAX_SLUG_LENGTH)
         assertEquals("a".repeat(MAX_SLUG_LENGTH - 2) + "-2", uniqueSlug(long, setOf(long)::contains))
     }
+
+    @Test
+    fun `skips the slugs of the ui's own routes`() {
+        assertEquals("terms-2", uniqueSlug("Terms", setOf<String>()::contains))
+        assertEquals("privacy-2", uniqueSlug("Privacy", setOf<String>()::contains))
+        assertEquals("admin-3", uniqueSlug("Admin", setOf("admin-2")::contains))
+    }
 }

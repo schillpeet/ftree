@@ -37,7 +37,7 @@ class CapacityLimitsTest {
     fun tearDown() = SecurityContextHolder.clearContext()
 
     @Test
-    fun `a non-admin owns at most five trees outside the trash, test families included`() {
+    fun `a plain user owns at most five trees outside the trash, test families included`() {
         signIn(admin = false)
         val first = (familyService.create(CreateFamilyRequest(name(), 1, 1, 0, 0)) as FamilyCreationResult.CREATED).summary
         repeat(MAX_OWNED_TREES - 1) { assertTrue(familyService.createEmpty(CreateEmptyFamilyRequest(name())) is FamilyCreationResult.CREATED) }
@@ -70,7 +70,7 @@ class CapacityLimitsTest {
     }
 
     private fun signIn(admin: Boolean) {
-        val access = Access(admin = admin, canCreateTrees = true)
+        val access = Access(admin = admin)
         SecurityContextHolder.getContext().authentication =
             CurrentUserAuthentication(CurrentUser("limits-${UUID.randomUUID()}@example.com", access, verified = true))
     }

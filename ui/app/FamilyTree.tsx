@@ -31,7 +31,8 @@ import TreeNotFound from './TreeNotFound';
 
 // Shares the members between the scene's scrolls and the list/form overlay. Rendered by the `(tree)` layout, so it
 // stays mounted while the URL switches between trees; the open tree is the one the URL's slug names.
-export default function FamilyTree() {
+// `operatorEmail` is the operator's address from the server's environment, read at request time; unset, no feedback link.
+export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }) {
   const t = useT();
   const me = useMe();
   const router = useRouter();
@@ -240,6 +241,7 @@ export default function FamilyTree() {
         panel={panel}
         families={families}
         activeFamilyId={activeFamilyId}
+        feedbackEmail={operatorEmail}
         onToggle={() => {
           setIsMenuOpen((open) => !open);
           setPanel(null);

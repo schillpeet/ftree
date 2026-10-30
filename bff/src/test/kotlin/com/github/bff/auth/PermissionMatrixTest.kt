@@ -1,6 +1,7 @@
 package com.github.bff.auth
 
 import com.github.bff.auth.CloudflareTestTokens.token
+import com.github.bff.auth.Permission.DEV_TOOLS
 import com.github.bff.auth.Permission.FAMILY_CREATE
 import com.github.bff.auth.Permission.FAMILY_DELETE
 import com.github.bff.auth.Permission.FAMILY_EDIT
@@ -74,7 +75,7 @@ class PermissionMatrixTest {
         Endpoint(DELETE, "/families/$family/photo", FAMILY_EDIT),
         Endpoint(PUT, "/families/$family/photo-fit", FAMILY_EDIT, MediaType.APPLICATION_JSON),
         Endpoint(DELETE, "/families/$family/members/$member", MEMBER_DELETE),
-        Endpoint(POST, "/families", FAMILY_CREATE, MediaType.APPLICATION_JSON),
+        Endpoint(POST, "/families", DEV_TOOLS, MediaType.APPLICATION_JSON),
         Endpoint(PUT, "/families/order", FAMILY_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/empty", FAMILY_CREATE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/families/import", FAMILY_CREATE, MediaType.APPLICATION_JSON),
@@ -135,11 +136,11 @@ class PermissionMatrixTest {
         val users = mapOf(
             "visitor@example.com" to Role.VISITOR.permissions + Access.NONE.permissions,
             "editor@example.com" to Role.EDITOR.permissions + Access.NONE.permissions,
-            // Tree owners: an editor's rights plus deleting members and the tree, and sharing it (family.share), but
-            // nothing outside their tree, so neither creating trees nor any admin endpoint.
+            // Tree owners: an editor's rights plus deleting members and the tree, and sharing it (family.share); outside
+            // their tree only what everyone has (creating trees, but neither dev tools nor any admin endpoint).
             "owner@example.com" to Role.OWNER.permissions + Access.NONE.permissions,
-            // can_create_trees replaces the global developer role: creating trees and the dev tools, nothing more in a
-            // tree they only visit.
+            // can_create_trees now only adds the dev tools (generating test families), nothing more in a tree they
+            // only visit.
             "creator@example.com" to Role.VISITOR.permissions + Access(admin = false, canCreateTrees = true).permissions,
             "admin@example.com" to Permission.entries.toSet(),
         )
@@ -155,24 +156,30 @@ class PermissionMatrixTest {
         assertEquals(emptyList(), mismatches)
     }
 
-    // Tree owners, which replace the global developer role: their rights end at their own tree, and whoever creates a
-    // tree (can_create_trees) becomes its owner.
+    // Tree owners, which replace the global developer role: their rights end at their own tree, and whoever creates or
+    // imports a tree, any signed-in user without a flag, becomes its owner.
     @Test
     fun `owners act only in their own tree, and creating a tree makes its owner`() {
         visibleFamily()
         val other = familyRepository.saveAndFlush(FamilyEntity(name = "Matrix other ${UUID.randomUUID()}")).id
         assertEquals(404, status(Endpoint(DELETE, "/families/$other", FAMILY_DELETE), "owner@example.com"))
 
-        memberships.grantFlags("creator@example.com", admin = false, canCreateTrees = true, grantedBy = null)
-        val json = mockMvc.perform(
-            request(POST, "/families/empty")
-                .header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "creator@example.com"))
+        fun create(path: String, body: String) = mockMvc.perform(
+            request(POST, path)
+                .header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "plain@example.com"))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"name":"Matrix own ${UUID.randomUUID()}"}"""),
-        ).andReturn().response.contentAsString
-        assertEquals("owner", Regex(""""role":"(\w+)"""").find(json)?.groupValues?.get(1), json)
-        val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
-        assertEquals(204, status(Endpoint(DELETE, "/families/$own", FAMILY_DELETE), "creator@example.com"))
+                .content(body),
+        ).andReturn().response
+        listOf(
+            create("/families/empty", """{"name":"Matrix own ${UUID.randomUUID()}"}"""),
+            create("/families/import", """{"name":"Matrix import ${UUID.randomUUID()}","gedcom":"0 HEAD\n0 @I1@ INDI\n1 NAME A /B/\n0 TRLR"}"""),
+        ).forEach { response ->
+            val json = response.contentAsString
+            assertEquals(201, response.status, json)
+            assertEquals("owner", Regex(""""role":"(\w+)"""").find(json)?.groupValues?.get(1), json)
+            val own = Regex(""""id":"([0-9a-f-]{36})"""").find(json)!!.groupValues[1]
+            assertEquals(204, status(Endpoint(DELETE, "/families/$own", FAMILY_DELETE), "plain@example.com"))
+        }
     }
 
     // Access: an owner shares only their own tree, which another tree does not exist for, and editors and visitors may

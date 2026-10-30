@@ -11,10 +11,6 @@ import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, MailIcon, PaletteIcon, 
 import TreeSwitcher from './TreeSwitcher';
 import { Can, useCan, useMe, useMeLoaded } from './Permissions';
 
-// TODO(owner): set NEXT_PUBLIC_FEEDBACK_EMAIL at build time to the address testers should write to; the placeholder
-// below only keeps the link working until then.
-const FEEDBACK_EMAIL = process.env.NEXT_PUBLIC_FEEDBACK_EMAIL || 'feedback@example.com';
-
 export type DashboardPanel = 'profile' | 'families' | 'appearance';
 
 // Boards drawn here inside the menu, which closes with them on a press outside.
@@ -28,6 +24,7 @@ export default function Dashboard({
   panel,
   families,
   activeFamilyId,
+  feedbackEmail,
   onToggle,
   onPanel,
   onAddMember,
@@ -37,6 +34,8 @@ export default function Dashboard({
   panel: DashboardPanel | null;
   families: FamilySummary[] | null;
   activeFamilyId: string | null;
+  // The operator's address (`OPERATOR_EMAIL`); without it the menu has no "Feedback" entry.
+  feedbackEmail?: string;
   onToggle: () => void;
   onPanel: (panel: DashboardPanel) => void;
   onAddMember: () => void;
@@ -134,10 +133,12 @@ export default function Dashboard({
               <CameraIcon />
               <span>{t.menu.snapshot}</span>
             </button>
-            <a className="dashboard-nav-item" href={`mailto:${FEEDBACK_EMAIL}?subject=ftree%20Feedback`}>
-              <MailIcon />
-              <span>{t.menu.feedback}</span>
-            </a>
+            {feedbackEmail && (
+              <a className="dashboard-nav-item" href={`mailto:${feedbackEmail}?subject=ftree%20Feedback`}>
+                <MailIcon />
+                <span>{t.menu.feedback}</span>
+              </a>
+            )}
           </nav>
         )}
         {isOpen && panel === 'profile' && (

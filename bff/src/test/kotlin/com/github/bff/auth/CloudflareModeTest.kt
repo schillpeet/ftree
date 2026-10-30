@@ -33,8 +33,9 @@ class CloudflareModeTest {
         listOf("editor@example.com", "someone@example.com").forEach { email ->
             me(token(email = email)).andExpect {
                 jsonPath("$.admin") { value(false) }
-                jsonPath("$.permissions.length()") { value(1) }
+                jsonPath("$.permissions.length()") { value(2) }
                 jsonPath("$.permissions[0]") { value("tree.appearance") }
+                jsonPath("$.permissions[1]") { value("family.create") }
             }
         }
     }

@@ -9,13 +9,14 @@ data class Access(
     val canCreateTrees: Boolean = false,
     val memberships: Map<UUID, Role> = emptyMap(),
 ) {
-    // Permissions outside any family: everyone may change how the tree looks, people who may create trees may also
-    // create families (test families with the dev tools included), and admins may do everything.
+    // Permissions outside any family: everyone may change how the tree looks and create trees (capped by
+    // MAX_OWNED_TREES), canCreateTrees (users.can_create_trees) adds the dev tools that generate test families, and
+    // admins may do everything.
     val permissions: Set<Permission>
         get() = when {
             admin -> Permission.entries.toSet()
             canCreateTrees -> setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE, Permission.DEV_TOOLS)
-            else -> setOf(Permission.TREE_APPEARANCE)
+            else -> setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE)
         }
 
     companion object {
