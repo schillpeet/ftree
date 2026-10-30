@@ -12,8 +12,7 @@
 
 ### Dependencies
 
-* **ui:** bump eslint-config-next from 16.4.2 to 16.4.3 in /ui ([#264](https://github.com/schillpeet/ftree/issues/264)) ([dee400f](https://github.com/schillpeet/ftree/commit/dee400fd1880f997eb9375a24897a1c7d9ea7e94))
-* **ui:** bump next from 16.4.2 to 16.4.3 in /ui ([#263](https://github.com/schillpeet/ftree/issues/263)) ([6949919](https://github.com/schillpeet/ftree/commit/694991943e8c2aec0febbeb8781beeec30939b98))
+* update dependencies with dependabot ([#263](https://github.com/schillpeet/ftree/issues/263), [#264](https://github.com/schillpeet/ftree/issues/264))
 
 ## [0.29.0](https://github.com/schillpeet/ftree/compare/v0.28.0...v0.29.0) (2026-10-30)
 
