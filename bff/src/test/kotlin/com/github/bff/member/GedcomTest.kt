@@ -1,9 +1,12 @@
 package com.github.bff.member
 
 import com.github.bff.generated.model.ParentLink.KindEnum
+import com.github.bff.generated.model.ProblemCode
+import com.github.bff.problem.ApiProblem
 import java.time.LocalDate
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -102,9 +105,9 @@ class GedcomTest {
     }
 
     @Test
-    fun `rejects too many people and malformed levels without throwing`() {
+    fun `rejects too many people and reads malformed levels as no gedcom`() {
         val twoPeople = "0 HEAD\n0 @I1@ INDI\n0 @I2@ INDI"
-        assertNull(parseGedcom(twoPeople, maxPeople = 1))
+        assertEquals(ProblemCode.MEMBER_LIMIT_REACHED, assertFailsWith<ApiProblem> { parseGedcom(twoPeople, maxPeople = 1) }.code)
         assertEquals(2, parseGedcom(twoPeople, maxPeople = 2)?.size)
         assertNull(parseGedcom("0 HEAD\n99999999999 @I1@ INDI"))
     }

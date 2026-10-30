@@ -237,15 +237,15 @@ class FamilyServiceTest {
     }
 
     @Test
-    fun `imports a chain of 250 generations`() {
+    fun `imports a chain of 100 generations`() {
         val gedcom = buildString {
             append("0 HEAD\n")
-            repeat(250) { append("0 @I$it@ INDI\n1 NAME Person$it /Kette/\n") }
-            repeat(249) { append("0 @F$it@ FAM\n1 HUSB @I$it@\n1 CHIL @I${it + 1}@\n") }
+            repeat(MAX_MEMBERS_PER_FAMILY) { append("0 @I$it@ INDI\n1 NAME Person$it /Kette/\n") }
+            repeat(MAX_MEMBERS_PER_FAMILY - 1) { append("0 @F$it@ FAM\n1 HUSB @I$it@\n1 CHIL @I${it + 1}@\n") }
             append("0 TRLR")
         }
         val result = familyService.import(ImportFamilyRequest("Kette ${UUID.randomUUID()}", gedcom))
-        assertEquals(250, (result as FamilyImportResult.IMPORTED).summary.generationCount)
+        assertEquals(MAX_MEMBERS_PER_FAMILY, (result as FamilyImportResult.IMPORTED).summary.generationCount)
     }
 
     @Test

@@ -12,10 +12,12 @@ import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ImportFamilyRequest
 import com.github.bff.generated.model.ParentLink.KindEnum
 import com.github.bff.generated.model.PhotoFit
+import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.TestFamilySettings
 import com.github.bff.live.TreeEvent
+import com.github.bff.problem.ApiProblem
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
@@ -61,7 +63,7 @@ class FamilyService(
         val maxChildren = request.maxChildren ?: return FamilyCreationResult.INVALID
         if (
             name.isEmpty() || name.length > 100 ||
-            totalUsers !in 1..250 ||
+            totalUsers !in 1..MAX_MEMBERS_PER_FAMILY ||
             generationCount !in 1..10 ||
             minChildren !in 0..3 ||
             maxChildren !in minChildren..3
@@ -131,8 +133,8 @@ class FamilyService(
         if (name.isEmpty() || name.length > 100) return FamilyImportResult.INVALID
         val gedcom = request.gedcom.orEmpty()
         if (gedcom.length > MAX_GEDCOM_LENGTH) return FamilyImportResult.INVALID
-        val people = parseGedcom(gedcom, MAX_IMPORTED_PEOPLE) ?: return FamilyImportResult.INVALID
-        if (people.isEmpty() || people.size > MAX_IMPORTED_PEOPLE) return FamilyImportResult.INVALID
+        val people = parseGedcom(gedcom, MAX_MEMBERS_PER_FAMILY) ?: return FamilyImportResult.INVALID
+        if (people.isEmpty()) return FamilyImportResult.INVALID
         val ids = people.associate { it.id to UUID.randomUUID() }
         if (hasCycle(people.associate { person -> ids.getValue(person.id) to person.parentIds.map(ids::getValue).toSet() })) {
             return FamilyImportResult.INVALID
@@ -342,11 +344,17 @@ class FamilyService(
 
     private fun creator() = CurrentUser.current()?.email?.normalizedEmail()
 
-    // Whoever creates a family becomes its owner.
-    private fun saveNew(family: FamilyEntity): FamilyEntity =
-        familyRepository.saveAndFlush(family).also { saved ->
-            saved.createdBy?.let { memberships.grant(saved.id, it, Role.OWNER, it) }
+    // Whoever creates a family becomes its owner; non-admins own at most MAX_OWNED_TREES outside the trash.
+    // ponytail: count-then-insert, so two parallel creations can both pass at the limit; lock the user row if that matters.
+    private fun saveNew(family: FamilyEntity): FamilyEntity {
+        val owner = family.createdBy
+        if (owner != null && CurrentUser.current()?.access?.admin != true && familyRepository.countOwnedBy(owner) >= MAX_OWNED_TREES) {
+            throw ApiProblem(ProblemCode.TREE_LIMIT_REACHED)
         }
+        return familyRepository.saveAndFlush(family).also { saved ->
+            owner?.let { memberships.grant(saved.id, it, Role.OWNER, it) }
+        }
+    }
 
     private fun FamilyEntity.toSummary(members: List<MemberEntity>, photoUpdatedAt: OffsetDateTime? = null) = FamilySummary().apply {
         id = this@toSummary.id
@@ -384,9 +392,12 @@ class FamilyService(
 }
 
 internal const val DEFAULT_FAMILY_NAME = "default"
-private const val MAX_IMPORTED_PEOPLE = 2000
 // Bounds the parser's memory on the single BFF pod; the API schema allows longer text.
 private const val MAX_GEDCOM_LENGTH = 5 * 1024 * 1024
+
+// Capacity caps for one BFF pod: trees a non-admin may own, and people per tree (imports and test families included).
+const val MAX_OWNED_TREES = 5
+const val MAX_MEMBERS_PER_FAMILY = 100
 
 sealed interface FamilyCreationResult {
     data class CREATED(val summary: FamilySummary) : FamilyCreationResult

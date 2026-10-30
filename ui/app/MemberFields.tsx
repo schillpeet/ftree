@@ -5,6 +5,7 @@ import { createFamilyMember, uploadFamilyMemberPhoto, type CreateMemberRequest, 
 import { useT } from './i18n';
 import { splitName } from './names';
 import { CENTRE, clampOffset, placeBeside, type Offset } from './panelPosition';
+import { problemCode } from './problems';
 import { Avatar, PanelShell } from './PersonPanel';
 import RelationLink from './RelationLink';
 
@@ -257,7 +258,7 @@ export function NewMemberPanel({
     try {
       const response = await createFamilyMember(familyId, toRequest(form, null));
       if (response.status !== 201) {
-        setError(t.members.createFailed);
+        setError(problemCode(response.data) === 'MEMBER_LIMIT_REACHED' ? t.memberLimit : t.members.createFailed);
         return;
       }
       let saved = response.data;

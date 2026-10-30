@@ -4,9 +4,10 @@ import { useMemo, useState, type FormEvent } from 'react';
 import { createFamily, type FamilySummary } from '../lib/api/generated/members';
 import { CloseIcon, DiceIcon } from './icons';
 import { useT } from './i18n';
+import { problemCode } from './problems';
 import { planTestFamily } from './testFamilyPlan';
 
-const MAX_PERSONS = 250;
+const MAX_PERSONS = 100;
 const MAX_GENERATIONS = 10;
 const MAX_CHILDREN = 3;
 
@@ -59,7 +60,7 @@ export default function RandomFamilyPanel({
         maxChildren,
       });
       if (response.status === 409) {
-        setError(t.random.exists);
+        setError(problemCode(response.data) === 'TREE_LIMIT_REACHED' ? t.treeLimit : t.random.exists);
         return;
       }
       if (response.status !== 201) {

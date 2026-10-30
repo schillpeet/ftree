@@ -18,6 +18,8 @@
  * - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
  * - `SEATS_EXHAUSTED` (409): every Cloudflare Access seat is taken, so nobody new can be given access.
  * - `USER_OWNS_TREES` (409): the person is the only owner of trees, which need a new owner before the person can be deleted.
+ * - `TREE_LIMIT_REACHED` (409): the caller already owns the most trees a non-admin may own (5, trash excluded).
+ * - `MEMBER_LIMIT_REACHED` (409): the tree would hold more than 100 people.
  * - `PHOTO_TOO_LARGE` (413): the photo is too large.
  * - `UNSUPPORTED_MEDIA_TYPE` (415): the body's content type is not accepted.
  * - `INTERNAL_ERROR` (500): an unexpected error on the server.
@@ -38,6 +40,8 @@ export const ProblemCode = {
   EDIT_CONFLICT: 'EDIT_CONFLICT',
   SEATS_EXHAUSTED: 'SEATS_EXHAUSTED',
   USER_OWNS_TREES: 'USER_OWNS_TREES',
+  TREE_LIMIT_REACHED: 'TREE_LIMIT_REACHED',
+  MEMBER_LIMIT_REACHED: 'MEMBER_LIMIT_REACHED',
   PHOTO_TOO_LARGE: 'PHOTO_TOO_LARGE',
   UNSUPPORTED_MEDIA_TYPE: 'UNSUPPORTED_MEDIA_TYPE',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
@@ -456,7 +460,7 @@ export interface CreateFamilyRequest {
   name: string;
   /**
      * @minimum 1
-     * @maximum 250
+     * @maximum 100
      */
   totalUsers: number;
   /**

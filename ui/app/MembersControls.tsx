@@ -24,6 +24,7 @@ import { initialsOf, nameOf } from './names';
 import { dateProblem } from './partnerships';
 import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
+import { problemCode } from './problems';
 import RelativesFields, { type Relation } from './RelativesFields';
 import { EMPTY_FORM, MemberHero, MemberLifeFields, NewMemberPanel, toForm, toJpeg, toRequest, usePhotoPreview, type MemberForm } from './MemberFields';
 import type { Focus } from './Scene';
@@ -326,7 +327,7 @@ export default function MembersControls({
       } else {
         const response = await createFamilyMember(familyId, request);
         if (response.status !== 201) {
-          setFormError(t.members.createFailed);
+          setFormError(problemCode(response.data) === 'MEMBER_LIMIT_REACHED' ? t.memberLimit : t.members.createFailed);
           return;
         }
         saved = response.data;

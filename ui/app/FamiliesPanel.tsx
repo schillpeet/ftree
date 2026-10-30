@@ -85,6 +85,8 @@ export default function FamiliesPanel({
       if (response.status !== 201) {
         const code = problemCode(response.data);
         if (code === 'NAME_TAKEN') return setImportError(t.familyExists(name));
+        if (code === 'TREE_LIMIT_REACHED') return setImportError(t.treeLimit);
+        if (code === 'MEMBER_LIMIT_REACHED') return setImportError(t.memberLimit);
         if (code === 'INVALID_REQUEST' || code === 'VALIDATION_FAILED') return setImportError(t.families.importInvalid);
         throw new Error('Unexpected import response');
       }

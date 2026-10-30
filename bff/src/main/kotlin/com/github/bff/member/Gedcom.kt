@@ -1,6 +1,8 @@
 package com.github.bff.member
 
 import com.github.bff.generated.model.ParentLink.KindEnum
+import com.github.bff.generated.model.ProblemCode
+import com.github.bff.problem.ApiProblem
 import java.time.DateTimeException
 import java.time.LocalDate
 
@@ -61,8 +63,8 @@ private fun GedcomLine?.nameParts(): Pair<String, String> {
 
 /**
  * Reads people, partners (HUSB/WIFE of a FAM) and parents (its CHIL) from a GEDCOM 5.5.1 or 7 file.
- * Unknown tags and references to missing records are ignored. Null when the text is not GEDCOM, or has more than
- * [maxPeople] people or [MAX_LINES] lines.
+ * Unknown tags and references to missing records are ignored. Null when the text is not GEDCOM or has more than
+ * [MAX_LINES] lines; more than [maxPeople] people answer MEMBER_LIMIT_REACHED before any person is built.
  */
 internal fun parseGedcom(text: String, maxPeople: Int = Int.MAX_VALUE): List<GedcomPerson>? {
     val records = mutableListOf<GedcomLine>()
@@ -82,7 +84,7 @@ internal fun parseGedcom(text: String, maxPeople: Int = Int.MAX_VALUE): List<Ged
         open.addLast(line)
     }
     if (records.firstOrNull()?.tag != "HEAD") return null
-    if (records.count { it.tag == "INDI" && it.xref != null } > maxPeople) return null
+    if (records.count { it.tag == "INDI" && it.xref != null } > maxPeople) throw ApiProblem(ProblemCode.MEMBER_LIMIT_REACHED)
 
     val byXref = records.filter { it.xref != null }.associateBy { it.xref }
     val individuals = records.filter { it.tag == "INDI" && it.xref != null }.associateBy { it.xref!! }
