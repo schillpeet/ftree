@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.29.0](https://github.com/schillpeet/ftree/compare/v0.28.0...v0.29.0) (2026-10-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* **bff:** limit trees per user and people per tree
+
+### Features
+
+* **bff:** limit trees per user and people per tree ([3981c03](https://github.com/schillpeet/ftree/commit/3981c030c6c12229e2110cc48bae19409209d2ec))
+* **repo:** add setup script and contributing guide ([#257](https://github.com/schillpeet/ftree/issues/257)) ([9aac7ca](https://github.com/schillpeet/ftree/commit/9aac7ca4f3016b6484c88bf312ecbd65f1295b7e))
+* **repo:** updates startscripts and readme ([#255](https://github.com/schillpeet/ftree/issues/255)) ([f74f342](https://github.com/schillpeet/ftree/commit/f74f3429d10d61c46301edcf06f5a4ebad8734cb))
+* **ui:** add empty tree onboarding and feedback link ([18d729d](https://github.com/schillpeet/ftree/commit/18d729d6438a1c0fce5df8ed0ecd6ad2f56298ae))
+* **ui:** add terms and privacy pages and let every user create trees ([#261](https://github.com/schillpeet/ftree/issues/261)) ([9332bcc](https://github.com/schillpeet/ftree/commit/9332bccf777cddf9b6e0ad2ee310522f7d19a084))
+
+
+### Bug Fixes
+
+* **bff:** bound gedcom import memory ([c59a598](https://github.com/schillpeet/ftree/commit/c59a598ce75404edbf413f3e421ea1342780501d))
+* **bff:** load members of visible families only ([#258](https://github.com/schillpeet/ftree/issues/258)) ([96eaffd](https://github.com/schillpeet/ftree/commit/96eaffdd3a38bb51136250d52ff1251c8a763fd0))
+
 ## [0.28.0](https://github.com/schillpeet/ftree/compare/v0.27.1...v0.28.0) (2026-10-27)
 
 
