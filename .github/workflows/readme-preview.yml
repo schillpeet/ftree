@@ -12,11 +12,13 @@ on:
         required: true
 
 permissions:
-  contents: write # gh release upload
+  contents: read
 
 jobs:
   preview:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write # gh release upload
     env:
       TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:

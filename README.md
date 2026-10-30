@@ -8,9 +8,10 @@
   <a href="https://github.com/schillpeet/ftree/actions/workflows/ci.yml"><img src="https://github.com/schillpeet/ftree/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://github.com/schillpeet/ftree/tags"><img src="https://img.shields.io/github/v/tag/schillpeet/ftree?sort=semver&label=version" alt="Version"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/schillpeet/ftree"><img src="https://api.scorecard.dev/projects/github.com/schillpeet/ftree/badge" alt="OpenSSF Scorecard"></a>
 </p>
 
-> **Early prototype.** Today, ftree shows a procedurally generated 3D tree in a meadow and lets you manage families, their members, and parent/child and partner links. Accounts and sharing are still to come.
+> **Early stage, tested by a small invited group.** ftree shows each family as a procedurally generated 3D tree in a meadow. Signed-in people create their own trees, add members with parent/child and partner links, import and export GEDCOM, and share a tree with others as editor or visitor.
 
 ![ftree preview with a demo family](https://github.com/schillpeet/ftree/releases/latest/download/preview.png)
 
@@ -109,7 +110,12 @@ The data lives in the Docker volume `ftree_postgres_data` and survives `./stop.s
 
 ## Contributing
 
-Branches, commit messages, and project conventions are described in [AGENTS.md](AGENTS.md). Commits follow [Conventional Commits](https://www.conventionalcommits.org), which drive automated releases.
+[CONTRIBUTING.md](CONTRIBUTING.md) describes the fork workflow, branches, commit messages, and how a change reaches `main`; commits follow [Conventional Commits](https://www.conventionalcommits.org), which drive automated releases.
+Coding agents read [AGENTS.md](AGENTS.md), which holds the project conventions.
+
+## Security
+
+Please do not report vulnerabilities in public issues; [SECURITY.md](SECURITY.md) explains how to report them privately.
 
 ## License
 
