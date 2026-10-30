@@ -56,7 +56,7 @@ class TrashTest {
     fun createFamily() {
         at("2026-01-01T12:00:00Z")
         name = "Trash ${UUID.randomUUID()}"
-        family = familyRepository.saveAndFlush(FamilyEntity(name = name)).id
+        family = familyRepository.saveAndFlush(FamilyEntity(name = name, createdBy = "admin@example.com")).id
         memberService.create(family, CreateMemberRequest("Erna", "Trash"))
     }
 
@@ -162,7 +162,7 @@ class TrashTest {
             jsonPath("$.detail") { value(org.hamcrest.Matchers.containsString("trash")) }
         }
 
-        val other = familyRepository.saveAndFlush(FamilyEntity(name = "Other ${UUID.randomUUID()}")).id
+        val other = familyRepository.saveAndFlush(FamilyEntity(name = "Other ${UUID.randomUUID()}", createdBy = "admin@example.com")).id
         mockMvc.put("/families/$other") {
             header(CLOUDFLARE_ACCESS_JWT_HEADER, admin)
             contentType = MediaType.APPLICATION_JSON

@@ -297,17 +297,24 @@ class FamilyServiceTest {
     }
 
     @Test
-    fun `gives every family a unique slug that survives a rename`() {
+    fun `gives every family a random slug that survives a rename`() {
         val name = "Slug test ${UUID.randomUUID()}"
         val first = (familyService.create(request(name)) as FamilyCreationResult.CREATED).summary
         familyService.rename(first.id, RenameFamilyRequest("Renamed ${UUID.randomUUID()}"))
-        val second = (familyService.create(request(name.uppercase().replace(' ', '_'))) as FamilyCreationResult.CREATED).summary
         familyRepository.flush()
 
-        assertEquals(slugOf(name), first.slug)
-        assertEquals("${slugOf(name)}-2", second.slug)
+        assertTrue(first.slug.matches(Regex("^[a-z0-9]{10}$")))
         assertEquals(first.slug, familyService.findAll().single { it.id == first.id }.slug)
-        assertTrue(familyRepository.findAll().all { it.slug.matches(Regex("^[a-z0-9]+(-[a-z0-9]+)*$")) })
+    }
+
+    @Test
+    fun `names are unique per creator only`() {
+        val name = "Shared name ${UUID.randomUUID()}"
+        familyRepository.saveAndFlush(FamilyEntity(name = name, createdBy = "someone-else@example.com"))
+
+        val mine = familyService.createEmpty(CreateEmptyFamilyRequest(name))
+        assertTrue(mine is FamilyCreationResult.CREATED)
+        assertEquals(FamilyCreationResult.NAME_TAKEN, familyService.createEmpty(CreateEmptyFamilyRequest(name.uppercase())))
     }
 
     private fun request(name: String = "Family test ${UUID.randomUUID()}") = CreateFamilyRequest(

@@ -67,8 +67,9 @@ class PeopleService(
         return users().single { it.id == userId }
     }
 
-    // Removes the person's roles and users row, which leaves the persons they created and the audit log's names alone.
-    // Trees that would lose their only owner stop it. The Access group sync, announced like any change of rights, drops
+    // Removes the person's roles and users row and replaces their email everywhere else it is kept (audit log, creators,
+    // grantors, inviters, who trashed a tree) with a pseudonym, so the deletion erases them (GDPR Art. 17); the people
+    // they entered in trees stay. Trees that would lose their only owner stop it; trash those first. The Access group sync, announced like any change of rights, drops
     // the address and ends the sessions of whoever has no seat left; ending them here as well is best effort, since the
     // person is gone either way.
     @Transactional
@@ -82,7 +83,14 @@ class PeopleService(
             throw ApiProblem(ProblemCode.USER_OWNS_TREES, properties = mapOf("trees" to owned.map { mapOf("familyId" to it.first, "familyName" to it.second) }))
         }
         jdbc.update("DELETE FROM users WHERE email = ?", email)
-        auditLog.record(actor, "user.deleted", "user", email)
+        val pseudonym = "deleted-${userId.toString().take(8)}"
+        jdbc.update("UPDATE audit_log SET actor = ? WHERE actor = ?", pseudonym, email)
+        jdbc.update("UPDATE audit_log SET target_id = ? WHERE target_type = 'user' AND target_id = ?", pseudonym, email)
+        jdbc.update("UPDATE audit_log SET details = replace(details::text, ?, ?)::jsonb WHERE strpos(details::text, ?) > 0", "\"$email\"", "\"$pseudonym\"", "\"$email\"")
+        listOf("families" to "created_by", "families" to "deleted_by", "family_memberships" to "granted_by", "users" to "invited_by").forEach { (table, column) ->
+            jdbc.update("UPDATE $table SET $column = ? WHERE $column = ?", pseudonym, email)
+        }
+        auditLog.record(actor, "user.deleted", "user", pseudonym)
         try {
             gateway.revokeSessions(email)
         } catch (exception: AccessGatewayException) {

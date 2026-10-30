@@ -115,12 +115,12 @@ The family selector is the "Familien" entry of the burger menu in the upper-left
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
 The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation, which moves it to the trash.
 The UI offers no archiving; the BFF's `POST /families/{familyId}/archive` stays available.
-The family card's edit mode renames the family via `PUT /families/{familyId}`; the name is unique (case-insensitively) and up to 100 characters, and the rename leaves the members, links, and placements untouched.
-Every family has a slug (lowercase ASCII words joined by `-`, at most 60 characters) that is made from its name when it is created, gets `-2`, `-3`, … when taken, and stays when the family is renamed; it names the family in the access file, and admins see it on the family card.
+The family card's edit mode renames the family via `PUT /families/{familyId}`; the name is unique (case-insensitively) among the trees of the same creator and up to 100 characters, and the rename leaves the members, links, and placements untouched.
+Every family has a slug (lowercase ASCII words joined by `-`, at most 60 characters), random, that stays when the family is renamed; it names the family in the access file, and admins see it on the family card.
 Family sets and their settings are persisted in PostgreSQL; existing members are migrated into `default`, and members/relationships are scoped to the selected set.
 The legacy `/members` endpoints for the default family were removed; members are only reached through `/families/{familyId}/members`.
 "GEDCOM importieren" in the family selector reads a GEDCOM 5.5.1 or 7 file and, after asking for a name (the file name by default), always creates it as a new family.
-`POST /families/empty` creates a family without members or test settings under a unique name of up to 100 characters; like importing, it needs `family.create`, which every signed-in user has, and whoever creates it is its owner; generating test families (`POST /families`) needs `dev.tools`.
+`POST /families/empty` creates a family without members or test settings under a name of up to 100 characters that is unique among the creator's trees; like importing, it needs `family.create`, which every signed-in user has, and whoever creates it is its owner; generating test families (`POST /families`) needs `dev.tools`.
 The import takes names, exact birth and death dates and places, and notes from its people, and partners and children from its family records; imprecise dates such as `ABT 1950` stay empty and are kept verbatim in the note, and unknown names stay empty.
 Imported members get no placement, so they are shown on the free pins like other unplaced members.
 The family card's download button exports the family as a GEDCOM 5.5.1 file named after the family; photos and card placement are not exported.
@@ -145,7 +145,7 @@ Choosing a tree in the families board or creating one navigates to its URL, and 
 A deleted tree's URL leads on like `/` once the families reload.
 A slug that names no visible family, is malformed, or is reserved shows "Baum nicht gefunden" with a link back to the first tree; unknown and forbidden trees look the same.
 The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `terms`, and `privacy` are reserved for routes of their own and never open a tree.
-The BFF never gives a new family a reserved slug (`RESERVED_SLUGS` in `FamilySlugs.kt`) but numbers it instead, for example `terms-2`; families that got one before keep it.
+A new family gets a random slug of 10 lowercase letters and digits (`FamilySlugs.kt`), so the URL does not reveal the tree's name and never hits a reserved slug; V26 replaced the name-based slugs of older families the same way.
 Whoever sees more than one family gets a chevron beside the family name at the top centre that lists every visible tree by name, marks the open one, and links to each tree's URL; with one family the name looks as before.
 The scene lives in the `(tree)` route group's layout, so switching trees keeps the canvas and only swaps the family.
 
@@ -398,8 +398,8 @@ The BFF has no problem code of its own for the last owner, so the UI reads `INVA
 `DELETE /admin/users/{userId}` needs `users.manage` and removes the person's `users` row, which cascades to their roles in every tree.
 It answers 400 `INVALID_REQUEST` for yourself and for admins of the access file, and 404 for an unknown id.
 While the person is the only owner of a tree outside the trash it answers 409 `USER_OWNS_TREES` with `trees` (`familyId`, `familyName`) in the problem body and changes nothing.
-The persons they created in trees stay, and the audit log keeps the names of its entries.
-After the deletion it ends their Access sessions best effort, since Cloudflare may be unavailable, announces `AccessChanged` so the Access group sync drops their address, and writes `user.deleted` to the audit log.
+The persons they created in trees stay; everywhere else their email was kept (the audit log's actors, targets, and details, a tree's creator, who trashed a tree, granted a role, or invited someone) it becomes `deleted-<first 8 characters of the user id>`, so the deletion erases them.
+After the deletion it ends their Access sessions best effort, since Cloudflare may be unavailable, announces `AccessChanged` so the Access group sync drops their address, and writes `user.deleted` with the pseudonym as target to the audit log.
 `ApiProblem` can carry extra members of the problem body for such lists.
 "Sessions beenden" in "Personen" asks for a confirmation and calls `POST /admin/users/{userId}/sessions/revoke`; without a Cloudflare API token, as locally, it shows that the sessions were not ended.
 Ending the sessions signs the person out, but someone who still has access can sign in again with a new one-time PIN at once; to keep someone out, delete them or take away their roles.
@@ -451,7 +451,7 @@ A "Du folgst Manuel" chip at the bottom centre stops following, and so do clicki
 
 `DELETE /families/{familyId}` no longer removes a family: it sets `families.deleted_at` and `deleted_by` and moves the family, its members, photos, and memberships into a trash for 30 days.
 A trashed family is invisible to everyone, admins included: every family path answers 404, it is missing from `GET /families`, and it does not count in a reorder.
-Its name and slug stay taken, so creating, importing, archiving, anonymizing, or renaming to that name answers 409 `NAME_TAKEN` with a detail that says the name is in the trash.
+Its name and slug stay taken, so its creator creating, importing, archiving, anonymizing, or renaming to that name gets 409 `NAME_TAKEN` with a detail that says the name is in the trash.
 `GET /admin/trash` lists the trashed families (`id`, `name`, `slug`, `deletedAt`, `deletedBy`, `purgeAt`, `memberCount`), the one deleted longest ago first.
 `POST /admin/trash/{familyId}/restore` brings a family back with everything it had, and `DELETE /admin/trash/{familyId}` removes it for good at once, photos included; both answer 404 for a family that is not in the trash.
 The three trash endpoints need `family.manage`, which only admins have, and the family visibility check skips `/admin/**`.
