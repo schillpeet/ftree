@@ -61,16 +61,13 @@ class SecurityConfiguration(
     fun managementSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
             .securityMatcher(EndpointRequest.toAnyEndpoint())
-            .csrf { it.disable() }
+            // No token is ever issued, so every write to the management port is refused; it only serves GET.
+            .csrf { it.csrfTokenRepository(NoCsrfTokenRepository) }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
             .authorizeHttpRequests {
                 it.requestMatchers(EndpointRequest.to("health", "prometheus")).permitAll()
-                // Trash: deleted families, admins only.
-                it.requestMatchers(GET, "/admin/trash").hasAuthority(FAMILY_MANAGE.key)
-                it.requestMatchers(POST, "/admin/trash/*/restore").hasAuthority(FAMILY_MANAGE.key)
-                it.requestMatchers(DELETE, "/admin/trash/*").hasAuthority(FAMILY_MANAGE.key)
                 it.anyRequest().denyAll()
             }
         return http.build()
