@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.30.0](https://github.com/schillpeet/ftree/compare/v0.29.1...v0.30.0) (2026-10-31)
+
+
+### Features
+
+* **repo:** attach signed build provenance to releases ([#271](https://github.com/schillpeet/ftree/issues/271)) ([4361cbd](https://github.com/schillpeet/ftree/commit/4361cbd07402a0c34b1a9bd438ee23c1601f9c5a))
+
 ## [0.29.1](https://github.com/schillpeet/ftree/compare/v0.29.0...v0.29.1) (2026-10-30)
 
 
