@@ -115,7 +115,7 @@ export interface Me {
      * @nullable
      */
   customName: string | null;
-  /** True for admins, who are admins in every family. */
+  /** True for admins in an admin session (on the administration's own host), who are admins in every family; elsewhere an admin is false here, like everyone else. */
   admin: boolean;
   /** True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both. */
   canCreateTrees: boolean;
@@ -271,7 +271,21 @@ export interface AdminPresence {
 }
 
 /**
- * Extra facts such as `email`, `role`, `name`, `source`, or `reason`.
+ * `access` for rights, `tree` for a tree's lifecycle, `content` for persons in a tree, `admin` for managing people, and `system` for the BFF itself.
+ */
+export type AuditCategory = typeof AuditCategory[keyof typeof AuditCategory];
+
+
+export const AuditCategory = {
+  access: 'access',
+  tree: 'tree',
+  content: 'content',
+  admin: 'admin',
+  system: 'system',
+} as const;
+
+/**
+ * Extra facts such as `email`, `role`, `name`, `source`, or `reason`. Content entries carry only `memberId` and, for updates, `fields`, the comma-separated names of the changed fields, never their values.
  */
 export type AuditEntryDetails = {[key: string]: string};
 
@@ -288,18 +302,19 @@ export interface AuditEntry {
      * @nullable
      */
   actorId: string | null;
-  /** For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.trashed`, `family.restored`, or `family.purged`. */
+  category: AuditCategory;
+  /** For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.created`, `family.imported`, `family.renamed`, `family.archived`, `family.anonymized`, `family.reordered`, `family.trashed`, `family.restored`, `family.purged`, `member.created`, `member.updated`, or `member.deleted`. */
   action: string;
-  /** `family` or `user`. */
+  /** `family`, `user`, or `system`. */
   targetType: string;
-  /** The family's id, or the email of the person. */
+  /** The family's id, the email of the person, or what the BFF changed as a whole, such as `families` for their order. */
   targetId: string;
   /**
      * The family's current name, else the name recorded in the entry; null for a person.
      * @nullable
      */
   targetName: string | null;
-  /** Extra facts such as `email`, `role`, `name`, `source`, or `reason`. */
+  /** Extra facts such as `email`, `role`, `name`, `source`, or `reason`. Content entries carry only `memberId` and, for updates, `fields`, the comma-separated names of the changed fields, never their values. */
   details: AuditEntryDetails;
 }
 
@@ -962,10 +977,9 @@ export interface AdminUser {
 }
 
 /**
- * Every field is optional; absent fields stay as they are.
+ * Every field is optional; absent fields stay as they are. The admin right comes only from the access file.
  */
 export interface UpdateAdminUserRequest {
-  admin?: boolean;
   canCreateTrees?: boolean;
   /**
      * The new display name; an empty or blank one removes it, so the email's local part shows again.
@@ -1045,6 +1059,18 @@ familyId?: string;
  * @maxLength 60
  */
 action?: string;
+/**
+ * Only entries of this category.
+ */
+category?: AuditCategory;
+/**
+ * Only entries at or after this time.
+ */
+from?: string;
+/**
+ * Only entries before this time.
+ */
+to?: string;
 };
 
 export type StreamFamilyEventsParams = {
@@ -1489,7 +1515,7 @@ export const getGetAdminAuditUrl = (params?: GetAdminAuditParams,) => {
 }
 
 /**
- * Who changed which rights or trees when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them, and an unknown id matches nothing. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
+ * Who changed which rights, trees, or persons when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them, and an unknown id matches nothing. Content entries are kept 90 days, all others 12 months. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
  * @summary List the audit log, newest first
  */
 export const getAdminAudit = async (params?: GetAdminAuditParams, options?: RequestInit): Promise<getAdminAuditResponse> => {
@@ -4219,7 +4245,7 @@ export const getUpdateAdminUserUrl = (userId: string,) => {
 }
 
 /**
- * Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says. Granting a right to someone without a seat while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `users.manage`, which only admins have; every change is written to the audit log.
+ * Sets the fields that are present and leaves the others. Admins are not set here: they are the bootstrap admins of the access file (or `app.roles.admins`), which `users.admin` follows at every start. Granting a right to someone without a seat while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `users.manage`, which only admins have; every change is written to the audit log.
  * @summary Change a person's global rights or display name
  */
 export const updateAdminUser = async (userId: string,

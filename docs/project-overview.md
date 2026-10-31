@@ -266,6 +266,7 @@ Every signed-in user may create and import up to 5 families and becomes the owne
 Everyone has `tree.appearance`, which offers every appearance and the Evolution panel with its view, line, and legend settings.
 `app.access.file` (env `APP_ACCESS_FILE`) points to the access file, a YAML list `people` in which every entry has an `email` and `admin: true`, `developer: true` (optionally with `trees`), or `trees` with exactly one family slug mapped to `editor` or `visitor`; the BFF reads it once at startup and refuses to start when it is malformed or set together with `app.roles.admins`.
 Only the access file's admins apply at runtime, as bootstrap admins who stay admins whatever the database says; `MembershipSeed` imports its other entries into the database once (see Sharing).
+Admins come only from the access file (or `app.roles.admins`): at every start `MembershipSeed.syncAdmins` sets `users.admin` to exactly the bootstrap admins, writing `user.admin.granted` or `user.admin.revoked` with the source `access-file`, and `users.admin` alone gives no right.
 Without an access file, `app.roles.admins` (env `APP_ROLES_ADMINS`) lists the bootstrap admins' emails, matched trimmed and case-insensitively.
 `GET /me` returns the signed-in user's `email`, `admin`, `canCreateTrees`, the `permissions` outside any family, and `verified`, or 401 without a user; every family in `GET /families` and in the answers of family writes carries the caller's `role` and `permissions` in it.
 `app.auth.mode` (env `APP_AUTH_MODE`) is `cloudflare` by default; `dev` signs every request in as `app.auth.dev-email` (default `dev@localhost`) with `verified` false and logs a warning at startup, and `start.sh` runs the BFF in dev mode with `dev@localhost` as admin.
@@ -276,12 +277,17 @@ Every request that reaches a controller records its signed-in user in the `users
 Non-admins see only the families they have a role in: `GET /families` lists only those, and every `/families/{familyId}/...` request for another family answers 404, so test families are only for admins and their owners.
 Because Cloudflare Access turns its cookie into the JWT header, the BFF rejects writes from other sites with 403: POST, PUT, PATCH, and DELETE with `Sec-Fetch-Site` `same-site` or `cross-site`, or without it but with an `Origin` outside `app.cors.allowed-origins`; the UI sends no CSRF token.
 In cloudflare mode the BFF verifies the Cloudflare Access JWT from the `Cf-Access-Jwt-Assertion` header against the keys at `https://<team-domain>/cdn-cgi/access/certs`, checking its signature, expiry, issuer (`https://<team-domain>`), and audience, and takes the user from its `email` claim with `verified` true.
+`app.auth.admin-audience` (env `APP_AUTH_ADMIN_AUDIENCE`) is the AUD tag of the admins' own Access application on its own host; the BFF accepts tokens for it as well, and while it is set, admins have their rights only with such a token, so on the tree's host they are ordinary users with their own trees.
+Without it, every token counts as an admin session and the BFF warns at startup that admins have their rights on the tree's host as well.
+In dev mode, `app.auth.dev-admin-session` (default true) decides whether requests count as an admin session.
+Dev mode refuses to start unless `app.public-url` is a local address (`localhost`, `127.0.0.1`, `::1`, `*.localhost`, or `*.test`), since it signs anyone in as anyone.
 `app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
 A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` answers 401; an `Authorization: Bearer` header is ignored.
 The UI loads `GET /me` once at start and shows only what the permissions allow, those from `/me` together with those of the open family; it checks permissions, never role names, and the BFF still enforces them.
 The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator, otherwise the role in the open family: Eigentümer, Bearbeiter, or Gast), whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode), and a logout link to `/cdn-cgi/access/logout`.
 "Familien" needs `family.create` (every signed-in user) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Mitglied hinzufügen" needs `member.edit` in the open family, and "Momentaufnahme" and "Darstellung" are for everyone.
 "Verwaltung" ("Administration") needs `users.view` and links to the admin page at `/admin`; the former read-only "Anmeldungen" board of `GET /users` is gone until the admin page gets a people tab.
+On the tree's host of a deployment whose administration has its own host, admins lack `users.view`, so the menu has no "Verwaltung"; they open the administration's host directly, for example from the Cloudflare App Launcher.
 Without `tree.appearance` only the experimental appearance can be chosen; the others are disabled and marked "Demnächst", and a stored other choice falls back to experimental.
 The Evolution button needs `tree.appearance`, so everyone sees it; its random-family generator needs `dev.tools`.
 Editing a person, their photo, relatives, and dragging cards to pins need `member.edit`; deleting a person needs `member.delete`.
@@ -324,7 +330,7 @@ Roles per tree live in PostgreSQL (V20): `family_memberships` holds one role per
 At the first start with V20, `MembershipSeed` copies the rights into the database once: the creator of every family (`created_by`) becomes its owner, the trees of the access file become memberships, `developer: true` becomes `can_create_trees`, and `admin: true` becomes `admin`, each written to the audit log.
 At every start, every family without an owner, such as those without `created_by`, gets the first bootstrap admin (the first admin of the access file, or of `app.roles.admins`) as owner, written to the audit log with the source `bootstrap-admin`; a family that has an owner is left alone, so this runs idempotently.
 The seed runs only while no `access_file.imported` entry is in the audit log and `family_memberships` is empty, so it never runs again even after every membership was removed; it skips trees whose slug no family has yet and locks the table so a second BFF starting at the same time waits and then skips it.
-Every request reads the user's rights from the database alone: `users.admin` and the bootstrap admins are admins, everyone may create trees, `can_create_trees` adds the dev tools, and in each family the role of the membership applies; without a membership a family does not exist for them.
+Every request reads the user's rights from the database alone: the bootstrap admins are admins (in an admin session), everyone may create trees, `can_create_trees` adds the dev tools, and in each family the role of the membership applies; without a membership a family does not exist for them.
 Only an owner membership reaches a test family; editor and visitor memberships do not.
 Whoever creates, imports, archives, or anonymizes a family gets an owner membership in the new family, written to the audit log.
 `GET /users` lists the bootstrap admins first and then everyone else with a right in the database, by email, with `listed` true, before the people who only signed in.
@@ -339,7 +345,7 @@ Inviting sends no email: the answer carries the tree's link `<app.public-url>/<s
 `DELETE /families/{familyId}/access/{userId}` removes the person's membership and keeps their `users` row; `POST /families/{familyId}/owner` with `{userId}` makes the person, who must already have a role in the tree, its only owner and every previous owner an editor, and writes `family.ownership.transferred`.
 People are named by `users.id` in every path, so no email appears in a URL or log; a `userId` without a role in the tree answers 404 `NOT_FOUND`, like a tree the caller cannot see, while editors and visitors of the tree get 403.
 `GET /admin/users` (`users.view`) lists everyone with a `users` row by name, with `admin`, `bootstrapAdmin`, `canCreateTrees`, `status`, invitation and sign-in times, and their roles in the trees outside the trash.
-`PUT /admin/users/{userId}` (`users.manage`) sets the present fields of `admin`, `canCreateTrees`, and `displayName` (blank removes it), writing `user.admin.granted` or `.revoked`, `user.can-create-trees.granted` or `.revoked`, and `user.display-name.changed` or `.removed` to the audit log; admins cannot take away their own admin right (400 `INVALID_REQUEST`).
+`PUT /admin/users/{userId}` (`users.manage`) sets the present fields of `canCreateTrees` and `displayName` (blank removes it), writing `user.can-create-trees.granted` or `.revoked` and `user.display-name.changed` or `.removed` to the audit log; it no longer takes `admin`, a breaking change released as `feat(bff)!`.
 `GET /admin/invitations` (`users.view`) lists every membership of someone who never signed in, in trees outside the trash, newest first.
 `PUT /me` with `{displayName}` sets the caller's own display name, and `GET /me` now also returns `id`, `displayName` (the name, else the email before the `@`), and `customName`.
 Every change of a role or a global right publishes `AccessChanged` (the email and the tree, or null for a global right) once the transaction commits, through `AccessEvents`; `AccessSync` listens to it.
@@ -374,25 +380,48 @@ The overview counts `families` (test families included), `members`, `users` (`to
 Trashed families appear only in `GET /admin/trash`: `GET /admin/families` leaves them out, and the overview counts neither them nor their members and photos.
 `/admin` is a full page outside the tree's route group, so it has no 3D scene, in the dashboard's glass style with "Zurück zum Baum" (to `/`) and the language switch.
 The admin page shows its tabs only with `users.view` and otherwise "Kein Zugriff"; the BFF enforces the rights of every endpoint it calls.
-The admin page has the tabs "Übersicht", "Personen", "Einladungen", "Bäume", and "Protokoll".
+The admin page has the tabs "Übersicht", "Personen", "Einladungen", "Bäume", and "Aktivität".
+Each tab is a route of its own (`/admin`, `/admin/people`, `/admin/invitations`, `/admin/trees`, `/admin/audit`), so a reload or a link keeps it.
 "Übersicht" shows tiles for online now, access seats (used of limit, with signed-in and invited people), trees, persons, and photos with their storage size, from `GET /admin/overview`.
 Below the tiles, "Gerade aktiv" lists `GET /admin/presence` with one row per person and tree however many tabs they have there: name, email, admin mark, the tree as a link, editing or idle marks, and since when.
 "Übersicht" refreshes its tiles and the active list every 15 seconds.
-"Bäume" lists `GET /admin/families` with name, slug, test mark, creator and date, how many people hold each role, and the person count, with "Öffnen" (to `/<slug>`) and "In den Papierkorb" after a confirmation.
-Below the trees, the trash (`family.manage`) lists `GET /admin/trash` with who deleted each tree and when, the remaining days, "Wiederherstellen", and "Endgültig löschen", which needs the tree's exact name typed into a prompt.
+"Bäume" shows `GET /admin/families` as cards with name, slug, test mark, creator and date, the person count, and how many people hold each role.
+It lists the real trees by default; a select shows the test trees or all, and a search narrows them by name or slug.
+"Öffnen" (to `/<slug>`, in a new tab) is a card's only button; its "⋯" menu holds "Besitz übertragen", "Aktivität des Baums" (`/admin/audit?tree=<id>`), and "In den Papierkorb" after a confirmation.
+With `ADMIN_URL` set, the UI's `proxy.ts` sends `/` on the administration's host to `/admin` and answers `/admin` on any other host with 404; tree pages stay reachable on the administration's host, and without `ADMIN_URL` everything lives on one host as before.
+A tree opened on the administration's host shows the banner "Admin-Ansicht", which says that changes are made as admin and that opening a tree the admin holds no role in is logged.
+On its own host the administration's header button is "Zur App" and leads to `APP_URL`; on a shared host it stays "Zurück zum Baum" to `/`.
+The person detail opens their trees in a new tab as well.
+Below the trees, the trash (`family.manage`) is folded to one line with its number of trees and the next removal; opened, it lists `GET /admin/trash` with who deleted each tree and when, the remaining days, "Wiederherstellen", and "Endgültig löschen", which needs the tree's exact name typed into a prompt.
 `GET /admin/audit` needs `users.view` and lists `audit_log` newest first as `entries` (`id`, `at`, `actor` as email or null for the BFF itself, `actorId`, `action`, `targetType`, `targetId`, `targetName`, and `details`) with `next`, the `before` for the following page, or null on the last.
 The query takes `limit` (1 to 100, default 50), `before` (an entry id), and the optional filters `userId`, `familyId`, and `action`, which combine; ids are used instead of emails, so no email appears in a URL or log.
 `userId` matches entries a person made and entries about them; an unknown id matches nothing, and invalid parameters answer 400 `INVALID_REQUEST`.
 `targetName` is the tree's current name, else the name recorded in the entry, so entries of purged trees stay readable.
 `GET /admin/audit/filters` lists the people with a `users` row who appear in the log and the actions it contains, for the filter menus.
-"Protokoll" shows the log as a table with time, who, action (a readable label, the raw action when unknown), target, and details, newest first, and "Mehr laden" appends the next 50 entries.
-Its menus filter by person, tree (`GET /admin/families`), and action; changing one starts the list again.
-"Personen" lists `GET /admin/users` with name, email, status, rights, and the person's trees with their roles.
+Every audit entry has a `category`: `access` for rights, `tree` for a tree's lifecycle, `content` for persons in a tree, `admin` for managing people, and `system` for the BFF itself; `AuditLog.categoryOf` derives it from the action, and migration V27 backfilled older entries the same way.
+An admin who opens a tree they hold no role in (its member list) writes `admin.tree.viewed` in the `admin` category, at most once an hour per admin and tree, remembered in memory only (`AdminViews`).
+Every audit entry also stores `actor_id`, the actor's `users` row, which becomes null when that person is deleted; `actorId` and the `userId` filter use it instead of the email.
+`GET /admin/audit` also takes the optional filters `category`, `from` (inclusive), and `to` (exclusive), and returns `category` per entry.
+Creating (`family.created`, with `test` for test families), importing, renaming, archiving, anonymizing, and reordering trees are written to the audit log in the `tree` category.
+Creating, updating, and deleting a person write `member.created`, `member.updated`, and `member.deleted` in the `content` category, with the tree as target and only `memberId` and, for updates, `fields` (the names of the changed fields), never their values; an update that changes nothing is not logged.
+`AuditLogPurger` deletes `content` entries after 90 days and all other entries after 12 months every night at 3:45 (`app.audit.content-retention`, `app.audit.retention`, and `app.audit.purge-cron`).
+"Aktivität" shows the log as a timeline, newest first: a heading per day ("Heute", "Gestern", else the date), then per entry its time, a dot in its category's colour, and a sentence such as "Anna hat Bernd die Rolle Bearbeiter in „Müller“ gegeben", with its remaining facts folded under "Details"; "Mehr laden" appends the next 50 entries.
+Content entries in a row by the same person, of the same action, in the same tree, at most 30 minutes apart, read as one line, for example "Anna hat 6 Personen in „Müller“ geändert", whose details list each change's time and fields (`activityDays` in `adminData.ts`).
+People are named by their display name from `GET /admin/audit/filters`, else by the part of their email before the `@`, and actions without a sentence fall back to their label or the raw action.
+Chips filter by category (all, access and rights, trees, persons, administration, system), and a period menu by the last 7 or 30 days, 12 months, or everything (`from`); the log starts with the last 30 days, a person's or tree's own log with everything.
+"CSV exportieren" downloads the loaded entries as CSV in the browser, and a note below says how long entries are kept.
+Its menus filter by person and tree (`GET /admin/families`); changing a filter starts the list again.
+`?person=<user id>` and `?tree=<family id>` preset the person and tree filters, which the person and tree cards link to.
+"Personen" lists `GET /admin/users` as cards with an initials avatar and a status dot, the name, the status, and badges for admin, developer tools, the number of trees, and the trees owned.
+A search over name and email and the chips "Alle", "Online", "Eingeladen", "Inaktiv" (last sign-in 90 days ago or longer), and "Admins", each with its count, narrow the cards.
+Choosing a card opens `/admin/people/<id>` beside the list, or instead of it on narrow screens: the trees with their roles, the global rights, when the person was invited and first signed in, the last five audit entries as the same timeline with a link to the full log, and a "Gefahrenzone".
 The status is "Online in <trees>" from `GET /admin/presence` (refreshed every 15 seconds), else the last sign-in, else "Eingeladen, noch nicht angemeldet", else "Noch nie angemeldet".
-The toggles "Entwicklerwerkzeuge" (`canCreateTrees`) and "Administrator" call `PUT /admin/users/{userId}`; the admin toggle is disabled for yourself and for admins of the access file.
+A person's "⋯" menu holds "Umbenennen" and "Entwicklerwerkzeuge erlauben" or "entziehen" (`canCreateTrees`, not offered for admins), both through `PUT /admin/users/{userId}`.
+The admin page neither grants nor takes the admin right, since admins come only from the access file.
 "Umbenennen" sets the display name through the same call, and an empty name shows the email's local part again.
-Each tree has a role menu (`PUT /families/{familyId}/access`) and "Entfernen" after a confirmation (`DELETE /families/{familyId}/access/{userId}`); users are addressed by id, never by email in a URL.
+Each tree has a role menu (`PUT /families/{familyId}/access`) and an × that removes the person after a confirmation (`DELETE /families/{familyId}/access/{userId}`); users are addressed by id, never by email in a URL.
 "Einladungen" lists `GET /admin/invitations`, the people who never signed in, one row per tree with role, who invited them, and when.
+Each invitation shows its age and is marked "Überfällig" once it is 14 days old.
 "Text kopieren" asks `PUT /families/{familyId}/access` again with the same role, which changes nothing and returns the invitation text in the page language, and copies it; "Zurückziehen" removes the person from that tree after a confirmation.
 "Person einladen" (in both tabs) takes an email, a tree, and a role, calls the same endpoint, and shows the text to copy; nothing is sent.
 The BFF has no problem code of its own for the last owner, so the UI reads `INVALID_REQUEST` from these calls as "a tree needs an owner" and shows readable messages for the other codes.
@@ -402,12 +431,12 @@ While the person is the only owner of a tree outside the trash it answers 409 `U
 The persons they created in trees stay; everywhere else their email was kept (the audit log's actors, targets, and details, a tree's creator, who trashed a tree, granted a role, or invited someone) it becomes `deleted-<first 8 characters of the user id>`, so the deletion erases them.
 After the deletion it ends their Access sessions best effort, since Cloudflare may be unavailable, announces `AccessChanged` so the Access group sync drops their address, and writes `user.deleted` with the pseudonym as target to the audit log.
 `ApiProblem` can carry extra members of the problem body for such lists.
-"Sessions beenden" in "Personen" asks for a confirmation and calls `POST /admin/users/{userId}/sessions/revoke`; without a Cloudflare API token, as locally, it shows that the sessions were not ended.
+"Sessions beenden" in a person's "Gefahrenzone" asks for a confirmation and calls `POST /admin/users/{userId}/sessions/revoke`; without a Cloudflare API token, as locally, it shows that the sessions were not ended.
 Ending the sessions signs the person out, but someone who still has access can sign in again with a new one-time PIN at once; to keep someone out, delete them or take away their roles.
-"Löschen" in "Personen" is disabled for yourself and for admins of the access file.
-It opens a panel; if the person is the only owner of trees, the panel first asks for a new owner of each tree among the other people with a role in it, and says so when nobody else has one.
+"Löschen" in the "Gefahrenzone" is missing for yourself and for admins of the access file, which the zone then says.
+It opens a panel in place of the zone; if the person is the only owner of trees, the panel first asks for a new owner of each tree among the other people with a role in it, and says so when nobody else has one.
 The panel enables "Person löschen" once the person's name or email is typed; it then calls `POST /families/{familyId}/owner` for each tree and `DELETE /admin/users/{userId}`, and stops at the first failure.
-"Besitz übertragen" in "Bäume" loads `GET /families/{familyId}/access` for the tree, offers its people with their roles, and calls `POST /families/{familyId}/owner` after a confirmation.
+"Besitz übertragen" in a tree's "⋯" menu loads `GET /families/{familyId}/access` for the tree, offers its people with their roles, and calls `POST /families/{familyId}/owner` after a confirmation.
 
 ### Presence
 
@@ -486,7 +515,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `ui/app/nameSearch.ts` matches members by name and birth name (case- and accent-insensitive, every query word must match, names starting with a word first); `ui/app/nameSearch.check.mjs` is its self-check (`node app/nameSearch.check.mjs` in `ui/`).
 - `ui/app/PersonPanel.tsx` holds the person panel's shell (header with back, edit, pin, "⋯", and close, draggable by the header), its read-only view with the relatives, and the shared relative chip.
 - `ui/app/panelPosition.ts` keeps a dragged person panel within the viewport, reads a stored pin, and places a panel beside another; `ui/app/panelPosition.check.mjs` is its self-check.
-- `ui/app/admin/` holds the admin page: `layout.tsx` and `page.tsx` (tabs and the `users.view` gate), one component per tab (`OverviewTab.tsx`, `TreesTab.tsx`), `useAdminLoad.ts` for loading with retry and refresh, `admin.css`, and the pure helpers in `adminData.ts` with `adminData.check.mjs` as their self-check.
+- `ui/app/admin/` holds the admin page: `layout.tsx` with `AdminShell.tsx` (header, tab links, and the `users.view` gate), one route and component per tab (`OverviewTab.tsx`, `PeopleTab.tsx` with `PersonDetail.tsx` in `people/layout.tsx`, `TreesTab.tsx`, …), `ActionMenu.tsx` for the cards' "⋯" menus, `useAdminLoad.ts` for loading with retry and refresh, `admin.css`, and the pure helpers in `adminData.ts` with `adminData.check.mjs` as their self-check.
 - `ui/app/Permissions.tsx` loads `GET /me` into a React context and provides `useMe`, `<OpenFamily>`, `useCan(permission)` (outside any family or in the open one), `<Can permission>`, and the 401/403 notice; `ui/app/access.ts` holds the pure permission, appearance-fallback, and sign-in-problem rules, with `ui/app/access.check.mjs` as its self-check.
 - `ui/app/problems.ts` reads the `code` of a problem details answer from the BFF; `ui/app/problems.check.mjs` is its self-check.
 - `ui/app/live/useTreeEvents.ts` holds the tree's event stream, the presence heartbeat, and idleness, and keeps the presence in a store read with `useSyncExternalStore` (drei's `<Html>` gets no React context); `ui/app/live/PresenceBar.tsx` renders the avatars (styled in `ui/app/live/presence.css`), and `ui/app/live/presence.ts` merges tabs into people, sorts them, and decides idleness, with `ui/app/live/presence.check.mjs` as its self-check.
@@ -558,6 +587,8 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `ui/osv-scanner.toml` and `api/osv-scanner.toml` list advisories that OSV-Scanner and Scorecard's Vulnerabilities check skip, each with a reason and an `ignoreUntil` date; today only GHSA-g3hv-75wg-m249 in `minimatch`, used only by ESLint and Spectral and not in any image, until 2027-01-31.
 - Trivy actions are pinned by commit SHA to releases made after the March 2026 tag hijacking of `aquasecurity/trivy-action` and `setup-trivy`, and the Trivy version is set explicitly.
 - The chart's `bff.auth.*` and `bff.roles.admins` values become the BFF's `APP_AUTH_*` and `APP_ROLES_ADMINS` variables, and `bff.access` becomes the mounted access file in `APP_ACCESS_FILE`; in cloudflare mode the chart refuses to render without `bff.auth.teamDomain` and `bff.auth.audience` (see `deploy/README.md`).
+- The chart's `bff.auth.adminAudience` becomes `APP_AUTH_ADMIN_AUDIENCE`.
+- The chart's `publicUrl` becomes the BFF's `APP_PUBLIC_URL` and the UI's `APP_URL`, and `adminUrl` the UI's `ADMIN_URL`.
 - With `bff.cloudflare.existingSecret` set, the chart passes its `api-token` key as `CLOUDFLARE_API_TOKEN`, `bff.cloudflare.accountId` and `bff.cloudflare.accessGroupId` as `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_ACCESS_GROUP_ID`, and `bff.cloudflare.dryRun` as `ACCESS_SYNC_DRY_RUN`.
 
 The procedural scene is presentation code.

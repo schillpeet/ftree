@@ -48,7 +48,7 @@ class FamilyVisibility(private val familyRepository: FamilyRepository, private v
     // One family returned by a write, which only someone with a role in it can make. The access is read again, since the
     // owner membership of a family created in this request is newer than the user's access.
     fun withCallerRole(family: FamilySummary): FamilySummary {
-        val user = CurrentUser.current()?.let { it.copy(access = accessPolicy.accessOf(it.email)) }
+        val user = CurrentUser.current()?.let { it.copy(access = accessPolicy.accessOf(it.email, it.adminSession)) }
         return family.withRole(roleIn(family.id, user) ?: Role.VISITOR)
     }
 

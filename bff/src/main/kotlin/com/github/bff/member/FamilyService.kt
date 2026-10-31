@@ -1,5 +1,6 @@
 package com.github.bff.member
 
+import com.github.bff.auth.AuditLog
 import com.github.bff.auth.CurrentUser
 import com.github.bff.auth.Memberships
 import com.github.bff.auth.Role
@@ -35,6 +36,7 @@ class FamilyService(
     private val jdbc: JdbcTemplate,
     private val memberships: Memberships,
     private val events: ApplicationEventPublisher,
+    private val auditLog: AuditLog,
 ) {
     // Members are loaded only for the families that pass `include`, so a user's list never reads other people's trees.
     fun findAll(include: (FamilyEntity) -> Boolean = { true }): List<FamilySummary> {
@@ -51,6 +53,7 @@ class FamilyService(
         val families = familyRepository.findAllByDeletedAtIsNullOrderByPositionAsc().associateBy { it.id }
         if (ids.size != families.size || ids.toSet() != families.keys) return false
         ids.forEachIndexed { index, id -> families.getValue(id).position = index }
+        audit("family.reordered", "system", "families")
         return true
     }
 
@@ -98,6 +101,7 @@ class FamilyService(
         }
         val saved = memberRepository.saveAll(members)
         memberRepository.flush()
+        audit("family.created", family.id, mapOf("name" to name, "test" to "true"))
         return FamilyCreationResult.CREATED(family.toSummary(saved))
     }
 
@@ -108,6 +112,7 @@ class FamilyService(
         if (name.isEmpty() || name.length > 100) return FamilyCreationResult.INVALID
         if (nameTaken(name)) return FamilyCreationResult.NAME_TAKEN
         val family = saveNew(FamilyEntity(name = name, slug = newSlug(), createdBy = creator()))
+        audit("family.created", family.id, mapOf("name" to name))
         return FamilyCreationResult.CREATED(family.toSummary(emptyList()))
     }
 
@@ -123,6 +128,7 @@ class FamilyService(
         members.forEach { it.family = archived }
         memberRepository.flush()
         changed(id)
+        audit("family.archived", id, mapOf("into" to archived.id.toString(), "name" to name))
         return FamilyArchiveResult.ARCHIVED(archived.toSummary(members))
     }
 
@@ -172,6 +178,7 @@ class FamilyService(
             }
         }
         jdbc.batchUpdate("UPDATE member_parents SET kind = ? WHERE child_id = ? AND parent_id = ?", kinds)
+        audit("family.imported", family.id, mapOf("name" to name, "members" to "${saved.size}"))
         return FamilyImportResult.IMPORTED(family.toSummary(saved.values.toList()))
     }
 
@@ -237,6 +244,7 @@ class FamilyService(
             arrayOf<Any?>(kind, copyOf.getValue(child).id, copyOf.getValue(parent).id)
         }
         jdbc.batchUpdate("UPDATE member_parents SET kind = ? WHERE child_id = ? AND parent_id = ?", kinds)
+        audit("family.anonymized", id, mapOf("into" to family.id.toString(), "name" to name))
         return FamilyAnonymizeResult.ANONYMIZED(family.toSummary(copies))
     }
 
@@ -248,9 +256,11 @@ class FamilyService(
         if (!name.equals(family.name, ignoreCase = true) && nameTaken(name, family.createdBy)) {
             return FamilyRenameResult.NAME_TAKEN
         }
+        val before = family.name
         family.name = name
         familyRepository.flush()
         changed(id)
+        audit("family.renamed", id, mapOf("from" to before, "name" to name))
         val members = memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id)
         return FamilyRenameResult.RENAMED(family.toSummary(members, photoTimes()[id]))
     }
@@ -324,6 +334,11 @@ class FamilyService(
 
     // The family's event streams get it once the transaction has committed.
     private fun changed(id: UUID) = events.publishEvent(TreeEvent.FamilyChanged(id))
+
+    private fun audit(action: String, familyId: UUID, details: Map<String, String>) = audit(action, "family", familyId.toString(), details)
+
+    private fun audit(action: String, targetType: String, targetId: String, details: Map<String, String> = emptyMap()) =
+        auditLog.record(creator(), action, targetType, targetId, details)
 
     // One query for all families instead of one per family; never loads the bytes.
     private fun photoTimes(): Map<UUID, OffsetDateTime> =

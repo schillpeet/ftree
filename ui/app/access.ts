@@ -52,3 +52,12 @@ function isApiUrl(url: string, origin: string) {
     return false;
   }
 }
+
+// The host (with its port) of a configured address such as `ADMIN_URL`, lowercased; null when unset or not a URL.
+export function hostOf(url: string | undefined): string | null {
+  try {
+    return url?.trim() ? new URL(url.trim()).host.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}

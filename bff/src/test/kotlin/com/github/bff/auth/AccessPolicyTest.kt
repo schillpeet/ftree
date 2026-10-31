@@ -54,9 +54,23 @@ class AccessPolicyTest {
         }
         val policy = AccessPolicy(AccessProperties(file.toString()), RoleProperties(), grants)
         assertEquals(Access(admin = false, canCreateTrees = true, memberships = mapOf(family to Role.OWNER)), policy.accessOf("editor@example.com"))
-        assertEquals(Access(admin = true), policy.accessOf("someone@example.com"))
-        // The bootstrap admins stay admins whatever the database says.
+        // Admins come only from the access file: users.admin alone gives nothing, and the bootstrap admins stay admins
+        // whatever the database says.
+        assertEquals(Access.NONE, policy.accessOf("someone@example.com"))
         assertEquals(Access(admin = true), policy.accessOf("admin@example.com"))
+    }
+
+    @Test
+    fun `admins have their rights only in an admin session and keep their own trees outside it`() {
+        val family = UUID.randomUUID()
+        val grants = AccessGrants { email ->
+            if (email == "admin@example.com") Grants(canCreateTrees = true, families = mapOf(family to Role.EDITOR)) else Grants.NONE
+        }
+        val policy = AccessPolicy(AccessProperties(file.toString()), RoleProperties(), grants)
+        val own = mapOf(family to Role.EDITOR)
+        assertEquals(Access(admin = true, canCreateTrees = true, memberships = own), policy.accessOf("admin@example.com", adminSession = true))
+        assertEquals(Access(admin = false, canCreateTrees = true, memberships = own), policy.accessOf("admin@example.com", adminSession = false))
+        assertEquals(Access.NONE, policy.accessOf("someone@example.com", adminSession = true))
     }
 
     private companion object {

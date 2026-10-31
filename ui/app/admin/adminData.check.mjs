@@ -1,19 +1,31 @@
-// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, people, and deleting them.
+// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, people, deleting them, the filters of the people, invitation, and tree cards, and the activity timeline.
 import assert from 'node:assert/strict';
 import {
   accessProblem,
+  activityDays,
+  auditCsv,
+  dayKind,
+  localDay,
+  periodStart,
   auditDetails,
   confirmsName,
   confirmsPerson,
   daysLeft,
   deleteProblem,
+  daysSince,
   formatBytes,
+  initialsOf,
+  inPeopleFilter,
+  isOverdue,
+  matchesSearch,
+  nextPurgeIn,
   onlineTrees,
   ownerCandidates,
   personStatus,
   presenceRows,
   soleOwnedTrees,
   sortedPeople,
+  treeListed,
 } from './adminData.ts';
 
 const now = Date.parse('2026-10-26T12:00:00Z');
@@ -159,5 +171,106 @@ assert.equal(confirmsPerson('  ADA@example.org ', ada), true);
 assert.equal(confirmsPerson('ada lovelace', ada), false);
 assert.equal(confirmsPerson('', ada), false);
 assert.equal(confirmsPerson(null, ada), false);
+
+// Avatars take two letters: of the first two words, or the first two of a single word; nothing gives a question mark.
+assert.equal(initialsOf('Ada Lovelace'), 'AL');
+assert.equal(initialsOf('ada'), 'AD');
+assert.equal(initialsOf('anna.mueller'), 'AM');
+assert.equal(initialsOf('  Éva  Ötvös  Kiss'), 'ÉÖ');
+assert.equal(initialsOf(''), '?');
+
+// The filter chips: online beats inactive, invited means never signed in, inactive needs an old sign-in.
+const daysAgo = (days) => new Date(now - days * 24 * 60 * 60 * 1000).toISOString();
+const someone = (overrides = {}) => ({ admin: false, status: 'active', lastSeen: daysAgo(1), ...overrides });
+assert.equal(inPeopleFilter(someone(), 'all', undefined, now), true);
+assert.equal(inPeopleFilter(someone(), 'online', ['Marina'], now), true);
+assert.equal(inPeopleFilter(someone(), 'online', [], now), false);
+assert.equal(inPeopleFilter(someone({ status: 'invited', lastSeen: null }), 'invited', undefined, now), true);
+assert.equal(inPeopleFilter(someone(), 'invited', undefined, now), false);
+assert.equal(inPeopleFilter(someone({ lastSeen: daysAgo(90) }), 'inactive', undefined, now), true);
+assert.equal(inPeopleFilter(someone({ lastSeen: daysAgo(89) }), 'inactive', undefined, now), false);
+assert.equal(inPeopleFilter(someone({ lastSeen: daysAgo(200) }), 'inactive', ['Marina'], now), false);
+assert.equal(inPeopleFilter(someone({ lastSeen: null, status: 'invited' }), 'inactive', undefined, now), false);
+assert.equal(inPeopleFilter(someone({ admin: true }), 'admins', undefined, now), true);
+assert.equal(inPeopleFilter(someone(), 'admins', undefined, now), false);
+
+// Searching ignores case, accents, and spaces around the query; an empty query matches everybody.
+assert.equal(matchesSearch('  mÜller ', 'Anna Müller', 'anna@example.org'), true);
+assert.equal(matchesSearch('ANNA@', 'Anna', 'anna@example.org'), true);
+assert.equal(matchesSearch('ben', 'Anna', null), false);
+assert.equal(matchesSearch('', 'Anna'), true);
+
+// Invitations count whole days and are overdue after two weeks.
+assert.equal(daysSince(daysAgo(0), now), 0);
+assert.equal(daysSince(daysAgo(13.9), now), 13);
+assert.equal(isOverdue(daysAgo(13.9), now), false);
+assert.equal(isOverdue(daysAgo(14), now), true);
+
+// Trees: real ones by default, test ones on demand, all together, and by name or slug.
+const real = { name: 'Marina', slug: 'k3x9a', test: false };
+const test = { name: 'Zufall 1', slug: 'q7p2m', test: true };
+assert.equal(treeListed(real, 'real', ''), true);
+assert.equal(treeListed(test, 'real', ''), false);
+assert.equal(treeListed(test, 'test', ''), true);
+assert.equal(treeListed(real, 'all', 'K3X'), true);
+assert.equal(treeListed(real, 'all', 'zufall'), false);
+
+// The trash's next purge is its soonest one; an empty trash has none.
+assert.equal(nextPurgeIn([], now), null);
+assert.equal(nextPurgeIn([{ purgeAt: '2026-11-20T12:00:00Z' }, { purgeAt: '2026-10-30T12:00:00Z' }], now), 4);
+
+// The timeline: days by local date, newest first; a burst of content edits by one person in one tree reads as one line.
+const audit = (id, at, overrides = {}) => ({
+  id,
+  at,
+  actor: 'ada@example.org',
+  actorId: 'u1',
+  category: 'content',
+  action: 'member.updated',
+  targetType: 'family',
+  targetId: 'f1',
+  targetName: 'Marina',
+  details: {},
+  ...overrides,
+});
+const noon = (day, minutes = 0) => new Date(`${day}T12:00:00`).getTime() + minutes * 60 * 1000;
+const iso = (time) => new Date(time).toISOString();
+const days = activityDays([
+  audit(9, iso(noon('2026-10-26', 50))),
+  audit(8, iso(noon('2026-10-26', 30))),
+  audit(7, iso(noon('2026-10-26', 0))),
+  audit(6, iso(noon('2026-10-26', -40))),
+  audit(5, iso(noon('2026-10-26', -45)), { actorId: 'u2', actor: 'ben@example.org' }),
+  audit(4, iso(noon('2026-10-26', -50)), { action: 'member.created' }),
+  audit(3, iso(noon('2026-10-26', -55)), { category: 'access', action: 'membership.granted' }),
+  audit(2, iso(noon('2026-10-26', -56)), { category: 'access', action: 'membership.granted' }),
+  audit(1, iso(noon('2026-10-25'))),
+]);
+assert.deepEqual(
+  days.map((day) => [day.day, day.groups.map((group) => group.map((entry) => entry.id))]),
+  [
+    ['2026-10-26', [[9, 8, 7], [6], [5], [4], [3], [2]]],
+    ['2026-10-25', [[1]]],
+  ],
+);
+assert.deepEqual(activityDays([]), []);
+
+// Today and yesterday by the local calendar, anything older by its date.
+assert.equal(localDay(noon('2026-10-26')), '2026-10-26');
+assert.equal(dayKind('2026-10-26', noon('2026-10-26')), 'today');
+assert.equal(dayKind('2026-10-25', noon('2026-10-26')), 'yesterday');
+assert.equal(dayKind('2026-10-24', noon('2026-10-26')), 'earlier');
+
+// A period starts whole days back; "all" has no start.
+assert.equal(periodStart('7', now), '2026-10-19T12:00:00.000Z');
+assert.equal(periodStart('all', now), undefined);
+
+// CSV quotes every field and doubles quotes inside, one line per entry after the header.
+const csv = auditCsv([audit(1, '2026-10-26T12:00:00Z', { targetName: 'Die "Alten"', details: { fields: 'note,firstName' } })]);
+assert.equal(
+  csv,
+  '"at","category","actor","action","targetType","target","details"\r\n' +
+    '"2026-10-26T12:00:00Z","content","ada@example.org","member.updated","family","Die ""Alten""","fields=note,firstName"\r\n',
+);
 
 console.log('adminData checks passed');

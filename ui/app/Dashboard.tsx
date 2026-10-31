@@ -122,6 +122,7 @@ export default function Dashboard({
               </button>
             </Can>
             {boardItem('appearance', t.menu.appearance, <PaletteIcon />)}
+            {/* Only where admins have their rights: locally, and not on the tree's host when the administration has its own. */}
             <Can permission="users.view">
               <Link className="dashboard-nav-item" href="/admin">
                 <SettingsIcon />

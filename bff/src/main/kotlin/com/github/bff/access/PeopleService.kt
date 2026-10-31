@@ -44,19 +44,14 @@ class PeopleService(
             .sortedWith(compareBy({ it.displayName.lowercase() }, { it.email }))
     }
 
-    // Sets the present fields; an admin cannot take away their own admin right, and a new right needs a free seat.
+    // Sets the present fields; a new right needs a free seat. The admin right is not among them: it comes only from the
+    // access file (see MembershipSeed.syncAdmins).
     @Transactional
     fun update(userId: UUID, request: UpdateAdminUserRequest, actor: String): AdminUser {
         val before = userRows(userId).singleOrNull() ?: throw ApiProblem(ProblemCode.NOT_FOUND)
         val email = before.email
-        if (request.admin == false && email == actor.normalizedEmail()) throw ApiProblem(ProblemCode.INVALID_REQUEST, OWN_ADMIN)
-        if ((request.admin == true && !before.admin) || (request.canCreateTrees == true && !before.canCreateTrees)) seats.requireSeatFor(email)
+        if (request.canCreateTrees == true && !before.canCreateTrees) seats.requireSeatFor(email)
         var rightsChanged = false
-        request.admin?.takeIf { it != before.admin }?.let { admin ->
-            jdbc.update("UPDATE users SET admin = ? WHERE email = ?", admin, email)
-            auditLog.record(actor, if (admin) "user.admin.granted" else "user.admin.revoked", "user", email)
-            rightsChanged = true
-        }
         request.canCreateTrees?.takeIf { it != before.canCreateTrees }?.let { canCreate ->
             jdbc.update("UPDATE users SET can_create_trees = ? WHERE email = ?", canCreate, email)
             auditLog.record(actor, if (canCreate) "user.can-create-trees.granted" else "user.can-create-trees.revoked", "user", email)
@@ -198,7 +193,6 @@ class PeopleService(
     companion object {
         const val OWN_ACCOUNT = "You cannot delete yourself; ask another admin."
         const val BOOTSTRAP_ADMIN = "Bootstrap admins come from the configuration and cannot be deleted."
-        const val OWN_ADMIN = "You cannot take away your own admin right; ask another admin."
         private const val MAX_NAME = 100
         private val log = LoggerFactory.getLogger(PeopleService::class.java)
     }
