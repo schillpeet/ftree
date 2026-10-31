@@ -1,5 +1,8 @@
 package com.github.bff.member
 
+import com.github.bff.auth.AuditLog
+import com.github.bff.auth.CurrentUser
+import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.CreateMemberRequest
 import com.github.bff.generated.model.Member
 import com.github.bff.generated.model.ParentLink
@@ -30,6 +33,7 @@ class MemberService(
     private val jdbc: JdbcTemplate,
     private val events: ApplicationEventPublisher,
     private val entityManager: EntityManager,
+    private val auditLog: AuditLog,
 ) {
     fun findAll(familyId: UUID): List<Member>? {
         if (!familyRepository.existsById(familyId)) return null
@@ -57,7 +61,10 @@ class MemberService(
                 note = request.note,
                 photoUrl = request.photoUrl?.toString(),
             ),
-        ).also { changed(familyId, it.id) }.toResponse(null, emptyList(), emptyList())
+        ).also {
+            changed(familyId, it.id)
+            audit("member.created", familyId, it.id)
+        }.toResponse(null, emptyList(), emptyList())
     }
 
     /**
@@ -68,6 +75,7 @@ class MemberService(
     fun update(familyId: UUID, id: UUID, request: CreateMemberRequest, version: Long? = null): Member? {
         val entity = memberRepository.findByIdAndFamilyId(id, familyId) ?: return null
         entity.requireVersion(version)
+        val before = entity.fields()
         entity.firstName = request.firstName.trim()
         entity.lastName = request.lastName.trim()
         entity.birthName = request.birthName
@@ -78,6 +86,8 @@ class MemberService(
         entity.note = request.note
         entity.photoUrl = request.photoUrl?.toString()
         changed(familyId, id)
+        val fields = entity.fields().filter { (field, value) -> before[field] != value }.keys
+        if (fields.isNotEmpty()) audit("member.updated", familyId, id, mapOf("fields" to fields.joinToString(",")))
         // Writes now, so the answer carries the raised version.
         memberRepository.flush()
         return entity.toResponse(
@@ -249,6 +259,7 @@ class MemberService(
         member.partners.clear()
         memberRepository.delete(member)
         events.publishEvent(TreeEvent.MemberDeleted(familyId, id))
+        audit("member.deleted", familyId, id)
         return true
     }
 
@@ -291,6 +302,26 @@ class MemberService(
 
     // The family's event streams get it once the transaction has committed.
     private fun changed(familyId: UUID, id: UUID) = events.publishEvent(TreeEvent.MemberChanged(familyId, id))
+
+    // Content entries name the person by id and the changed fields by name only, never their values.
+    private fun audit(action: String, familyId: UUID, memberId: UUID, details: Map<String, String> = emptyMap()) =
+        auditLog.record(
+            CurrentUser.current()?.email?.normalizedEmail(), action, "family", familyId.toString(),
+            mapOf("memberId" to memberId.toString()) + details,
+        )
+
+    // The fields update replaces, by their API names.
+    private fun MemberEntity.fields(): Map<String, Any?> = mapOf(
+        "firstName" to firstName,
+        "lastName" to lastName,
+        "birthName" to birthName,
+        "birthDate" to birthDate,
+        "birthPlace" to birthPlace,
+        "deathDate" to deathDate,
+        "deathPlace" to deathPlace,
+        "note" to note,
+        "photoUrl" to photoUrl,
+    )
 
     // One query for the whole family instead of one per member; never loads the bytes.
     private fun photoTimes(familyId: UUID): Map<UUID, OffsetDateTime> =

@@ -172,8 +172,8 @@ paths:
         - admin
       summary: List the audit log, newest first
       description: >-
-        Who changed which rights or trees when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them,
-        and an unknown id matches nothing. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
+        Who changed which rights, trees, or persons when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them,
+        and an unknown id matches nothing. Content entries are kept 90 days, all others 12 months. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
       parameters:
         - name: limit
           in: query
@@ -208,6 +208,23 @@ paths:
           schema:
             type: string
             maxLength: 60
+        - name: category
+          in: query
+          description: Only entries of this category.
+          schema:
+            $ref: "#/components/schemas/AuditCategory"
+        - name: from
+          in: query
+          description: Only entries at or after this time.
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          description: Only entries before this time.
+          schema:
+            type: string
+            format: date-time
       responses:
         "200":
           description: One page, empty when nothing matches.
@@ -2106,6 +2123,7 @@ components:
         - at
         - actor
         - actorId
+        - category
         - action
         - targetType
         - targetId
@@ -2127,15 +2145,20 @@ components:
           format: uuid
           nullable: true
           description: The actor's id; null for the BFF itself or when the actor has no `users` row.
+        category:
+          $ref: "#/components/schemas/AuditCategory"
         action:
           type: string
-          description: For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.trashed`, `family.restored`, or `family.purged`.
+          description: >-
+            For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.created`, `family.imported`,
+            `family.renamed`, `family.archived`, `family.anonymized`, `family.reordered`, `family.trashed`, `family.restored`, `family.purged`,
+            `member.created`, `member.updated`, or `member.deleted`.
         targetType:
           type: string
-          description: "`family` or `user`."
+          description: "`family`, `user`, or `system`."
         targetId:
           type: string
-          description: The family's id, or the email of the person.
+          description: The family's id, the email of the person, or what the BFF changed as a whole, such as `families` for their order.
         targetName:
           type: string
           nullable: true
@@ -2144,7 +2167,20 @@ components:
           type: object
           additionalProperties:
             type: string
-          description: Extra facts such as `email`, `role`, `name`, `source`, or `reason`.
+          description: >-
+            Extra facts such as `email`, `role`, `name`, `source`, or `reason`. Content entries carry only `memberId` and, for updates,
+            `fields`, the comma-separated names of the changed fields, never their values.
+    AuditCategory:
+      type: string
+      description: >-
+        `access` for rights, `tree` for a tree's lifecycle, `content` for persons in a tree, `admin` for managing people,
+        and `system` for the BFF itself.
+      enum:
+        - access
+        - tree
+        - content
+        - admin
+        - system
     AuditFilters:
       type: object
       required:

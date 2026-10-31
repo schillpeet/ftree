@@ -385,6 +385,12 @@ The query takes `limit` (1 to 100, default 50), `before` (an entry id), and the 
 `userId` matches entries a person made and entries about them; an unknown id matches nothing, and invalid parameters answer 400 `INVALID_REQUEST`.
 `targetName` is the tree's current name, else the name recorded in the entry, so entries of purged trees stay readable.
 `GET /admin/audit/filters` lists the people with a `users` row who appear in the log and the actions it contains, for the filter menus.
+Every audit entry has a `category`: `access` for rights, `tree` for a tree's lifecycle, `content` for persons in a tree, `admin` for managing people, and `system` for the BFF itself; `AuditLog.categoryOf` derives it from the action, and migration V27 backfilled older entries the same way.
+Every audit entry also stores `actor_id`, the actor's `users` row, which becomes null when that person is deleted; `actorId` and the `userId` filter use it instead of the email.
+`GET /admin/audit` also takes the optional filters `category`, `from` (inclusive), and `to` (exclusive), and returns `category` per entry.
+Creating (`family.created`, with `test` for test families), importing, renaming, archiving, anonymizing, and reordering trees are written to the audit log in the `tree` category.
+Creating, updating, and deleting a person write `member.created`, `member.updated`, and `member.deleted` in the `content` category, with the tree as target and only `memberId` and, for updates, `fields` (the names of the changed fields), never their values; an update that changes nothing is not logged.
+`AuditLogPurger` deletes `content` entries after 90 days and all other entries after 12 months every night at 3:45 (`app.audit.content-retention`, `app.audit.retention`, and `app.audit.purge-cron`).
 "Protokoll" shows the log as a table with time, who, action (a readable label, the raw action when unknown), target, and details, newest first, and "Mehr laden" appends the next 50 entries.
 Its menus filter by person, tree (`GET /admin/families`), and action; changing one starts the list again.
 "Personen" lists `GET /admin/users` with name, email, status, rights, and the person's trees with their roles.

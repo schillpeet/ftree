@@ -90,11 +90,24 @@ class Memberships(private val jdbc: JdbcTemplate, private val auditLog: AuditLog
 
 @Component
 class AuditLog(private val jdbc: JdbcTemplate) {
-    // actor null: the BFF itself.
+    // actor null: the BFF itself. actor_id is the actor's users row, if there is one.
     fun record(actor: String?, action: String, targetType: String, targetId: String, details: Map<String, String> = emptyMap()) {
         jdbc.update(
-            "INSERT INTO audit_log (actor, action, target_type, target_id, details) VALUES (?, ?, ?, ?, jsonb_object(?::text[]))",
-            actor, action, targetType, targetId, details.flatMap { (key, value) -> listOf(key, value) }.toTypedArray(),
+            "INSERT INTO audit_log (actor, actor_id, category, action, target_type, target_id, details) " +
+                "VALUES (?, (SELECT id FROM users WHERE email = ?), ?, ?, ?, ?, jsonb_object(?::text[]))",
+            actor, actor, categoryOf(action), action, targetType, targetId, details.flatMap { (key, value) -> listOf(key, value) }.toTypedArray(),
         )
+    }
+
+    companion object {
+        // Like the backfill in V27__categorize_the_audit_log.sql; keep both in step.
+        fun categoryOf(action: String): String = when {
+            action.startsWith("member.") -> "content"
+            action.startsWith("membership.") || action.startsWith("user.admin.") || action.startsWith("user.can-create-trees.") ||
+                action == "user.sessions.revoked" || action == "family.ownership.transferred" -> "access"
+            action.startsWith("family.") -> "tree"
+            action.startsWith("user.") -> "admin"
+            else -> "system"
+        }
     }
 }
