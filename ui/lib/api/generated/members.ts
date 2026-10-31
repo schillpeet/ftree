@@ -1013,7 +1013,6 @@ export interface SetupInvitationRequest {
      * @maxLength 320
      */
   email: string;
-  /** The role the person has in a tree they are invited to later; they become owner of a tree they create themselves. Owner when omitted. */
   role?: TreeRole;
 }
 

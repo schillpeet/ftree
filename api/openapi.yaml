@@ -3216,7 +3216,6 @@ components:
           description: The email the person signs in with; trimmed and lowercased.
         role:
           $ref: "#/components/schemas/TreeRole"
-          description: The role the person has in a tree they are invited to later; they become owner of a tree they create themselves. Owner when omitted.
     SetupInvitation:
       type: object
       required:
