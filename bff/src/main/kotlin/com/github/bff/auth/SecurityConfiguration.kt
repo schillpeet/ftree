@@ -52,6 +52,8 @@ class SecurityConfiguration(
     private val familyVisibility: FamilyVisibility,
     @Value("\${app.cors.allowed-origins:http://localhost:3000}")
     private val allowedOrigins: String,
+    @Value("\${app.public-url:http://localhost:3000}")
+    private val publicUrl: String,
 ) {
     // Boot applies the security filters to the management port as well. EndpointRequest matches only there, because the
     // port differs from the app's, so the app port keeps denying /actuator. Probes and the scraper send no user, and the
@@ -163,10 +165,16 @@ class SecurityConfiguration(
                 it.bearerTokenResolver(HeaderBearerTokenResolver(CLOUDFLARE_ACCESS_JWT_HEADER))
                 it.authenticationEntryPoint(entryPoint)
                 it.accessDeniedHandler(accessDeniedHandler)
-                it.jwt { jwt -> jwt.jwtAuthenticationConverter(CloudflareAccessAuthenticationConverter(accessPolicy)) }
+                val adminAudience = authProperties.cloudflareSettings().adminAudience
+                if (adminAudience == null) {
+                    log.warn("app.auth.admin-audience is not set, so admins have their rights on the tree's host as well")
+                }
+                it.jwt { jwt -> jwt.jwtAuthenticationConverter(CloudflareAccessAuthenticationConverter(accessPolicy, adminAudience)) }
             }
             AuthMode.DEV -> {
+                authProperties.requireLocalInDevMode(publicUrl)
                 val email = authProperties.devEmail
+                val adminSession = authProperties.devAdminSession
                 log.warn(
                     "Auth mode is dev: every request runs as {}, or as the email in the {} cookie, without verification. " +
                         "Never use this in production.",
@@ -174,7 +182,7 @@ class SecurityConfiguration(
                     DevAuthenticationFilter.DEV_EMAIL_COOKIE,
                 )
                 http.addFilterBefore(
-                    DevAuthenticationFilter(email) { CurrentUser(it, accessPolicy.accessOf(it), verified = false) },
+                    DevAuthenticationFilter(email) { CurrentUser(it, accessPolicy.accessOf(it, adminSession), verified = false, adminSession) },
                     AnonymousAuthenticationFilter::class.java,
                 )
             }

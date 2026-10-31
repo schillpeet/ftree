@@ -101,16 +101,17 @@ class DatabaseRolesTest {
     }
 
     @Test
-    fun `admin and can_create_trees in users are global rights`() {
+    fun `can_create_trees in users is a global right, admin there is not`() {
         memberships.grantFlags(VISITOR, admin = true, canCreateTrees = false, grantedBy = ADMIN)
         memberships.grantFlags(BUILDER, admin = false, canCreateTrees = true, grantedBy = ADMIN)
 
-        assertEquals("admin", families(VISITOR)[test.toString()])
+        // Admins come only from the access file, so users.admin alone gives nothing.
+        assertEquals(null, families(VISITOR)[test.toString()])
+        mockMvc.get("/users") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = VISITOR)) }.andExpect { status { isForbidden() } }
         mockMvc.get("/me") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = BUILDER)) }.andExpect {
             jsonPath("$.admin") { value(false) }
             jsonPath("$.canCreateTrees") { value(true) }
         }
-        mockMvc.get("/users") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = VISITOR)) }.andExpect { status { isOk() } }
     }
 
     @Test

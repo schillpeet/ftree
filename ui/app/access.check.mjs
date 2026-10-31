@@ -1,7 +1,7 @@
 // Run with `node app/access.check.mjs`: permission checks, the appearance fallback without `tree.appearance`,
 // and which API answers count as a sign-in or permission problem.
 import assert from 'node:assert/strict';
-import { APPEARANCES, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can, failedCallNeedsProbe, signedOutByProbe } from './access.ts';
+import { adminPageOf, APPEARANCES, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can, failedCallNeedsProbe, signedOutByProbe } from './access.ts';
 
 const me = { email: 'x@example.org', admin: false, canCreateTrees: false, permissions: ['tree.appearance'], verified: true };
 const visited = { role: 'visitor', permissions: ['tree.view'] };
@@ -48,3 +48,7 @@ assert.ok(!failedCallNeedsProbe('https://elsewhere.example/api/x', origin));
 assert.ok(signedOutByProbe('opaqueredirect'));
 assert.ok(!signedOutByProbe('basic'));
 assert.ok(!signedOutByProbe('error'));
+
+// The admin page lives under /admin on the administration's host, with or without a trailing slash in its address.
+assert.equal(adminPageOf('https://admin.example.org'), 'https://admin.example.org/admin');
+assert.equal(adminPageOf('https://admin.example.org//'), 'https://admin.example.org/admin');

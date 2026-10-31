@@ -52,3 +52,6 @@ function isApiUrl(url: string, origin: string) {
     return false;
   }
 }
+
+// The admin page on the administration's own host, from `adminUrl` in `/me`, however many slashes it ends with.
+export const adminPageOf = (adminUrl: string) => `${adminUrl.replace(/\/+$/, '')}/admin`;

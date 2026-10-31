@@ -106,7 +106,7 @@ class AuditLog(private val jdbc: JdbcTemplate) {
             action.startsWith("membership.") || action.startsWith("user.admin.") || action.startsWith("user.can-create-trees.") ||
                 action == "user.sessions.revoked" || action == "family.ownership.transferred" -> "access"
             action.startsWith("family.") -> "tree"
-            action.startsWith("user.") -> "admin"
+            action.startsWith("user.") || action.startsWith("admin.") -> "admin"
             else -> "system"
         }
     }

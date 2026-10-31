@@ -25,5 +25,22 @@ class AuthPropertiesTest {
         assertEquals("https://team.cloudflareaccess.com", settings.issuer)
         assertEquals("https://team.cloudflareaccess.com/cdn-cgi/access/certs", settings.jwkSetUri)
         assertEquals("aud", settings.audience)
+        assertEquals(null, settings.adminAudience)
+        val admin = AuthProperties(teamDomain = "team.cloudflareaccess.com", audience = "aud", adminAudience = " admin-aud ")
+        assertEquals("admin-aud", admin.cloudflareSettings().adminAudience)
+        assertEquals(null, AuthProperties(teamDomain = "t", audience = "a", adminAudience = " ").cloudflareSettings().adminAudience)
+    }
+
+    @Test
+    fun `dev mode runs only for a local address`() {
+        val dev = AuthProperties(mode = AuthMode.DEV)
+        listOf("http://localhost:3000", "http://127.0.0.1:3000", "http://[::1]:3000", "https://ftree.localhost", "http://ftree.test")
+            .forEach { dev.requireLocalInDevMode(it) }
+        listOf("https://ftree.example.org", "http://192.168.1.10:3000", "not a url", "").forEach { url ->
+            val error = assertFailsWith<IllegalStateException>(url) { dev.requireLocalInDevMode(url) }
+            assertEquals(true, error.message?.contains("APP_PUBLIC_URL"))
+        }
+        // Cloudflare mode verifies every token, so any address is fine.
+        AuthProperties().requireLocalInDevMode("https://ftree.example.org")
     }
 }

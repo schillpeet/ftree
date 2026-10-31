@@ -1588,7 +1588,7 @@ paths:
         - access
       summary: Change a person's global rights or display name
       description: >-
-        Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says.
+        Sets the fields that are present and leaves the others. Admins are not set here: they are the bootstrap admins of the access file (or `app.roles.admins`), which `users.admin` follows at every start.
         Granting a right to someone without a seat while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`.
         Needs `users.manage`, which only admins have; every change is written to the audit log.
       requestBody:
@@ -1881,6 +1881,7 @@ components:
         - canCreateTrees
         - permissions
         - verified
+        - adminUrl
       properties:
         id:
           type: string
@@ -1899,7 +1900,7 @@ components:
           description: The display name the user or an admin set; null while `displayName` falls back to the email.
         admin:
           type: boolean
-          description: True for admins, who are admins in every family.
+          description: True for admins in an admin session, who are admins in every family; an admin on the tree's host is false here and gets `adminUrl`.
         canCreateTrees:
           type: boolean
           description: True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both.
@@ -1911,6 +1912,11 @@ components:
         verified:
           type: boolean
           description: True when Cloudflare Access confirmed the email; false in local dev mode.
+        adminUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: For an admin outside the admin application, the address of the administration on its own host (`app.admin-url`); null for everyone else and when it is not configured.
     UserLogin:
       type: object
       required:
@@ -3107,10 +3113,8 @@ components:
             $ref: "#/components/schemas/AdminUserTree"
     UpdateAdminUserRequest:
       type: object
-      description: Every field is optional; absent fields stay as they are.
+      description: Every field is optional; absent fields stay as they are. The admin right comes only from the access file.
       properties:
-        admin:
-          type: boolean
         canCreateTrees:
           type: boolean
         displayName:
