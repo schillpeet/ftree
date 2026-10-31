@@ -12,7 +12,7 @@ The overall score is the weighted average; the 18 checks weigh 105 in total, so 
 
 ## Where the points are lost
 
-As of 2026-10-31 the score is 7.0; every check not listed scores 10.
+As of 2026-10-31 the score is 7.1; every check not listed scores 10.
 
 | Check | Score | Weight | Overall cost | Why | Outlook |
 |---|---|---|---|---|---|
@@ -22,17 +22,16 @@ As of 2026-10-31 the score is 7.0; every check not listed scores 10.
 | Branch-Protection | 4 | High | 0.43 | The `main` ruleset blocks deletion and force pushes and requires a PR and the `validate` and `ci-ok` checks, but requires no approval. | Accepted: a required approval with an admin bypass would raise it to about 8 without anyone reviewing; it is not worth that. |
 | Contributors | 0 | Low | 0.24 | Scorecard wants recent contributors from at least three organizations. | Accepted: it follows from who contributes, not from the code. |
 | CII-Best-Practices | 5 | Low | 0.12 | The [OpenSSF Best Practices badge](https://www.bestpractices.dev/projects/16096) is at Passing. | Silver would add 0.05 and needs mostly documentation (governance, roles, access continuity, an assurance case) plus signed releases; Gold needs two-person review and is out of reach for now. |
-| Binary-Artifacts | 9 | High | 0.07 | `bff/gradle/wrapper/gradle-wrapper.jar`. | 10 once Scorecard sees a successful `gradle-wrapper.yml` run for the scanned commit; see [Timing](#timing). |
-| SAST | 9 | Medium | 0.05 | A merged commit without a finished CodeQL run counts as unscanned. | CodeQL stays optional for merging; the weekly run usually finds every commit scanned. |
 
 Maintained and Signed-Releases bring the score to about 8.5 within a few months.
 The accepted checks cost about 1.4 points as long as one person maintains ftree alone.
 
 ## Timing
 
-Binary-Artifacts and SAST depend on other workflows having finished for the commit Scorecard scans.
+Binary-Artifacts and SAST score 10 only when other workflows have finished for the commit Scorecard scans: Binary-Artifacts accepts `bff/gradle/wrapper/gradle-wrapper.jar` only after a successful `gradle-wrapper.yml` run, and SAST counts a merged commit without a finished CodeQL run as unscanned.
 On a push to `main` Scorecard starts in the same second as CI, CodeQL (about four minutes) and the Gradle wrapper check, and counts the commit as unscanned or the wrapper as unvalidated while they still run.
-The weekly run starts long after the last merge, so it sees the finished runs.
+The weekly run starts long after the last merge, so it sees the finished runs; CodeQL stays optional for merging.
+After a manual run right after a merge, both checks may drop to 9 until the next weekly run.
 
 ## Ignored advisories
 
