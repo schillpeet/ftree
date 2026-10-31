@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.30.0](https://github.com/schillpeet/ftree/compare/v0.29.1...v0.30.0) (2026-10-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* **bff:** grant admin rights only through the admin access application ([#284](https://github.com/schillpeet/ftree/issues/284))
+
+### Features
+
+* **bff:** categorize and retain the audit log ([#282](https://github.com/schillpeet/ftree/issues/282)) ([443536c](https://github.com/schillpeet/ftree/commit/443536c048632b54168909d0aebfacddeb62bcd0))
+* **bff:** grant admin rights only through the admin access application ([#284](https://github.com/schillpeet/ftree/issues/284)) ([c4fe61d](https://github.com/schillpeet/ftree/commit/c4fe61dcef826d3add3f07a865b1a76a1c7a5c39))
+* **repo:** attach signed build provenance to releases ([#271](https://github.com/schillpeet/ftree/issues/271)) ([4361cbd](https://github.com/schillpeet/ftree/commit/4361cbd07402a0c34b1a9bd438ee23c1601f9c5a))
+* **ui:** redesign admin people and trees as cards ([#281](https://github.com/schillpeet/ftree/issues/281)) ([07c0292](https://github.com/schillpeet/ftree/commit/07c02920c6c78da253e8c98b0836b635f235788e))
+* **ui:** show the audit log as an activity timeline ([#283](https://github.com/schillpeet/ftree/issues/283)) ([3962367](https://github.com/schillpeet/ftree/commit/39623678e59b3d34c2be0b22b0d192aa78cc640d))
+
 ## [0.29.1](https://github.com/schillpeet/ftree/compare/v0.29.0...v0.29.1) (2026-10-30)
 
 
