@@ -21,7 +21,7 @@ spec:
           ports:
             - name: http
               containerPort: 3000
-          {{- if or .Values.operator.name .Values.operator.email }}
+          {{- if or .Values.operator.name .Values.operator.email .Values.publicUrl .Values.adminUrl }}
           env:
             {{- with .Values.operator.name }}
             - name: OPERATOR_NAME
@@ -29,6 +29,14 @@ spec:
             {{- end }}
             {{- with .Values.operator.email }}
             - name: OPERATOR_EMAIL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.publicUrl }}
+            - name: APP_URL
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.adminUrl }}
+            - name: ADMIN_URL
               value: {{ . | quote }}
             {{- end }}
           {{- end }}

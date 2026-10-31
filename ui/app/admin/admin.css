@@ -49,7 +49,7 @@
   margin-bottom: 16px;
 }
 
-.admin-tabs [aria-selected='true'] {
+.admin-tabs [aria-current='page'] {
   border-color: var(--glass-accent);
   color: var(--glass-accent);
 }
@@ -297,27 +297,8 @@
   resize: vertical;
 }
 
-.admin-tree-role {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 6px;
-}
-
-.admin-tree-role > span {
-  min-width: 100px;
-}
-
 .admin-role {
   min-width: 0;
-}
-
-.admin-check {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding-bottom: 4px;
 }
 
 .admin-rename {
@@ -326,13 +307,8 @@
   gap: 8px;
 }
 
-.admin-inline {
-  margin-left: 8px;
-  padding: 2px 8px;
-  font-size: 12px;
-}
-
-.admin-table td[data-online] {
+.admin-table td[data-online],
+.admin-page [data-online] {
   color: var(--glass-accent);
 }
 
@@ -360,4 +336,545 @@
 
 .admin-actions .admin-transfer {
   flex-basis: 100%;
+}
+
+/* Search and filter chips above the people and tree cards. */
+.admin-search {
+  align-items: center;
+  margin-bottom: 0;
+}
+
+.admin-search input {
+  flex: 1 1 220px;
+}
+
+.admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--glass-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 13px;
+}
+
+.admin-chip:hover {
+  background: var(--glass-hover);
+}
+
+.admin-chip[aria-pressed='true'] {
+  border-color: var(--glass-accent);
+  color: var(--glass-accent);
+}
+
+.admin-chip-count {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.admin-badge-warning {
+  border-color: rgb(255 210 122 / 55%);
+  color: #ffd27a;
+}
+
+/* People: the cards on the left, the chosen person beside them; on a phone one or the other. */
+.admin-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);
+  align-items: start;
+  gap: 16px;
+}
+
+.admin-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-detail-column {
+  position: sticky;
+  top: 16px;
+}
+
+.admin-page a.admin-person-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.admin-person-card:hover {
+  background: var(--glass-hover);
+}
+
+.admin-person-card[aria-current='page'] {
+  border-color: var(--glass-accent);
+}
+
+.admin-person-card > .icon {
+  color: var(--glass-muted);
+}
+
+.admin-person-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-person-text strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-person-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.admin-person-badges .admin-badge,
+.admin-facts .admin-badge {
+  margin-left: 0;
+}
+
+.admin-avatar {
+  position: relative;
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 12%);
+  font: 600 13px/1 Arial, sans-serif;
+  letter-spacing: 0.02em;
+}
+
+.admin-avatar-large {
+  width: 52px;
+  height: 52px;
+  font-size: 16px;
+}
+
+/* The dot: green online, amber invited, grey once seen, none for people who never signed in. */
+.admin-avatar::after {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 11px;
+  height: 11px;
+  border: 2px solid #16212e;
+  border-radius: 50%;
+  content: '';
+}
+
+.admin-avatar[data-state='online']::after {
+  background: #7be0a5;
+}
+
+.admin-avatar[data-state='invited']::after {
+  background: #ffd27a;
+}
+
+.admin-avatar[data-state='seen']::after {
+  background: rgb(255 255 255 / 35%);
+}
+
+.admin-avatar[data-state='never']::after {
+  display: none;
+}
+
+.admin-detail {
+  display: grid;
+  gap: 10px;
+}
+
+.admin-detail h3 {
+  margin: 10px 0 0;
+  color: var(--glass-muted);
+  font: 600 12px/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-detail p {
+  margin: 0;
+}
+
+.admin-detail-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.admin-detail-title {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+
+.admin-detail-title h2 {
+  margin: 0;
+  font-size: 19px;
+}
+
+.admin-back {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.admin-back .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-rows li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--glass-border);
+}
+
+.admin-rows li > a,
+.admin-rows li > span {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-rows li > .icon {
+  width: 18px;
+  height: 18px;
+  color: var(--glass-muted);
+}
+
+.admin-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.admin-dates {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-more-link {
+  justify-self: end;
+  font-size: 13px;
+}
+
+.admin-danger {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgb(255 143 122 / 45%);
+  border-radius: 10px;
+}
+
+.admin-danger > span:first-child {
+  flex: 1;
+  color: var(--glass-danger);
+  font-size: 13px;
+}
+
+.admin-danger > .admin-muted {
+  flex-basis: 100%;
+  order: 3;
+}
+
+.admin-icon-button {
+  justify-content: center;
+  width: 38px;
+  padding: 0;
+}
+
+/* The "⋯" menu of a card. */
+.admin-menu {
+  position: relative;
+}
+
+/* Glass panels blur their backdrop and so stack on their own; the one with an open menu goes above its neighbours. */
+.admin-page .glass:has(.admin-menu-list) {
+  position: relative;
+  z-index: 5;
+}
+
+.admin-menu-list {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 6px);
+  right: 0;
+  display: grid;
+  min-width: 230px;
+  padding: 4px;
+  background: #16212e;
+}
+
+.admin-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.admin-menu-item:hover,
+.admin-menu-item:focus-visible {
+  background: var(--glass-hover);
+}
+
+.admin-menu-item .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-menu-danger {
+  margin-top: 4px;
+  border-top: 1px solid var(--glass-border);
+  border-radius: 0 0 8px 8px;
+  color: var(--glass-danger);
+}
+
+/* Trees: a grid of cards with one visible action each, and the trash folded below. */
+.admin-tree-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-tree-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.admin-tree-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-tree-icon {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: rgb(127 214 255 / 12%);
+  color: var(--glass-accent);
+}
+
+.admin-tree-stats {
+  display: grid;
+  gap: 2px;
+}
+
+.admin-tree-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.admin-tree-actions > a {
+  flex: 1;
+  justify-content: center;
+}
+
+.admin-trash summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.admin-trash summary::-webkit-details-marker {
+  display: none;
+}
+
+.admin-trash summary::after {
+  margin-left: auto;
+  color: var(--glass-muted);
+  content: '▾';
+}
+
+.admin-trash[open] summary::after {
+  content: '▴';
+}
+
+.admin-trash[open] summary {
+  margin-bottom: 12px;
+}
+
+.admin-trash summary .icon {
+  color: var(--glass-muted);
+}
+
+@media (max-width: 760px) {
+  .admin-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-split[data-selected] .admin-list,
+  .admin-split:not([data-selected]) .admin-detail-column {
+    display: none;
+  }
+
+  .admin-detail-column {
+    position: static;
+  }
+
+  .admin-back {
+    display: inline-flex;
+  }
+}
+
+/* The activity timeline: a heading per day, then time, a category dot, and a sentence per line, the facts folded below. */
+.admin-categories {
+  margin-bottom: 12px;
+}
+
+.admin-chip[data-category]::before,
+.admin-timeline-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--category, rgb(255 255 255 / 35%));
+}
+
+.admin-chip[data-category]:not([data-category='all'])::before {
+  content: '';
+}
+
+[data-category='access'] {
+  --category: #ffd27a;
+}
+
+[data-category='tree'] {
+  --category: #7be0a5;
+}
+
+[data-category='content'] {
+  --category: var(--glass-accent);
+}
+
+[data-category='admin'] {
+  --category: #c9a7ff;
+}
+
+[data-category='system'] {
+  --category: rgb(255 255 255 / 45%);
+}
+
+.admin-timeline h3 {
+  margin: 14px 0 4px;
+  color: var(--glass-muted);
+  font: 600 12px/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-timeline section:first-child h3 {
+  margin-top: 0;
+}
+
+.admin-timeline ol,
+.admin-timeline ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-timeline ol > li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--glass-border);
+}
+
+.admin-timeline ol > li > time {
+  flex: none;
+  width: 42px;
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.admin-timeline-dot {
+  display: inline-block;
+  transform: translateY(-1px);
+}
+
+.admin-timeline ol > li > div {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-timeline details {
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.admin-timeline summary {
+  width: max-content;
+  cursor: pointer;
+}
+
+.admin-timeline details ul {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0 0 2px;
+  overflow-wrap: anywhere;
+}
+
+.admin-retention {
+  margin: 12px 0 0;
+}
+
+.admin-tab .admin-card > .admin-toolbar {
+  margin-bottom: 4px;
 }

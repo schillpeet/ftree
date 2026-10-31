@@ -88,13 +88,13 @@ class PeopleServiceTest {
         memberships.grantFlags(GUEST, admin = false, canCreateTrees = false, grantedBy = null)
         val id = idOf(GUEST)
 
-        val changed = people.update(id, UpdateAdminUserRequest().admin(true).canCreateTrees(true).displayName("  Grace  "), ADMIN)
-        assertTrue(changed.admin && changed.canCreateTrees && !changed.bootstrapAdmin)
+        val changed = people.update(id, UpdateAdminUserRequest().canCreateTrees(true).displayName("  Grace  "), ADMIN)
+        assertTrue(!changed.admin && changed.canCreateTrees && !changed.bootstrapAdmin)
         assertEquals("Grace", changed.displayName)
         assertEquals("Grace", changed.customName)
 
         // Fields that are absent or unchanged write nothing.
-        people.update(id, UpdateAdminUserRequest().admin(true), ADMIN)
+        people.update(id, UpdateAdminUserRequest().canCreateTrees(true), ADMIN)
         val cleared = people.update(id, UpdateAdminUserRequest().canCreateTrees(false).displayName(" "), ADMIN)
         assertFalse(cleared.canCreateTrees)
         assertNull(cleared.customName)
@@ -102,7 +102,6 @@ class PeopleServiceTest {
 
         assertEquals(
             listOf(
-                "user.admin.granted $ADMIN",
                 "user.can-create-trees.granted $ADMIN",
                 "user.display-name.changed $ADMIN",
                 "user.can-create-trees.revoked $ADMIN",
@@ -113,11 +112,7 @@ class PeopleServiceTest {
     }
 
     @Test
-    fun `admins cannot take away their own admin right`() {
-        memberships.grantFlags(ADMIN, admin = true, canCreateTrees = false, grantedBy = null)
-        val problem = assertFailsWith<ApiProblem> { people.update(idOf(ADMIN), UpdateAdminUserRequest().admin(false), ADMIN.uppercase()) }
-        assertEquals(ProblemCode.INVALID_REQUEST, problem.code)
-        assertEquals(PeopleService.OWN_ADMIN, problem.detail)
+    fun `an unknown person cannot be changed`() {
         assertEquals(ProblemCode.NOT_FOUND, assertFailsWith<ApiProblem> { people.update(UUID.randomUUID(), UpdateAdminUserRequest(), ADMIN) }.code)
     }
 

@@ -49,7 +49,7 @@ class MembershipSeedTest {
     @BeforeTest
     fun forgetTheSeed() {
         val policy = AccessPolicy(AccessProperties(accessFile().toString()), RoleProperties(), memberships)
-        seed = MembershipSeed(jdbc, policy, memberships, MembershipService(jdbc, memberships, auditLog, accessEvents), auditLog, transactions)
+        seed = MembershipSeed(jdbc, policy, memberships, MembershipService(jdbc, memberships, auditLog, accessEvents), auditLog, accessEvents, transactions)
         jdbc.update("DELETE FROM family_memberships")
         jdbc.update("DELETE FROM audit_log")
         lab = familyRepository.saveAndFlush(FamilyEntity(name = "Lab $RUN", slug = "lab-$RUN", createdBy = BUILDER)).id
@@ -112,6 +112,20 @@ class MembershipSeedTest {
         val audit = audit()
         assertEquals(0, seed.ensureOwners())
         assertEquals(audit, audit())
+    }
+
+    @Test
+    fun `keeps users admin equal to the admins of the access file`() {
+        val former = "seed-former-admin-$RUN@example.com"
+        memberships.grantFlags(former, admin = true, canCreateTrees = true, grantedBy = null)
+
+        assertTrue(seed.syncAdmins() >= 1)
+        assertEquals(Triple(false, true, true), flags(former))
+        assertEquals(true, flags(ADMIN)?.first)
+        assertEquals(true, flags(SECOND_ADMIN)?.first)
+        assertTrue(audit().any { it.startsWith("user.admin.revoked $former") && "access-file" in it }, "${audit()}")
+        // Once in step, it changes nothing.
+        assertEquals(0, seed.syncAdmins())
     }
 
     @Test

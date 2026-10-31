@@ -1,5 +1,6 @@
 package com.github.bff.admin
 
+import com.github.bff.generated.model.AuditCategory
 import com.github.bff.generated.model.AuditEntry
 import com.github.bff.generated.model.AuditFilters
 import com.github.bff.generated.model.AuditPage
@@ -16,8 +17,18 @@ import java.util.UUID
 class AuditLogService(private val jdbc: JdbcTemplate) {
     private val json = JsonMapper()
 
-    // Newest first; `before` is the id of the last entry of the previous page. Filters are ids, never emails.
-    fun page(limit: Int, before: Long?, userId: UUID?, familyId: UUID?, action: String?): AuditPage {
+    // Newest first; `before` is the id of the last entry of the previous page. Filters are ids, never emails; `from` is
+    // inclusive and `to` exclusive.
+    fun page(
+        limit: Int,
+        before: Long?,
+        userId: UUID?,
+        familyId: UUID?,
+        action: String?,
+        category: AuditCategory? = null,
+        from: OffsetDateTime? = null,
+        to: OffsetDateTime? = null,
+    ): AuditPage {
         val where = mutableListOf<String>()
         val args = mutableListOf<Any>()
         before?.let {
@@ -25,7 +36,7 @@ class AuditLogService(private val jdbc: JdbcTemplate) {
             args += it
         }
         userId?.let {
-            where += "(a.actor = (SELECT email FROM users WHERE id = ?) OR (a.target_type = 'user' AND a.target_id = (SELECT email FROM users WHERE id = ?)))"
+            where += "(a.actor_id = ? OR (a.target_type = 'user' AND a.target_id = (SELECT email FROM users WHERE id = ?)))"
             args += it
             args += it
         }
@@ -37,9 +48,21 @@ class AuditLogService(private val jdbc: JdbcTemplate) {
             where += "a.action = ?"
             args += it
         }
+        category?.let {
+            where += "a.category = ?"
+            args += it.value
+        }
+        from?.let {
+            where += "a.at >= ?"
+            args += it
+        }
+        to?.let {
+            where += "a.at < ?"
+            args += it
+        }
         val rows = jdbc.query(
-            "SELECT a.id, a.at, a.actor, u.id, a.action, a.target_type, a.target_id, f.name, a.details::text " +
-                "FROM audit_log a LEFT JOIN users u ON u.email = a.actor " +
+            "SELECT a.id, a.at, a.actor, a.actor_id, a.action, a.target_type, a.target_id, f.name, a.details::text, a.category " +
+                "FROM audit_log a " +
                 "LEFT JOIN families f ON a.target_type = 'family' AND a.target_id = f.id::text " +
                 (if (where.isEmpty()) "" else "WHERE ${where.joinToString(" AND ")} ") +
                 "ORDER BY a.id DESC LIMIT ?",
@@ -50,6 +73,7 @@ class AuditLogService(private val jdbc: JdbcTemplate) {
                     rs.getObject(2, OffsetDateTime::class.java),
                     rs.getString(3),
                     rs.getObject(4, UUID::class.java),
+                    AuditCategory.fromValue(rs.getString(10)),
                     rs.getString(5),
                     rs.getString(6),
                     rs.getString(7),
