@@ -2,6 +2,7 @@ name: CI
 
 # Always runs so `ci-ok` can be a required status check. The api, ui, and bff jobs run only when
 # files that affect them change (Markdown-only changes are skipped); `ci-ok` waits for them.
+# The bff job starts its database from docker-compose.yml, so a new postgres image is tested there first.
 # The image job also runs on release-please's release PR, so a release with fixable CRITICAL
 # vulnerabilities in its images cannot be merged and never gets a tag.
 on:
@@ -42,7 +43,7 @@ jobs:
               - "{ui/**,api/openapi.yaml,.github/workflows/ci.yml}"
               - "!**/*.md"
             bff:
-              - "{bff/**,api/openapi.yaml,.github/workflows/ci.yml}"
+              - "{bff/**,api/openapi.yaml,docker-compose.yml,.github/workflows/ci.yml}"
               - "!**/*.md"
             image:
               - "{bff/**,ui/**,api/openapi.yaml,.dockerignore,.github/workflows/ci.yml}"
@@ -144,22 +145,8 @@ jobs:
     defaults:
       run:
         working-directory: bff
-    services:
-      db:
-        image: postgres:17@sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f
-        env:
-          POSTGRES_USER: app
-          POSTGRES_PASSWORD: app
-          POSTGRES_DB: appdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U app -d appdb"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
     env:
-      DB_URL: jdbc:postgresql://localhost:5432/appdb
+      DB_URL: jdbc:postgresql://localhost:5433/appdb
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -170,6 +157,10 @@ jobs:
           java-version: 21
       # gradle-wrapper.yml validates bff/gradle/wrapper/gradle-wrapper.jar on every commit.
       - uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
+      # The same database as local development; docker-compose.yml is the only place for its image.
+      - name: Start the database
+        working-directory: .
+        run: docker compose up -d --wait db
       - run: ./gradlew build
 
   # Builds both images like release-images.yml (arm64, not pushed) and fails on the same Trivy gate,
