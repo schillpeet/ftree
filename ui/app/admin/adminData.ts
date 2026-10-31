@@ -155,3 +155,66 @@ export function confirmsPerson(typed: string | null | undefined, user: Pick<Admi
   const value = typed?.trim();
   return !!value && (value === user.displayName || value.toLowerCase() === user.email.toLowerCase());
 }
+
+// Up to two letters for an avatar: the first letters of the first two words, else the first two of the only one.
+export function initialsOf(name: string): string {
+  const words = name.trim().split(/[\s._@-]+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  const letters = words.length === 1 ? [...words[0]].slice(0, 2) : [[...words[0]][0], [...words[1]][0]];
+  return letters.join('').toUpperCase();
+}
+
+export const PEOPLE_FILTERS = ['all', 'online', 'invited', 'inactive', 'admins'] as const;
+export type PeopleFilter = (typeof PEOPLE_FILTERS)[number];
+
+// Someone counts as inactive once their last sign-in lies this long back; people who never signed in do not.
+export const INACTIVE_DAYS = 90;
+
+// Whether a person belongs under a filter chip: online with a tab open, invited and never signed in, inactive for
+// `INACTIVE_DAYS` while not online, or an admin of any kind.
+export function inPeopleFilter(
+  user: Pick<AdminUser, 'admin' | 'status' | 'lastSeen'>,
+  filter: PeopleFilter,
+  online: readonly string[] | undefined,
+  now: number,
+): boolean {
+  switch (filter) {
+    case 'all':
+      return true;
+    case 'online':
+      return !!online?.length;
+    case 'invited':
+      return user.status === 'invited' && !user.lastSeen;
+    case 'inactive':
+      return !online?.length && !!user.lastSeen && now - Date.parse(user.lastSeen) >= INACTIVE_DAYS * DAY;
+    case 'admins':
+      return user.admin;
+  }
+}
+
+// A search matches the name or the email, ignoring case, accents, and surrounding spaces; an empty one matches everybody.
+export function matchesSearch(query: string, ...fields: readonly (string | null | undefined)[]): boolean {
+  const fold = (value: string) => value.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+  const wanted = fold(query.trim());
+  return !wanted || fields.some((field) => !!field && fold(field).includes(wanted));
+}
+
+// Invitations still unanswered after this many days are marked as overdue.
+export const OVERDUE_DAYS = 14;
+
+// Whole days since an invitation; one sent today is 0 days old.
+export const daysSince = (at: string, now: number) => Math.max(0, Math.floor((now - Date.parse(at)) / DAY));
+
+export const isOverdue = (invitedAt: string, now: number) => daysSince(invitedAt, now) >= OVERDUE_DAYS;
+
+export type TreeKind = 'real' | 'test' | 'all';
+
+// Whether a tree is listed: by kind (real trees by default, test trees on demand) and by name or slug.
+export const treeListed = (family: Pick<AdminFamily, 'name' | 'slug' | 'test'>, kind: TreeKind, query: string) =>
+  (kind === 'all' || family.test === (kind === 'test')) && matchesSearch(query, family.name, family.slug);
+
+// Days until the next tree leaves the trash for good, or null while it is empty.
+export function nextPurgeIn(trash: readonly { purgeAt: string }[], now: number): number | null {
+  if (trash.length === 0) return null;
+  return Math.min(...trash.map((family) => daysLeft(family.purgeAt, now)));
+}
