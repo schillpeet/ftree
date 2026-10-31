@@ -271,7 +271,21 @@ export interface AdminPresence {
 }
 
 /**
- * Extra facts such as `email`, `role`, `name`, `source`, or `reason`.
+ * `access` for rights, `tree` for a tree's lifecycle, `content` for persons in a tree, `admin` for managing people, and `system` for the BFF itself.
+ */
+export type AuditCategory = typeof AuditCategory[keyof typeof AuditCategory];
+
+
+export const AuditCategory = {
+  access: 'access',
+  tree: 'tree',
+  content: 'content',
+  admin: 'admin',
+  system: 'system',
+} as const;
+
+/**
+ * Extra facts such as `email`, `role`, `name`, `source`, or `reason`. Content entries carry only `memberId` and, for updates, `fields`, the comma-separated names of the changed fields, never their values.
  */
 export type AuditEntryDetails = {[key: string]: string};
 
@@ -288,18 +302,19 @@ export interface AuditEntry {
      * @nullable
      */
   actorId: string | null;
-  /** For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.trashed`, `family.restored`, or `family.purged`. */
+  category: AuditCategory;
+  /** For example `membership.granted`, `user.admin.granted`, `user.can-create-trees.granted`, `family.created`, `family.imported`, `family.renamed`, `family.archived`, `family.anonymized`, `family.reordered`, `family.trashed`, `family.restored`, `family.purged`, `member.created`, `member.updated`, or `member.deleted`. */
   action: string;
-  /** `family` or `user`. */
+  /** `family`, `user`, or `system`. */
   targetType: string;
-  /** The family's id, or the email of the person. */
+  /** The family's id, the email of the person, or what the BFF changed as a whole, such as `families` for their order. */
   targetId: string;
   /**
      * The family's current name, else the name recorded in the entry; null for a person.
      * @nullable
      */
   targetName: string | null;
-  /** Extra facts such as `email`, `role`, `name`, `source`, or `reason`. */
+  /** Extra facts such as `email`, `role`, `name`, `source`, or `reason`. Content entries carry only `memberId` and, for updates, `fields`, the comma-separated names of the changed fields, never their values. */
   details: AuditEntryDetails;
 }
 
@@ -1045,6 +1060,18 @@ familyId?: string;
  * @maxLength 60
  */
 action?: string;
+/**
+ * Only entries of this category.
+ */
+category?: AuditCategory;
+/**
+ * Only entries at or after this time.
+ */
+from?: string;
+/**
+ * Only entries before this time.
+ */
+to?: string;
 };
 
 export type StreamFamilyEventsParams = {
@@ -1489,7 +1516,7 @@ export const getGetAdminAuditUrl = (params?: GetAdminAuditParams,) => {
 }
 
 /**
- * Who changed which rights or trees when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them, and an unknown id matches nothing. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
+ * Who changed which rights, trees, or persons when (see `audit_log`). The filters combine; `userId` matches entries a person made or that concern them, and an unknown id matches nothing. Content entries are kept 90 days, all others 12 months. Page through with `next` as `before`. Emails appear in the body only, never in the query. Needs `users.view`.
  * @summary List the audit log, newest first
  */
 export const getAdminAudit = async (params?: GetAdminAuditParams, options?: RequestInit): Promise<getAdminAuditResponse> => {
