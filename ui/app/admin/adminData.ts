@@ -1,5 +1,5 @@
 // Pure helpers of the admin page, so `adminData.check.mjs` can test them without Next.
-import type { AdminFamily, AdminPresence, AdminUser, TreeRole } from '../../lib/api/generated/members';
+import type { AdminFamily, AdminPresence, AdminUser, AuditEntry, TreeRole } from '../../lib/api/generated/members';
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -217,4 +217,76 @@ export const treeListed = (family: Pick<AdminFamily, 'name' | 'slug' | 'test'>, 
 export function nextPurgeIn(trash: readonly { purgeAt: string }[], now: number): number | null {
   if (trash.length === 0) return null;
   return Math.min(...trash.map((family) => daysLeft(family.purgeAt, now)));
+}
+
+// A local calendar day as `YYYY-MM-DD`, so entries can be grouped by the day they happened where the admin is.
+export function localDay(at: string | number): string {
+  const date = new Date(at);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+// Content changes in a row by the same person, of the same kind, in the same tree, at most this far apart, read as one.
+export const BURST_MS = 30 * 60 * 1000;
+
+export type ActivityDay = { day: string; groups: AuditEntry[][] };
+
+// The log, newest first, as days and, within a day, groups: every entry alone, except that a burst of content entries
+// (`BURST_MS`) becomes one group, so editing six persons reads as one line instead of six.
+export function activityDays(entries: readonly AuditEntry[]): ActivityDay[] {
+  const days: ActivityDay[] = [];
+  for (const entry of entries) {
+    const day = localDay(entry.at);
+    let current = days.at(-1);
+    if (current?.day !== day) {
+      current = { day, groups: [] };
+      days.push(current);
+    }
+    const group = current.groups.at(-1);
+    const last = group?.at(-1);
+    const joins =
+      !!last &&
+      entry.category === 'content' &&
+      last.category === 'content' &&
+      last.action === entry.action &&
+      last.targetId === entry.targetId &&
+      (last.actorId ?? last.actor) === (entry.actorId ?? entry.actor) &&
+      Date.parse(last.at) - Date.parse(entry.at) <= BURST_MS;
+    if (joins) group!.push(entry);
+    else current.groups.push([entry]);
+  }
+  return days;
+}
+
+// Whether a day is today, yesterday, or further back, seen from `now`.
+export function dayKind(day: string, now: number): 'today' | 'yesterday' | 'earlier' {
+  if (day === localDay(now)) return 'today';
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  return day === localDay(yesterday.getTime()) ? 'yesterday' : 'earlier';
+}
+
+export const PERIODS = ['7', '30', '365', 'all'] as const;
+export type Period = (typeof PERIODS)[number];
+
+// The `from` of a period of whole days back from `now`, or nothing for everything.
+export const periodStart = (period: Period, now: number) =>
+  period === 'all' ? undefined : new Date(now - Number(period) * 24 * 60 * 60 * 1000).toISOString();
+
+// The loaded entries as CSV (RFC 4180: comma-separated, every field quoted, quotes doubled), one line per entry.
+export function auditCsv(entries: readonly AuditEntry[]): string {
+  const quote = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  const head = ['at', 'category', 'actor', 'action', 'targetType', 'target', 'details'];
+  const rows = entries.map((entry) => [
+    entry.at,
+    entry.category,
+    entry.actor ?? '',
+    entry.action,
+    entry.targetType,
+    entry.targetName ?? entry.targetId,
+    auditDetails(entry.details)
+      .map(([key, value]) => `${key}=${value}`)
+      .join('; '),
+  ]);
+  return [head, ...rows].map((row) => row.map(quote).join(',')).join('\r\n') + '\r\n';
 }

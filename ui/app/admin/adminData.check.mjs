@@ -1,7 +1,12 @@
-// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, people, deleting them, and the filters of the people, invitation, and tree cards.
+// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, people, deleting them, the filters of the people, invitation, and tree cards, and the activity timeline.
 import assert from 'node:assert/strict';
 import {
   accessProblem,
+  activityDays,
+  auditCsv,
+  dayKind,
+  localDay,
+  periodStart,
   auditDetails,
   confirmsName,
   confirmsPerson,
@@ -213,5 +218,59 @@ assert.equal(treeListed(real, 'all', 'zufall'), false);
 // The trash's next purge is its soonest one; an empty trash has none.
 assert.equal(nextPurgeIn([], now), null);
 assert.equal(nextPurgeIn([{ purgeAt: '2026-11-20T12:00:00Z' }, { purgeAt: '2026-10-30T12:00:00Z' }], now), 4);
+
+// The timeline: days by local date, newest first; a burst of content edits by one person in one tree reads as one line.
+const audit = (id, at, overrides = {}) => ({
+  id,
+  at,
+  actor: 'ada@example.org',
+  actorId: 'u1',
+  category: 'content',
+  action: 'member.updated',
+  targetType: 'family',
+  targetId: 'f1',
+  targetName: 'Marina',
+  details: {},
+  ...overrides,
+});
+const noon = (day, minutes = 0) => new Date(`${day}T12:00:00`).getTime() + minutes * 60 * 1000;
+const iso = (time) => new Date(time).toISOString();
+const days = activityDays([
+  audit(9, iso(noon('2026-10-26', 50))),
+  audit(8, iso(noon('2026-10-26', 30))),
+  audit(7, iso(noon('2026-10-26', 0))),
+  audit(6, iso(noon('2026-10-26', -40))),
+  audit(5, iso(noon('2026-10-26', -45)), { actorId: 'u2', actor: 'ben@example.org' }),
+  audit(4, iso(noon('2026-10-26', -50)), { action: 'member.created' }),
+  audit(3, iso(noon('2026-10-26', -55)), { category: 'access', action: 'membership.granted' }),
+  audit(2, iso(noon('2026-10-26', -56)), { category: 'access', action: 'membership.granted' }),
+  audit(1, iso(noon('2026-10-25'))),
+]);
+assert.deepEqual(
+  days.map((day) => [day.day, day.groups.map((group) => group.map((entry) => entry.id))]),
+  [
+    ['2026-10-26', [[9, 8, 7], [6], [5], [4], [3], [2]]],
+    ['2026-10-25', [[1]]],
+  ],
+);
+assert.deepEqual(activityDays([]), []);
+
+// Today and yesterday by the local calendar, anything older by its date.
+assert.equal(localDay(noon('2026-10-26')), '2026-10-26');
+assert.equal(dayKind('2026-10-26', noon('2026-10-26')), 'today');
+assert.equal(dayKind('2026-10-25', noon('2026-10-26')), 'yesterday');
+assert.equal(dayKind('2026-10-24', noon('2026-10-26')), 'earlier');
+
+// A period starts whole days back; "all" has no start.
+assert.equal(periodStart('7', now), '2026-10-19T12:00:00.000Z');
+assert.equal(periodStart('all', now), undefined);
+
+// CSV quotes every field and doubles quotes inside, one line per entry after the header.
+const csv = auditCsv([audit(1, '2026-10-26T12:00:00Z', { targetName: 'Die "Alten"', details: { fields: 'note,firstName' } })]);
+assert.equal(
+  csv,
+  '"at","category","actor","action","targetType","target","details"\r\n' +
+    '"2026-10-26T12:00:00Z","content","ada@example.org","member.updated","family","Die ""Alten""","fields=note,firstName"\r\n',
+);
 
 console.log('adminData checks passed');
