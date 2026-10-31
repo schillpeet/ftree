@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.31.0](https://github.com/schillpeet/ftree/compare/v0.30.0...v0.31.0) (2026-10-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ui:** serve the administration only on the admin host ([#285](https://github.com/schillpeet/ftree/issues/285))
+
+### Features
+
+* **ui:** serve the administration only on the admin host ([#285](https://github.com/schillpeet/ftree/issues/285)) ([c98a157](https://github.com/schillpeet/ftree/commit/c98a157d1fa40e02fd8cc82acc4ad87943f30d11))
+
+
+### Dependencies
+
+* **repo:** bump gradle/actions/setup-gradle from 6.4.0 to 6.4.1 ([#279](https://github.com/schillpeet/ftree/issues/279)) ([60b1f47](https://github.com/schillpeet/ftree/commit/60b1f47b31fd98f76f6f0445851e7fc41c801373))
+* **repo:** bump gradle/actions/wrapper-validation from 6.4.0 to 6.4.1 ([#278](https://github.com/schillpeet/ftree/issues/278)) ([5bd7699](https://github.com/schillpeet/ftree/commit/5bd76999aeb0c84749d7bc86b4b8c87f900da5c2))
+* **repo:** bump swaggerapi/swagger-ui from v5.33.1 to v5.34.0 ([#277](https://github.com/schillpeet/ftree/issues/277)) ([623fe58](https://github.com/schillpeet/ftree/commit/623fe586902d61b4c6cdd6d98704627ce1978355))
+
 ## [0.30.0](https://github.com/schillpeet/ftree/compare/v0.29.1...v0.30.0) (2026-10-31)
 
 
