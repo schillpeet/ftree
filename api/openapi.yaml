@@ -1726,6 +1726,56 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+    post:
+      operationId: inviteWithoutTree
+      tags:
+        - access
+      summary: Invite someone to set up their own tree
+      description: >-
+        Adds the person to `users` as invited without a tree or a role: after signing in they start with an empty setup, create their own tree and become its owner.
+        Their seat stays until they are removed (`DELETE /admin/users/{userId}`), even without a membership; the role is kept for the text and applies to trees they are invited to later.
+        Nothing is sent: the answer carries an invitation text with the app's address to copy, in German or English by `Accept-Language`.
+        Someone who already has a seat gets the text again; someone new while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`.
+        Needs `users.manage`; the change is written to the audit log.
+      parameters:
+        - name: Accept-Language
+          in: header
+          required: false
+          description: The language of the invitation text; German (`de`) or English (`en`, also the fallback).
+          schema:
+            type: string
+            maxLength: 200
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetupInvitationRequest"
+      responses:
+        "200":
+          description: The person and the invitation text.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetupInvitation"
+        "400":
+          description: The body breaks the schema or the email is not valid (`VALIDATION_FAILED`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: Every Cloudflare Access seat is taken, so nobody new can get access. Code `SEATS_EXHAUSTED`; nothing was changed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          $ref: "#/components/responses/InternalError"
 components:
   securitySchemes:
     cloudflareAccess:
@@ -3153,6 +3203,43 @@ components:
           type: string
           nullable: true
           description: The email of whoever gave the role; null when the BFF did.
+    SetupInvitationRequest:
+      type: object
+      required:
+        - email
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 320
+          description: The email the person signs in with; trimmed and lowercased.
+        role:
+          $ref: "#/components/schemas/TreeRole"
+    SetupInvitation:
+      type: object
+      required:
+        - userId
+        - email
+        - displayName
+        - link
+        - text
+      properties:
+        userId:
+          type: string
+          format: uuid
+        email:
+          type: string
+        displayName:
+          type: string
+          description: The display name, or the part of the email before the `@`.
+        link:
+          type: string
+          format: uri
+          description: The app's address, `https://<host>/`.
+        text:
+          type: string
+          description: An invitation to copy and send yourself, with the address and how to sign in with a one-time code.
     UpdateMeRequest:
       type: object
       required:
