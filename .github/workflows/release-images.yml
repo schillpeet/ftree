@@ -3,6 +3,8 @@ name: Release images
 # Builds the UI and BFF container images and the Helm chart for each published release and pushes them to GHCR.
 # Trivy scans each image before the push and stops the release on fixable CRITICAL vulnerabilities.
 # Images are arm64 only, matching the Hetzner CAX servers they are meant for.
+# Every image and chart gets a signed SLSA build provenance attestation (Sigstore, GitHub attestations); the chart and
+# its attestation bundle are also attached to the release, where OpenSSF Scorecard's Signed-Releases check finds them.
 on:
   release:
     types: [published]
@@ -17,6 +19,8 @@ jobs:
       contents: read
       packages: write
       security-events: write # uploads the Trivy results to code scanning
+      id-token: write # signs the provenance with Sigstore
+      attestations: write # stores the provenance as a GitHub attestation
     strategy:
       matrix:
         include:
@@ -81,6 +85,7 @@ jobs:
           exit-code: "1"
       # Same builder and inputs as above, so this reuses the cached layers instead of building again.
       - uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        id: push
         with:
           context: ${{ matrix.context }}
           file: ${{ matrix.file }}
@@ -88,6 +93,12 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      # Verify with `gh attestation verify oci://ghcr.io/schillpeet/ftree-<name>:<version> -R schillpeet/ftree`.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/ftree-${{ matrix.name }}
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
 
   # Publishes the Helm chart with the release version as chart and app version, so it points at the images above.
   # Manual runs have no release version and skip it.
@@ -96,8 +107,10 @@ jobs:
     needs: image
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write # attaches the chart and its provenance to the release
       packages: write # pushes the chart to GHCR
+      id-token: write # signs the provenance with Sigstore
+      attestations: write # stores the provenance as a GitHub attestation
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # Helm is preinstalled on GitHub-hosted Ubuntu runners.
@@ -111,3 +124,17 @@ jobs:
           echo "$TOKEN" | helm registry login ghcr.io --username "$ACTOR" --password-stdin
           helm package deploy/ftree --version "$version" --app-version "$version"
           helm push "ftree-$version.tgz" "oci://ghcr.io/$OWNER/charts"
+      # Verify with `gh attestation verify ftree-<version>.tgz --bundle ftree-<version>.tgz.intoto.jsonl -R schillpeet/ftree`.
+      - uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
+        id: attest
+        with:
+          subject-path: ftree-*.tgz
+      # The bundle holds the in-toto SLSA provenance statement; Scorecard counts `*.intoto.jsonl` assets as provenance.
+      - env:
+          TAG: ${{ github.event.release.tag_name }}
+          BUNDLE: ${{ steps.attest.outputs.bundle-path }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          chart="ftree-${TAG#v}.tgz"
+          cp "$BUNDLE" "$chart.intoto.jsonl"
+          gh release upload "$TAG" "$chart" "$chart.intoto.jsonl" --clobber
