@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.32.0](https://github.com/schillpeet/ftree/compare/v0.31.0...v0.32.0) (2026-10-31)
+
+
+### Features
+
+* **ui:** invite people to set up their own tree ([#292](https://github.com/schillpeet/ftree/issues/292)) ([5015e23](https://github.com/schillpeet/ftree/commit/5015e230027c5a185f4698e73bb49803e1534a58))
+* **ui:** show crown and relation spacing controls to everyone ([#290](https://github.com/schillpeet/ftree/issues/290)) ([c127192](https://github.com/schillpeet/ftree/commit/c127192e54882edabe4f9f6b6dbb5d95a775a08e))
+
+
+### Bug Fixes
+
+* **repo:** merge duplicate changelog entries ([#291](https://github.com/schillpeet/ftree/issues/291)) ([daeffae](https://github.com/schillpeet/ftree/commit/daeffae97856d1551a65bf7ae44c65c6a232071c))
+* **ui:** disable new family at the family limit and explain why ([#287](https://github.com/schillpeet/ftree/issues/287)) ([2c1ed74](https://github.com/schillpeet/ftree/commit/2c1ed7472ce5df51ec82b21b6c684dce21d6590b)) ([#289](https://github.com/schillpeet/ftree/issues/289)) ([e5bc643](https://github.com/schillpeet/ftree/commit/e5bc6437764e58d0c9b03f413e000b5d18e9e997))
+
 ## [0.31.0](https://github.com/schillpeet/ftree/compare/v0.30.0...v0.31.0) (2026-10-31)
 
 
