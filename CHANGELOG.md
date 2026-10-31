@@ -12,8 +12,7 @@
 ### Bug Fixes
 
 * **repo:** merge duplicate changelog entries ([#291](https://github.com/schillpeet/ftree/issues/291)) ([daeffae](https://github.com/schillpeet/ftree/commit/daeffae97856d1551a65bf7ae44c65c6a232071c))
-* **ui:** disable new family at the family limit and explain why ([#287](https://github.com/schillpeet/ftree/issues/287)) ([2c1ed74](https://github.com/schillpeet/ftree/commit/2c1ed7472ce5df51ec82b21b6c684dce21d6590b))
-* **ui:** disable new family at the family limit and explain why ([#289](https://github.com/schillpeet/ftree/issues/289)) ([e5bc643](https://github.com/schillpeet/ftree/commit/e5bc6437764e58d0c9b03f413e000b5d18e9e997))
+* **ui:** disable new family at the family limit and explain why ([#287](https://github.com/schillpeet/ftree/issues/287)) ([2c1ed74](https://github.com/schillpeet/ftree/commit/2c1ed7472ce5df51ec82b21b6c684dce21d6590b)) ([#289](https://github.com/schillpeet/ftree/issues/289)) ([e5bc643](https://github.com/schillpeet/ftree/commit/e5bc6437764e58d0c9b03f413e000b5d18e9e997))
 
 ## [0.31.0](https://github.com/schillpeet/ftree/compare/v0.30.0...v0.31.0) (2026-10-31)
 
