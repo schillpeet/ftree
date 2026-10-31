@@ -1,28 +1,35 @@
 'use client';
 
 import { useState, type FormEvent } from 'react';
-import type { AdminFamily, TreeInvitation, TreeRole } from '../../lib/api/generated/members';
+import type { AdminFamily, TreeRole } from '../../lib/api/generated/members';
 import { useLanguage, useT } from '../i18n';
-import { copyText, share } from './accessActions';
+import { copyText, inviteToSetup, share } from './accessActions';
 import RolePicker from './RolePicker';
 
-// "Person einladen": email, tree, and role; nothing is sent, the answer is a text to copy and send yourself.
+// The invitation to copy and send yourself, with the name it is for, the address, and the text.
+type Invitation = { name: string; link: string; text: string };
+
+// "Person einladen": email, tree, and role. The tree defaults to "Leeres Setup" with the role owner; the role then is the
+// one in trees they are invited to later, as the text says. Nothing is sent; the answer is a text to copy and send yourself.
 export default function InvitePerson({ trees, onShared }: { trees: readonly AdminFamily[]; onShared: () => void }) {
   const t = useT();
   const [language] = useLanguage();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState('');
+  // An empty id is the empty setup.
   const [familyId, setFamilyId] = useState('');
-  const [role, setRole] = useState<TreeRole>('editor');
+  const [role, setRole] = useState<TreeRole>('owner');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [invitation, setInvitation] = useState<TreeInvitation | null>(null);
+  const [invitation, setInvitation] = useState<Invitation | null>(null);
   const [copied, setCopied] = useState<boolean | null>(null);
-  const chosen = familyId || trees[0]?.id || '';
+  const emptySetup = familyId === '';
 
   function close() {
     setOpen(false);
     setEmail('');
+    setFamilyId('');
+    setRole('owner');
     setError(null);
     setInvitation(null);
     setCopied(null);
@@ -32,10 +39,17 @@ export default function InvitePerson({ trees, onShared }: { trees: readonly Admi
     event.preventDefault();
     setBusy(true);
     setError(null);
-    const result = await share(chosen, email.trim(), role, language);
-    setBusy(false);
-    if (!result.ok) return setError(t.admin.problems[result.problem]);
-    setInvitation(result.data);
+    if (emptySetup) {
+      const result = await inviteToSetup(email.trim(), role, language);
+      setBusy(false);
+      if (!result.ok) return setError(t.admin.problems[result.problem]);
+      setInvitation({ name: result.data.displayName, link: result.data.link, text: result.data.text });
+    } else {
+      const result = await share(familyId, email.trim(), role, language);
+      setBusy(false);
+      if (!result.ok) return setError(t.admin.problems[result.problem]);
+      setInvitation({ name: result.data.access.displayName, link: result.data.link, text: result.data.text });
+    }
     setCopied(null);
     onShared();
   }
@@ -46,7 +60,7 @@ export default function InvitePerson({ trees, onShared }: { trees: readonly Admi
 
   if (!open) {
     return (
-      <button type="button" className="glass glass-button" disabled={!trees.length} onClick={() => setOpen(true)}>
+      <button type="button" className="glass glass-button" onClick={() => setOpen(true)}>
         {t.admin.invite.open}
       </button>
     );
@@ -57,7 +71,9 @@ export default function InvitePerson({ trees, onShared }: { trees: readonly Admi
       <h2 id="admin-invite">{t.admin.invite.title}</h2>
       {invitation ? (
         <div className="admin-invite-result">
-          <p className="admin-muted">{t.admin.invite.done(invitation.access.displayName, invitation.link)}</p>
+          <p className="admin-muted">
+            {emptySetup ? t.admin.invite.doneSetup(invitation.name, invitation.link) : t.admin.invite.done(invitation.name, invitation.link)}
+          </p>
           <textarea className="admin-invite-text" readOnly rows={8} value={invitation.text} onFocus={(event) => event.target.select()} />
           <div className="admin-actions">
             {copied !== null && (
@@ -90,7 +106,8 @@ export default function InvitePerson({ trees, onShared }: { trees: readonly Admi
           </label>
           <label>
             {t.admin.invite.tree}
-            <select className="admin-select" value={chosen} onChange={(event) => setFamilyId(event.target.value)}>
+            <select className="admin-select" value={familyId} onChange={(event) => setFamilyId(event.target.value)}>
+              <option value="">{t.admin.invite.emptySetup}</option>
               {trees.map((tree) => (
                 <option key={tree.id} value={tree.id}>
                   {tree.name}
@@ -111,7 +128,7 @@ export default function InvitePerson({ trees, onShared }: { trees: readonly Admi
             <button type="button" className="family-card-button" onClick={close}>
               {t.cancel}
             </button>
-            <button type="submit" className="family-card-button" disabled={busy || !email.trim() || !chosen}>
+            <button type="submit" className="family-card-button" disabled={busy}>
               {t.admin.invite.submit}
             </button>
           </div>

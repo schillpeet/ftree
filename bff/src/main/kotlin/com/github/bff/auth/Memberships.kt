@@ -37,11 +37,24 @@ class Memberships(private val jdbc: JdbcTemplate, private val auditLog: AuditLog
         return Grants(flags?.first ?: false, flags?.second ?: false, families)
     }
 
-    // Everyone with a right in the database, by email.
+    // Everyone with a right in the database, by email; also people who were invited without a tree and keep their seat.
     fun people(): List<String> =
-        jdbc.query("SELECT email FROM users WHERE admin OR can_create_trees UNION SELECT email FROM family_memberships ORDER BY 1") { rs, _ ->
+        jdbc.query(
+            "SELECT email FROM users WHERE admin OR can_create_trees OR setup_seat " +
+                "UNION SELECT email FROM family_memberships ORDER BY 1",
+        ) { rs, _ ->
             rs.getString(1)
         }
+
+    // Invites someone without a tree: adds the users row, keeps a seat for them until they are removed, and stores the role
+    // for their invitation text. True when the seat was newly reserved.
+    fun reserveSetupSeat(email: String, role: String, invitedBy: String): Boolean {
+        val key = email.normalizedEmail()
+        addUser(key, invitedBy)
+        val reserved = jdbc.queryForObject("SELECT setup_seat FROM users WHERE email = ?", Boolean::class.java, key) == false
+        jdbc.update("UPDATE users SET setup_seat = true, setup_role = ? WHERE email = ?", role, key)
+        return reserved
+    }
 
     // Gives the role in the family unless the person already has one there; true when it was granted.
     fun grant(familyId: UUID, email: String, role: Role, grantedBy: String?, source: String? = null): Boolean {

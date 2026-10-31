@@ -341,6 +341,7 @@ Every tree keeps at least one owner: `MembershipService` refuses to demote or re
 `GET /families/{familyId}/access` lists everyone with a membership in the tree, owners first, with `userId`, `email`, `displayName`, `role`, `status` (`invited` until the first sign-in, then `active`), `grantedAt`, and `lastSeen`; admins reach every tree without a membership and are not listed.
 `PUT /families/{familyId}/access` with `{email, role}` invites the person, adding a `users` row with `invited_at` and `invited_by` when they are new, or changes their role.
 Inviting sends no email: the answer carries the tree's link `<app.public-url>/<slug>` and an invitation text to copy, in German or English by `Accept-Language` (English otherwise), that tells the person to sign in with their email and the one-time code Cloudflare Access mails them.
+`POST /admin/invitations` with `{email, role}` (`users.manage`, role owner by default) invites someone to set up their own tree: it adds the `users` row with `invited_at` and `invited_by`, sets `setup_seat` and `setup_role` (V28), which keeps their Cloudflare Access seat even without a membership; the person becomes owner of a tree they create, `setup_role` applies in trees they are invited to later, and the answer carries `<app.public-url>/` and an invitation text that says so.
 `app.public-url` (`APP_PUBLIC_URL`, default `http://localhost:3000`) is the address people open the UI at.
 `DELETE /families/{familyId}/access/{userId}` removes the person's membership and keeps their `users` row; `POST /families/{familyId}/owner` with `{userId}` makes the person, who must already have a role in the tree, its only owner and every previous owner an editor, and writes `family.ownership.transferred`.
 People are named by `users.id` in every path, so no email appears in a URL or log; a `userId` without a role in the tree answers 404 `NOT_FOUND`, like a tree the caller cannot see, while editors and visitors of the tree get 403.
@@ -359,6 +360,7 @@ A run that finds nothing to change logs that once, until the result changes agai
 The sync needs `CLOUDFLARE_API_TOKEN` (the Secret `ftree-cloudflare`, key `api-token`, a token with "Access: Organizations, Identity Providers, and Groups Edit"), `CLOUDFLARE_ACCOUNT_ID`, and `CLOUDFLARE_ACCESS_GROUP_ID` (`terraform output access_group_id` in ftree-infra).
 Without all three the BFF logs once at startup that the sync is off and runs with the noop gateway, as in development and tests, which never call Cloudflare.
 Seats are limited to `ACCESS_SYNC_SEAT_LIMIT` (default 50, the Cloudflare free plan): inviting someone without a seat, or giving them `admin` or `can_create_trees`, answers 409 `SEATS_EXHAUSTED` before anything is written, while people with a seat can still change roles.
+`users.setup_seat` counts as a seat in `AccessSeats.people()` until the `users` row is deleted, so someone invited to an empty setup keeps the seat after signing in, also when they have no tree.
 `POST /admin/users/{userId}/sessions/revoke` (`users.manage`) ends a person's Access sessions and writes `user.sessions.revoked` to the audit log; without the token or when Cloudflare fails it answers 503 `ACCESS_UNAVAILABLE`.
 The family card shows a "Teilen" button for everyone with `family.share` (owners of the tree and admins); editors and visitors do not see it.
 The button opens the share dialog (`ShareDialog.tsx`), a draggable, pinnable panel beside the card that loads `GET /families/{familyId}/access`.
@@ -366,6 +368,7 @@ The dialog lists the people with access with name, email, role, and status (invi
 Each row changes the role with a menu (editor or visitor), removes the access, hands the tree over after a confirmation ("Besitz übertragen", `POST /families/{familyId}/owner`), and, while the person is only invited, shows the invitation text again.
 The form invites by email with the role editor or visitor; ownership is only given by the transfer.
 After an invitation the dialog shows the text with the tree's link and a copy button; nothing is sent.
+The invite dialog defaults to the tree "Leeres Setup" with the role owner, which calls `POST /admin/invitations` with the role; choosing a tree calls `PUT /families/{familyId}/access` with the role picked.
 Problem codes are explained in the dialog's language; `INVALID_REQUEST` means the last owner, `SEATS_EXHAUSTED` that no seat is left for someone new, and `share.ts` holds this mapping and the row rules, tested by `share.check.mjs`.
 
 ### Administration
@@ -424,6 +427,7 @@ Each tree has a role menu (`PUT /families/{familyId}/access`) and an × that rem
 Each invitation shows its age and is marked "Überfällig" once it is 14 days old.
 "Text kopieren" asks `PUT /families/{familyId}/access` again with the same role, which changes nothing and returns the invitation text in the page language, and copies it; "Zurückziehen" removes the person from that tree after a confirmation.
 "Person einladen" (in both tabs) takes an email, a tree, and a role, calls the same endpoint, and shows the text to copy; nothing is sent.
+People invited to an empty setup have no membership, so they are not listed under "Einladungen"; they appear under "Personen" as invited, and "Löschen" there removes the row and with it the seat.
 The BFF has no problem code of its own for the last owner, so the UI reads `INVALID_REQUEST` from these calls as "a tree needs an owner" and shows readable messages for the other codes.
 `DELETE /admin/users/{userId}` needs `users.manage` and removes the person's `users` row, which cascades to their roles in every tree.
 It answers 400 `INVALID_REQUEST` for yourself and for admins of the access file, and 404 for an unknown id.

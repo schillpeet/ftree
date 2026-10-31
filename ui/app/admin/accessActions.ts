@@ -1,7 +1,9 @@
 import {
+  type SetupInvitation,
   type TreeInvitation,
   type TreeRole,
   deleteAdminUser,
+  inviteWithoutTree,
   revokeAdminUserSessions,
   revokeTreeAccess,
   shareTree,
@@ -19,6 +21,18 @@ export async function share(familyId: string, email: string, role: TreeRole, lan
   try {
     const response = await shareTree(familyId, { email, role }, { headers: { 'Accept-Language': language } });
     if (response.status === 200) return { ok: true, data: response.data as TreeInvitation };
+    return { ok: false, problem: accessProblem(problemCode(response.data)) };
+  } catch {
+    return { ok: false, problem: 'failed' };
+  }
+}
+
+// Invites the person to set up their own tree, so after signing in they start with an empty setup; the role is the one
+// they have in trees they are invited to later.
+export async function inviteToSetup(email: string, role: TreeRole, language: Language): Promise<AccessResult<SetupInvitation>> {
+  try {
+    const response = await inviteWithoutTree({ email, role }, { headers: { 'Accept-Language': language } });
+    if (response.status === 200) return { ok: true, data: response.data as SetupInvitation };
     return { ok: false, problem: accessProblem(problemCode(response.data)) };
   } catch {
     return { ok: false, problem: 'failed' };

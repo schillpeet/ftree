@@ -6,10 +6,13 @@ import com.github.bff.generated.api.AccessApi
 import com.github.bff.generated.model.AdminInvitation
 import com.github.bff.generated.model.AdminUser
 import com.github.bff.generated.model.ProblemCode
+import com.github.bff.generated.model.SetupInvitation
+import com.github.bff.generated.model.SetupInvitationRequest
 import com.github.bff.generated.model.ShareTreeRequest
 import com.github.bff.generated.model.TransferOwnershipRequest
 import com.github.bff.generated.model.TreeAccessEntry
 import com.github.bff.generated.model.TreeInvitation
+import com.github.bff.generated.model.TreeRole
 import com.github.bff.generated.model.UpdateAdminUserRequest
 import com.github.bff.problem.ApiProblem
 import org.springframework.http.ResponseEntity
@@ -17,12 +20,13 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 // SecurityConfiguration requires family.share in the tree for /families/{familyId}/..., users.view to read the
-// /admin paths, and users.manage to change or delete a person or end their sessions.
+// /admin paths, and users.manage to change or delete a person, end their sessions, or invite without a tree.
 @RestController
 class AccessController(
     private val trees: TreeAccessService,
     private val people: PeopleService,
     private val sessions: AccessSessions,
+    private val setup: SetupInvitations,
 ) : AccessApi {
     override fun getTreeAccess(familyId: UUID): ResponseEntity<List<TreeAccessEntry>> = ResponseEntity.ok(trees.list(familyId))
 
@@ -55,6 +59,9 @@ class AccessController(
     }
 
     override fun getAdminInvitations(): ResponseEntity<List<AdminInvitation>> = ResponseEntity.ok(people.invitations())
+
+    override fun inviteWithoutTree(setupInvitationRequest: SetupInvitationRequest, acceptLanguage: String?): ResponseEntity<SetupInvitation> =
+        ResponseEntity.ok(setup.invite(setupInvitationRequest.email, setupInvitationRequest.role ?: TreeRole.OWNER, actor(), acceptLanguage))
 
     private fun actor() = CurrentUser.current()?.email ?: throw ApiProblem(ProblemCode.UNAUTHENTICATED)
 }

@@ -1006,6 +1006,28 @@ export interface AdminInvitation {
   invitedBy: string | null;
 }
 
+export interface SetupInvitationRequest {
+  /**
+     * The email the person signs in with; trimmed and lowercased.
+     * @minLength 3
+     * @maxLength 320
+     */
+  email: string;
+  /** The role the person has in a tree they are invited to later; they become owner of a tree they create themselves. Owner when omitted. */
+  role?: TreeRole;
+}
+
+export interface SetupInvitation {
+  userId: string;
+  email: string;
+  /** The display name, or the part of the email before the `@`. */
+  displayName: string;
+  /** The app's address, `https://<host>/`. */
+  link: string;
+  /** An invitation to copy and send yourself, with the address and how to sign in with a one-time code. */
+  text: string;
+}
+
 export interface UpdateMeRequest {
   /**
      * The new display name; an empty or blank one removes it, so the email's local part shows again.
@@ -4487,4 +4509,89 @@ export const getAdminInvitations = async ( options?: RequestInit): Promise<getAd
 
   const data: getAdminInvitationsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as getAdminInvitationsResponse
+}
+
+
+
+export type inviteWithoutTreeResponse200 = {
+  data: SetupInvitation
+  status: 200
+}
+
+export type inviteWithoutTreeResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type inviteWithoutTreeResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type inviteWithoutTreeResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type inviteWithoutTreeResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type inviteWithoutTreeResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type inviteWithoutTreeResponseSuccess = (inviteWithoutTreeResponse200) & {
+  headers: Headers;
+};
+export type inviteWithoutTreeResponseError = (inviteWithoutTreeResponse400 | inviteWithoutTreeResponse401 | inviteWithoutTreeResponse403 | inviteWithoutTreeResponse409 | inviteWithoutTreeResponse500) & {
+  headers: Headers;
+};
+
+export type inviteWithoutTreeResponse = (inviteWithoutTreeResponseSuccess | inviteWithoutTreeResponseError)
+
+export const getInviteWithoutTreeUrl = () => {
+
+
+
+
+  return `/api/admin/invitations`
+}
+
+/**
+ * Adds the person to `users` as invited without a tree or a role: after signing in they start with an empty setup, create their own tree and become its owner. Their seat stays until they are removed (`DELETE /admin/users/{userId}`), even without a membership; the role is kept for the text and applies to trees they are invited to later. Nothing is sent: the answer carries an invitation text with the app's address to copy, in German or English by `Accept-Language`. Someone who already has a seat gets the text again; someone new while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `users.manage`; the change is written to the audit log.
+ * @summary Invite someone to set up their own tree
+ */
+export const inviteWithoutTree = async (setupInvitationRequest: SetupInvitationRequest, options?: RequestInit): Promise<inviteWithoutTreeResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getInviteWithoutTreeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setupInvitationRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: inviteWithoutTreeResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as inviteWithoutTreeResponse
 }
