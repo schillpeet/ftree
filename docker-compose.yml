@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:17@sha256:31ba9c94a03ada9988f2bb493a22a75eef3a185884533e5cdbcd498ea835b08f
     environment:
       POSTGRES_USER: app
       POSTGRES_PASSWORD: app
@@ -16,7 +16,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   swagger:
-    image: swaggerapi/swagger-ui:v5.33.1
+    image: swaggerapi/swagger-ui:v5.33.1@sha256:c3f95bc6ccb41a39c842d7b4f957e1ccb4b3e43c15ec3520654efa4a28761c18
     environment:
       SWAGGER_JSON: /spec/openapi.yaml
     ports:
