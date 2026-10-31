@@ -5,7 +5,8 @@ import { EyeIcon, EyeOffIcon, PencilIcon, PlusIcon, UploadIcon, UsersIcon, Close
 import { importFamily, reorderFamilies, type FamilySummary } from '../lib/api/generated/members';
 import RandomFamilyPanel from './RandomFamilyPanel';
 import { useT } from './i18n';
-import { useCan } from './Permissions';
+import { useCan, useMe } from './Permissions';
+import { atFamilyLimit } from './access';
 import { problemCode } from './problems';
 
 export default function FamiliesPanel({
@@ -45,6 +46,8 @@ export default function FamiliesPanel({
   const canImport = useCan('family.create');
   const canGenerate = useCan('dev.tools');
   const manage = useCan('family.manage');
+  // At the limit the BFF would refuse a new family, so creating and importing are off and the reason shows right below.
+  const atLimit = atFamilyLimit(useMe(), families);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
@@ -131,11 +134,12 @@ export default function FamiliesPanel({
       <div className="families-panel-body">
         {canImport && (
           <div className="family-set-import">
-            <button type="button" disabled={isImporting} onClick={onCreate}>
+            <button type="button" disabled={isImporting || atLimit} aria-describedby={atLimit ? 'family-limit' : undefined} onClick={onCreate}>
               <PlusIcon />
               {t.families.create}
             </button>
-            <button type="button" disabled={isImporting} onClick={() => fileRef.current?.click()}>
+            {atLimit && <p className="family-limit" id="family-limit" role="status">{t.treeLimit}</p>}
+            <button type="button" disabled={isImporting || atLimit} aria-describedby={atLimit ? 'family-limit' : undefined} onClick={() => fileRef.current?.click()}>
               <UploadIcon />
               {isImporting ? t.families.importing : t.families.import}
             </button>

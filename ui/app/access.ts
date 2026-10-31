@@ -8,6 +8,15 @@ export function can(me: Me | null, permission: Permission, family?: Pick<FamilyS
   return me.permissions.includes(permission) || !!family?.permissions.includes(permission);
 }
 
+// The BFF's MAX_OWNED_TREES: non-admins own at most this many families outside the trash.
+export const MAX_OWNED_FAMILIES = 5;
+
+// Whether creating or importing a family would hit that limit; the list holds no trashed families, like the BFF's count.
+export function atFamilyLimit(me: Me | null, families: Pick<FamilySummary, 'role'>[] | null) {
+  if (!me || me.admin || !families) return false;
+  return families.filter((family) => family.role === 'owner').length >= MAX_OWNED_FAMILIES;
+}
+
 // Without `tree.appearance` only the experimental appearance is available; any other stored choice falls back to it.
 export const APPEARANCES = ['organic', 'organicExperimental', 'experimental'] as const;
 export type Appearance = (typeof APPEARANCES)[number];

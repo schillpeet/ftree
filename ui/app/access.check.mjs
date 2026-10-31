@@ -1,7 +1,7 @@
 // Run with `node app/access.check.mjs`: permission checks, the appearance fallback without `tree.appearance`,
 // and which API answers count as a sign-in or permission problem.
 import assert from 'node:assert/strict';
-import { hostOf, APPEARANCES, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can, failedCallNeedsProbe, signedOutByProbe } from './access.ts';
+import { hostOf, APPEARANCES, MAX_OWNED_FAMILIES, atFamilyLimit, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can, failedCallNeedsProbe, signedOutByProbe } from './access.ts';
 
 const me = { email: 'x@example.org', admin: false, canCreateTrees: false, permissions: ['tree.appearance'], verified: true };
 const visited = { role: 'visitor', permissions: ['tree.view'] };
@@ -17,6 +17,17 @@ assert.ok(!can(me, 'member.delete', edited));
 assert.ok(!can({ ...me, admin: true }, 'family.manage', edited));
 assert.ok(can({ ...me, permissions: ['family.manage'] }, 'family.manage', null));
 assert.ok(!can(null, 'tree.view', edited));
+
+// The family limit counts owned families only, and never applies to admins or before `/me` and the list are loaded.
+const owned = (count) => Array.from({ length: count }, () => ({ role: 'owner' }));
+assert.equal(MAX_OWNED_FAMILIES, 5);
+assert.ok(!atFamilyLimit(me, owned(4)));
+assert.ok(atFamilyLimit(me, owned(5)));
+assert.ok(atFamilyLimit(me, owned(6)));
+assert.ok(!atFamilyLimit(me, [...owned(4), visited, edited]));
+assert.ok(!atFamilyLimit({ ...me, admin: true }, owned(5)));
+assert.ok(!atFamilyLimit(null, owned(5)));
+assert.ok(!atFamilyLimit(me, null));
 
 // Appearance: without `tree.appearance` always experimental; with them the stored choice, organic by default.
 assert.equal(PUBLIC_APPEARANCE, 'experimental');
