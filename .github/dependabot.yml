@@ -41,7 +41,8 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
-  # Dependabot does not read the image in the services block of ci.yml; bump that digest by hand when the compose one moves.
+  # docker-compose.yml is the only place for the postgres tag: local development and the CI bff job start it from there,
+  # and production follows this tag.
   - package-ecosystem: docker-compose
     directory: /
     schedule:
