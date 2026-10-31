@@ -89,7 +89,7 @@ The original aerial and grounded roots always stay; nothing grows below scale 1.
 
 ### Debug panel
 
-The "Evolution" button in the upper-right corner (the former debug panel, closed by default) opens a translucent panel that groups the tools into sections: "Ansicht" with the zoom slider, the "Front", "Above", and "Orbit" camera buttons, the "Anheftpunkte" pin checkbox, and the "Kartenstil" select (see below), and the development-only "Vorschau" section with the crown and relation spacing sliders (hidden in production builds).
+The "Evolution" button in the upper-right corner (the former debug panel, closed by default) opens a translucent panel that groups the tools into sections: "Ansicht" with the zoom slider, the "Front", "Above", and "Orbit" camera buttons, the "Anheftpunkte" pin checkbox, and the "Kartenstil" select (see below), and the "Vorschau" section with the crown and relation spacing sliders.
 The "Linien anzeigen" checkbox in the "Verbindungslinien" section hides or shows the parent and partner lines in all three appearances, so that only the cards remain.
 The choice is remembered per browser and the lines are shown by default.
 While a person panel is open, the lines from that person to everyone the panel lists (parents, partners, children, siblings, and half-siblings) are drawn in a highlight color in all three appearances.
@@ -103,8 +103,8 @@ The "Legende der Beziehungen" checkbox at the end of the "Ansicht" section shows
 The legend explains the experimental view's solid, dashed, dotted, core-family, and blood-relative lines, branch points, bridges, the partnership symbols ⚭ ⚯ ⚮, the "▲ Eltern von …" stubs, and the † before a name (`ui/app/RelationLegend.tsx`).
 The legend lists its entries in two columns, can be dragged by its header, pinned in place like the person panel, folded to its header with the button next to ×, and closed with ×; the pinned position and the folded state are remembered per browser.
 The legend starts folded to its header until the user unfolds it.
-A development-only slider scales the crown and its pins together while the card size itself stays fixed.
-A second development-only slider in the debug panel previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
+A slider in "Vorschau" scales the crown and its pins together while the card size itself stays fixed.
+A second slider in "Vorschau" previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
 The preview is not saved, and cards cannot be dragged while it is on.
 
 ### Families
@@ -497,7 +497,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay.
 - `ui/app/FamilyTree.tsx` also renders the dashboard and the families board.
 - `ui/app/Dashboard.tsx` renders the burger menu and the family name that opens the family card (`ui/app/FamilyCard.tsx`, rendered by `MembersControls`); `ui/app/icons.tsx` holds the shared stroke icons; the glass styles are at the end of `ui/app/globals.css`.
-- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with "Ansicht" with the zoom slider, pin toggle, and card style select, and the development-only "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
+- `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the "Time" and "Evolution" buttons with their panels (the latter with "Ansicht" with the zoom slider, pin toggle, and card style select, and the "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, bridges, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's core family and blood relatives (`ui/app/experimental/highlight.ts`, `highlight.check.mjs`); `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.
 - `ui/app/RelationLegend.tsx` renders the experimental view's legend of lines, symbols, and stubs.
 - `ui/app/experimental/model.ts` derives unions, partnerships, and generations for the experimental view (`model.check.mjs`); `routing.ts` routes the circuit-diagram lines (`route.check.mjs`); `verify.ts` and `families.check.mjs` prove them on fixtures and random families (`node app/experimental/families.check.mjs` in `ui/`).

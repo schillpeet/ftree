@@ -849,16 +849,14 @@ export default function Scene({
                 {t.tools.bloodRelatives}
               </label>
             </section>
-            {process.env.NODE_ENV !== 'production' && (
-              <section>
-                <h2>{t.tools.preview}</h2>
-                <fieldset className="organic-only" disabled={!organic}>
-                  {!organic && <legend>{t.tools.disabled}</legend>}
-                  <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
-                  <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
-                </fieldset>
-              </section>
-            )}
+            <section>
+              <h2>{t.tools.preview}</h2>
+              <fieldset className="organic-only" disabled={!organic}>
+                {!organic && <legend>{t.tools.disabled}</legend>}
+                <CrownScale previewScale={previewScale} onPreviewScale={setPreviewScale} />
+                <RelationSpacing spacing={spacing} bundle={bundle} onSpacing={setSpacing} onBundle={setBundle} />
+              </fieldset>
+            </section>
           </div>
         </section>
       )}
