@@ -12,7 +12,7 @@ import {
   type UpdateAdminUserRequest,
 } from '../../lib/api/generated/members';
 import { useLanguage, useT } from '../i18n';
-import { ChevronLeftIcon, CloseIcon, PencilIcon, ShieldIcon, TrashIcon, TreeIcon } from '../icons';
+import { ChevronLeftIcon, CloseIcon, PencilIcon, TrashIcon, TreeIcon } from '../icons';
 import { endSessions, revoke, share } from './accessActions';
 import ActionMenu from './ActionMenu';
 import ActivityList from './ActivityList';
@@ -36,7 +36,8 @@ export function Avatar({ name, state, large }: { name: string; state: AvatarStat
 type Result = { ok: boolean; problem?: keyof ReturnType<typeof useT>['admin']['problems'] };
 
 // One person in full: their trees with a role each, their global rights, what they did lately, and, set apart, signing
-// them out and deleting them. The rare changes (name, developer tools, a database admin right) wait in the "⋯" menu.
+// them out and deleting them. The rare changes (name, developer tools) wait in the "⋯" menu; the admin right comes only
+// from the access file.
 export default function PersonDetail({
   user,
   users,
@@ -98,11 +99,6 @@ export default function PersonDetail({
       const result = await revoke(familyId, user.id);
       return result.ok ? { ok: true } : { ok: false, problem: result.problem };
     });
-  }
-
-  async function revokeAdmin() {
-    if (!window.confirm(t.admin.people.confirmRevokeAdmin(user.displayName))) return;
-    await update({ admin: false });
   }
 
   async function signOut() {
@@ -174,13 +170,6 @@ export default function PersonDetail({
               hidden: user.admin,
               onSelect: () => void update({ canCreateTrees: !user.canCreateTrees }),
             },
-            {
-              label: t.admin.people.revokeAdmin,
-              icon: <ShieldIcon />,
-              danger: true,
-              hidden: !user.admin || user.bootstrapAdmin || self,
-              onSelect: () => void revokeAdmin(),
-            },
           ]}
         />
       </div>
@@ -228,7 +217,6 @@ export default function PersonDetail({
       <h3>{t.admin.people.rightsTitle}</h3>
       <div className="admin-facts">
         {user.bootstrapAdmin && <span className="admin-badge admin-badge-accent">{t.admin.people.adminByFile}</span>}
-        {user.admin && !user.bootstrapAdmin && <span className="admin-badge admin-badge-accent">{t.admin.people.adminByDatabase}</span>}
         {user.canCreateTrees && !user.admin && <span className="admin-badge">{t.admin.people.canCreate}</span>}
         {!user.admin && !user.canCreateTrees && <span className="admin-muted">{t.admin.people.noRights}</span>}
       </div>

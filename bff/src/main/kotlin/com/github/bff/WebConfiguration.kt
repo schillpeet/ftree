@@ -1,5 +1,6 @@
 package com.github.bff
 
+import com.github.bff.admin.AdminViews
 import com.github.bff.auth.LoginRecordingInterceptor
 import com.github.bff.member.FamilyVisibilityInterceptor
 import org.springframework.beans.factory.annotation.Value
@@ -14,11 +15,14 @@ class WebConfiguration(
     private val allowedOrigins: String,
     private val familyVisibilityInterceptor: FamilyVisibilityInterceptor,
     private val loginRecordingInterceptor: LoginRecordingInterceptor,
+    private val adminViews: AdminViews,
 ) : WebMvcConfigurer {
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(loginRecordingInterceptor)
         // The trash endpoints name trashed families, which the interceptor would hide.
         registry.addInterceptor(familyVisibilityInterceptor).excludePathPatterns("/admin/**")
+        // After the visibility check, so a view of a tree that does not exist is never written down.
+        registry.addInterceptor(adminViews)
     }
 
     override fun addCorsMappings(registry: CorsRegistry) {

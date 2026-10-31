@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { useLanguage, useT } from '../i18n';
 import { ChevronLeftIcon, LanguageIcon } from '../icons';
-import { useCan, useMeLoaded } from '../Permissions';
+import { adminPageOf } from '../access';
+import { useCan, useMe, useMeLoaded } from '../Permissions';
 
 // One route per tab, so a reload or a shared link stays on it; people keep their own sub-route for the chosen person.
 const TABS = [
@@ -26,6 +27,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   const [language, setLanguage] = useLanguage();
   const pathname = usePathname();
   const meLoaded = useMeLoaded();
+  const me = useMe();
   const allowed = useCan('users.view');
 
   useEffect(() => {
@@ -56,6 +58,11 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         <section className="glass admin-card" role="alert">
           <h2>{t.admin.noAccess}</h2>
           <p className="admin-muted">{t.admin.noAccessHint}</p>
+          {me?.adminUrl && (
+            <a className="family-card-button" href={adminPageOf(me.adminUrl)}>
+              {t.admin.openAdmin}
+            </a>
+          )}
         </section>
       ) : (
         <main>

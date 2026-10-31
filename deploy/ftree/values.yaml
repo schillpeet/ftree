@@ -22,6 +22,11 @@ bff:
     teamDomain: ""
     # AUD tag of the Access application; required in cloudflare mode.
     audience: ""
+    # AUD tag of the admins' own Access application on its own host. Set, admins have their rights only with its tokens
+    # and are ordinary users on the tree's host; unset, they have them everywhere.
+    adminAudience: ""
+  # The administration's address on its own host, e.g. https://admin.example.org; the menu links admins there.
+  adminUrl: ""
   # The access file's content as one string, e.g. --set-file bff.access=access.yaml. Its admin: true entries are the
   # bootstrap admins; the BFF imports its other entries into the database once, which decides from then on. It replaces
   # roles; set only one of the two.

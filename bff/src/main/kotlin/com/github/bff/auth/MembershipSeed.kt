@@ -12,8 +12,8 @@ import java.util.UUID
 // family_memberships, guarded by its entry in the audit log: the creator of a family becomes its owner, the trees of the
 // access file become memberships, developer: true becomes can_create_trees and admin: true becomes admin. A slug no
 // family has yet is skipped. Afterwards the database alone decides; only the bootstrap admins keep applying (see
-// AccessPolicy). At every start, each family without an owner, such as those from before created_by, gets the first
-// bootstrap admin as its owner.
+// AccessPolicy). At every start, users.admin is set to the bootstrap admins (admins come only from the access file),
+// and each family without an owner, such as those from before created_by, gets the first bootstrap admin as its owner.
 @Component
 class MembershipSeed(
     private val jdbc: JdbcTemplate,
@@ -21,10 +21,12 @@ class MembershipSeed(
     private val memberships: Memberships,
     private val membershipService: MembershipService,
     private val auditLog: AuditLog,
+    private val accessEvents: AccessEvents,
     private val transactions: TransactionTemplate,
 ) : ApplicationRunner {
     override fun run(args: ApplicationArguments) {
         seed()
+        syncAdmins()
         ensureOwners()
     }
 
@@ -60,6 +62,22 @@ class MembershipSeed(
         auditLog.record(null, SEEDED, "system", "family_memberships", mapOf("memberships" to "$granted", "people" to "${people.size}"))
         log.info("Seeded {} memberships from families.created_by and the access file ({} people)", granted, people.size)
         true
+    }
+
+    // Makes users.admin equal to the bootstrap admins: grants it to those without it and takes it from everyone else, such
+    // as people made admins in the admin page before or dropped from the access file, each written to the audit log.
+    // The number of people it took the right from.
+    fun syncAdmins(): Int = transactions.execute {
+        val admins = accessPolicy.bootstrapAdmins()
+        admins.forEach { memberships.grantFlags(it, admin = true, canCreateTrees = false, grantedBy = null, source = ACCESS_FILE) }
+        val former = jdbc.query("SELECT email FROM users WHERE admin ORDER BY email") { rs, _ -> rs.getString(1) }.filter { it !in admins }
+        former.forEach { email ->
+            jdbc.update("UPDATE users SET admin = false WHERE email = ?", email)
+            auditLog.record(null, "user.admin.revoked", "user", email, mapOf("source" to ACCESS_FILE))
+            accessEvents.changed(email, null)
+        }
+        if (former.isNotEmpty()) log.info("Took the admin right from {} people the access file does not list", former.size)
+        former.size
     }
 
     // Makes the first bootstrap admin the owner of every family without one; the number of families it changed.

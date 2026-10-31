@@ -115,7 +115,7 @@ export interface Me {
      * @nullable
      */
   customName: string | null;
-  /** True for admins, who are admins in every family. */
+  /** True for admins in an admin session, who are admins in every family; an admin on the tree's host is false here and gets `adminUrl`. */
   admin: boolean;
   /** True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both. */
   canCreateTrees: boolean;
@@ -123,6 +123,11 @@ export interface Me {
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
   verified: boolean;
+  /**
+     * For an admin outside the admin application, the address of the administration on its own host (`app.admin-url`); null for everyone else and when it is not configured.
+     * @nullable
+     */
+  adminUrl: string | null;
 }
 
 export interface UserLogin {
@@ -977,10 +982,9 @@ export interface AdminUser {
 }
 
 /**
- * Every field is optional; absent fields stay as they are.
+ * Every field is optional; absent fields stay as they are. The admin right comes only from the access file.
  */
 export interface UpdateAdminUserRequest {
-  admin?: boolean;
   canCreateTrees?: boolean;
   /**
      * The new display name; an empty or blank one removes it, so the email's local part shows again.
@@ -4246,7 +4250,7 @@ export const getUpdateAdminUserUrl = (userId: string,) => {
 }
 
 /**
- * Sets the fields that are present and leaves the others. Admins cannot take away their own admin right, and bootstrap admins stay admins whatever `users.admin` says. Granting a right to someone without a seat while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `users.manage`, which only admins have; every change is written to the audit log.
+ * Sets the fields that are present and leaves the others. Admins are not set here: they are the bootstrap admins of the access file (or `app.roles.admins`), which `users.admin` follows at every start. Granting a right to someone without a seat while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `users.manage`, which only admins have; every change is written to the audit log.
  * @summary Change a person's global rights or display name
  */
 export const updateAdminUser = async (userId: string,
