@@ -42,11 +42,10 @@ class AdminAudienceTest {
 
         val tree = user(listOf("tree-aud"))
         assertFalse(tree.adminSession || tree.access.admin)
-        assertTrue(tree.access.adminElsewhere)
         assertEquals(setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE), tree.permissions)
 
         val someone = user(listOf("admin-aud"), email = "someone@example.com")
-        assertFalse(someone.access.admin || someone.access.adminElsewhere)
+        assertFalse(someone.access.admin)
     }
 
     @Test

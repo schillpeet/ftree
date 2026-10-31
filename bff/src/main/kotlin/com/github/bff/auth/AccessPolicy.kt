@@ -34,7 +34,6 @@ class AccessPolicy(
             admin = admin && adminSession,
             canCreateTrees = granted.canCreateTrees,
             memberships = granted.families,
-            adminElsewhere = admin && !adminSession,
         )
     }
 

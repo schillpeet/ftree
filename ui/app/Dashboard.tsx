@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance } from './appearance';
-import { adminPageOf, PUBLIC_APPEARANCE } from './access';
+import { PUBLIC_APPEARANCE } from './access';
 import { useT } from './i18n';
 import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, MailIcon, PaletteIcon, SettingsIcon, UserIcon, UserPlusIcon, UsersIcon } from './icons';
 import TreeSwitcher from './TreeSwitcher';
@@ -122,22 +122,14 @@ export default function Dashboard({
               </button>
             </Can>
             {boardItem('appearance', t.menu.appearance, <PaletteIcon />)}
-            {/* On the tree's host an admin is an ordinary user; the administration lives on its own host. */}
-            {me?.adminUrl ? (
-              <a className="dashboard-nav-item" href={adminPageOf(me.adminUrl)}>
+            {/* Only where admins have their rights: locally, and not on the tree's host when the administration has its own. */}
+            <Can permission="users.view">
+              <Link className="dashboard-nav-item" href="/admin">
                 <SettingsIcon />
                 <span>{t.menu.admin}</span>
                 <ChevronIcon />
-              </a>
-            ) : (
-              <Can permission="users.view">
-                <Link className="dashboard-nav-item" href="/admin">
-                  <SettingsIcon />
-                  <span>{t.menu.admin}</span>
-                  <ChevronIcon />
-                </Link>
-              </Can>
-            )}
+              </Link>
+            </Can>
             <button type="button" className="dashboard-nav-item" onClick={() => void takeSnapshot()}>
               <CameraIcon />
               <span>{t.menu.snapshot}</span>

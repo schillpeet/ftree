@@ -72,7 +72,7 @@ class AdminViewsTest {
     @Test
     fun `members, ordinary users, and other requests are not written down`() {
         open(Access(admin = true, memberships = mapOf(family to Role.OWNER)))
-        open(Access(admin = false, adminElsewhere = true))
+        open(Access(admin = false))
         open(Access(admin = true), pattern = "/families/{familyId}/members/{memberId}")
         open(Access(admin = true), method = "POST")
         assertEquals(0, views())

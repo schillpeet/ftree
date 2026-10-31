@@ -1881,7 +1881,6 @@ components:
         - canCreateTrees
         - permissions
         - verified
-        - adminUrl
       properties:
         id:
           type: string
@@ -1900,7 +1899,7 @@ components:
           description: The display name the user or an admin set; null while `displayName` falls back to the email.
         admin:
           type: boolean
-          description: True for admins in an admin session, who are admins in every family; an admin on the tree's host is false here and gets `adminUrl`.
+          description: True for admins in an admin session (on the administration's own host), who are admins in every family; elsewhere an admin is false here, like everyone else.
         canCreateTrees:
           type: boolean
           description: True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both.
@@ -1912,11 +1911,6 @@ components:
         verified:
           type: boolean
           description: True when Cloudflare Access confirmed the email; false in local dev mode.
-        adminUrl:
-          type: string
-          format: uri
-          nullable: true
-          description: For an admin outside the admin application, the address of the administration on its own host (`app.admin-url`); null for everyone else and when it is not configured.
     UserLogin:
       type: object
       required:

@@ -5,8 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
 import { useLanguage, useT } from '../i18n';
 import { ChevronLeftIcon, LanguageIcon } from '../icons';
-import { adminPageOf } from '../access';
-import { useCan, useMe, useMeLoaded } from '../Permissions';
+import { useCan, useMeLoaded } from '../Permissions';
 
 // One route per tab, so a reload or a shared link stays on it; people keep their own sub-route for the chosen person.
 const TABS = [
@@ -21,13 +20,13 @@ const isCurrent = (pathname: string, href: string) =>
   href === '/admin' ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 
 // Header, gate, and tab bar of every admin page. Only for `users.view` (admins); the BFF enforces the same rights on
-// every admin endpoint, so the gate only decides what is shown.
-export default function AdminShell({ children }: { children: ReactNode }) {
+// every admin endpoint, so the gate only decides what is shown. `appUrl`: the app on its own host, which "Zur App"
+// opens; null when both share one host, and "Zurück zum Baum" stays on it.
+export default function AdminShell({ appUrl, children }: { appUrl: string | null; children: ReactNode }) {
   const t = useT();
   const [language, setLanguage] = useLanguage();
   const pathname = usePathname();
   const meLoaded = useMeLoaded();
-  const me = useMe();
   const allowed = useCan('users.view');
 
   useEffect(() => {
@@ -37,10 +36,17 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   return (
     <>
       <header className="admin-header">
-        <Link className="glass glass-button" href="/">
-          <ChevronLeftIcon />
-          {t.admin.back}
-        </Link>
+        {appUrl ? (
+          <a className="glass glass-button" href={appUrl}>
+            <ChevronLeftIcon />
+            {t.admin.toApp}
+          </a>
+        ) : (
+          <Link className="glass glass-button" href="/">
+            <ChevronLeftIcon />
+            {t.admin.back}
+          </Link>
+        )}
         <h1>{t.admin.title}</h1>
         <button
           type="button"
@@ -58,11 +64,6 @@ export default function AdminShell({ children }: { children: ReactNode }) {
         <section className="glass admin-card" role="alert">
           <h2>{t.admin.noAccess}</h2>
           <p className="admin-muted">{t.admin.noAccessHint}</p>
-          {me?.adminUrl && (
-            <a className="family-card-button" href={adminPageOf(me.adminUrl)}>
-              {t.admin.openAdmin}
-            </a>
-          )}
         </section>
       ) : (
         <main>

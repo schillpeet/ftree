@@ -115,7 +115,7 @@ export interface Me {
      * @nullable
      */
   customName: string | null;
-  /** True for admins in an admin session, who are admins in every family; an admin on the tree's host is false here and gets `adminUrl`. */
+  /** True for admins in an admin session (on the administration's own host), who are admins in every family; elsewhere an admin is false here, like everyone else. */
   admin: boolean;
   /** True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both. */
   canCreateTrees: boolean;
@@ -123,11 +123,6 @@ export interface Me {
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
   verified: boolean;
-  /**
-     * For an admin outside the admin application, the address of the administration on its own host (`app.admin-url`); null for everyone else and when it is not configured.
-     * @nullable
-     */
-  adminUrl: string | null;
 }
 
 export interface UserLogin {
