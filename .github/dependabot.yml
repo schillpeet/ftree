@@ -41,6 +41,17 @@ updates:
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
 
+  # Dependabot does not read the image in the services block of ci.yml; bump that digest by hand when the compose one moves.
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "deps(repo)"
+    ignore:
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
