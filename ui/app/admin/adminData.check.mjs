@@ -1,4 +1,4 @@
-// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, people, and deleting them.
+// Run with `node app/admin/adminData.check.mjs`: trash days, storage sizes, the purge confirmation, who is active, audit details, people, deleting them, and the filters of the people, invitation, and tree cards.
 import assert from 'node:assert/strict';
 import {
   accessProblem,
@@ -7,13 +7,20 @@ import {
   confirmsPerson,
   daysLeft,
   deleteProblem,
+  daysSince,
   formatBytes,
+  initialsOf,
+  inPeopleFilter,
+  isOverdue,
+  matchesSearch,
+  nextPurgeIn,
   onlineTrees,
   ownerCandidates,
   personStatus,
   presenceRows,
   soleOwnedTrees,
   sortedPeople,
+  treeListed,
 } from './adminData.ts';
 
 const now = Date.parse('2026-10-26T12:00:00Z');
@@ -159,5 +166,52 @@ assert.equal(confirmsPerson('  ADA@example.org ', ada), true);
 assert.equal(confirmsPerson('ada lovelace', ada), false);
 assert.equal(confirmsPerson('', ada), false);
 assert.equal(confirmsPerson(null, ada), false);
+
+// Avatars take two letters: of the first two words, or the first two of a single word; nothing gives a question mark.
+assert.equal(initialsOf('Ada Lovelace'), 'AL');
+assert.equal(initialsOf('ada'), 'AD');
+assert.equal(initialsOf('anna.mueller'), 'AM');
+assert.equal(initialsOf('  Éva  Ötvös  Kiss'), 'ÉÖ');
+assert.equal(initialsOf(''), '?');
+
+// The filter chips: online beats inactive, invited means never signed in, inactive needs an old sign-in.
+const daysAgo = (days) => new Date(now - days * 24 * 60 * 60 * 1000).toISOString();
+const someone = (overrides = {}) => ({ admin: false, status: 'active', lastSeen: daysAgo(1), ...overrides });
+assert.equal(inPeopleFilter(someone(), 'all', undefined, now), true);
+assert.equal(inPeopleFilter(someone(), 'online', ['Marina'], now), true);
+assert.equal(inPeopleFilter(someone(), 'online', [], now), false);
+assert.equal(inPeopleFilter(someone({ status: 'invited', lastSeen: null }), 'invited', undefined, now), true);
+assert.equal(inPeopleFilter(someone(), 'invited', undefined, now), false);
+assert.equal(inPeopleFilter(someone({ lastSeen: daysAgo(90) }), 'inactive', undefined, now), true);
+assert.equal(inPeopleFilter(someone({ lastSeen: daysAgo(89) }), 'inactive', undefined, now), false);
+assert.equal(inPeopleFilter(someone({ lastSeen: daysAgo(200) }), 'inactive', ['Marina'], now), false);
+assert.equal(inPeopleFilter(someone({ lastSeen: null, status: 'invited' }), 'inactive', undefined, now), false);
+assert.equal(inPeopleFilter(someone({ admin: true }), 'admins', undefined, now), true);
+assert.equal(inPeopleFilter(someone(), 'admins', undefined, now), false);
+
+// Searching ignores case, accents, and spaces around the query; an empty query matches everybody.
+assert.equal(matchesSearch('  mÜller ', 'Anna Müller', 'anna@example.org'), true);
+assert.equal(matchesSearch('ANNA@', 'Anna', 'anna@example.org'), true);
+assert.equal(matchesSearch('ben', 'Anna', null), false);
+assert.equal(matchesSearch('', 'Anna'), true);
+
+// Invitations count whole days and are overdue after two weeks.
+assert.equal(daysSince(daysAgo(0), now), 0);
+assert.equal(daysSince(daysAgo(13.9), now), 13);
+assert.equal(isOverdue(daysAgo(13.9), now), false);
+assert.equal(isOverdue(daysAgo(14), now), true);
+
+// Trees: real ones by default, test ones on demand, all together, and by name or slug.
+const real = { name: 'Marina', slug: 'k3x9a', test: false };
+const test = { name: 'Zufall 1', slug: 'q7p2m', test: true };
+assert.equal(treeListed(real, 'real', ''), true);
+assert.equal(treeListed(test, 'real', ''), false);
+assert.equal(treeListed(test, 'test', ''), true);
+assert.equal(treeListed(real, 'all', 'K3X'), true);
+assert.equal(treeListed(real, 'all', 'zufall'), false);
+
+// The trash's next purge is its soonest one; an empty trash has none.
+assert.equal(nextPurgeIn([], now), null);
+assert.equal(nextPurgeIn([{ purgeAt: '2026-11-20T12:00:00Z' }, { purgeAt: '2026-10-30T12:00:00Z' }], now), 4);
 
 console.log('adminData checks passed');

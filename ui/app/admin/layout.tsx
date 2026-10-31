@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { PermissionsProvider } from '../Permissions';
+import AdminShell from './AdminShell';
 import './admin.css';
 
 export const metadata: Metadata = {
@@ -10,7 +11,9 @@ export const metadata: Metadata = {
 export default function AdminLayout({ children }: LayoutProps<'/admin'>) {
   return (
     <PermissionsProvider>
-      <div className="admin-page">{children}</div>
+      <div className="admin-page">
+        <AdminShell>{children}</AdminShell>
+      </div>
     </PermissionsProvider>
   );
 }
