@@ -1,9 +1,11 @@
 // Run with `node .github/scripts/collapse-dependency-notes.check.mjs`: Dependabot updates become one changelog line.
 import assert from 'node:assert/strict';
-import { collapseDependencyNotes } from './collapse-dependency-notes.mjs';
+import { collapseDependencyNotes, mergeDuplicateNotes, tidyReleaseNotes } from './collapse-dependency-notes.mjs';
 
 const issue = (n) => `https://github.com/schillpeet/ftree/issues/${n}`;
+const commit = (sha) => `https://github.com/schillpeet/ftree/commit/${sha}`;
 const dep = (n, sha, text) => `* **ui:** ${text} ([#${n}](${issue(n)})) ([${sha}](https://github.com/schillpeet/ftree/commit/${sha}))`;
+const linkOf = (n, sha) => `([#${n}](${issue(n)})) ([${sha}](${commit(sha)}))`;
 
 const older = `## [0.19.0](https://github.com/schillpeet/ftree/compare/v0.18.0...v0.19.0) (2026-10-23)
 
@@ -69,5 +71,21 @@ ${dep(171, '5555555', 'bump react')}
 This PR was generated with [Release Please](https://github.com/googleapis/release-please). See [documentation](https://github.com/googleapis/release-please#release-please).`;
 const collapsedBody = collapseDependencyNotes(body);
 assert.ok(collapsedBody.includes(`### Dependencies\n\n* update dependencies with dependabot ([#170](${issue(170)}), [#171](${issue(171)}))\n\n---\nThis PR was generated`));
+
+// An empty squash commit repeats its pull request's title: both entries become one line with both links.
+const title = '* **ui:** disable new family at the family limit and explain why';
+const repeated = `# Changelog\n\n## [0.32.0](x) (2026-10-31)\n\n\n### Bug Fixes\n\n${title} ${linkOf(287, '2c1ed74')}\n${title} ${linkOf(289, 'e5bc643')}\n\n### Features\n\n* **ui:** add something ${linkOf(290, 'c127192')}\n\n${older}`;
+const merged = `# Changelog\n\n## [0.32.0](x) (2026-10-31)\n\n\n### Bug Fixes\n\n${title} ${linkOf(287, '2c1ed74')} ${linkOf(289, 'e5bc643')}\n\n### Features\n\n* **ui:** add something ${linkOf(290, 'c127192')}\n\n${older}`;
+assert.equal(mergeDuplicateNotes(repeated), merged);
+assert.equal(mergeDuplicateNotes(merged), merged, 'merging is idempotent');
+
+// Older releases are not touched, even when they repeat an entry of the newest one.
+const olderRepeat = `## [0.32.0](x) (2026-10-31)\n\n\n### Bug Fixes\n\n${title} ${linkOf(287, '2c1ed74')}\n\n## [0.31.0](x) (2026-10-30)\n\n\n### Bug Fixes\n\n${title} ${linkOf(280, '1234567')}\n${title} ${linkOf(281, '7654321')}\n`;
+assert.equal(mergeDuplicateNotes(olderRepeat), olderRepeat);
+
+// The full pipeline merges duplicates and collapses Dependabot updates in the same pass.
+const tidied = tidyReleaseNotes(`${repeated.replace(older, '')}### Dependencies\n\n${dep(175, '2222222', 'bump react')}\n`);
+assert.equal(tidied.split('\n').filter((line) => line.startsWith(title)).length, 1);
+assert.ok(tidied.includes('### Dependencies\n\n* update dependencies with dependabot ([#175]'));
 
 console.log('collapse dependency notes ok');
