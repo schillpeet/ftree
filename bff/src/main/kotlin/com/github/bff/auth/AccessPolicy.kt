@@ -5,9 +5,10 @@ import org.springframework.stereotype.Component
 import java.nio.file.Path
 import kotlin.io.path.readText
 
-// Who may see what. The database (see Memberships) decides the role in every tree and who may create trees; the
-// bootstrap admins, read once at startup from the access file when APP_ACCESS_FILE is set and otherwise from
-// app.roles.admins, stay admins whatever the database says.
+// Who may see what. The database (see Memberships) decides the role in every tree and who may create trees; admins are
+// only the bootstrap admins, read once at startup from the access file when APP_ACCESS_FILE is set and otherwise from
+// app.roles.admins, and only in an admin session (see AuthProperties.adminAudience). MembershipSeed keeps users.admin
+// equal to them.
 @Component
 class AccessPolicy(
     accessProperties: AccessProperties,
@@ -24,11 +25,16 @@ class AccessPolicy(
         people?.filterValues { it.admin }?.keys?.toList()
             ?: roleProperties.admins.map { it.normalizedEmail() }.filter { it.isNotEmpty() }.distinct()
 
-    // Someone without a right in the database sees no family.
-    fun accessOf(email: String): Access {
+    // Someone without a right in the database sees no family. An admin keeps their own memberships, so a view of a tree
+    // they hold no role in can be told apart (AdminViews); outside an admin session they have only those.
+    fun accessOf(email: String, adminSession: Boolean = true): Access {
         val granted = grants.of(email)
-        if (granted.admin || email.normalizedEmail() in bootstrapAdmins) return Access(admin = true)
-        return Access(admin = false, canCreateTrees = granted.canCreateTrees, memberships = granted.families)
+        val admin = email.normalizedEmail() in bootstrapAdmins
+        return Access(
+            admin = admin && adminSession,
+            canCreateTrees = granted.canCreateTrees,
+            memberships = granted.families,
+        )
     }
 
     // The people of the access file by email, in its order, for the one-time import; empty without an access file.

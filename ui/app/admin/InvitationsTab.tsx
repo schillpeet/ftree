@@ -10,11 +10,13 @@ import {
 } from '../../lib/api/generated/members';
 import { useLanguage, useT } from '../i18n';
 import { copyText, revoke, share } from './accessActions';
+import { daysSince, isOverdue } from './adminData';
 import InvitePerson from './InvitePerson';
 import { LoadError } from './OverviewTab';
 import { useAdminLoad } from './useAdminLoad';
 
-// People who never signed in, one row per tree they were invited to, with the text to send them again or to withdraw it.
+// People who never signed in, one row per tree they were invited to, with the text to send them again or to withdraw it;
+// invitations unanswered for two weeks are marked as overdue.
 export default function InvitationsTab() {
   const t = useT();
   const [language] = useLanguage();
@@ -26,6 +28,8 @@ export default function InvitationsTab() {
   const rows = invitations.data;
   const date = (value: string) => new Date(value).toLocaleDateString(locale, { dateStyle: 'medium' });
   const keyOf = (row: AdminInvitation) => `${row.userId}/${row.familyId}`;
+  // Ages are counted from when the page opened; a day passing while it stays open is not worth a re-render.
+  const [now] = useState(() => Date.now());
 
   async function copy(row: AdminInvitation) {
     setBusy(keyOf(row));
@@ -91,7 +95,10 @@ export default function InvitationsTab() {
                   </td>
                   <td>
                     {row.invitedBy ?? t.admin.invitations.byServer}
-                    <span className="admin-muted">{date(row.invitedAt)}</span>
+                    <span className="admin-muted">
+                      {date(row.invitedAt)} · {t.admin.invitations.age(daysSince(row.invitedAt, now))}
+                      {isOverdue(row.invitedAt, now) && <span className="admin-badge admin-badge-warning">{t.admin.invitations.overdue}</span>}
+                    </span>
                   </td>
                   <td className="admin-actions">
                     <button type="button" className="family-card-button" disabled={busy === keyOf(row)} onClick={() => void copy(row)}>

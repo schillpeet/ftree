@@ -2721,3 +2721,20 @@ button.dashboard-family:hover {
   color: #fff;
   text-decoration: underline;
 }
+
+/* Above a tree opened on the administration's host: a reminder that this is an admin's view, clear of the legal links. */
+.admin-view-banner {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  z-index: 8;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 8px 14px;
+  border-color: rgba(255, 196, 120, 0.6);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  transform: translateX(-50%);
+}

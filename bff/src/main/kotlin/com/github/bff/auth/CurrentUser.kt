@@ -4,8 +4,9 @@ import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 
-// verified: Cloudflare Access confirmed the email (false in dev mode).
-data class CurrentUser(val email: String, val access: Access, val verified: Boolean) {
+// verified: Cloudflare Access confirmed the email (false in dev mode). adminSession: the request came through the admin
+// application (or there is none), so an admin has their rights in it.
+data class CurrentUser(val email: String, val access: Access, val verified: Boolean, val adminSession: Boolean = true) {
     // Permissions outside any family; FamilyVisibility adds the role in a family.
     val permissions: Set<Permission> get() = access.permissions
 

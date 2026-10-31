@@ -64,6 +64,14 @@ spec:
             - name: APP_AUTH_AUDIENCE
               value: {{ . | quote }}
             {{- end }}
+            {{- with .Values.bff.auth.adminAudience }}
+            - name: APP_AUTH_ADMIN_AUDIENCE
+              value: {{ . | quote }}
+            {{- end }}
+            {{- with .Values.publicUrl }}
+            - name: APP_PUBLIC_URL
+              value: {{ . | quote }}
+            {{- end }}
             {{- with .Values.bff.roles.admins }}
             - name: APP_ROLES_ADMINS
               value: {{ join "," . | quote }}
