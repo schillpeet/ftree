@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import {
   getAdminAudit,
@@ -19,12 +20,18 @@ const PAGE_SIZE = 50;
 
 type Query = { userId: string; familyId: string; action: string };
 
-// Who changed which rights or trees when, newest first, narrowed by person, tree, and action.
+// Who changed which rights or trees when, newest first, narrowed by person, tree, and action; `?person=<user id>` and
+// `?tree=<family id>` preset the filters, as the person and tree cards link here.
 export default function AuditTab() {
   const t = useT();
+  const params = useSearchParams();
   const filters = useAdminLoad<AuditFilters>(getAdminAuditFilters);
   const families = useAdminLoad<AdminFamily[]>(getAdminFamilies);
-  const [query, setQuery] = useState<Query>({ userId: '', familyId: '', action: '' });
+  const [query, setQuery] = useState<Query>(() => ({
+    userId: params.get('person') ?? '',
+    familyId: params.get('tree') ?? '',
+    action: '',
+  }));
   const set = (key: keyof Query) => (event: React.ChangeEvent<HTMLSelectElement>) =>
     setQuery((current) => ({ ...current, [key]: event.target.value }));
 

@@ -138,6 +138,18 @@ export const TrashIcon = () => (
   </Icon>
 );
 
+export const MoreIcon = () => (
+  <Icon>
+    <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth={3} />
+  </Icon>
+);
+
+export const TreeIcon = () => (
+  <Icon>
+    <path d="M12 21v-6M8 15h8l-3-4h2l-3-4h1.5L12 3 10.5 7H12L9 11h2l-3 4" />
+  </Icon>
+);
+
 export const PlusIcon = () => (
   <Icon>
     <path d="M12 5v14M5 12h14" />
