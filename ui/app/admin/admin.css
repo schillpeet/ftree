@@ -572,12 +572,6 @@
   color: var(--glass-muted);
 }
 
-.admin-activity time {
-  flex: none;
-  width: 110px;
-  font-size: 12px;
-}
-
 .admin-facts {
   display: flex;
   flex-wrap: wrap;
@@ -774,4 +768,113 @@
   .admin-back {
     display: inline-flex;
   }
+}
+
+/* The activity timeline: a heading per day, then time, a category dot, and a sentence per line, the facts folded below. */
+.admin-categories {
+  margin-bottom: 12px;
+}
+
+.admin-chip[data-category]::before,
+.admin-timeline-dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--category, rgb(255 255 255 / 35%));
+}
+
+.admin-chip[data-category]:not([data-category='all'])::before {
+  content: '';
+}
+
+[data-category='access'] {
+  --category: #ffd27a;
+}
+
+[data-category='tree'] {
+  --category: #7be0a5;
+}
+
+[data-category='content'] {
+  --category: var(--glass-accent);
+}
+
+[data-category='admin'] {
+  --category: #c9a7ff;
+}
+
+[data-category='system'] {
+  --category: rgb(255 255 255 / 45%);
+}
+
+.admin-timeline h3 {
+  margin: 14px 0 4px;
+  color: var(--glass-muted);
+  font: 600 12px/1 Arial, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-timeline section:first-child h3 {
+  margin-top: 0;
+}
+
+.admin-timeline ol,
+.admin-timeline ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.admin-timeline ol > li {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  border-top: 1px solid var(--glass-border);
+}
+
+.admin-timeline ol > li > time {
+  flex: none;
+  width: 42px;
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.admin-timeline-dot {
+  display: inline-block;
+  transform: translateY(-1px);
+}
+
+.admin-timeline ol > li > div {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+}
+
+.admin-timeline details {
+  color: var(--glass-muted);
+  font-size: 12px;
+}
+
+.admin-timeline summary {
+  width: max-content;
+  cursor: pointer;
+}
+
+.admin-timeline details ul {
+  display: grid;
+  gap: 2px;
+  padding: 4px 0 0 2px;
+  overflow-wrap: anywhere;
+}
+
+.admin-retention {
+  margin: 12px 0 0;
+}
+
+.admin-tab .admin-card > .admin-toolbar {
+  margin-bottom: 4px;
 }

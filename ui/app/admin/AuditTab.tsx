@@ -7,21 +7,26 @@ import {
   getAdminAuditFilters,
   getAdminFamilies,
   type AdminFamily,
+  type AuditCategory,
   type AuditEntry,
   type AuditFilters,
   type AuditPage,
 } from '../../lib/api/generated/members';
-import { useLanguage, useT } from '../i18n';
-import { auditDetails } from './adminData';
+import { useT } from '../i18n';
+import { DownloadIcon } from '../icons';
+import ActivityList from './ActivityList';
+import { auditCsv, PERIODS, periodStart, type Period } from './adminData';
 import { LoadError } from './OverviewTab';
 import { useAdminLoad } from './useAdminLoad';
 
 const PAGE_SIZE = 50;
 
-type Query = { userId: string; familyId: string; action: string };
+const CATEGORIES = ['all', 'access', 'tree', 'content', 'admin', 'system'] as const;
 
-// Who changed which rights or trees when, newest first, narrowed by person, tree, and action; `?person=<user id>` and
-// `?tree=<family id>` preset the filters, as the person and tree cards link here.
+type Query = { userId: string; familyId: string; category: AuditCategory | 'all'; period: Period };
+
+// Who changed which rights, trees, or persons when, as a timeline narrowed by category, person, tree, and period;
+// `?person=<user id>` and `?tree=<family id>` preset the filters, as the person and tree cards link here.
 export default function AuditTab() {
   const t = useT();
   const params = useSearchParams();
@@ -30,16 +35,33 @@ export default function AuditTab() {
   const [query, setQuery] = useState<Query>(() => ({
     userId: params.get('person') ?? '',
     familyId: params.get('tree') ?? '',
-    action: '',
+    category: 'all',
+    // A person's or tree's own log shows everything; the whole log starts with the last month.
+    period: params.get('person') || params.get('tree') ? 'all' : '30',
   }));
-  const set = (key: keyof Query) => (event: React.ChangeEvent<HTMLSelectElement>) =>
+  const set = (key: 'userId' | 'familyId' | 'period') => (event: React.ChangeEvent<HTMLSelectElement>) =>
     setQuery((current) => ({ ...current, [key]: event.target.value }));
+  const names = new Map((filters.data?.people ?? []).flatMap((person) => (person.displayName ? [[person.email.toLowerCase(), person.displayName]] : [])));
 
   return (
     <div className="admin-tab">
       <section className="glass admin-card" aria-labelledby="admin-audit">
-        <h2 id="admin-audit">{t.admin.audit.title}</h2>
-        <p className="admin-muted">{t.admin.audit.hint}</p>
+        <h2 id="admin-audit">{t.admin.activity.title}</h2>
+        <p className="admin-muted">{t.admin.activity.hint}</p>
+        <div className="admin-chips admin-categories" role="group" aria-label={t.admin.activity.title}>
+          {CATEGORIES.map((category) => (
+            <button
+              key={category}
+              type="button"
+              className="admin-chip"
+              data-category={category}
+              aria-pressed={query.category === category}
+              onClick={() => setQuery((current) => ({ ...current, category }))}
+            >
+              {t.admin.activity.categories[category]}
+            </button>
+          ))}
+        </div>
         <div className="admin-filters">
           <label>
             {t.admin.audit.person}
@@ -64,29 +86,29 @@ export default function AuditTab() {
             </select>
           </label>
           <label>
-            {t.admin.audit.action}
-            <select className="admin-select" value={query.action} onChange={set('action')}>
-              <option value="">{t.admin.audit.all}</option>
-              {filters.data?.actions.map((action) => (
-                <option key={action} value={action}>
-                  {t.admin.audit.actions[action] ?? action}
+            {t.admin.activity.period}
+            <select className="admin-select" value={query.period} onChange={set('period')}>
+              {PERIODS.map((period) => (
+                <option key={period} value={period}>
+                  {t.admin.activity.periods[period]}
                 </option>
               ))}
             </select>
           </label>
         </div>
         {/* A new filter starts a new list, so the list is keyed by it. */}
-        <AuditList key={`${query.userId}|${query.familyId}|${query.action}`} query={query} />
+        <AuditList key={`${query.userId}|${query.familyId}|${query.category}|${query.period}`} query={query} names={names} />
+        <p className="admin-muted admin-retention">{t.admin.activity.retention}</p>
       </section>
     </div>
   );
 }
 
-function AuditList({ query }: { query: Query }) {
+function AuditList({ query, names }: { query: Query; names: ReadonlyMap<string, string> }) {
   const t = useT();
-  const [language] = useLanguage();
-  const locale = language === 'de' ? 'de-DE' : 'en-GB';
-  const loadFirst = useCallback(() => fetchPage(query), [query]);
+  // The period counts back from when the filter was chosen, so loading more pages keeps the same window.
+  const [now] = useState(() => Date.now());
+  const loadFirst = useCallback(() => fetchPage(query, now), [query, now]);
   const first = useAdminLoad<AuditPage>(loadFirst);
   // Pages after the first; `next` is undefined until one was loaded, then the cursor after the last page.
   const [more, setMore] = useState<{ entries: AuditEntry[]; next: number | null } | null>(null);
@@ -94,14 +116,13 @@ function AuditList({ query }: { query: Query }) {
   const [moreFailed, setMoreFailed] = useState(false);
   const next = more ? more.next : (first.data?.next ?? null);
   const entries = first.data ? [...first.data.entries, ...(more?.entries ?? [])] : null;
-  const time = (value: string) => new Date(value).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'medium' });
 
   async function loadMore() {
     if (next === null || !first.data) return;
     setLoadingMore(true);
     setMoreFailed(false);
     try {
-      const response = await fetchPage(query, next);
+      const response = await fetchPage(query, now, next);
       if (response.status !== 200) throw new Error('failed');
       const page = response.data as AuditPage;
       setMore({ entries: [...(more?.entries ?? []), ...page.entries], next: page.next });
@@ -112,40 +133,29 @@ function AuditList({ query }: { query: Query }) {
     }
   }
 
+  // The loaded entries as a file; nothing leaves the browser.
+  function exportCsv() {
+    if (!entries) return;
+    const url = URL.createObjectURL(new Blob([auditCsv(entries)], { type: 'text/csv;charset=utf-8' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `ftree-activity-${new Date(now).toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
   if (first.failed && !entries) return <LoadError text={t.admin.audit.failed} onRetry={first.reload} />;
   if (!entries) return <p className="admin-muted">{t.admin.loading}</p>;
   if (entries.length === 0) return <p className="admin-muted">{t.admin.audit.empty}</p>;
   return (
     <>
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th scope="col">{t.admin.audit.time}</th>
-            <th scope="col">{t.admin.audit.who}</th>
-            <th scope="col">{t.admin.audit.action}</th>
-            <th scope="col">{t.admin.audit.target}</th>
-            <th scope="col">{t.admin.audit.details}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry) => (
-            <tr key={entry.id}>
-              <td>{time(entry.at)}</td>
-              <td>{entry.actor ?? <span className="admin-muted">{t.admin.audit.system}</span>}</td>
-              <td>{t.admin.audit.actions[entry.action] ?? entry.action}</td>
-              <td>{target(entry, t.admin.trees.unknown)}</td>
-              <td>
-                {/* A tree's name is already the target. */}
-                {auditDetails(entry.details).filter(([key]) => !(key === 'name' && entry.targetType === 'family')).map(([key, value]) => (
-                  <span key={key} className="admin-muted">
-                    {t.admin.audit.detailKeys[key] ?? key}: {key === 'role' ? (t.account.roles[value as keyof typeof t.account.roles] ?? value) : (t.admin.audit.detailValues[value] ?? value)}
-                  </span>
-                ))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="admin-toolbar">
+        <button type="button" className="family-card-button" onClick={exportCsv}>
+          <DownloadIcon />
+          {t.admin.activity.csv}
+        </button>
+      </div>
+      <ActivityList entries={entries} names={names} now={now} />
       {moreFailed && <LoadError text={t.admin.audit.moreFailed} onRetry={() => void loadMore()} />}
       {next !== null && !moreFailed && (
         <button type="button" className="family-card-button admin-more" disabled={loadingMore} onClick={() => void loadMore()}>
@@ -156,17 +166,12 @@ function AuditList({ query }: { query: Query }) {
   );
 }
 
-const fetchPage = (query: Query, before?: number) =>
+const fetchPage = (query: Query, now: number, before?: number) =>
   getAdminAudit({
     limit: PAGE_SIZE,
     before,
     userId: query.userId || undefined,
     familyId: query.familyId || undefined,
-    action: query.action || undefined,
+    category: query.category === 'all' ? undefined : query.category,
+    from: periodStart(query.period, now),
   });
-
-// A tree by its name, a person by their email, anything else (the system's own steps) by nothing.
-function target(entry: AuditEntry, unknown: string) {
-  if (entry.targetType === 'family') return entry.targetName ?? unknown;
-  return entry.targetType === 'user' ? entry.targetId : '–';
-}

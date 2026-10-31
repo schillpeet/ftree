@@ -374,14 +374,14 @@ The overview counts `families` (test families included), `members`, `users` (`to
 Trashed families appear only in `GET /admin/trash`: `GET /admin/families` leaves them out, and the overview counts neither them nor their members and photos.
 `/admin` is a full page outside the tree's route group, so it has no 3D scene, in the dashboard's glass style with "Zurück zum Baum" (to `/`) and the language switch.
 The admin page shows its tabs only with `users.view` and otherwise "Kein Zugriff"; the BFF enforces the rights of every endpoint it calls.
-The admin page has the tabs "Übersicht", "Personen", "Einladungen", "Bäume", and "Protokoll".
+The admin page has the tabs "Übersicht", "Personen", "Einladungen", "Bäume", and "Aktivität".
 Each tab is a route of its own (`/admin`, `/admin/people`, `/admin/invitations`, `/admin/trees`, `/admin/audit`), so a reload or a link keeps it.
 "Übersicht" shows tiles for online now, access seats (used of limit, with signed-in and invited people), trees, persons, and photos with their storage size, from `GET /admin/overview`.
 Below the tiles, "Gerade aktiv" lists `GET /admin/presence` with one row per person and tree however many tabs they have there: name, email, admin mark, the tree as a link, editing or idle marks, and since when.
 "Übersicht" refreshes its tiles and the active list every 15 seconds.
 "Bäume" shows `GET /admin/families` as cards with name, slug, test mark, creator and date, the person count, and how many people hold each role.
 It lists the real trees by default; a select shows the test trees or all, and a search narrows them by name or slug.
-"Öffnen" (to `/<slug>`) is a card's only button; its "⋯" menu holds "Besitz übertragen", "Protokoll des Baums" (`/admin/audit?tree=<id>`), and "In den Papierkorb" after a confirmation.
+"Öffnen" (to `/<slug>`) is a card's only button; its "⋯" menu holds "Besitz übertragen", "Aktivität des Baums" (`/admin/audit?tree=<id>`), and "In den Papierkorb" after a confirmation.
 Below the trees, the trash (`family.manage`) is folded to one line with its number of trees and the next removal; opened, it lists `GET /admin/trash` with who deleted each tree and when, the remaining days, "Wiederherstellen", and "Endgültig löschen", which needs the tree's exact name typed into a prompt.
 `GET /admin/audit` needs `users.view` and lists `audit_log` newest first as `entries` (`id`, `at`, `actor` as email or null for the BFF itself, `actorId`, `action`, `targetType`, `targetId`, `targetName`, and `details`) with `next`, the `before` for the following page, or null on the last.
 The query takes `limit` (1 to 100, default 50), `before` (an entry id), and the optional filters `userId`, `familyId`, and `action`, which combine; ids are used instead of emails, so no email appears in a URL or log.
@@ -394,12 +394,16 @@ Every audit entry also stores `actor_id`, the actor's `users` row, which becomes
 Creating (`family.created`, with `test` for test families), importing, renaming, archiving, anonymizing, and reordering trees are written to the audit log in the `tree` category.
 Creating, updating, and deleting a person write `member.created`, `member.updated`, and `member.deleted` in the `content` category, with the tree as target and only `memberId` and, for updates, `fields` (the names of the changed fields), never their values; an update that changes nothing is not logged.
 `AuditLogPurger` deletes `content` entries after 90 days and all other entries after 12 months every night at 3:45 (`app.audit.content-retention`, `app.audit.retention`, and `app.audit.purge-cron`).
-"Protokoll" shows the log as a table with time, who, action (a readable label, the raw action when unknown), target, and details, newest first, and "Mehr laden" appends the next 50 entries.
-Its menus filter by person, tree (`GET /admin/families`), and action; changing one starts the list again.
+"Aktivität" shows the log as a timeline, newest first: a heading per day ("Heute", "Gestern", else the date), then per entry its time, a dot in its category's colour, and a sentence such as "Anna hat Bernd die Rolle Bearbeiter in „Müller“ gegeben", with its remaining facts folded under "Details"; "Mehr laden" appends the next 50 entries.
+Content entries in a row by the same person, of the same action, in the same tree, at most 30 minutes apart, read as one line, for example "Anna hat 6 Personen in „Müller“ geändert", whose details list each change's time and fields (`activityDays` in `adminData.ts`).
+People are named by their display name from `GET /admin/audit/filters`, else by the part of their email before the `@`, and actions without a sentence fall back to their label or the raw action.
+Chips filter by category (all, access and rights, trees, persons, administration, system), and a period menu by the last 7 or 30 days, 12 months, or everything (`from`); the log starts with the last 30 days, a person's or tree's own log with everything.
+"CSV exportieren" downloads the loaded entries as CSV in the browser, and a note below says how long entries are kept.
+Its menus filter by person and tree (`GET /admin/families`); changing a filter starts the list again.
 `?person=<user id>` and `?tree=<family id>` preset the person and tree filters, which the person and tree cards link to.
 "Personen" lists `GET /admin/users` as cards with an initials avatar and a status dot, the name, the status, and badges for admin, developer tools, the number of trees, and the trees owned.
 A search over name and email and the chips "Alle", "Online", "Eingeladen", "Inaktiv" (last sign-in 90 days ago or longer), and "Admins", each with its count, narrow the cards.
-Choosing a card opens `/admin/people/<id>` beside the list, or instead of it on narrow screens: the trees with their roles, the global rights, when the person was invited and first signed in, the last five audit entries with a link to the full log, and a "Gefahrenzone".
+Choosing a card opens `/admin/people/<id>` beside the list, or instead of it on narrow screens: the trees with their roles, the global rights, when the person was invited and first signed in, the last five audit entries as the same timeline with a link to the full log, and a "Gefahrenzone".
 The status is "Online in <trees>" from `GET /admin/presence` (refreshed every 15 seconds), else the last sign-in, else "Eingeladen, noch nicht angemeldet", else "Noch nie angemeldet".
 A person's "⋯" menu holds "Umbenennen", "Entwicklerwerkzeuge erlauben" or "entziehen" (`canCreateTrees`, not offered for admins), and "Administratorrecht entziehen" for admins granted in the database other than yourself, all through `PUT /admin/users/{userId}`.
 The admin page no longer grants the admin right, since admins are meant to come only from the access file.

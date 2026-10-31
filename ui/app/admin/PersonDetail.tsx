@@ -15,6 +15,7 @@ import { useLanguage, useT } from '../i18n';
 import { ChevronLeftIcon, CloseIcon, PencilIcon, ShieldIcon, TrashIcon, TreeIcon } from '../icons';
 import { endSessions, revoke, share } from './accessActions';
 import ActionMenu from './ActionMenu';
+import ActivityList from './ActivityList';
 import { initialsOf } from './adminData';
 import DeleteUser from './DeleteUser';
 import { LoadError } from './OverviewTab';
@@ -237,7 +238,7 @@ export default function PersonDetail({
       </p>
 
       <h3>{t.admin.people.activity}</h3>
-      <RecentActivity userId={user.id} />
+      <RecentActivity userId={user.id} users={users} />
       <Link className="admin-more-link" href={`/admin/audit?person=${user.id}`}>
         {t.admin.people.allActivity}
       </Link>
@@ -270,31 +271,16 @@ export default function PersonDetail({
   );
 }
 
-// The latest audit entries a person made or that are about them.
-function RecentActivity({ userId }: { userId: string }) {
+// The latest audit entries a person made or that are about them, as a short timeline.
+function RecentActivity({ userId, users }: { userId: string; users: readonly AdminUser[] }) {
   const t = useT();
-  const [language] = useLanguage();
-  const locale = language === 'de' ? 'de-DE' : 'en-GB';
   const load = useCallback(() => getAdminAudit({ userId, limit: 5 }), [userId]);
   const page = useAdminLoad<AuditPage>(load);
-  const time = (value: string) => new Date(value).toLocaleString(locale, { dateStyle: 'short', timeStyle: 'short' });
+  const [now] = useState(() => Date.now());
+  const names = new Map(users.map((user) => [user.email.toLowerCase(), user.displayName]));
 
   if (page.failed && !page.data) return <LoadError text={t.admin.people.activityFailed} onRetry={page.reload} />;
   if (!page.data) return <p className="admin-muted">{t.admin.loading}</p>;
   if (page.data.entries.length === 0) return <p className="admin-muted">{t.admin.people.activityEmpty}</p>;
-  return (
-    <ul className="admin-rows admin-activity">
-      {page.data.entries.map((entry) => (
-        <li key={entry.id}>
-          <time className="admin-muted" dateTime={entry.at}>
-            {time(entry.at)}
-          </time>
-          <span>
-            {t.admin.audit.actions[entry.action] ?? entry.action}
-            {entry.targetType === 'family' && entry.targetName && <span className="admin-muted"> · {entry.targetName}</span>}
-          </span>
-        </li>
-      ))}
-    </ul>
-  );
+  return <ActivityList entries={page.data.entries} names={names} now={now} />;
 }
