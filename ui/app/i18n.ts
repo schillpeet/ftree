@@ -307,7 +307,8 @@ const en = {
     loading: 'Loading …',
     noAccess: 'No access',
     noAccessHint: 'Only administrators can open the administration.',
-    openAdmin: 'Open the administration',
+    toApp: 'To the app',
+    viewBanner: 'Admin view: you see this tree as an administrator. Changes are made as admin, and opening a tree you are not part of is logged.',
     persons: (count: number) => (count === 1 ? '1 person' : `${count} persons`),
     tabs: { overview: 'Overview', people: 'People', invitations: 'Invitations', trees: 'Trees', audit: 'Activity' },
     overview: {
@@ -938,7 +939,8 @@ const de: typeof en = {
     loading: 'Wird geladen …',
     noAccess: 'Kein Zugriff',
     noAccessHint: 'Nur Administratoren können die Verwaltung öffnen.',
-    openAdmin: 'Zur Verwaltung',
+    toApp: 'Zur App',
+    viewBanner: 'Admin-Ansicht: Du siehst diesen Baum als Admin. Änderungen machst du als Admin, und das Öffnen fremder Bäume wird protokolliert.',
     persons: (count) => (count === 1 ? '1 Person' : `${count} Personen`),
     tabs: { overview: 'Übersicht', people: 'Personen', invitations: 'Einladungen', trees: 'Bäume', audit: 'Aktivität' },
     overview: {

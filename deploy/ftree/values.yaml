@@ -6,6 +6,12 @@ imagePullSecrets: []
 operator:
   name: ""
   email: ""
+# The address people open ftree at, e.g. https://ftree.example.org: invitation texts link to it, and the administration
+# leads back to it. Unset, the BFF falls back to http://localhost:3000.
+publicUrl: ""
+# The administration's own address, e.g. https://admin.example.org. Set, it opens on /admin there and only there, and
+# trees opened from it show that they are an admin's view; unset, the administration is /admin of publicUrl.
+adminUrl: ""
 ui:
   image: { repository: ghcr.io/schillpeet/ftree-ui, tag: "", pullPolicy: IfNotPresent }
   resources:
@@ -25,8 +31,6 @@ bff:
     # AUD tag of the admins' own Access application on its own host. Set, admins have their rights only with its tokens
     # and are ordinary users on the tree's host; unset, they have them everywhere.
     adminAudience: ""
-  # The administration's address on its own host, e.g. https://admin.example.org; the menu links admins there.
-  adminUrl: ""
   # The access file's content as one string, e.g. --set-file bff.access=access.yaml. Its admin: true entries are the
   # bootstrap admins; the BFF imports its other entries into the database once, which decides from then on. It replaces
   # roles; set only one of the two.

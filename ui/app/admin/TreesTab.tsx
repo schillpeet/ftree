@@ -23,7 +23,8 @@ import TransferOwnership from './TransferOwnership';
 import { useAdminLoad } from './useAdminLoad';
 
 // Every tree as a card with who created it, its persons, and how many hold each role, real trees first and test trees
-// on demand; "Öffnen" is its one visible action, the others wait in the "⋯" menu. Below, the trash folds away.
+// on demand; "Öffnen" is its one visible action and opens the tree in a new tab, the others wait in the "⋯" menu.
+// Below, the trash folds away.
 export default function TreesTab() {
   const t = useT();
   const [language] = useLanguage();
@@ -157,7 +158,7 @@ export default function TreesTab() {
                 />
               ) : (
                 <div className="admin-tree-actions">
-                  <Link className="family-card-button" href={pathOf(family)}>
+                  <Link className="family-card-button" href={pathOf(family)} target="_blank" rel="noopener">
                     {t.admin.trees.open}
                   </Link>
                   <ActionMenu

@@ -53,5 +53,11 @@ function isApiUrl(url: string, origin: string) {
   }
 }
 
-// The admin page on the administration's own host, from `adminUrl` in `/me`, however many slashes it ends with.
-export const adminPageOf = (adminUrl: string) => `${adminUrl.replace(/\/+$/, '')}/admin`;
+// The host (with its port) of a configured address such as `ADMIN_URL`, lowercased; null when unset or not a URL.
+export function hostOf(url: string | undefined): string | null {
+  try {
+    return url?.trim() ? new URL(url.trim()).host.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}

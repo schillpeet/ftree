@@ -69,10 +69,7 @@ class AccessPolicyTest {
         val policy = AccessPolicy(AccessProperties(file.toString()), RoleProperties(), grants)
         val own = mapOf(family to Role.EDITOR)
         assertEquals(Access(admin = true, canCreateTrees = true, memberships = own), policy.accessOf("admin@example.com", adminSession = true))
-        assertEquals(
-            Access(admin = false, canCreateTrees = true, memberships = own, adminElsewhere = true),
-            policy.accessOf("admin@example.com", adminSession = false),
-        )
+        assertEquals(Access(admin = false, canCreateTrees = true, memberships = own), policy.accessOf("admin@example.com", adminSession = false))
         assertEquals(Access.NONE, policy.accessOf("someone@example.com", adminSession = true))
     }
 

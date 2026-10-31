@@ -268,7 +268,7 @@ Everyone has `tree.appearance`, which offers every appearance and the Evolution 
 Only the access file's admins apply at runtime, as bootstrap admins who stay admins whatever the database says; `MembershipSeed` imports its other entries into the database once (see Sharing).
 Admins come only from the access file (or `app.roles.admins`): at every start `MembershipSeed.syncAdmins` sets `users.admin` to exactly the bootstrap admins, writing `user.admin.granted` or `user.admin.revoked` with the source `access-file`, and `users.admin` alone gives no right.
 Without an access file, `app.roles.admins` (env `APP_ROLES_ADMINS`) lists the bootstrap admins' emails, matched trimmed and case-insensitively.
-`GET /me` returns the signed-in user's `email`, `admin`, `canCreateTrees`, the `permissions` outside any family, `verified`, and `adminUrl`, or 401 without a user; every family in `GET /families` and in the answers of family writes carries the caller's `role` and `permissions` in it.
+`GET /me` returns the signed-in user's `email`, `admin`, `canCreateTrees`, the `permissions` outside any family, and `verified`, or 401 without a user; every family in `GET /families` and in the answers of family writes carries the caller's `role` and `permissions` in it.
 `app.auth.mode` (env `APP_AUTH_MODE`) is `cloudflare` by default; `dev` signs every request in as `app.auth.dev-email` (default `dev@localhost`) with `verified` false and logs a warning at startup, and `start.sh` runs the BFF in dev mode with `dev@localhost` as admin.
 Spring Security runs stateless and enforces the permissions per method and path: every request needs a signed-in user (401 otherwise), `GET /me` needs nothing more, and any other request needs its permission (403 otherwise), taken from the role in the family of the path for `/families/{familyId}/...`, with unknown endpoints always denied.
 `tree.view` covers the reads (families, members, photos), `family.export` the GEDCOM export, `member.edit` creating and changing members, relatives, placement, and member photos, `member.delete` deleting members, `family.edit` renaming families, family photos, and the photo fit, `family.delete` deleting a family, `family.create` creating and importing families, `dev.tools` generating test families, and `family.manage` archiving, anonymizing, and reordering families.
@@ -279,7 +279,6 @@ Because Cloudflare Access turns its cookie into the JWT header, the BFF rejects 
 In cloudflare mode the BFF verifies the Cloudflare Access JWT from the `Cf-Access-Jwt-Assertion` header against the keys at `https://<team-domain>/cdn-cgi/access/certs`, checking its signature, expiry, issuer (`https://<team-domain>`), and audience, and takes the user from its `email` claim with `verified` true.
 `app.auth.admin-audience` (env `APP_AUTH_ADMIN_AUDIENCE`) is the AUD tag of the admins' own Access application on its own host; the BFF accepts tokens for it as well, and while it is set, admins have their rights only with such a token, so on the tree's host they are ordinary users with their own trees.
 Without it, every token counts as an admin session and the BFF warns at startup that admins have their rights on the tree's host as well.
-`app.admin-url` (env `APP_ADMIN_URL`) is the address of that host; `/me` returns it as `adminUrl` to admins outside an admin session, and null otherwise.
 In dev mode, `app.auth.dev-admin-session` (default true) decides whether requests count as an admin session.
 Dev mode refuses to start unless `app.public-url` is a local address (`localhost`, `127.0.0.1`, `::1`, `*.localhost`, or `*.test`), since it signs anyone in as anyone.
 `app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
@@ -288,7 +287,7 @@ The UI loads `GET /me` once at start and shows only what the permissions allow, 
 The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator, otherwise the role in the open family: Eigentümer, Bearbeiter, or Gast), whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode), and a logout link to `/cdn-cgi/access/logout`.
 "Familien" needs `family.create` (every signed-in user) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Mitglied hinzufügen" needs `member.edit` in the open family, and "Momentaufnahme" and "Darstellung" are for everyone.
 "Verwaltung" ("Administration") needs `users.view` and links to the admin page at `/admin`; the former read-only "Anmeldungen" board of `GET /users` is gone until the admin page gets a people tab.
-For an admin on the tree's host, whose `/me` carries `adminUrl`, "Verwaltung" links to `/admin` on that host instead, and the admin page's "Kein Zugriff" offers "Zur Verwaltung" there.
+On the tree's host of a deployment whose administration has its own host, admins lack `users.view`, so the menu has no "Verwaltung"; they open the administration's host directly, for example from the Cloudflare App Launcher.
 Without `tree.appearance` only the experimental appearance can be chosen; the others are disabled and marked "Demnächst", and a stored other choice falls back to experimental.
 The Evolution button needs `tree.appearance`, so everyone sees it; its random-family generator needs `dev.tools`.
 Editing a person, their photo, relatives, and dragging cards to pins need `member.edit`; deleting a person needs `member.delete`.
@@ -388,7 +387,11 @@ Below the tiles, "Gerade aktiv" lists `GET /admin/presence` with one row per per
 "Übersicht" refreshes its tiles and the active list every 15 seconds.
 "Bäume" shows `GET /admin/families` as cards with name, slug, test mark, creator and date, the person count, and how many people hold each role.
 It lists the real trees by default; a select shows the test trees or all, and a search narrows them by name or slug.
-"Öffnen" (to `/<slug>`) is a card's only button; its "⋯" menu holds "Besitz übertragen", "Aktivität des Baums" (`/admin/audit?tree=<id>`), and "In den Papierkorb" after a confirmation.
+"Öffnen" (to `/<slug>`, in a new tab) is a card's only button; its "⋯" menu holds "Besitz übertragen", "Aktivität des Baums" (`/admin/audit?tree=<id>`), and "In den Papierkorb" after a confirmation.
+With `ADMIN_URL` set, the UI's `proxy.ts` sends `/` on the administration's host to `/admin` and answers `/admin` on any other host with 404; tree pages stay reachable on the administration's host, and without `ADMIN_URL` everything lives on one host as before.
+A tree opened on the administration's host shows the banner "Admin-Ansicht", which says that changes are made as admin and that opening a tree the admin holds no role in is logged.
+On its own host the administration's header button is "Zur App" and leads to `APP_URL`; on a shared host it stays "Zurück zum Baum" to `/`.
+The person detail opens their trees in a new tab as well.
 Below the trees, the trash (`family.manage`) is folded to one line with its number of trees and the next removal; opened, it lists `GET /admin/trash` with who deleted each tree and when, the remaining days, "Wiederherstellen", and "Endgültig löschen", which needs the tree's exact name typed into a prompt.
 `GET /admin/audit` needs `users.view` and lists `audit_log` newest first as `entries` (`id`, `at`, `actor` as email or null for the BFF itself, `actorId`, `action`, `targetType`, `targetId`, `targetName`, and `details`) with `next`, the `before` for the following page, or null on the last.
 The query takes `limit` (1 to 100, default 50), `before` (an entry id), and the optional filters `userId`, `familyId`, and `action`, which combine; ids are used instead of emails, so no email appears in a URL or log.
@@ -584,7 +587,8 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `ui/osv-scanner.toml` and `api/osv-scanner.toml` list advisories that OSV-Scanner and Scorecard's Vulnerabilities check skip, each with a reason and an `ignoreUntil` date; today only GHSA-g3hv-75wg-m249 in `minimatch`, used only by ESLint and Spectral and not in any image, until 2027-01-31.
 - Trivy actions are pinned by commit SHA to releases made after the March 2026 tag hijacking of `aquasecurity/trivy-action` and `setup-trivy`, and the Trivy version is set explicitly.
 - The chart's `bff.auth.*` and `bff.roles.admins` values become the BFF's `APP_AUTH_*` and `APP_ROLES_ADMINS` variables, and `bff.access` becomes the mounted access file in `APP_ACCESS_FILE`; in cloudflare mode the chart refuses to render without `bff.auth.teamDomain` and `bff.auth.audience` (see `deploy/README.md`).
-- The chart's `bff.auth.adminAudience` and `bff.adminUrl` become `APP_AUTH_ADMIN_AUDIENCE` and `APP_ADMIN_URL`.
+- The chart's `bff.auth.adminAudience` becomes `APP_AUTH_ADMIN_AUDIENCE`.
+- The chart's `publicUrl` becomes the BFF's `APP_PUBLIC_URL` and the UI's `APP_URL`, and `adminUrl` the UI's `ADMIN_URL`.
 - With `bff.cloudflare.existingSecret` set, the chart passes its `api-token` key as `CLOUDFLARE_API_TOKEN`, `bff.cloudflare.accountId` and `bff.cloudflare.accessGroupId` as `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_ACCESS_GROUP_ID`, and `bff.cloudflare.dryRun` as `ACCESS_SYNC_DRY_RUN`.
 
 The procedural scene is presentation code.

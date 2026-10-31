@@ -192,7 +192,9 @@ export default function PersonDetail({
           {user.trees.map((tree) => (
             <li key={tree.familyId}>
               <TreeIcon />
-              <Link href={`/${tree.familySlug}`}>{tree.familyName}</Link>
+              <Link href={`/${tree.familySlug}`} target="_blank" rel="noopener">
+                {tree.familyName}
+              </Link>
               <RolePicker
                 value={tree.role}
                 disabled={busy}
