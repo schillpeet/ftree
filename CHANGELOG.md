@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.31.0](https://github.com/schillpeet/ftree/compare/v0.30.0...v0.31.0) (2026-10-31)
+
+
+### ⚠ BREAKING CHANGES
+
+* **ui:** serve the administration only on the admin host ([#285](https://github.com/schillpeet/ftree/issues/285))
+
+### Features
+
+* **ui:** serve the administration only on the admin host ([#285](https://github.com/schillpeet/ftree/issues/285)) ([c98a157](https://github.com/schillpeet/ftree/commit/c98a157d1fa40e02fd8cc82acc4ad87943f30d11))
+
+
+### Dependencies
+
+* update dependencies with dependabot ([#277](https://github.com/schillpeet/ftree/issues/277), [#278](https://github.com/schillpeet/ftree/issues/278), [#279](https://github.com/schillpeet/ftree/issues/279))
+
 ## [0.30.0](https://github.com/schillpeet/ftree/compare/v0.29.1...v0.30.0) (2026-10-31)
 
 
