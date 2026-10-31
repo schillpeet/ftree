@@ -408,6 +408,20 @@ textarea {
   opacity: 0.65;
 }
 
+.family-set-import > button[aria-describedby='family-limit']:disabled {
+  cursor: not-allowed;
+}
+
+.family-limit {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(176, 112, 24, 0.35);
+  border-radius: 5px;
+  background: #fdf3e1;
+  color: #7a4a0c;
+  font-size: 13px;
+}
+
 .family-set-select:focus-visible,
 .family-set-delete:focus-visible,
 .family-set-visibility:focus-visible,
