@@ -1,0 +1,9 @@
+# Advisories OSV-Scanner (and OpenSSF Scorecard's Vulnerabilities check, which uses it) skips for this lockfile.
+# Each entry says why it does not apply and expires, so it is reviewed again; drop it once Dependabot brings a fix.
+
+# minimatch < 11.0.1 (ReDoS through brace and glob amplification): only Spectral's contract lint uses it, on our own
+# spec and rulesets, and nothing of it ends up in an image. Spectral needs minimatch 3.x, so it cannot be overridden to 11.
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-01-31T00:00:00Z
+reason = "Dev-only (Spectral lint), not in any image; no fix compatible with Spectral yet"

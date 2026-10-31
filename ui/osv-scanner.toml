@@ -1,0 +1,9 @@
+# Advisories OSV-Scanner (and OpenSSF Scorecard's Vulnerabilities check, which uses it) skips for this lockfile.
+# Each entry says why it does not apply and expires, so it is reviewed again; drop it once Dependabot brings a fix.
+
+# minimatch < 11.0.1 (ReDoS through brace and glob amplification): only ESLint's tooling uses it, on our own
+# patterns, and nothing of it ends up in an image. ESLint 9 needs minimatch 3.x, so it cannot be overridden to 11.
+[[IgnoredVulns]]
+id = "GHSA-g3hv-75wg-m249"
+ignoreUntil = 2027-01-31T00:00:00Z
+reason = "Dev-only (ESLint tooling), not in any image; no fix compatible with ESLint 9 yet"
