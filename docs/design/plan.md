@@ -19,12 +19,12 @@ Journeys: N new user, I invited user, R returning user, V signed-out visitor ([j
 - A member can be linked to one user per family; `/me` or the family answer names the caller's own member.
 - Set when a tree is planted from the welcome card; "Nicht ich" removes the link; the API spec comes first, the UI client is regenerated.
 
-## 3. [~] `feat(ui): add relatives from the tree and highlight lineages` (N R)
+## 3. [x] `feat(ui): add relatives from the tree and highlight lineages` (N R)
 
 - Relative slots and quick-add popover around the selected person: only missing relations, mother → father chaining, toast with undo.
 - Thin accent connection lines, the selected lineage highlighted; 3D keeps the papyrus scrolls, TRON uses glass pills (see components.md).
 
-## 4. `feat(ui): guide new, invited, and returning users` (N I R)
+## 4. [~] `feat(ui): guide new, invited, and returning users` (N I R)
 
 - Welcome card for signed-in users without a tree; replaces `ui/app/EmptyTree.tsx` for them.
 - Invitation card on the first visit of a shared tree; sharing keeps granting access right away, so "Einladung annehmen" only closes the card and starts the tour.
@@ -33,7 +33,7 @@ Journeys: N new user, I invited user, R returning user, V signed-out visitor ([j
 
 ## 5. `feat(ui): add public landing page with example family` (V)
 
-- Landing page for signed-out visitors; needs a public path outside Cloudflare Access (see README open questions).
+- Landing page at `/home`, public through a Cloudflare Access bypass (ftree-infra); `/` redirects there and the header logo links there.
 - Read-only example family bundled with the UI, no BFF call.
 - Lower and closer camera, warmer horizon light, and a new still for the landing.
 
@@ -41,4 +41,4 @@ Journeys: N new user, I invited user, R returning user, V signed-out visitor ([j
 
 1. PRs 1 and 2 in parallel.
 2. PR 3 once PR 1 is merged; PR 4 once PRs 1 and 2 are merged; both in parallel.
-3. PR 5 once the Cloudflare Access question in ftree-infra is decided.
+3. PR 5 once PR 4 is merged; the Access bypass for `/home` lands in ftree-infra before it is deployed.

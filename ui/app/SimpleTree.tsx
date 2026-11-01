@@ -82,6 +82,7 @@ export default function SimpleTree({
   focusId,
   selectedId,
   bloodId,
+  selfId = null,
   onOpen,
   slots,
 }: {
@@ -95,6 +96,8 @@ export default function SimpleTree({
   selectedId: string | null;
   // Whose lines to their blood relatives stand out, or null.
   bloodId: string | null;
+  // The signed-in user's own member, marked with a ring and a badge, or null.
+  selfId?: string | null;
   onOpen: (id: string) => void;
   // The "+" slots around the selected name, missing without the permission to add people.
   slots?: SlotMount;
@@ -191,6 +194,7 @@ export default function SimpleTree({
           <Html key={member.id} position={positions.get(member.id)} center distanceFactor={scale}>
             <button
               className={`simple-name${state}`}
+                data-self={member.id === selfId || undefined}
               type="button"
               title={nameOf(member, t.members.unknown)}
               aria-label={t.profile.open(nameOf(member, t.members.unknown))}
@@ -203,6 +207,7 @@ export default function SimpleTree({
                 <span>{isNameless(member) ? t.members.unknown : shortFirstName(member.firstName) || member.lastName}</span>
                 {years && <span className="simple-name-years">{years}</span>}
               </span>
+              {member.id === selfId && <span className="self-badge">{t.tour.you}</span>}
               <PresenceDot memberId={member.id} />
             </button>
           </Html>

@@ -1530,6 +1530,36 @@ a.dashboard-nav-item {
   outline-offset: 2px;
 }
 
+/* The signed-in user's own card: "DU" badge on the scroll's rod; in the experimental view a ring and glow instead. */
+.self-badge {
+  position: absolute;
+  z-index: 2;
+  top: -9px;
+  right: -6px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 700 10px/1.3 var(--font-ui);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.simple-name[data-self] {
+  box-shadow:
+    0 0 0 1.5px var(--line-on),
+    0 0 14px var(--glow);
+}
+
+.self-badge-floating {
+  position: static;
+}
+
+.simple-name[data-self] .self-badge {
+  top: -8px;
+  right: -8px;
+}
+
 /* Member search: a square next to the burger that widens to a search field. */
 .member-search {
   position: fixed;

@@ -37,6 +37,13 @@ assert.equal(homePath([marina, fallback]), '/default');
 assert.equal(homePath([other]), '/schiller-2');
 assert.equal(homePath([]), null);
 assert.equal(pathOf(marina), '/marina');
+// The last open tree wins while it is visible; a gone, malformed or missing one falls back to the default choice.
+assert.equal(homePath([marina, fallback], 'marina'), '/marina');
+assert.equal(homePath([marina, fallback], 'gone'), '/default');
+assert.equal(homePath([other], 'marina'), '/schiller-2');
+assert.equal(homePath([marina, fallback], null), '/default');
+assert.equal(homePath([marina, fallback], 'admin'), '/default');
+assert.equal(homePath([], 'marina'), null);
 
 // The switcher lists every family by name and marks the open one.
 assert.deepEqual(switcherEntries([other, marina], 'o'), [

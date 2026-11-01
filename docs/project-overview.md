@@ -148,6 +148,10 @@ Every tree opens at `/<slug>`, its family's slug; deep links, reloads, and the b
 `/` leads on to the family named `default`, else the first visible family, and replaces itself in the history; without any visible family it stays empty with "Keine Familie".
 Choosing a tree in the families board or creating one navigates to its URL, and hiding the shown tree there goes back to `/` without leading on.
 A deleted tree's URL leads on like `/` once the families reload.
+`/` opens the tree last opened in this browser while it is still visible, else the choice above.
+A signed-in user without any tree sees a welcome card that plants the tree "Familie <Nachname>" with themselves as its first person, linked to their account.
+A tree shared with the user greets them once per browser with an invitation card that names the person they are linked to ("Du hängst schon im Baum als …", with "Nicht ich" to remove the link).
+The own card carries a "DU" badge, the camera flies to it when a tree opens, and a three-step intro tour runs once per browser after planting a tree or accepting an invitation.
 A slug that names no visible family, is malformed, or is reserved shows "Baum nicht gefunden" with a link back to the first tree; unknown and forbidden trees look the same.
 The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `terms`, and `privacy` are reserved for routes of their own and never open a tree.
 A new family gets a random slug of 10 lowercase letters and digits (`FamilySlugs.kt`), so the URL does not reveal the tree's name and never hits a reserved slug; V26 replaced the name-based slugs of older families the same way.

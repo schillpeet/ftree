@@ -364,6 +364,7 @@ function Scrolls({
   showLines,
   focusId,
   selectedId,
+  selfId,
   cardStyle,
   spacing,
   evening,
@@ -383,6 +384,8 @@ function Scrolls({
   focusId: string | null;
   // The person whose panel is open: their card gets a halo.
   selectedId: string | null;
+  // The signed-in user's own member, marked with a badge, or null.
+  selfId: string | null;
   cardStyle: CardStyle;
   // Relation spacing while bundling, otherwise null.
   spacing: number | null;
@@ -550,9 +553,9 @@ function Scrolls({
           selected: member.id === selectedId,
           dimmed: lineage != null && !lineage.has(member.id),
         };
-        if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} />;
-        if (cardStyle === 'sign') return <SignCard key={member.id} {...card} evening={evening} />;
-        return <ScrollCard key={member.id} {...card} mode={cardStyle} evening={evening} />;
+        if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} isSelf={member.id === selfId} />;
+        if (cardStyle === 'sign') return <SignCard key={member.id} {...card} evening={evening} isSelf={member.id === selfId} />;
+        return <ScrollCard key={member.id} {...card} mode={cardStyle} evening={evening} isSelf={member.id === selfId} />;
       })}
       {showPins &&
         pins.map((pin, i) => (
@@ -579,6 +582,7 @@ export default function Scene({
   members,
   focus,
   highlight,
+  selfId = null,
   evolutionOpen,
   onEvolutionClose,
   onOpen,
@@ -591,6 +595,8 @@ export default function Scene({
   focus: Focus;
   // The person whose panel is open, whose lines to their relatives can stand out.
   highlight: string | null;
+  // The signed-in user's own member, marked with a badge, or null.
+  selfId?: string | null;
   // The Evolution panel (developers only); its button sits in the header, which owns the toggle.
   evolutionOpen: boolean;
   onEvolutionClose: () => void;
@@ -749,7 +755,7 @@ export default function Scene({
         {experimental ? (
           <>
             <GridFloor />
-            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} selectedId={highlight} bloodId={bloodId} onOpen={onOpen} slots={slots('pill')} />
+            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} selectedId={highlight} bloodId={bloodId} selfId={selfId} onOpen={onOpen} slots={slots('pill')} />
           </>
         ) : (
           <>
@@ -769,6 +775,7 @@ export default function Scene({
               showLines={showLines}
               focusId={focusId}
               selectedId={highlight}
+              selfId={selfId}
               cardStyle={cardStyle}
               spacing={organic && bundle ? spacing : null}
               evening={eveningFactor}

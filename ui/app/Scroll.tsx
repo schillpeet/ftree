@@ -23,6 +23,7 @@ export default function Scroll({
   onDrag,
   selected = false,
   dimmed = false,
+  isSelf = false,
 }: {
   member: Member;
   familyId: string | null;
@@ -31,6 +32,8 @@ export default function Scroll({
   onDrag?: (event: PointerEvent<HTMLDivElement>) => void;
   selected?: boolean;
   dimmed?: boolean;
+  // The signed-in user's own card: marked with a badge.
+  isSelf?: boolean;
 }) {
   const t = useT();
   const birth = formatDate(member.birthDate);
@@ -45,6 +48,7 @@ export default function Scroll({
         tabIndex={0}
         aria-label={t.profile.open(nameOf(member, t.members.unknown))}
         className={['scroll', onDrag && 'scroll-draggable', selected && 'is-selected', dimmed && 'is-dimmed'].filter(Boolean).join(' ')}
+        data-self={isSelf || undefined}
         onPointerDown={(event) => {
           pressedAt.current = { x: event.clientX, y: event.clientY };
           if (!onDrag) return; // the camera controls on the canvas container must still see the press
@@ -66,6 +70,7 @@ export default function Scroll({
         }}
       >
         <div className="scroll-rod" />
+        {isSelf && <span className="self-badge">{t.tour.you}</span>}
         <div className="scroll-sheet">
           {photo && (
             // Arbitrary user URLs: next/image would need every host configured.
