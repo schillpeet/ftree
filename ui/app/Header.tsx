@@ -8,6 +8,7 @@ import { useLanguage, useT, type Language } from './i18n';
 import { EvolutionIcon, UsersIcon } from './icons';
 import { useCan, useMeLoaded } from './Permissions';
 import TreeSwitcher from './TreeSwitcher';
+import BrandLink from './home/BrandLink';
 import './header.css';
 
 const THEMES: { theme: Theme; appearance: Appearance }[] = [
@@ -47,7 +48,7 @@ export function ThemeSegment({ className }: { className?: string }) {
 const LANGUAGES: Language[] = ['de', 'en'];
 
 // DE | EN.
-function LanguageSegment() {
+export function LanguageSegment() {
   const t = useT();
   const [language, setLanguage] = useLanguage();
   return (
@@ -60,16 +61,6 @@ function LanguageSegment() {
     </div>
   );
 }
-
-// The f-monogram of the prototype, in the accent colour.
-const Monogram = () => (
-  <svg className="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-    <path d="M15 27V13" />
-    <path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" />
-    <path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" />
-    <path d="M9 27h12" />
-  </svg>
-);
 
 // The top of every signed-in screen: the wordmark, the centred family name (with several trees a switcher sits beside it,
 // and it opens the family card), and on the right the theme and language segments, the developers' Evolution button, and
@@ -98,10 +89,7 @@ export default function Header({
 
   return (
     <header className="app-header">
-      <div className="header-brand">
-        <Monogram />
-        <span className="header-wordmark">ftree</span>
-      </div>
+      <BrandLink />
       {switchable ? (
         <TreeSwitcher families={families ?? []} activeFamily={activeFamily ?? null} onFamilyClick={onFamilyClick} />
       ) : (

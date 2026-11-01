@@ -29,9 +29,11 @@ import type { CameraView } from './Dock';
 import Tree, { buildTree } from './Tree';
 
 // Sky colors (hemisphere sky, ground, haze) at night, with the sun low, and with the sun high.
+// The haze is what the meadow melts into at the horizon, so it carries the amber; the hemisphere
+// sky stays cool-neutral to keep the cards' light free of a cast.
 const NIGHT = { sky: new Color('#4a5f96'), ground: new Color('#1c1a2c'), haze: new Color('#1a2238') };
-const DUSK = { sky: new Color('#f0a888'), ground: new Color('#3a2c3c'), haze: new Color('#b98a86') };
-const NOON = { sky: new Color('#d8e6f5'), ground: new Color('#3c3a30'), haze: new Color('#a9bccf') };
+const DUSK = { sky: new Color('#f0a888'), ground: new Color('#3a2c3c'), haze: new Color('#c9916e') };
+const NOON = { sky: new Color('#d8e6f5'), ground: new Color('#3c3a30'), haze: new Color('#bcbfc2') };
 const SUN_LOW = new Color('#ffa870');
 const SUN_HIGH = new Color('#fff2dc');
 const MOONLIGHT = new Color('#9fb4ff');
@@ -56,8 +58,14 @@ const MOON_GEOMETRY = new CircleGeometry(70, 64);
 const HALO_GEOMETRY = new CircleGeometry(260, 32);
 const STARS = 4000;
 const TREE_BASE = height(0, 0);
-const CAMERA_START: [number, number, number] = [40, TREE_BASE + 15, 50];
-const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 9, 0];
+const CAMERA_START: [number, number, number] = [32, TREE_BASE + 8, 40];
+const CAMERA_TARGET: [number, number, number] = [0, TREE_BASE + 11, 0];
+// Portrait screens show less width at the same distance, so the start view backs off along its line of sight.
+const startCamera = (aspect: number): [number, number, number, number, number, number] => {
+  const k = Math.min(1.7, Math.max(1, 1.1 / aspect));
+  const [x, y, z] = CAMERA_START.map((v, i) => CAMERA_TARGET[i] + (v - CAMERA_TARGET[i]) * k);
+  return [x, y, z, ...CAMERA_TARGET];
+};
 const FOCUS_DISTANCE = 12;
 // High enough above the trunk that the crown and the waiting rows fit into the bird's-eye view.
 const TOP_HEIGHT = 90;
@@ -318,7 +326,7 @@ function DaySky({ date, location }: { date: Date; location: Location }) {
 
   return (
     <>
-      <Sky sunPosition={sun} turbidity={10} rayleigh={3.5} mieCoefficient={0.004} mieDirectionalG={0.9} />
+      <Sky sunPosition={sun} turbidity={10} rayleigh={3} mieCoefficient={0.006} mieDirectionalG={0.9} />
       <Stars ref={stars} radius={3000} depth={500} count={STARS} factor={110} speed={0} fade />
       {altitude < 0.1 && (
         <Billboard position={moon.map((v) => v * MOON_DISTANCE) as [number, number, number]}>
@@ -634,7 +642,7 @@ export default function Scene({
   const stopOrbit = useCallback(() => setOrbit(false), []);
   const lookFront = () => {
     setOrbit(false);
-    void controls?.setLookAt(...CAMERA_START, ...CAMERA_TARGET, true);
+    void controls?.setLookAt(...startCamera(window.innerWidth / window.innerHeight), true);
   };
   // A tiny offset toward the front keeps the front at the bottom of the screen.
   const lookFromAbove = () => {
@@ -721,7 +729,7 @@ export default function Scene({
   const initControls = useCallback((controls: CameraControls | null) => {
     controlsRef.current = controls;
     setControls(controls);
-    void controls?.setLookAt(...CAMERA_START, ...CAMERA_TARGET, false);
+    void controls?.setLookAt(...startCamera(window.innerWidth / window.innerHeight), false);
   }, []);
 
   const selected = members.find((m) => m.id === highlight);

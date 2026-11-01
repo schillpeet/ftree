@@ -39,7 +39,7 @@ import { useTour } from './tour';
 import WelcomeCard, { PlantRetry, type PartialPlant } from './WelcomeCard';
 import TreeNotFound from './TreeNotFound';
 
-// The slug of the tree last open in this browser, which `/` opens again while it is still visible.
+// The slug of the tree last open in this browser, which `/start` opens again while it is still visible.
 const LAST_TREE_KEY = 'ftree.lastTree';
 
 function lastTree() {
@@ -62,9 +62,9 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const canCreate = useCan('family.create');
   const [members, setMembers] = useState<Member[] | null>(null);
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);
-  // The tree just chosen here, shown before the URL follows; `slug: undefined` is `/` with no tree.
+  // The tree just chosen here, shown before the URL follows; `slug: undefined` is `/start` with no tree.
   const [pending, setPending] = useState<{ slug: string | undefined } | null>(null);
-  // Set when the families board hides the only shown tree, so `/` does not lead on to the first one again.
+  // Set when the families board hides the only shown tree, so `/start` does not lead on to the first one again.
   const [hidden, setHidden] = useState(false);
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [familiesError, setFamiliesError] = useState(false);
@@ -134,7 +134,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
     try {
       localStorage.setItem(LAST_TREE_KEY, activeSlug);
     } catch {
-      // Without storage `/` opens the default tree.
+      // Without storage `/start` opens the default tree.
     }
   }, [activeSlug]);
 
@@ -180,10 +180,10 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
       }
       const loaded = response.data;
       setFamilies(loaded);
-      // A tree that went away (deleted) leads on like `/`, to "default" or the first family.
+      // A tree that went away (deleted) leads on like `/start`, to "default" or the first family.
       if (activeFamilyId && !loaded.some((family) => family.id === activeFamilyId)) {
         setPending({ slug: firstFamily(loaded)?.slug });
-        router.replace(homePath(loaded, lastTree()) ?? '/');
+        router.replace(homePath(loaded, lastTree()) ?? '/start');
       }
     } catch {
       if (!quiet) setFamiliesError(true);
@@ -224,7 +224,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
     };
   }, []);
 
-  // `/` leads on to the first visible tree, replacing itself so the back button skips it.
+  // `/start` leads on to the last or first visible tree, replacing itself so the back button skips it.
   useEffect(() => {
     if (slug !== undefined || hidden || !families) return;
     const home = homePath(families, lastTree());
@@ -249,7 +249,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
     setFamilyCard(card);
     setHidden(family === null);
     setPending({ slug: family?.slug });
-    router.push(family ? pathOf(family) : '/');
+    router.push(family ? pathOf(family) : '/start');
   }
 
   function toggleFamilyVisibility(familyId: string) {

@@ -24,16 +24,16 @@ Journeys: N new user, I invited user, R returning user, V signed-out visitor ([j
 - Relative slots and quick-add popover around the selected person: only missing relations, mother → father chaining, toast with undo.
 - Thin accent connection lines, the selected lineage highlighted; 3D keeps the papyrus scrolls, TRON uses glass pills (see components.md).
 
-## 4. [~] `feat(ui): guide new, invited, and returning users` (N I R)
+## 4. [x] `feat(ui): guide new, invited, and returning users` (N I R)
 
 - Welcome card for signed-in users without a tree; replaces `ui/app/EmptyTree.tsx` for them.
 - Invitation card on the first visit of a shared tree; sharing keeps granting access right away, so "Einladung annehmen" only closes the card and starts the tour.
 - `/` opens the last tree and the camera settles on the own card with the "DU" badge.
 - Three-step intro tour, shown once per user and remembered per browser.
 
-## 5. `feat(ui): add public landing page with example family` (V)
+## 5. [~] `feat(ui): add public landing page with example family` (V)
 
-- Landing page at `/home`, public through a Cloudflare Access bypass (ftree-infra); `/` redirects there and the header logo links there.
+- Landing page at `/home`, public through a Cloudflare Access bypass (ftree-infra); `/` redirects there and the header logo links there – [implementation plan](../superpowers/plans/2026-11-01-landing-page.md).
 - Read-only example family bundled with the UI, no BFF call.
 - Lower and closer camera, warmer horizon light, and a new still for the landing.
 
