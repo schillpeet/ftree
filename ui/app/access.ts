@@ -22,6 +22,13 @@ export const APPEARANCES = ['organic', 'organicExperimental', 'experimental'] as
 export type Appearance = (typeof APPEARANCES)[number];
 export const PUBLIC_APPEARANCE: Appearance = 'experimental';
 
+// The design theme of an appearance; the organic appearances are 3D, the experimental one is TRON.
+export type Theme = '3d' | 'tron';
+
+export function themeOf(appearance: Appearance): Theme {
+  return appearance === 'experimental' ? 'tron' : '3d';
+}
+
 // `mayChoose` is null while `/me` is still loading; the stored choice is kept meanwhile, so the
 // tree does not switch appearance once the permissions arrive.
 export function allowedAppearance(saved: string | null, mayChoose: boolean | null): Appearance {

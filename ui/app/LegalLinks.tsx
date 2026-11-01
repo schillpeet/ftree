@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useLanguage, useT } from './i18n';
 
-// "Terms · Privacy" beside the version badge; the pages open in the language chosen here.
+// "Terms · Privacy" after the version in the footer; the pages open in the language chosen here.
 export default function LegalLinks() {
   const t = useT();
   const [language] = useLanguage();

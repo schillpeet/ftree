@@ -15,6 +15,7 @@
   --segment-on: rgba(244,238,227,.92); --segment-on-ink: #0F1214; --slot-border: rgba(242,195,139,.75);
   --line-on: #F2C38B; --line-dim: rgba(242,195,139,.3); --glow: rgba(242,195,139,.5);
   --avatar: #F2C38B; --avatar-dim: #B9A68C;
+  --hover: rgba(255,255,255,.12); --danger: #FF8F7A;
 }
 [data-theme="tron"] {
   --bg: #02050A; --text: #E8FCFF; --muted: #8FBAC2;
@@ -24,4 +25,5 @@
   --segment-on: #48E5FF; --segment-on-ink: #02050A; --slot-border: rgba(72,229,255,.6);
   --line-on: #48E5FF; --line-dim: rgba(72,229,255,.22); --glow: rgba(72,229,255,.55);
   --avatar: #48E5FF; --avatar-dim: #2B5560;
+  --hover: rgba(72,229,255,.14); --danger: #FF8F7A;
 }

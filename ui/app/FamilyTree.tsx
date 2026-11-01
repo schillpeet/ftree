@@ -9,11 +9,14 @@ import {
   type Member,
   type Placement,
 } from '../lib/api/generated/members';
+import Dock, { type CameraView } from './Dock';
 import Dashboard, { type DashboardPanel } from './Dashboard';
 import FamiliesPanel from './FamiliesPanel';
 import type { FamilyCardMode } from './FamilyCard';
+import Header from './Header';
 import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
+import ShareDialog from './ShareDialog';
 import Scene, { type Focus } from './Scene';
 import { useT } from './i18n';
 import LiveToasts from './live/LiveToasts';
@@ -48,10 +51,15 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [isLoadingFamilies, setIsLoadingFamilies] = useState(true);
   const [familiesError, setFamiliesError] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // The developers' Evolution panel; it and the burger menu close each other.
+  const [isEvolutionOpen, setIsEvolutionOpen] = useState(false);
   const [panel, setPanel] = useState<DashboardPanel | null>(null);
   const [familyCard, setFamilyCard] = useState<FamilyCardMode | null>(null);
   // A new object per "Add member" in the menu.
   const [addRequest, setAddRequest] = useState<object | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+  const [cameraView, setCameraView] = useState<{ view: CameraView; nonce: number } | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
@@ -100,6 +108,8 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
     setFamilyCard(null);
     setAddRequest(null);
     setFollowing(null);
+    setIsSharing(false);
+    setIsSearchOpen(false);
   }
 
   // `quiet` keeps the board as it is while the families load again.
@@ -205,10 +215,13 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
     }
   }
 
+  const closeEvolution = useCallback(() => setIsEvolutionOpen(false), []);
+
   function addMember() {
     stopFollowing();
     setIsMenuOpen(false);
     setPanel(null);
+    setIsSearchOpen(false);
     setAddRequest({});
   }
 
@@ -221,6 +234,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const notFound = families !== null && slug !== undefined && !activeFamily;
   const emptyTree = emptyTreeOf(families, slug, activeFamily, members);
   const canPlace = can(me, 'member.edit', activeFamily);
+  const canShare = can(me, 'family.share', activeFamily);
   useTreeEvents(activeFamilyId, shownId, isEditingShown ? shownId : null);
 
   return (
@@ -234,26 +248,41 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           stopFollowing();
           setProfile({ id });
         }}
+        evolutionOpen={isEvolutionOpen}
+        onEvolutionClose={closeEvolution}
         onPlace={canPlace ? (id, placement) => void placeMember(id, placement) : undefined}
+        cameraView={cameraView}
       />
-      <Dashboard
-        isOpen={isMenuOpen}
-        panel={panel}
+      <Header
         families={families}
         activeFamilyId={activeFamilyId}
-        feedbackEmail={operatorEmail}
-        onToggle={() => {
-          setIsMenuOpen((open) => !open);
+        evolutionOpen={isEvolutionOpen}
+        onEvolution={() => {
+          setIsEvolutionOpen((open) => !open);
+          setIsMenuOpen(false);
           setPanel(null);
         }}
-        onPanel={(next) => setPanel((current) => (current === next ? null : next))}
-        onAddMember={addMember}
         onFamilyClick={() => {
           if (activeFamilyId) return setFamilyCard((current) => current ?? 'view');
           if (!canCreate) return;
           setIsMenuOpen(true);
           setPanel('families');
         }}
+        menu={
+          <Dashboard
+            isOpen={isMenuOpen}
+            panel={panel}
+            families={families}
+            activeFamilyId={activeFamilyId}
+            feedbackEmail={operatorEmail}
+            onToggle={() => {
+              setIsMenuOpen((open) => !open);
+              setPanel(null);
+              setIsEvolutionOpen(false);
+            }}
+            onPanel={(next) => setPanel((current) => (current === next ? null : next))}
+          />
+        }
       />
       {activeFamilyId && (
         <PresenceBar
@@ -276,8 +305,27 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           onAddPerson={addMember}
         />
       )}
+      <Dock
+        canAdd={canPlace}
+        canShare={canShare}
+        hasFamily={!!activeFamily}
+        onPerson={addMember}
+        onSearch={() => setIsSearchOpen((open) => !open)}
+        onInvite={() => {
+          setIsMenuOpen(false);
+          setPanel(null);
+          setIsSearchOpen(false);
+          setIsSharing(true);
+        }}
+        onView={(view) => setCameraView((current) => ({ view, nonce: (current?.nonce ?? 0) + 1 }))}
+      />
+      {isSharing && activeFamily && canShare && (
+        <ShareDialog family={activeFamily} onClose={() => setIsSharing(false)} onChanged={() => void loadFamilies(true)} />
+      )}
       <MemberSearch
         members={members ?? []}
+        open={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
         onSelect={(id) => {
           stopFollowing();
           setIsMenuOpen(false);
