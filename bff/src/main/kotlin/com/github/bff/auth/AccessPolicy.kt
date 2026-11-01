@@ -33,6 +33,7 @@ class AccessPolicy(
         return Access(
             admin = admin && adminSession,
             canCreateTrees = granted.canCreateTrees,
+            adminFlag = admin || granted.admin,
             memberships = granted.families,
             pendingInvitations = granted.pending,
         )

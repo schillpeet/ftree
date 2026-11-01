@@ -374,6 +374,8 @@ A membership can name the member of the tree the person is (V29 `family_membersh
 `PUT /admin/users/{userId}` (`users.manage`) sets the present fields of `canCreateTrees` and `displayName` (blank removes it), writing `user.can-create-trees.granted` or `.revoked` and `user.display-name.changed` or `.removed` to the audit log; it no longer takes `admin`, a breaking change released as `feat(bff)!`.
 `GET /admin/invitations` (`users.view`) lists every membership of someone who never signed in, in trees outside the trash, newest first.
 `PUT /me` with `{displayName}` sets the caller's own display name, and `GET /me` now also returns `id`, `displayName` (the name, else the email before the `@`), and `customName`.
+`GET /me/invitations` lists the invitations the caller sent (`users.invited_by`, not to themselves) as `{email, familyId, familyName, role, invitedAt, status}`, pending (never signed in) first, then newest first.
+Admins outside an admin session (the tree host) keep `admin` false but get the permissions of `canCreateTrees` (`dev.tools`), never admin-only ones.
 Every change of a role or a global right publishes `AccessChanged` (the email and the tree, or null for a global right) once the transaction commits, through `AccessEvents`; `AccessSync` listens to it.
 `AccessSync` (`bff/.../auth/access/`) keeps the Cloudflare Access group `ftree users` equal to everyone with access: the bootstrap admins, `users.admin`, `can_create_trees`, and everyone with a membership, also in a tree in the trash until it is purged.
 It runs on its own thread after every `AccessChanged` and every 10 minutes, and a PostgreSQL advisory lock lets only one run at a time work across BFF instances; a run that finds the lock taken is retried a few seconds later.

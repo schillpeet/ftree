@@ -3,6 +3,7 @@ package com.github.bff.auth
 import com.github.bff.access.PeopleService
 import com.github.bff.generated.api.MeApi
 import com.github.bff.generated.model.Me
+import com.github.bff.generated.model.MyInvitation
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.UpdateMeRequest
 import com.github.bff.problem.ApiProblem
@@ -21,6 +22,9 @@ class MeController(private val people: PeopleService) : MeApi {
         val user = user()
         return ResponseEntity.ok(me(user, people.setOwnDisplayName(user.email, updateMeRequest.displayName)))
     }
+
+    override fun listMyInvitations(): ResponseEntity<List<MyInvitation>> =
+        ResponseEntity.ok(people.invitationsSentBy(user().email))
 
     private fun user() = CurrentUser.current() ?: throw ApiProblem(ProblemCode.UNAUTHENTICATED)
 

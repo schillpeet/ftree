@@ -117,11 +117,11 @@ export interface Me {
      * @nullable
      */
   customName: string | null;
-  /** True for admins in an admin session (on the administration's own host), who are admins in every family; elsewhere an admin is false here, like everyone else. */
+  /** True for admins in an admin session (on the administration's own host), who are admins in every family; elsewhere an admin is false here, like everyone else, but keeps the permissions of `canCreateTrees` (`dev.tools`). */
   admin: boolean;
   /** True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both. */
   canCreateTrees: boolean;
-  /** The permissions outside any family; admins have every permission. */
+  /** The permissions outside any family; admins in an admin session have every permission, admins elsewhere those of `canCreateTrees`. */
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
   verified: boolean;
@@ -1030,6 +1030,29 @@ export interface AdminInvitation {
   invitedBy: string | null;
 }
 
+/**
+ * `pending` while the invited person never signed in, `accepted` afterwards.
+ */
+export type MyInvitationStatus = typeof MyInvitationStatus[keyof typeof MyInvitationStatus];
+
+
+export const MyInvitationStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+} as const;
+
+export interface MyInvitation {
+  /** The email address of the invited person. */
+  email: string;
+  familyId: string;
+  familyName: string;
+  role: TreeRole;
+  /** When the role in this tree was given. */
+  invitedAt: string;
+  /** `pending` while the invited person never signed in, `accepted` afterwards. */
+  status: MyInvitationStatus;
+}
+
 export interface SetupInvitationRequest {
   /**
      * The email the person signs in with; trimmed and lowercased.
@@ -1262,6 +1285,67 @@ const res = await fetch(getUpdateMeUrl(),
 
   const data: updateMeResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as updateMeResponse
+}
+
+
+
+export type listMyInvitationsResponse200 = {
+  data: MyInvitation[]
+  status: 200
+}
+
+export type listMyInvitationsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listMyInvitationsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listMyInvitationsResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type listMyInvitationsResponseSuccess = (listMyInvitationsResponse200) & {
+  headers: Headers;
+};
+export type listMyInvitationsResponseError = (listMyInvitationsResponse401 | listMyInvitationsResponse403 | listMyInvitationsResponse500) & {
+  headers: Headers;
+};
+
+export type listMyInvitationsResponse = (listMyInvitationsResponseSuccess | listMyInvitationsResponseError)
+
+export const getListMyInvitationsUrl = () => {
+
+
+
+
+  return `/api/me/invitations`
+}
+
+/**
+ * The memberships in trees outside the trash of people the caller invited, pending ones (the person never signed in) first, then the newest first.
+ * @summary List the invitations the signed-in user sent
+ */
+export const listMyInvitations = async ( options?: RequestInit): Promise<listMyInvitationsResponse> => {
+
+  const res = await fetch(getListMyInvitationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMyInvitationsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listMyInvitationsResponse
 }
 
 

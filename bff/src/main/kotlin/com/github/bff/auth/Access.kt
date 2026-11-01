@@ -7,17 +7,20 @@ import java.util.UUID
 data class Access(
     val admin: Boolean,
     val canCreateTrees: Boolean = false,
+    // The admin flag of the database (or a bootstrap admin) whatever the session: it gives the rights of canCreateTrees
+    // outside an admin session, where `admin` stays false.
+    val adminFlag: Boolean = false,
     val memberships: Map<UUID, Role> = emptyMap(),
     // Families whose invitation is not accepted yet: the role is kept, but it only lets them look (see FamilyVisibility).
     val pendingInvitations: Set<UUID> = emptySet(),
 ) {
     // Permissions outside any family: everyone may change how the tree looks and create trees (capped by
-    // MAX_OWNED_TREES), canCreateTrees (users.can_create_trees) adds the dev tools that generate test families, and
+    // MAX_OWNED_TREES), canCreateTrees (users.can_create_trees) or the admin flag outside an admin session add the dev tools that generate test families, and
     // admins may do everything.
     val permissions: Set<Permission>
         get() = when {
             admin -> Permission.entries.toSet()
-            canCreateTrees -> setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE, Permission.DEV_TOOLS)
+            canCreateTrees || adminFlag -> setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE, Permission.DEV_TOOLS)
             else -> setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE)
         }
 

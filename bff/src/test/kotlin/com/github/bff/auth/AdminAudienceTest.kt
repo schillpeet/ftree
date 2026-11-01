@@ -42,7 +42,8 @@ class AdminAudienceTest {
 
         val tree = user(listOf("tree-aud"))
         assertFalse(tree.adminSession || tree.access.admin)
-        assertEquals(setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE), tree.permissions)
+        // The admin flag still gives the rights of canCreateTrees (dev tools), but nothing admin-only.
+        assertEquals(setOf(Permission.TREE_APPEARANCE, Permission.FAMILY_CREATE, Permission.DEV_TOOLS), tree.permissions)
 
         val someone = user(listOf("admin-aud"), email = "someone@example.com")
         assertFalse(someone.access.admin)
