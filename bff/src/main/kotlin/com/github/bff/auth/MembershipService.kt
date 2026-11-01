@@ -54,6 +54,40 @@ class MembershipService(
         return true
     }
 
+    // The invited person accepts their invitation into the tree, so their role counts from now on; false when there was
+    // nothing to accept. Without a membership in the tree there is no invitation (400).
+    @Transactional
+    fun accept(familyId: UUID, email: String): Boolean {
+        val key = email.normalizedEmail()
+        lockedRoleOf(familyId, key) ?: throw ApiProblem(ProblemCode.INVALID_REQUEST, NO_INVITATION)
+        val accepted = jdbc.update(
+            "UPDATE family_memberships SET accepted_at = now() WHERE family_id = ? AND email = ? AND accepted_at IS NULL",
+            familyId, key,
+        ) == 1
+        if (accepted) {
+            auditLog.record(key, "membership.accepted", "family", familyId.toString(), mapOf("email" to key))
+            accessEvents.changed(key, familyId)
+        }
+        return accepted
+    }
+
+    // The invited person turns the invitation down, which removes their membership like revoke does; only an invitation
+    // that is still open can be declined, so leaving a tree stays with its owners.
+    @Transactional
+    fun decline(familyId: UUID, email: String) {
+        val key = email.normalizedEmail()
+        val role = lockedRoleOf(familyId, key) ?: throw ApiProblem(ProblemCode.INVALID_REQUEST, NO_INVITATION)
+        val open = jdbc.queryForObject(
+            "SELECT accepted_at IS NULL FROM family_memberships WHERE family_id = ? AND email = ?",
+            Boolean::class.java, familyId, key,
+        ) == true
+        if (!open) throw ApiProblem(ProblemCode.INVALID_REQUEST, NO_INVITATION)
+        if (role == Role.OWNER) requireAnotherOwner(familyId, key)
+        jdbc.update("DELETE FROM family_memberships WHERE family_id = ? AND email = ?", familyId, key)
+        auditLog.record(key, "membership.declined", "family", familyId.toString(), mapOf("email" to key, "role" to role.name.lowercase()))
+        accessEvents.changed(key, familyId)
+    }
+
     // Locks the family row, so concurrent changes to its memberships run one after another and cannot remove the last
     // two owners at once.
     private fun lockedRoleOf(familyId: UUID, email: String): Role? {
@@ -76,5 +110,6 @@ class MembershipService(
 
     companion object {
         const val LAST_OWNER = "A tree needs at least one owner; make someone else its owner first."
+        const val NO_INVITATION = "There is no open invitation into this tree for you."
     }
 }

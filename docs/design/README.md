@@ -31,6 +31,8 @@ If code and this folder disagree, this folder wins until it is updated.
 
 ## Decisions
 
+- An invitation waits for the invited person on the server: until they accept it they may only look at the tree, and they can put it aside ("Später entscheiden") or decline it (2026-11-01).
+- A selected card is framed with all its slots and moved beside the person panel; editing from the tree's pencil slot opens the form on the left, with the card on the right (2026-11-01).
 - The themes are called "3D" and "TRON" in the UI (not "Abend").
 - The landing page lives at `/home` and is public (Cloudflare Access bypass for `/home` and its static assets); `/` redirects to `/home`, and the ftree logo in the header links there; signed-in users go on to their last tree from the landing through `/start` (2026-11-01).
 - The landing navigation holds only "So funktioniert's", with no entry the hero buttons or the footer repeat; the three steps moved to `/home/how` and are explained in more detail (2026-11-01).

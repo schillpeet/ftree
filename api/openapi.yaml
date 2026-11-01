@@ -1404,6 +1404,77 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  /families/{familyId}/invitation:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      operationId: acceptInvitation
+      tags:
+        - access
+      summary: Accept the invitation into a tree
+      description: >-
+        Until the invited person accepts, their role in the tree only lets them look at it (`invitationPending` in `FamilySummary`, permissions `tree.view`).
+        Accepting gives them the permissions of their role; accepting twice changes nothing.
+        Needs only `tree.view`; without a membership in the tree it answers 400 `INVALID_REQUEST`.
+      responses:
+        "200":
+          description: The family with the caller's role and permissions in it.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The caller has no membership in the tree. Code `INVALID_REQUEST`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: declineInvitation
+      tags:
+        - access
+      summary: Decline the invitation into a tree
+      description: >-
+        Removes the caller's membership in the tree, so they no longer see it; only an invitation that is not accepted yet can be declined.
+        Needs only `tree.view`; without an open invitation it answers 400 `INVALID_REQUEST`.
+      responses:
+        "204":
+          description: The invitation is declined and the tree is gone from the caller's list.
+        "400":
+          description: The caller has no open invitation into the tree, or is its last owner. Code `INVALID_REQUEST`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /families/{familyId}/presence:
     parameters:
       - name: familyId
@@ -2460,6 +2531,7 @@ components:
         - role
         - permissions
         - selfMemberId
+        - invitationPending
       properties:
         id:
           type: string
@@ -2511,6 +2583,13 @@ components:
           type: string
           format: uuid
           nullable: true
+          readOnly: true
+        invitationPending:
+          description: >-
+            True while the caller has not accepted the invitation into this family yet (`POST /families/{familyId}/invitation`);
+            until then `permissions` holds only `tree.view`, whatever the `role`.
+          type: boolean
+          default: false
           readOnly: true
     SetSelfMemberRequest:
       type: object

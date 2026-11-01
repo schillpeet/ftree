@@ -73,8 +73,9 @@ class DatabaseRolesTest {
 
     @Test
     fun `a membership gives its role in that tree only`() {
-        memberships.grant(tree, EDITOR.uppercase(), Role.EDITOR, ADMIN)
-        memberships.grant(other, VISITOR, Role.VISITOR, ADMIN)
+        // Granted by the BFF, so no invitation waits to be accepted (see InvitationTest).
+        memberships.grant(tree, EDITOR.uppercase(), Role.EDITOR, null)
+        memberships.grant(other, VISITOR, Role.VISITOR, null)
 
         assertEquals(mapOf(tree.toString() to "editor"), families(EDITOR))
         assertEquals(mapOf(other.toString() to "visitor"), families(VISITOR))

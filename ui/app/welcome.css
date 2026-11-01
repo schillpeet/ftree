@@ -363,3 +363,75 @@ body:has(.dashboard-nav, .person-panel) .welcome-card,
 body:has(.dashboard-nav, .person-panel) .welcome-veil {
   display: none;
 }
+
+/* "Du wurdest in den Baum / {Name} / eingeladen." on three lines, the name in the middle. */
+.invitation-title span,
+.invitation-title em {
+  display: block;
+}
+
+.invitation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+}
+
+.invitation-actions .welcome-link {
+  justify-self: center;
+}
+
+.invitation-confirm {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+}
+
+.invitation-confirm p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.invitation-actions .welcome-primary {
+  width: auto;
+  padding: 0 24px;
+}
+
+.invitation-danger {
+  background: var(--danger);
+  box-shadow: none;
+}
+
+/* The invitation put aside: a reminder above the dock (z-index 6), which brings the card back. */
+.invitation-pending {
+  position: fixed;
+  z-index: 5;
+  bottom: calc(var(--size-dock-primary) + 72px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 32px));
+  padding: 12px 12px 12px 20px;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+  transform: translateX(-50%);
+}
+
+.invitation-pending-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  font: 14px/1.35 var(--font-ui);
+}
+
+.invitation-pending-text span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.invitation-pending .welcome-primary {
+  width: auto;
+  padding: 0 20px;
+}

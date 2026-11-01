@@ -8,23 +8,41 @@ import { CloseIcon } from './icons';
 import { initialsOf, nameOf } from './names';
 import './welcome.css';
 
-// The first visit of a tree somebody shared: what it holds and, when the owner already linked the user to a person,
-// "Du hängst schon im Baum als …" with a way out. The inviter is not known to the API and is not named.
+// A tree somebody shared, until the user answers the invitation: what it holds and, when the owner already linked the
+// user to a person, "Du hängst schon im Baum als …" with a way out. They accept, put it aside for now, or decline it
+// after asking once. The inviter is not known to the API and is not named.
 export default function InvitationCard({
   family,
   members,
   onAccept,
+  onLater,
+  onDecline,
   onNotMe,
 }: {
   family: FamilySummary;
   members: Member[];
-  onAccept: () => void;
+  // Accepting and declining reject when the server refused.
+  onAccept: () => Promise<void>;
+  onLater: () => void;
+  onDecline: () => Promise<void>;
   // Removes the link between the user and the person; rejects when that fails.
   onNotMe: () => Promise<void>;
 }) {
   const t = useT();
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDecline, setConfirmDecline] = useState(false);
+
+  async function run(action: () => Promise<void>, failed: string) {
+    setIsBusy(true);
+    setError(null);
+    try {
+      await action();
+    } catch {
+      setError(failed);
+      setIsBusy(false);
+    }
+  }
   const self = members.find((member) => member.id === family.selfMemberId);
   const year = self?.birthDate?.slice(0, 4) ?? null;
 
@@ -45,10 +63,11 @@ export default function InvitationCard({
       <div className="invitation-veil" aria-hidden="true" />
       <main className="glass invitation-card" aria-label={t.invitation.label}>
         <span className="welcome-eyebrow">{t.invitation.eyebrow}</span>
-        <h1>
-          {t.invitation.titleBefore}
+        {/* Three lines, so the tree's name stands on its own in the middle. */}
+        <h1 className="invitation-title">
+          <span>{t.invitation.titleBefore}</span>
           <em>{family.name}</em>
-          {t.invitation.titleAfter}
+          {t.invitation.titleAfter && <span>{t.invitation.titleAfter}</span>}
         </h1>
         <div className="invitation-chips">
           <span className="invitation-chip">{t.invitation.people(members.length)}</span>
@@ -75,12 +94,63 @@ export default function InvitationCard({
             {error}
           </p>
         )}
-        <button type="button" className="welcome-primary" autoFocus onClick={onAccept}>
-          {t.invitation.accept}
-        </button>
+        {confirmDecline ? (
+          <div className="invitation-confirm" role="group" aria-label={t.invitation.decline}>
+            <p>{t.invitation.declineConfirm}</p>
+            <div className="invitation-actions">
+              <button
+                type="button"
+                className="welcome-primary invitation-danger"
+                disabled={isBusy}
+                onClick={() => void run(onDecline, t.invitation.declineFailed)}
+              >
+                {t.invitation.declineYes}
+              </button>
+              <button type="button" className="welcome-link" disabled={isBusy} onClick={() => setConfirmDecline(false)}>
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="welcome-primary"
+              autoFocus
+              disabled={isBusy}
+              onClick={() => void run(onAccept, t.invitation.acceptFailed)}
+            >
+              {t.invitation.accept}
+            </button>
+            <div className="invitation-actions">
+              <button type="button" className="welcome-link" disabled={isBusy} onClick={onLater}>
+                {t.invitation.later}
+              </button>
+              <button type="button" className="welcome-link" disabled={isBusy} onClick={() => setConfirmDecline(true)}>
+                {t.invitation.decline}
+              </button>
+            </div>
+          </>
+        )}
         <span className="invitation-note">{t.invitation.note}</span>
       </main>
     </>
+  );
+}
+
+// While the invitation is put aside: a small reminder that brings the card back.
+export function InvitationPending({ family, onAnswer }: { family: FamilySummary; onAnswer: () => void }) {
+  const t = useT();
+  return (
+    <aside className="glass invitation-pending" role="status">
+      <span className="invitation-pending-text">
+        <strong>{t.invitation.pending(family.name)}</strong>
+        <span>{t.invitation.pendingHint}</span>
+      </span>
+      <button type="button" className="welcome-primary" onClick={onAnswer}>
+        {t.invitation.answer}
+      </button>
+    </aside>
   );
 }
 
