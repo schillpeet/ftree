@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { useT } from './i18n';
-import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, ExternalLinkIcon, LogoutIcon, MailIcon, SettingsIcon, UploadIcon, UserIcon, UsersIcon } from './icons';
-import { Can, useMe, useMeLoaded } from './Permissions';
+import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, ExternalLinkIcon, LogoutIcon, MailIcon, SettingsIcon, UserIcon, UsersIcon } from './icons';
+import { Can } from './Permissions';
+import ProfilePanel from './ProfilePanel';
 
 export type DashboardPanel = 'profile' | 'families';
 
@@ -34,8 +35,6 @@ export default function Dashboard({
   onPanel: (panel: DashboardPanel) => void;
 }) {
   const t = useT();
-  const me = useMe();
-  const meLoaded = useMeLoaded();
   const menuRef = useRef<HTMLDivElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
 
@@ -110,12 +109,6 @@ export default function Dashboard({
             <CameraIcon />
             <span>{t.menu.snapshot}</span>
           </button>
-          <Can permission="family.create">
-            <button type="button" className="dashboard-nav-item" onClick={() => onPanel('families')}>
-              <UploadIcon />
-              <span>{t.menu.importTree}</span>
-            </button>
-          </Can>
           {feedbackEmail && (
             <a className="dashboard-nav-item" href={`mailto:${feedbackEmail}?subject=ftree%20Feedback`}>
               <MailIcon />
@@ -140,38 +133,7 @@ export default function Dashboard({
           </a>
         </nav>
       )}
-      {isOpen && panel === 'profile' && (
-        <section className="glass dashboard-board" id="profile-panel" aria-label={t.account.title}>
-          <header className="dashboard-board-header">
-            <UserIcon />
-            <h2>{t.account.title}</h2>
-            <button type="button" aria-label={t.account.close} onClick={() => onPanel('profile')}>
-              <CloseIcon />
-            </button>
-          </header>
-          <div className="profile-panel-body">
-            <h3 className="dashboard-subhead">{t.account.private}</h3>
-            {me ? (
-              <dl className="profile-facts">
-                <dt>{t.account.email}</dt>
-                <dd>{me.email}</dd>
-                <dt>{t.account.role}</dt>
-                <dd>
-                  {me.admin
-                    ? t.account.roles.admin
-                    : activeFamily
-                      ? t.account.roles[activeFamily.role]
-                      : t.account.noFamily}
-                </dd>
-                <dt>{t.account.verification}</dt>
-                <dd>{me.verified ? t.account.verified : t.account.unverified}</dd>
-              </dl>
-            ) : (
-              <p className="person-muted">{meLoaded ? t.account.unavailable : t.account.loading}</p>
-            )}
-          </div>
-        </section>
-      )}
+      {isOpen && panel === 'profile' && <ProfilePanel families={families} activeFamily={activeFamily} onClose={() => onPanel('profile')} />}
     </div>
   );
 }

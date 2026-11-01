@@ -83,47 +83,51 @@
   white-space: nowrap;
 }
 
-.landing-status:hover,
-.landing-status:focus-visible,
+a.landing-status:hover,
+a.landing-status:focus-visible,
 .landing-back:hover,
 .landing-back:focus-visible {
   background: var(--hover);
 }
 
+/* The same hero for 3D and TRON: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), the chip,
+   the sentence and the buttons hang below it. The headline is out of the flow, so a second line grows upward. */
 .landing-hero {
+  --landing-golden: 61.8dvh;
+  position: absolute;
+  top: var(--landing-golden);
+  right: 24px;
+  left: 24px;
   display: flex;
-  flex: 1;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 48px 0 32px;
   text-align: center;
 }
 
-/* 3D: the hero sits low and smaller, so the crown and trunk of the still stay visible above it. */
-[data-theme='3d'] .landing-hero {
-  justify-content: flex-end;
-  padding: 32px 0 16px;
+.landing-hero h1 {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  max-width: none;
+  margin: 0 auto 6px;
+  font: 400 clamp(30px, 4.8vw, 68px) / 1.05 var(--font-display);
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  text-wrap: balance;
 }
 
-[data-theme='3d'] .landing-hero h1 {
-  max-width: 30ch;
-  font-size: clamp(30px, 4.2vw, 54px);
-  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
-}
-
-[data-theme='3d'] .landing-lead {
-  margin: 14px 0 22px;
-  font-size: 17px;
-  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8);
-}
-
-[data-theme='3d'] .landing-chip {
-  margin-bottom: 16px;
+[data-theme='tron'] .landing-hero h1 {
+  text-shadow: 0 0 22px var(--glow);
 }
 
 .landing-chip {
-  margin: 0 0 22px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px 0 0;
   padding: 7px 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius-pill);
@@ -134,29 +138,52 @@
   letter-spacing: 0.02em;
 }
 
+.landing-chip a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.landing-chip a:hover,
+.landing-chip a:focus-visible {
+  text-decoration: underline;
+}
+
+.landing-chip .github-icon {
+  width: 14px;
+  height: 14px;
+}
+
 [data-theme='tron'] .landing-chip {
   font-family: var(--font-mono);
 }
 
-.landing-hero h1 {
-  max-width: 18ch;
-  margin: 0;
-  font: 400 clamp(44px, 7.4vw, 92px) / 1.02 var(--font-display);
-  letter-spacing: -0.01em;
-  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
-}
-
-[data-theme='tron'] .landing-hero h1 {
-  text-shadow: 0 0 22px var(--glow);
-}
-
 .landing-lead {
   max-width: 34rem;
-  margin: 20px 0 30px;
+  margin: 16px 0 24px;
   color: var(--text);
   font-size: 18px;
   line-height: 1.5;
-  text-shadow: 0 1px 16px rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8);
+}
+
+@media (max-width: 700px) {
+  .landing {
+    padding-inline: 16px;
+  }
+
+  .landing-hero {
+    right: 16px;
+    left: 16px;
+  }
+
+  .landing-lead {
+    margin: 12px 0 18px;
+    font-size: 16px;
+  }
 }
 
 .landing-actions {

@@ -10,6 +10,9 @@ import { responseProblemCode } from './problems';
 // undefined while `/me` is loading, null when it failed.
 const MeContext = createContext<Me | null | undefined>(undefined);
 
+// Replaces the loaded `/me` after the person changed something about themselves (the name), so every view updates.
+const SetMeContext = createContext<(me: Me) => void>(() => {});
+
 // The family that is open; its permissions are the caller's role in it.
 const OpenFamilyContext = createContext<FamilySummary | null>(null);
 
@@ -73,11 +76,15 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 
   return (
     <MeContext value={me}>
-      {children}
-      {problem && <AuthNotice problem={problem} onClose={() => setProblem(null)} />}
+      <SetMeContext value={setMe}>
+        {children}
+        {problem && <AuthNotice problem={problem} onClose={() => setProblem(null)} />}
+      </SetMeContext>
     </MeContext>
   );
 }
+
+export const useSetMe = () => useContext(SetMeContext);
 
 export const useMe = () => useContext(MeContext) ?? null;
 

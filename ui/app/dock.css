@@ -11,8 +11,8 @@
 .dock {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px;
+  gap: 2px;
+  padding: 5px;
   border-radius: var(--radius-dock);
   overflow-x: auto;
   scrollbar-width: none;
@@ -38,7 +38,7 @@
   align-items: center;
   gap: 8px;
   height: var(--size-dock-primary);
-  padding: 0 20px;
+  padding: 0 14px;
   border: 0;
   border-radius: var(--radius-dock-primary);
   background: var(--primary);
@@ -54,8 +54,8 @@
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  min-width: 68px;
-  padding: 8px 14px;
+  min-width: 56px;
+  padding: 8px 10px;
   border: 0;
   border-radius: 14px;
   background: transparent;

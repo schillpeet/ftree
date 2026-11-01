@@ -9,6 +9,7 @@ import { CheckIcon, EvolutionIcon, UsersIcon } from './icons';
 import { useCan, useMe, useMeLoaded } from './Permissions';
 import TreeSwitcher from './TreeSwitcher';
 import BrandLink from './home/BrandLink';
+import { SignedInChip } from './home/SignInChip';
 import './header.css';
 
 const THEMES: { theme: Theme; appearance: Appearance }[] = [
@@ -107,7 +108,8 @@ export default function Header({
 }) {
   const t = useT();
   const evolution = useCan('dev.tools');
-  const admin = !!useMe()?.admin;
+  const me = useMe();
+  const admin = !!me?.admin;
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
   // Whoever sees more than one tree switches between them at the family name.
   const switchable = !!families && families.length > 1;
@@ -133,6 +135,9 @@ export default function Header({
         </button>
       )}
       <div className="header-actions">
+        <span className="header-signed-in">
+          <SignedInChip me={me} />
+        </span>
         <ThemeSegment className="header-theme" />
         <LanguageSegment />
         {menu}
