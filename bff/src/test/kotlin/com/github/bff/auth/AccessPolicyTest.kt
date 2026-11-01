@@ -6,6 +6,8 @@ import kotlin.io.path.writeText
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
+import kotlin.test.assertTrue
 
 class AccessPolicyTest {
     private val file = Files.createTempFile("access", ".yaml").apply {
@@ -16,7 +18,7 @@ class AccessPolicyTest {
     @Test
     fun `only the admins of the access file apply, and people without rights in the database see nothing`() {
         val policy = AccessPolicy(AccessProperties(file.toString()), RoleProperties(), NO_GRANTS)
-        assertEquals(Access(admin = true), policy.accessOf("ADMIN@example.com"))
+        assertEquals(Access(admin = true, adminFlag = true), policy.accessOf("ADMIN@example.com"))
         assertEquals(Access.NONE, policy.accessOf("editor@example.com"))
         assertEquals(Access.NONE, policy.accessOf("someone@example.com"))
     }
@@ -24,7 +26,7 @@ class AccessPolicyTest {
     @Test
     fun `without an access file app roles admins are the bootstrap admins`() {
         val policy = AccessPolicy(AccessProperties(), RoleProperties(admins = listOf("admin@example.com")), NO_GRANTS)
-        assertEquals(Access(admin = true), policy.accessOf("admin@example.com"))
+        assertEquals(Access(admin = true, adminFlag = true), policy.accessOf("admin@example.com"))
         assertEquals(Access.NONE, policy.accessOf("someone@example.com"))
     }
 
@@ -54,10 +56,10 @@ class AccessPolicyTest {
         }
         val policy = AccessPolicy(AccessProperties(file.toString()), RoleProperties(), grants)
         assertEquals(Access(admin = false, canCreateTrees = true, memberships = mapOf(family to Role.OWNER)), policy.accessOf("editor@example.com"))
-        // Admins come only from the access file: users.admin alone gives nothing, and the bootstrap admins stay admins
-        // whatever the database says.
-        assertEquals(Access.NONE, policy.accessOf("someone@example.com"))
-        assertEquals(Access(admin = true), policy.accessOf("admin@example.com"))
+        // Admins come only from the access file: users.admin alone makes nobody an admin (only the flag, which gives the
+        // rights of canCreateTrees), and the bootstrap admins stay admins whatever the database says.
+        assertEquals(Access(admin = false, adminFlag = true), policy.accessOf("someone@example.com"))
+        assertEquals(Access(admin = true, adminFlag = true), policy.accessOf("admin@example.com"))
     }
 
     @Test
@@ -68,9 +70,27 @@ class AccessPolicyTest {
         }
         val policy = AccessPolicy(AccessProperties(file.toString()), RoleProperties(), grants)
         val own = mapOf(family to Role.EDITOR)
-        assertEquals(Access(admin = true, canCreateTrees = true, memberships = own), policy.accessOf("admin@example.com", adminSession = true))
-        assertEquals(Access(admin = false, canCreateTrees = true, memberships = own), policy.accessOf("admin@example.com", adminSession = false))
+        assertEquals(Access(admin = true, canCreateTrees = true, adminFlag = true, memberships = own), policy.accessOf("admin@example.com", adminSession = true))
+        assertEquals(Access(admin = false, canCreateTrees = true, adminFlag = true, memberships = own), policy.accessOf("admin@example.com", adminSession = false))
         assertEquals(Access.NONE, policy.accessOf("someone@example.com", adminSession = true))
+    }
+
+    @Test
+    fun `an admin outside the admin session has the dev tools but no admin-only permission`() {
+        val grants = AccessGrants { email -> if (email == "admin@example.com") Grants(admin = true) else Grants.NONE }
+        val policy = AccessPolicy(AccessProperties(file.toString()), RoleProperties(), grants)
+
+        val outside = policy.accessOf("admin@example.com", adminSession = false)
+        assertFalse(outside.admin)
+        assertTrue(Permission.DEV_TOOLS in outside.permissions)
+        assertTrue(Permission.FAMILY_CREATE in outside.permissions)
+        assertTrue(Permission.TREE_APPEARANCE in outside.permissions)
+        assertFalse(Permission.USERS_VIEW in outside.permissions)
+
+        assertEquals(Permission.entries.toSet(), policy.accessOf("admin@example.com", adminSession = true).permissions)
+
+        val plain = policy.accessOf("plain@example.com", adminSession = false)
+        assertFalse(Permission.DEV_TOOLS in plain.permissions)
     }
 
     private companion object {

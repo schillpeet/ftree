@@ -78,6 +78,29 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  /me/invitations:
+    get:
+      operationId: listMyInvitations
+      tags:
+        - Me
+      summary: List the invitations the signed-in user sent
+      description: >-
+        The memberships in trees outside the trash of people the caller invited, pending ones (the person never signed in) first, then the newest first.
+      responses:
+        "200":
+          description: The invitations the caller sent.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MyInvitation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /users:
     get:
       operationId: getUsers
@@ -2101,13 +2124,13 @@ components:
           description: The display name the user or an admin set; null while `displayName` falls back to the email.
         admin:
           type: boolean
-          description: True for admins in an admin session (on the administration's own host), who are admins in every family; elsewhere an admin is false here, like everyone else.
+          description: True for admins in an admin session (on the administration's own host), who are admins in every family; elsewhere an admin is false here, like everyone else, but keeps the permissions of `canCreateTrees` (`dev.tools`).
         canCreateTrees:
           type: boolean
           description: True for people with the developer tools (`dev.tools`, generating test families); everyone may create trees (`family.create`) and owns each tree they create, admins have both.
         permissions:
           type: array
-          description: The permissions outside any family; admins have every permission.
+          description: The permissions outside any family; admins in an admin session have every permission, admins elsewhere those of `canCreateTrees`.
           items:
             $ref: "#/components/schemas/Permission"
         verified:
@@ -3392,6 +3415,36 @@ components:
           type: string
           nullable: true
           description: The email of whoever gave the role; null when the BFF did.
+    MyInvitation:
+      type: object
+      required:
+        - email
+        - familyId
+        - familyName
+        - role
+        - invitedAt
+        - status
+      properties:
+        email:
+          type: string
+          description: The email address of the invited person.
+        familyId:
+          type: string
+          format: uuid
+        familyName:
+          type: string
+        role:
+          $ref: "#/components/schemas/TreeRole"
+        invitedAt:
+          type: string
+          format: date-time
+          description: When the role in this tree was given.
+        status:
+          type: string
+          description: "`pending` while the invited person never signed in, `accepted` afterwards."
+          enum:
+            - pending
+            - accepted
     SetupInvitationRequest:
       type: object
       required:
