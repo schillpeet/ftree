@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.35.0](https://github.com/schillpeet/ftree/compare/v0.34.0...v0.35.0) (2026-11-01)
+
+
+### Features
+
+* **ui:** rework the landing hero, profile panel and dock ([#305](https://github.com/schillpeet/ftree/issues/305)) ([fe43e83](https://github.com/schillpeet/ftree/commit/fe43e830736e3e2ceb5df99152dcab6cce49114d))
+
+
+### Bug Fixes
+
+* **bff:** give admins the dev tools and list sent invitations ([#304](https://github.com/schillpeet/ftree/issues/304)) ([083f37e](https://github.com/schillpeet/ftree/commit/083f37e5b14e42071960aa8f13e19769ee42f4b2))
+
 ## [0.34.0](https://github.com/schillpeet/ftree/compare/v0.33.0...v0.34.0) (2026-11-01)
 
 
