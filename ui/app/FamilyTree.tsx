@@ -3,7 +3,9 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useEffectEvent, useState } from 'react';
 import {
+  acceptInvitation as acceptInvitationRequest,
   clearSelfMember,
+  declineInvitation as declineInvitationRequest,
   getFamilies,
   updateFamilyMemberPlacement,
   type FamilySummary,
@@ -33,8 +35,8 @@ import { can } from './access';
 import { emptyTreeOf, familyOfSlug, firstFamily, homePath, pathOf } from './slugRoute';
 import EmptyTree from './EmptyTree';
 import IntroTour from './IntroTour';
-import InvitationCard, { InvitationTasks } from './InvitationCard';
-import { needsWelcome, useWelcomed } from './welcomed';
+import InvitationCard, { InvitationPending, InvitationTasks } from './InvitationCard';
+import { needsWelcome } from './welcomed';
 import { useTour } from './tour';
 import WelcomeCard, { PlantRetry, type PartialPlant } from './WelcomeCard';
 import TreeNotFound from './TreeNotFound';
@@ -75,6 +77,8 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [familyCard, setFamilyCard] = useState<FamilyCardMode | null>(null);
   // A new object per "Add member" in the menu.
   const [addRequest, setAddRequest] = useState<object | null>(null);
+  // A new object per click on the pencil beside a card.
+  const [editRequest, setEditRequest] = useState<Focus>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   const [cameraView, setCameraView] = useState<{ view: CameraView; nonce: number } | null>(null);
@@ -85,7 +89,8 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [partialPlant, setPartialPlant] = useState<PartialPlant | null>(null);
   // Whether the task list after accepting an invitation is shown.
   const [showTasks, setShowTasks] = useState(false);
-  const [welcomed, markWelcomed] = useWelcomed();
+  // Trees whose invitation the user put aside ("Später") during this visit.
+  const [postponed, setPostponed] = useState<string[]>([]);
   // A new object per click, so clicking the same scroll again reopens the profile.
   const [profile, setProfile] = useState<Focus>(null);
   const [shownId, setShownId] = useState<string | null>(null);
@@ -299,14 +304,29 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
     addFamily(partial.family);
   }
 
-  function acceptInvitation() {
+  async function acceptInvitation() {
     if (!activeFamily) return;
-    markWelcomed(activeFamily.id);
+    const response = await acceptInvitationRequest(activeFamily.id);
+    if (response.status !== 200) throw new Error(`HTTP ${response.status}`);
+    await loadFamilies(true);
     if (activeFamily.selfMemberId) {
       setFocus({ id: activeFamily.selfMemberId });
       setShowTasks(true);
     }
     tour.startTour();
+  }
+
+  function postponeInvitation() {
+    if (activeFamily) setPostponed((current) => [...current, activeFamily.id]);
+  }
+
+  // Declined, the tree is gone: back to the start, which opens another tree or the welcome card.
+  async function declineInvitation() {
+    if (!activeFamily) return;
+    const response = await declineInvitationRequest(activeFamily.id);
+    if (response.status !== 204) throw new Error(`HTTP ${response.status}`);
+    await loadFamilies(true);
+    router.push('/start');
   }
 
   // "Nicht ich": the card falls back to the unlinked text once the families are loaded again.
@@ -329,7 +349,8 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const notFound = families !== null && slug !== undefined && !activeFamily;
   const emptyTree = emptyTreeOf(families, slug, activeFamily, members);
   const welcome = emptyTree === 'noTree' && canCreate;
-  const invited = !notFound && !!activeFamily && !!members?.length && needsWelcome(activeFamily, welcomed);
+  const invited = !notFound && !!activeFamily && !!members?.length && needsWelcome(activeFamily, postponed);
+  const invitationOpen = !!activeFamily?.invitationPending;
   const canPlace = can(me, 'member.edit', activeFamily);
   const canShare = can(me, 'family.share', activeFamily);
   useTreeEvents(activeFamilyId, shownId, isEditingShown ? shownId : null);
@@ -357,6 +378,8 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
             ? (member) => setAdded((current) => ({ member, familyId: activeFamilyId, key: (current?.key ?? 0) + 1 }))
             : undefined
         }
+        onEdit={canPlace ? (id) => setEditRequest({ id }) : undefined}
+        panel={shownId ? (isEditingShown ? 'left' : 'right') : null}
         cameraView={cameraView}
       />
       <Header
@@ -414,7 +437,20 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
       )}
       {partialPlant && partialPlant.family.id === activeFamilyId && <PlantRetry partial={partialPlant} onPlanted={planted} />}
       {invited && activeFamily && members && (
-        <InvitationCard family={activeFamily} members={members} onAccept={acceptInvitation} onNotMe={notMe} />
+        <InvitationCard
+          family={activeFamily}
+          members={members}
+          onAccept={acceptInvitation}
+          onLater={postponeInvitation}
+          onDecline={declineInvitation}
+          onNotMe={notMe}
+        />
+      )}
+      {invitationOpen && !invited && activeFamily && (
+        <InvitationPending
+          family={activeFamily}
+          onAnswer={() => setPostponed((current) => current.filter((id) => id !== activeFamily.id))}
+        />
       )}
       {/* The task list waits for the intro tour, which points at the same places. */}
       {showTasks && !tour.active && activeFamily?.selfMemberId && (
@@ -443,6 +479,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           canAdd={canPlace}
           canShare={canShare}
           hasFamily={!!activeFamily}
+          locked={invitationOpen}
           hasSelection={!!shownId}
           onPerson={addMember}
           onSearch={() => setIsSearchOpen((open) => !open)}
@@ -481,6 +518,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         setMembers={setMembers}
         profile={profile}
         addRequest={addRequest}
+        editRequest={editRequest}
         onSelect={(id) => setFocus({ id })}
         onShownChange={onShownChange}
         onFamiliesChanged={() => void loadFamilies()}

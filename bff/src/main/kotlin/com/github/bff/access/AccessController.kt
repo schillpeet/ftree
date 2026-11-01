@@ -1,10 +1,12 @@
 package com.github.bff.access
 
 import com.github.bff.auth.CurrentUser
+import com.github.bff.auth.MembershipService
 import com.github.bff.auth.access.AccessSessions
 import com.github.bff.generated.api.AccessApi
 import com.github.bff.generated.model.AdminInvitation
 import com.github.bff.generated.model.AdminUser
+import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.SetupInvitation
 import com.github.bff.generated.model.SetupInvitationRequest
@@ -14,19 +16,25 @@ import com.github.bff.generated.model.TreeAccessEntry
 import com.github.bff.generated.model.TreeInvitation
 import com.github.bff.generated.model.TreeRole
 import com.github.bff.generated.model.UpdateAdminUserRequest
+import com.github.bff.member.FamilyService
+import com.github.bff.member.FamilyVisibility
 import com.github.bff.problem.ApiProblem
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
-// SecurityConfiguration requires family.share in the tree for /families/{familyId}/..., users.view to read the
-// /admin paths, and users.manage to change or delete a person, end their sessions, or invite without a tree.
+// SecurityConfiguration requires family.share in the tree for /families/{familyId}/... (only tree.view to answer one's
+// own invitation), users.view to read the /admin paths, and users.manage to change or delete a person, end their
+// sessions, or invite without a tree.
 @RestController
 class AccessController(
     private val trees: TreeAccessService,
     private val people: PeopleService,
     private val sessions: AccessSessions,
     private val setup: SetupInvitations,
+    private val memberships: MembershipService,
+    private val families: FamilyService,
+    private val familyVisibility: FamilyVisibility,
 ) : AccessApi {
     override fun getTreeAccess(familyId: UUID): ResponseEntity<List<TreeAccessEntry>> = ResponseEntity.ok(trees.list(familyId))
 
@@ -40,6 +48,17 @@ class AccessController(
 
     override fun transferTreeOwnership(familyId: UUID, transferOwnershipRequest: TransferOwnershipRequest): ResponseEntity<Void> {
         trees.transfer(familyId, transferOwnershipRequest.userId, actor())
+        return ResponseEntity.noContent().build()
+    }
+
+    override fun acceptInvitation(familyId: UUID): ResponseEntity<FamilySummary> {
+        memberships.accept(familyId, actor())
+        val summary = families.find(familyId) ?: throw ApiProblem(ProblemCode.NOT_FOUND)
+        return ResponseEntity.ok(familyVisibility.withCallerRole(summary))
+    }
+
+    override fun declineInvitation(familyId: UUID): ResponseEntity<Void> {
+        memberships.decline(familyId, actor())
         return ResponseEntity.noContent().build()
     }
 

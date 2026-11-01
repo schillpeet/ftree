@@ -468,6 +468,8 @@ export interface FamilySummary {
      * @nullable
      */
   readonly selfMemberId: string | null;
+  /** True while the caller has not accepted the invitation into this family yet (`POST /families/{familyId}/invitation`); until then `permissions` holds only `tree.view`, whatever the `role`. */
+  readonly invitationPending: boolean;
 }
 
 export interface SetSelfMemberRequest {
@@ -3925,6 +3927,148 @@ export const clearSelfMember = async (familyId: string, options?: RequestInit): 
 
   const data: clearSelfMemberResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as clearSelfMemberResponse
+}
+
+
+
+export type acceptInvitationResponse200 = {
+  data: FamilySummary
+  status: 200
+}
+
+export type acceptInvitationResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type acceptInvitationResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type acceptInvitationResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type acceptInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type acceptInvitationResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type acceptInvitationResponseSuccess = (acceptInvitationResponse200) & {
+  headers: Headers;
+};
+export type acceptInvitationResponseError = (acceptInvitationResponse400 | acceptInvitationResponse401 | acceptInvitationResponse403 | acceptInvitationResponse404 | acceptInvitationResponse500) & {
+  headers: Headers;
+};
+
+export type acceptInvitationResponse = (acceptInvitationResponseSuccess | acceptInvitationResponseError)
+
+export const getAcceptInvitationUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/invitation`
+}
+
+/**
+ * Until the invited person accepts, their role in the tree only lets them look at it (`invitationPending` in `FamilySummary`, permissions `tree.view`). Accepting gives them the permissions of their role; accepting twice changes nothing. Needs only `tree.view`; without a membership in the tree it answers 400 `INVALID_REQUEST`.
+ * @summary Accept the invitation into a tree
+ */
+export const acceptInvitation = async (familyId: string, options?: RequestInit): Promise<acceptInvitationResponse> => {
+
+  const res = await fetch(getAcceptInvitationUrl(familyId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: acceptInvitationResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as acceptInvitationResponse
+}
+
+
+
+export type declineInvitationResponse204 = {
+  data: void
+  status: 204
+}
+
+export type declineInvitationResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type declineInvitationResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type declineInvitationResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type declineInvitationResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type declineInvitationResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type declineInvitationResponseSuccess = (declineInvitationResponse204) & {
+  headers: Headers;
+};
+export type declineInvitationResponseError = (declineInvitationResponse400 | declineInvitationResponse401 | declineInvitationResponse403 | declineInvitationResponse404 | declineInvitationResponse500) & {
+  headers: Headers;
+};
+
+export type declineInvitationResponse = (declineInvitationResponseSuccess | declineInvitationResponseError)
+
+export const getDeclineInvitationUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/invitation`
+}
+
+/**
+ * Removes the caller's membership in the tree, so they no longer see it; only an invitation that is not accepted yet can be declined. Needs only `tree.view`; without an open invitation it answers 400 `INVALID_REQUEST`.
+ * @summary Decline the invitation into a tree
+ */
+export const declineInvitation = async (familyId: string, options?: RequestInit): Promise<declineInvitationResponse> => {
+
+  const res = await fetch(getDeclineInvitationUrl(familyId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: declineInvitationResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as declineInvitationResponse
 }
 
 

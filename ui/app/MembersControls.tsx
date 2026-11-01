@@ -64,6 +64,7 @@ export default function MembersControls({
   setMembers,
   profile,
   addRequest,
+  editRequest,
   onSelect,
   onShownChange,
   onFamiliesChanged,
@@ -80,6 +81,8 @@ export default function MembersControls({
   profile: Focus;
   // A new object per "Add member" in the menu, which opens the form for a new person.
   addRequest: object | null;
+  // Member whose edit form was requested from the pencil beside their card; a new object per click.
+  editRequest: Focus;
   onSelect: (id: string) => void;
   // The person whose panel is open (viewed or edited), or null, and whether the form edits them.
   onShownChange: (id: string | null, editing: boolean) => void;
@@ -174,6 +177,9 @@ export default function MembersControls({
   useEffect(() => {
     if (addRequest) onAddRequest();
   }, [addRequest]);
+
+  // Only a new pencil click opens the edit form; checked in render below, once openForm can run.
+  const [requestedEdit, setRequestedEdit] = useState(editRequest);
 
   // Only a new profile request opens the profile (adjusted during render instead of in an effect).
   const [requestedProfile, setRequestedProfile] = useState(profile);
@@ -428,6 +434,16 @@ export default function MembersControls({
 
   const photoPreview = usePhotoPreview(photoFile);
 
+  // The pencil beside a card edits the person; closing the form shows their profile again.
+  if (editRequest !== requestedEdit) {
+    setRequestedEdit(editRequest);
+    const member = editRequest && members?.find((m) => m.id === editRequest.id);
+    if (member) {
+      setProfileId(member.id);
+      openForm(member);
+    }
+  }
+
   return (
     <div className="members-controls">
       {isFormOpen && (
@@ -438,7 +454,9 @@ export default function MembersControls({
           closeLabel={t.members.closeForm}
           onClose={dismissForm}
           {...panelPosition}
-          className={`person-panel-form${newRelative ? ' person-panel-origin' : ''}`}
+          // Editing a person in the tree: the form opens on the left, so their card stays in view on the right.
+          {...(editing ? { offset: CENTRE } : {})}
+          className={`person-panel-form${editing ? ' person-panel-left' : ''}${newRelative ? ' person-panel-origin' : ''}`}
           onDelete={
             editing && canDelete
               ? async () => {

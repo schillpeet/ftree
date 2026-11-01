@@ -11,6 +11,7 @@ import { arrangePins, relationDistance } from './arrange';
 import { generationBounds, generations, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
 import RelationLegend from './RelationLegend';
+import { frameCard, type PanelSide } from './cardFrame';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
@@ -66,7 +67,6 @@ const startCamera = (aspect: number): [number, number, number, number, number, n
   const [x, y, z] = CAMERA_START.map((v, i) => CAMERA_TARGET[i] + (v - CAMERA_TARGET[i]) * k);
   return [x, y, z, ...CAMERA_TARGET];
 };
-const FOCUS_DISTANCE = 12;
 // High enough above the trunk that the crown and the waiting rows fit into the bird's-eye view.
 const TOP_HEIGHT = 90;
 // Radians per second of the round flight.
@@ -80,6 +80,7 @@ const ON_TOP = { depthTest: false, renderOrder: 1, toneMapped: false, fog: false
 const LINE_WIDTH = 1.3;
 const GLOW_WIDTH = 5;
 const MIN_DISTANCE = 8;
+const FOV = 50;
 const MAX_DISTANCE = 150;
 // camera-controls divides trackpad deltas by 10, so the default speed needs a lot of pinching.
 const DOLLY_SPEED = 5;
@@ -378,6 +379,7 @@ function Scrolls({
   evening,
   layout,
   controlsRef,
+  panel,
   onOpen,
   onPlace,
   slots,
@@ -402,13 +404,15 @@ function Scrolls({
   // Fixed card positions (the tiered tree); pins and stored placements are then ignored.
   layout?: Map<string, Point>;
   controlsRef: RefObject<CameraControls | null>;
+  // Where the person panel is open, so the focused card moves into the free part of the screen.
+  panel: PanelSide;
   onOpen: (id: string) => void;
   // Missing without the permission to place cards; they cannot be dragged then.
   onPlace?: (id: string, placement: Placement) => void;
   // The "+" slots around the selected card, missing without the permission to add people.
   slots?: SlotMount;
 }) {
-  const { camera, events, gl } = useThree();
+  const { camera, events, gl, size } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
   const pinOf = useMemo(() => layerPins(members, pins, assignPins(members, pins.length), GENERATION_GAP), [members, pins]);
   const shownPins = useMemo(
@@ -456,17 +460,32 @@ function Scrolls({
     if (!target || !controls) return;
     // Look at the middle of the card, which hangs below its position.
     const [x, y, z] = [target[0], target[1] - CARD.height / 2, target[2]];
-    // Cards hanging outward are seen from the outside at about their height and from up close, so
-    // few leaves get in between; otherwise keep the current viewing direction and move closer.
+    // Cards hanging outward are seen from the outside at about their height, so few leaves get in between;
+    // otherwise keep the current viewing direction. Either way the camera backs off far enough for the "+" and edit
+    // slots around the card, and the card moves beside the person panel.
     const outward = facesOutward(cardStyle);
     const direction = outward
       ? new Vector3(x, 0.1 * Math.hypot(x, z), z)
       : camera.position.clone().sub(controls.getTarget(new Vector3()));
-    const eye = direction.setLength(outward ? MIN_DISTANCE : FOCUS_DISTANCE).add(new Vector3(x, y, z));
+    const { distance, offsetX } = frameCard(CARD, size, FOV, panel);
+    const eye = direction.setLength(Math.min(MAX_DISTANCE, Math.max(MIN_DISTANCE, distance))).add(new Vector3(x, y, z));
     void controls.setLookAt(eye.x, eye.y, eye.z, x, y, z, true);
+    void controls.setFocalOffset(offsetX, 0, 0, true);
     // Only a new focus request should move the camera, not later member changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [focus]);
+
+  // The panel opening, closing or changing sides moves the card, at the distance the camera has now.
+  useEffect(() => {
+    const controls = controlsRef.current;
+    if (!controls) return;
+    // Where the camera is headed, not where a flight to a new card has got to so far.
+    const distance = controls.getPosition(new Vector3(), true).distanceTo(controls.getTarget(new Vector3(), true));
+    const { distance: framed, offsetX } = frameCard(CARD, size, FOV, panel);
+    void controls.setFocalOffset(offsetX * (distance / framed), 0, 0, true);
+    // Only the panel moves the card; resizing keeps what the user sees.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [panel]);
 
   // The card follows the pointer on a plane facing the camera through its start position. The
   // drop target is decided on screen, where the user sees the card touch a pin.
@@ -596,6 +615,8 @@ export default function Scene({
   onOpen,
   onPlace,
   onAdded,
+  onEdit,
+  panel = null,
   cameraView,
 }: {
   familyId: string | null;
@@ -612,6 +633,10 @@ export default function Scene({
   onPlace?: (id: string, placement: Placement) => void;
   // A person was added through a "+" slot around `highlight`; missing without the permission to add people, which hides the slots.
   onAdded?: (member: Member) => void;
+  // The edit pencil beside `highlight`'s card; missing without the permission to edit.
+  onEdit?: (id: string) => void;
+  // Where the person panel is open: right for a profile, left while editing, null when closed.
+  panel?: PanelSide;
   // The dock's "Ansicht": each new `nonce` moves the camera to the view (orbit toggles the flight).
   cameraView?: { view: CameraView; nonce: number } | null;
 }) {
@@ -746,6 +771,7 @@ export default function Scene({
               card={card}
               distanceFactor={distanceFactor}
               onAdded={onAdded}
+              onEdit={onEdit}
             />
           ),
         }
@@ -757,7 +783,7 @@ export default function Scene({
         shadows="percentage"
         // Lower exposure keeps the bright sky shader from washing out to white; lights compensate.
         gl={{ toneMappingExposure: 0.6, preserveDrawingBuffer: true }}
-        camera={{ position: CAMERA_START, fov: 50, far: 10000 }}
+        camera={{ position: CAMERA_START, fov: FOV, far: 10000 }}
         style={{ position: 'fixed', inset: 0 }}
       >
         {experimental ? (
@@ -789,6 +815,7 @@ export default function Scene({
               evening={eveningFactor}
               layout={organic ? undefined : tieredLayout}
               controlsRef={controlsRef}
+              panel={panel}
               onOpen={onOpen}
               onPlace={onPlace}
               slots={slots('scroll')}

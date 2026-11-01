@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { Html } from '@react-three/drei';
 import type { Member } from '../lib/api/generated/members';
 import { useT } from './i18n';
+import { PencilIcon } from './icons';
 import { nameOf } from './names';
 import { CARD, type Point } from './pins';
 import QuickAdd from './QuickAdd';
@@ -19,7 +20,8 @@ export type SlotMount = { memberId: string; render: (position: Point, distanceFa
 // The dashed "+" slots around the selected person, only for relations still missing (`slots.ts`). A slot opens the
 // quick-add popover; after a mother it moves on to the father. `card` is the shape they surround: the hanging card in
 // 3D (its top edge at `position`, facing the camera) or the TRON label (centred on `position`). drei's Html renders in
-// another React root without context, so everything comes in as props; only callers allowed to edit mount it.
+// another React root without context, so everything comes in as props; only callers allowed to edit mount it. The pencil
+// on the left opens the person's edit form, like the pencil in the person panel.
 export default function RelativeSlots({
   member,
   familyId,
@@ -27,6 +29,7 @@ export default function RelativeSlots({
   card,
   distanceFactor,
   onAdded,
+  onEdit,
 }: {
   member: Member;
   familyId: string;
@@ -34,6 +37,7 @@ export default function RelativeSlots({
   card: 'scroll' | 'pill';
   distanceFactor: number;
   onAdded: (added: Member) => void;
+  onEdit?: (id: string) => void;
 }) {
   const t = useT();
   const [open, setOpen] = useState<{ kind: SlotKind; anchor: DOMRect; key: number } | null>(null);
@@ -75,6 +79,21 @@ export default function RelativeSlots({
         {parents.length > 0 && <div className="relative-slots-parents">{parents.map(slot)}</div>}
         {kinds.includes('partner') && <div className="relative-slots-partner">{slot('partner')}</div>}
         {kinds.includes('child') && <div className="relative-slots-child">{slot('child')}</div>}
+        {onEdit && (
+          <div className="relative-slots-edit">
+            <button
+              type="button"
+              className="relative-slot relative-slot-edit"
+              aria-label={t.slots.edit(nameOf(member, t.members.unknown))}
+              title={t.slots.edit(nameOf(member, t.members.unknown))}
+              data-keeps-panel
+              onPointerDown={(event) => event.stopPropagation()}
+              onClick={() => onEdit(member.id)}
+            >
+              <PencilIcon />
+            </button>
+          </div>
+        )}
       </div>
       {/* Inside the Html, whose React DOM root can portal it into the body. */}
       {open && (

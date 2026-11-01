@@ -14,7 +14,9 @@
 
 1. Opens the invitation link; sees who invited them and to which tree, with a short summary.
 2. If the invitation names a member, the card shows "Du hängst schon im Baum als …" with "Nicht ich".
-3. "Einladung annehmen" opens the tree focused on their own card, with a small task list.
+3. "Einladung annehmen" opens the tree focused on their own card, with a small task list; until then they can only look.
+   - "Später entscheiden" leaves the invitation open, for example to plant their own tree first; a reminder brings the card back.
+   - "Ablehnen" removes the tree from their list after asking once.
 4. The intro tour runs once.
 - Goal: they contribute something (photo, date fix, own branch) in the first session.
 

@@ -8,6 +8,8 @@ data class Access(
     val admin: Boolean,
     val canCreateTrees: Boolean = false,
     val memberships: Map<UUID, Role> = emptyMap(),
+    // Families whose invitation is not accepted yet: the role is kept, but it only lets them look (see FamilyVisibility).
+    val pendingInvitations: Set<UUID> = emptySet(),
 ) {
     // Permissions outside any family: everyone may change how the tree looks and create trees (capped by
     // MAX_OWNED_TREES), canCreateTrees (users.can_create_trees) adds the dev tools that generate test families, and

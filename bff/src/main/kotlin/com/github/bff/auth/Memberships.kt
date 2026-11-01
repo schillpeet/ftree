@@ -9,6 +9,8 @@ data class Grants(
     val admin: Boolean = false,
     val canCreateTrees: Boolean = false,
     val families: Map<UUID, Role> = emptyMap(),
+    // The families whose invitation the person has not accepted yet; they may only look at those.
+    val pending: Set<UUID> = emptySet(),
 ) {
     companion object {
         val NONE = Grants()
@@ -29,12 +31,14 @@ class Memberships(private val jdbc: JdbcTemplate, private val auditLog: AuditLog
             { rs, _ -> rs.getBoolean(1) to rs.getBoolean(2) },
             key,
         ).singleOrNull()
-        val families = jdbc.query(
-            "SELECT family_id, role FROM family_memberships WHERE email = ?",
-            { rs, _ -> rs.getObject(1, UUID::class.java) to roleOf(rs.getString(2)) },
+        val rows = jdbc.query(
+            "SELECT family_id, role, accepted_at IS NULL FROM family_memberships WHERE email = ?",
+            { rs, _ -> Triple(rs.getObject(1, UUID::class.java), roleOf(rs.getString(2)), rs.getBoolean(3)) },
             key,
-        ).toMap()
-        return Grants(flags?.first ?: false, flags?.second ?: false, families)
+        )
+        val families = rows.associate { (family, role) -> family to role }
+        val pending = rows.filter { it.third }.map { it.first }.toSet()
+        return Grants(flags?.first ?: false, flags?.second ?: false, families, pending)
     }
 
     // Everyone with a right in the database, by email; also people who were invited without a tree and keep their seat.
@@ -56,15 +60,17 @@ class Memberships(private val jdbc: JdbcTemplate, private val auditLog: AuditLog
         return reserved
     }
 
-    // Gives the role in the family unless the person already has one there; true when it was granted.
+    // Gives the role in the family unless the person already has one there; true when it was granted. A role someone else
+    // gives is an invitation the person still has to accept; one they give themselves or the BFF grants counts at once.
     fun grant(familyId: UUID, email: String, role: Role, grantedBy: String?, source: String? = null): Boolean {
         require(role != Role.ADMIN) { "Admins are admins in every family; set users.admin instead" }
         val key = email.normalizedEmail()
         addUser(key, grantedBy)
+        val accepted = grantedBy == null || grantedBy.normalizedEmail() == key
         val granted = jdbc.update(
-            "INSERT INTO family_memberships (family_id, email, role, granted_by) VALUES (?, ?, ?, ?) " +
-                "ON CONFLICT (family_id, email) DO NOTHING",
-            familyId, key, role.name.lowercase(), grantedBy,
+            "INSERT INTO family_memberships (family_id, email, role, granted_by, accepted_at) " +
+                "VALUES (?, ?, ?, ?, CASE WHEN ? THEN now() END) ON CONFLICT (family_id, email) DO NOTHING",
+            familyId, key, role.name.lowercase(), grantedBy, accepted,
         ) == 1
         if (granted) {
             auditLog.record(grantedBy, "membership.granted", "family", familyId.toString(), details(key, role.name.lowercase(), source))

@@ -123,6 +123,7 @@ jobs:
       - run: node app/problems.check.mjs
       - run: node app/partnerships.check.mjs
       - run: node app/panelPosition.check.mjs
+      - run: node app/cardFrame.check.mjs
       - run: node app/simpleLayout.check.mjs
       - run: node app/relatives.check.mjs
       - run: node app/scrollLines.check.mjs

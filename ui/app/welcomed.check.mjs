@@ -2,16 +2,13 @@
 import assert from 'node:assert/strict';
 import { needsWelcome } from './welcomed.ts';
 
-const tree = (role, id = 'f1') => ({ id, role });
+const tree = (invitationPending, id = 'f1') => ({ id, invitationPending });
 
-assert.equal(needsWelcome(tree('owner'), []), false);
-assert.equal(needsWelcome(tree('editor'), []), true);
-assert.equal(needsWelcome(tree('editor'), ['f1']), false);
-assert.equal(needsWelcome(tree('editor'), ['other']), true);
-assert.equal(needsWelcome(tree('visitor'), []), true);
-assert.equal(needsWelcome(tree('visitor'), ['f1']), false);
-assert.equal(needsWelcome(null, []), false);
-assert.equal(needsWelcome(tree('admin'), []), false);
+assert.equal(needsWelcome(tree(true), []), true);
+assert.equal(needsWelcome(tree(false), []), false);
+assert.equal(needsWelcome(tree(true), ['f1']), false);
+assert.equal(needsWelcome(tree(true), ['other']), true);
 assert.equal(needsWelcome(tree(undefined), []), false);
+assert.equal(needsWelcome(null, []), false);
 
 console.log('welcomed ok');

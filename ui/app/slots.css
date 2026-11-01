@@ -14,7 +14,8 @@
 
 .relative-slots-parents,
 .relative-slots-partner,
-.relative-slots-child {
+.relative-slots-child,
+.relative-slots-edit {
   position: absolute;
   display: flex;
   gap: 8px;
@@ -30,6 +31,25 @@
   top: 50%;
   left: calc(100% + 24px);
   transform: translateY(-50%);
+}
+
+.relative-slots-edit {
+  top: 50%;
+  right: calc(100% + 24px);
+  transform: translateY(-50%);
+}
+
+/* A round pencil instead of a "+ …" pill: editing is not adding. */
+.relative-slot-edit {
+  display: grid;
+  place-items: center;
+  width: var(--size-slot);
+  padding: 0;
+}
+
+.relative-slot-edit .icon {
+  width: 16px;
+  height: 16px;
 }
 
 .relative-slots-child {

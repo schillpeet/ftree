@@ -20,7 +20,7 @@ import com.github.bff.generated.model.Role as ApiRole
 
 // The user's role in a family. Admins are admins in every family, test families included; everyone else has the role
 // of their membership in the database, and only owners reach test families. Every other family looks as if it did not
-// exist.
+// exist. Until they accept the invitation into a tree, the role only lets them look at it.
 @Component
 class FamilyVisibility(
     private val familyRepository: FamilyRepository,
@@ -39,7 +39,7 @@ class FamilyVisibility(
 
     // Whether the user may do this in the family; a family they cannot see is left to FamilyVisibilityInterceptor's 404.
     fun allows(user: CurrentUser, familyId: UUID, permission: Permission): Boolean =
-        roleIn(familyId, user)?.let { permission in it.permissions } ?: true
+        roleIn(familyId, user)?.let { permission in permissionsOf(it, familyId, user) } ?: true
 
     // The visible families, each with the user's role and permissions in it and the member they are.
     fun visible(families: List<FamilySummary>): List<FamilySummary> {
@@ -47,7 +47,7 @@ class FamilyVisibility(
         val entities = familyRepository.findAllById(families.map { it.id }).associateBy { it.id }
         val self = selfMembers.of(user.email)
         return families.mapNotNull { family ->
-            entities[family.id]?.let { roleIn(it, user) }?.let { family.withRole(it, self[family.id]) }
+            entities[family.id]?.let { roleIn(it, user) }?.let { family.withRole(it, user, self[family.id]) }
         }
     }
 
@@ -55,7 +55,7 @@ class FamilyVisibility(
     // owner membership of a family created in this request is newer than the user's access.
     fun withCallerRole(family: FamilySummary): FamilySummary {
         val user = CurrentUser.current()?.let { it.copy(access = accessPolicy.accessOf(it.email, it.adminSession)) }
-        return family.withRole(roleIn(family.id, user) ?: Role.VISITOR, user?.let { selfMembers.of(it.email)[family.id] })
+        return family.withRole(roleIn(family.id, user) ?: Role.VISITOR, user, user?.let { selfMembers.of(it.email)[family.id] })
     }
 
     private fun roleIn(family: FamilyEntity, user: CurrentUser): Role? {
@@ -67,10 +67,18 @@ class FamilyVisibility(
         return role?.takeIf { family.totalUsers == null || it == Role.OWNER }
     }
 
-    private fun FamilySummary.withRole(role: Role, selfMemberId: UUID?) = apply {
+    private fun pending(familyId: UUID, user: CurrentUser?) =
+        user != null && !user.access.admin && familyId in user.access.pendingInvitations
+
+    private fun permissionsOf(role: Role, familyId: UUID, user: CurrentUser?) =
+        if (pending(familyId, user)) Role.VISITOR.permissions else role.permissions
+
+    private fun FamilySummary.withRole(role: Role, user: CurrentUser?, selfMemberId: UUID?) = apply {
         this.role = ApiRole.fromValue(role.name.lowercase())
-        permissions = Permission.entries.filter { it in role.permissions }.map { ApiPermission.fromValue(it.key) }
+        val allowed = permissionsOf(role, id, user)
+        permissions = Permission.entries.filter { it in allowed }.map { ApiPermission.fromValue(it.key) }
         this.selfMemberId = selfMemberId
+        invitationPending = pending(id, user)
     }
 }
 

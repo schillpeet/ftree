@@ -58,6 +58,12 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 ## Person panel (right)
 
 - Eyebrow "AUSGEWÄHLT" in `--font-mono` and `--accent`, name in `--font-display`, years, then rows Eltern / Partner:in / Kinder.
+- The camera backs off far enough that the selected card and all its slots fit into about half of the free view, and shifts the card into the middle of the part the panel leaves free (`ui/app/cardFrame.ts`).
+- Editing a person from the tree opens the form on the left instead, and the card moves to the right until the form closes; below 700px the panel stays a full-width sheet.
+
+## Card slots
+
+- Dashed "+ Mutter / + Vater" above, "+ Partner:in" right and "+ Kind" below the selected card; a round pencil left of it opens the edit form.
 
 ## Intro tour
 
@@ -75,7 +81,10 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 
 - Centred glass card: inviter avatars, "<Name> hat dich in den Baum der Familie <Name> eingeladen.", chips (people, generations, last activity).
 - Row "Du hängst schon im Baum als <Name> · <Jahr> · <Beziehung>" with a "Nicht ich" link instead of a separate "Is this you?" step.
+- The title runs over three lines, the tree's name alone in the middle: "Du wurdest in den Baum / <Name> / eingeladen."
 - Primary "Einladung annehmen" leads into the tree focused on the user, with a task list (check your data, photo, your branch, a memory).
+- Links "Später entscheiden" (the card gives way to a small reminder above the dock with "Antworten"; it is back on the next visit) and "Ablehnen" (asks once, then removes the tree from the user's list).
+- Until the invitation is accepted, Person, Suche and Einladen in the dock stay disabled ("Nimm zuerst die Einladung an"); the server allows only viewing.
 
 ## Landing (signed out, `/`)
 

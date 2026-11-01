@@ -17,6 +17,8 @@ type Props = {
   canShare: boolean;
   // Whether a family is open; without one Person and Einladen stay visible but disabled, with the reason as title.
   hasFamily?: boolean;
+  // Whether the open tree's invitation is not accepted yet; Person, Suche and Einladen then stay disabled with the reason.
+  locked?: boolean;
   // Whether a person is selected, around whom "+" slots offer the missing relatives; Person then also points to them.
   hasSelection?: boolean;
   onPerson: () => void;
@@ -26,13 +28,24 @@ type Props = {
 };
 
 // The bottom dock: the primary "Person" action, then search, invitation and the camera view as icon-over-label buttons.
-export default function Dock({ canAdd, canShare, hasFamily = true, hasSelection = false, onPerson, onSearch, onInvite, onView }: Props) {
+export default function Dock({
+  canAdd,
+  canShare,
+  hasFamily = true,
+  locked = false,
+  hasSelection = false,
+  onPerson,
+  onSearch,
+  onInvite,
+  onView,
+}: Props) {
   const t = useT();
   const [viewOpen, setViewOpen] = useState(false);
   // A new number per Person click with a selection, so a second click restarts the hint's time.
   const [slotHint, setSlotHint] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
-  const reason = hasFamily ? undefined : t.dock.needsFamily;
+  const reason = !hasFamily ? t.dock.needsFamily : locked ? t.dock.needsAccept : undefined;
+  const disabled = !hasFamily || locked;
 
   useEffect(() => {
     if (!viewOpen) return;
@@ -81,11 +94,11 @@ export default function Dock({ canAdd, canShare, hasFamily = true, hasSelection 
         </div>
       )}
       <nav className="glass dock" data-dock aria-label={t.dock.label}>
-        {(canAdd || !hasFamily) && (
+        {(canAdd || disabled) && (
           <button
             type="button"
             className="dock-primary"
-            disabled={!hasFamily}
+            disabled={disabled}
             title={reason}
             onClick={() => {
               setViewOpen(false);
@@ -100,6 +113,8 @@ export default function Dock({ canAdd, canShare, hasFamily = true, hasSelection 
         <button
           type="button"
           className="dock-item"
+          disabled={locked}
+          title={locked ? reason : undefined}
           onClick={() => {
             setViewOpen(false);
             onSearch();
@@ -108,11 +123,11 @@ export default function Dock({ canAdd, canShare, hasFamily = true, hasSelection 
           <DockSearchIcon />
           {t.dock.search}
         </button>
-        {(canShare || !hasFamily) && (
+        {(canShare || disabled) && (
           <button
             type="button"
             className="dock-item"
-            disabled={!hasFamily}
+            disabled={disabled}
             title={reason}
             onClick={() => {
               setViewOpen(false);
