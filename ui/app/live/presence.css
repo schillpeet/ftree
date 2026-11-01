@@ -29,7 +29,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--glass-bg);
+  background: var(--panel);
   backdrop-filter: blur(16px) saturate(1.2);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   color: #fff;
@@ -37,7 +37,7 @@
 }
 
 .presence-person[data-me] .person-avatar {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
 }
 
 /* Only the avatar fades, so the tooltip stays readable. */
@@ -57,13 +57,13 @@
 }
 
 .presence-person[data-following] .person-avatar {
-  border-color: var(--glass-accent);
-  box-shadow: 0 0 0 2px var(--glass-accent), 0 4px 14px rgba(0, 0, 0, 0.3);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent), 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .presence-person:focus-visible .person-avatar,
 .presence-follow:focus-visible .person-avatar {
-  outline: 2px solid var(--glass-accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -76,7 +76,7 @@
   height: 15px;
   place-items: center;
   border-radius: 50%;
-  background: var(--glass-accent);
+  background: var(--accent);
   color: #0c121b;
 }
 
@@ -105,7 +105,7 @@
 }
 
 .presence-tooltip span {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .presence-person:hover .presence-tooltip,
@@ -168,7 +168,7 @@
   background: rgba(12, 18, 27, 0.85);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
   color: #fff;
-  font: 600 10px/1 Arial, sans-serif;
+  font: 600 10px/1 var(--font-ui);
   text-shadow: none;
   white-space: nowrap;
   pointer-events: auto;
@@ -236,7 +236,7 @@
   padding: 6px 10px;
   border-radius: 8px;
   background: rgba(143, 211, 255, 0.12);
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 

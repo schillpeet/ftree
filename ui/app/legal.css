@@ -8,7 +8,7 @@
   padding: 16px 16px 72px;
   background: radial-gradient(ellipse at top, #24364a 0%, #111a26 55%, #0a0f16 100%);
   color: #fff;
-  font: 15px/1.5 Arial, sans-serif;
+  font: 15px/1.5 var(--font-ui);
 }
 
 .legal-page > * {
@@ -49,6 +49,6 @@
 }
 
 .legal-muted {
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 13px;
 }

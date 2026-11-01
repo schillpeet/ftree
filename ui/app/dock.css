@@ -1,0 +1,157 @@
+/* Bottom dock: glass bar, centred, 44px above the bottom edge. Colours and sizes come from tokens.css. */
+.dock-root {
+  position: fixed;
+  z-index: 6;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+}
+
+.dock {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px;
+  border-radius: var(--radius-dock);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dock::-webkit-scrollbar {
+  display: none;
+}
+
+.dock button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.dock button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.dock-primary {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: var(--size-dock-primary);
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-dock-primary);
+  background: var(--primary);
+  color: var(--primary-ink);
+  box-shadow: var(--primary-glow);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.dock-item {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 68px;
+  padding: 8px 14px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.dock-item:hover:not(:disabled),
+.dock-item[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.dock-item:focus-visible,
+.dock-primary:focus-visible,
+.dock-popover button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dock .dock-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.dock-primary .dock-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* The view menu opens above the dock, right-aligned to the "Ansicht" end. */
+.dock-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  display: grid;
+  min-width: 140px;
+  padding: 6px;
+  border-radius: var(--radius-menu);
+  background: var(--panel-strong);
+}
+
+.dock-popover button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dock-popover button:hover {
+  background: var(--hover);
+}
+
+/* The member search opens above the dock instead of next to the burger. */
+body .member-search {
+  top: auto;
+  left: 50%;
+  bottom: calc(44px + var(--size-dock-primary) + 12px + 12px);
+  transform: translateX(-50%);
+  justify-items: stretch;
+  flex-direction: column-reverse;
+  display: flex;
+  max-width: calc(100vw - 32px);
+}
+
+@media (max-width: 700px) {
+  body .member-search,
+  body .member-search[data-open='true'] {
+    right: auto;
+    left: 50%;
+    width: calc(100vw - 32px);
+  }
+}
+
+/* Narrow phones: tighter buttons so all four fit without scrolling. */
+@media (max-width: 420px) {
+  .dock {
+    gap: 2px;
+  }
+
+  .dock-primary {
+    padding: 0 12px;
+  }
+
+  .dock-item {
+    min-width: 0;
+    padding: 8px 6px;
+  }
+}
+
+/* On phones the relation legend spans the width; it moves above the dock instead of covering it. */
+@media (max-width: 700px) {
+  body .relation-legend {
+    bottom: calc(44px + var(--size-dock-primary) + 24px);
+  }
+}

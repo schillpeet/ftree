@@ -43,7 +43,7 @@ textarea {
   width: 260px;
   padding: 0 14px 4px;
   border-top: 1px solid rgba(23, 58, 43, 0.14);
-  font: 13px/1.3 Arial, sans-serif;
+  font: 13px/1.3 var(--font-ui);
 }
 
 .debug-panel-body > section {
@@ -75,7 +75,7 @@ textarea {
   background: #fffdf7;
   color: #173a2b;
   cursor: pointer;
-  font: 600 13px/1.2 Arial, sans-serif;
+  font: 600 13px/1.2 var(--font-ui);
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -193,7 +193,7 @@ textarea {
   background: #fffdf7;
   color: #173a2b;
   cursor: pointer;
-  font: 600 15px/1 Arial, sans-serif;
+  font: 600 15px/1 var(--font-ui);
 }
 
 .zoom-steps button:hover {
@@ -226,7 +226,7 @@ textarea {
 
 .random-family-header h3 {
   margin: 0;
-  font: 600 15px/1.2 Arial, sans-serif;
+  font: 600 15px/1.2 var(--font-ui);
 }
 
 .random-family-header button {
@@ -245,7 +245,7 @@ textarea {
   display: grid;
   gap: 14px;
   padding: 14px 18px 18px;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-ui);
 }
 
 .random-family-form .member-field input {
@@ -280,7 +280,7 @@ textarea {
 
 .families-panel-body {
   padding: 12px 16px 16px;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-ui);
   font-size: 14px;
 }
 
@@ -347,7 +347,7 @@ textarea {
   background: #fffdf7;
   color: #8b321d;
   cursor: pointer;
-  font: 22px/1 Arial, sans-serif;
+  font: 22px/1 var(--font-ui);
 }
 
 .family-set-visibility {
@@ -456,7 +456,7 @@ textarea {
   background: transparent;
   color: inherit;
   cursor: pointer;
-  font: 24px/1 Arial, sans-serif;
+  font: 24px/1 var(--font-ui);
 }
 
 .members-empty,
@@ -724,24 +724,15 @@ textarea {
   fill: #173a2b;
 }
 
-/* Dashboard: dark, translucent glass with white type. Appended last so it wins over the earlier light styles. */
-:root {
-  --glass-bg: rgba(12, 18, 27, 0.66);
-  --glass-border: rgba(255, 255, 255, 0.16);
-  --glass-hover: rgba(255, 255, 255, 0.12);
-  --glass-muted: rgba(255, 255, 255, 0.68);
-  --glass-accent: #7fd6ff;
-  --glass-danger: #ff8f7a;
-}
-
+/* Dashboard: dark, translucent glass in the theme's colours. Appended last so it wins over the earlier light styles. */
 .glass {
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--panel);
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(16px) saturate(1.2);
-  color: #fff;
-  font-family: Arial, sans-serif;
+  backdrop-filter: var(--blur-glass);
+  color: var(--text);
+  font-family: var(--font-ui);
 }
 
 .icon {
@@ -762,7 +753,7 @@ textarea {
   min-height: 44px;
   padding: 0 16px;
   cursor: pointer;
-  font: 600 14px/1.2 Arial, sans-serif;
+  font: 600 14px/1.2 var(--font-ui);
 }
 
 .glass-button:hover,
@@ -776,25 +767,22 @@ textarea {
   padding: 0;
 }
 
-.dashboard-menu,
-.dashboard-family,
-.dashboard-actions {
-  position: fixed;
-  z-index: 6;
-  top: 16px;
-}
-
 .dashboard-menu {
-  left: 16px;
-  display: grid;
-  justify-items: start;
-  gap: 8px;
+  position: relative;
 }
 
+/* The burger menu drops down from the header's right end. */
 .dashboard-nav {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 8px);
+  right: 0;
   display: grid;
-  width: 264px;
+  box-sizing: border-box;
+  width: min(264px, calc(100vw - 20px));
   padding: 6px;
+  background: var(--panel-strong);
+  border-radius: var(--radius-menu);
 }
 
 .dashboard-nav-item {
@@ -809,7 +797,7 @@ textarea {
   background: transparent;
   color: inherit;
   cursor: pointer;
-  font: 500 15px/1.2 Arial, sans-serif;
+  font: 500 15px/1.2 var(--font-ui);
   text-align: left;
 }
 
@@ -820,18 +808,17 @@ a.dashboard-nav-item {
 
 .dashboard-nav-item:hover,
 .dashboard-nav-item[aria-expanded='true'] {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .dashboard-family {
-  left: 50%;
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
-  min-height: 44px;
+  min-height: var(--size-control);
   box-sizing: border-box;
   padding: 0 14px;
-  transform: translateX(-50%);
 }
 
 .dashboard-family select,
@@ -841,13 +828,13 @@ a.dashboard-nav-item {
   background: transparent;
   color: #fff;
   cursor: pointer;
-  font: 600 15px/1.2 Arial, sans-serif;
+  font: 600 15px/1.2 var(--font-ui);
 }
 
 .dashboard-family-name {
   max-width: 260px;
   overflow: hidden;
-  font: 600 15px/1.2 Arial, sans-serif;
+  font: 400 21px/1.2 var(--font-display);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -858,17 +845,11 @@ a.dashboard-nav-item {
   color: #fff;
 }
 
-.dashboard-actions {
-  right: 16px;
-  display: flex;
-  gap: 8px;
-}
-
 .dashboard-board {
   position: fixed;
   z-index: 5;
   top: 76px;
-  left: 296px;
+  right: 288px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
@@ -882,7 +863,7 @@ a.dashboard-nav-item {
   align-items: center;
   gap: 10px;
   padding: 14px 14px 12px 18px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border);
 }
 
 .dashboard-board-header h2 {
@@ -890,7 +871,7 @@ a.dashboard-nav-item {
   min-width: 0;
   margin: 0;
   overflow: hidden;
-  font: 600 17px/1.2 Arial, sans-serif;
+  font: 600 17px/1.2 var(--font-ui);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -909,8 +890,8 @@ a.dashboard-nav-item {
 
 .dashboard-subhead {
   margin: 16px 0 8px;
-  color: var(--glass-muted);
-  font: 600 12px/1 Arial, sans-serif;
+  color: var(--muted);
+  font: 600 12px/1 var(--font-ui);
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -918,8 +899,9 @@ a.dashboard-nav-item {
 .dashboard-board button:focus-visible,
 .dashboard-nav-item:focus-visible,
 .glass-button:focus-visible,
-.dashboard-family:focus-within {
-  outline: 2px solid var(--glass-accent);
+.dashboard-family:focus-within,
+.header-button:focus-visible {
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -934,12 +916,12 @@ a.dashboard-nav-item {
 
 .members-error,
 .member-form-error {
-  color: var(--glass-danger);
+  color: var(--danger);
 }
 
 .members-empty,
 .members-loading {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .family-set-import {
@@ -958,40 +940,40 @@ a.dashboard-nav-item {
   min-height: 40px;
   margin-top: 0;
   padding: 0 12px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
   cursor: pointer;
-  font: 500 14px/1.2 Arial, sans-serif;
+  font: 500 14px/1.2 var(--font-ui);
 }
 
 .family-set-import > button:hover,
 .random-family-control > button:hover,
 .random-family-control > button[aria-expanded='true'],
 .members-error button:hover {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .family-set-select {
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
 }
 
 .family-set-select:hover {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .family-set-select[aria-pressed='true'] {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
   background: rgba(127, 214, 255, 0.14);
   box-shadow: none;
 }
 
 .family-set-select span {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .icon-button {
@@ -1005,17 +987,17 @@ a.dashboard-nav-item {
   border: 0;
   border-radius: 8px;
   background: transparent;
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: pointer;
 }
 
 .icon-button:hover {
-  background: var(--glass-hover);
+  background: var(--hover);
   color: #fff;
 }
 
 .icon-button[aria-pressed='true'] {
-  color: var(--glass-accent);
+  color: var(--accent);
 }
 
 .icon-button:disabled {
@@ -1024,19 +1006,19 @@ a.dashboard-nav-item {
 }
 
 .icon-button:focus-visible {
-  outline: 2px solid var(--glass-accent);
+  outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
 
-/* Evolution and Time boards. */
+/* Evolution board, below the header's button. */
 .debug-panel {
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  background: var(--glass-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-menu);
+  background: var(--panel-strong);
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.32);
-  backdrop-filter: blur(16px) saturate(1.2);
-  color: #fff;
-  font-family: Arial, sans-serif;
+  backdrop-filter: var(--blur-glass);
+  color: var(--text);
+  font-family: var(--font-ui);
 }
 
 .debug-panel-body {
@@ -1044,16 +1026,17 @@ a.dashboard-nav-item {
 }
 
 .debug-panel-body > section + section {
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid var(--border);
 }
 
 .debug-panel-body > section > h2 {
-  color: var(--glass-muted);
+  color: var(--accent);
+  font-family: var(--font-mono);
 }
 
 .debug-button,
 .zoom-steps button {
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.06);
   color: #fff;
 }
@@ -1062,12 +1045,12 @@ a.dashboard-nav-item {
 .debug-button[aria-expanded='true'],
 .debug-button[aria-pressed='true'],
 .zoom-steps button:hover {
-  border-color: var(--glass-accent);
-  background: var(--glass-hover);
+  border-color: var(--accent);
+  background: var(--hover);
 }
 
 .debug-check input {
-  accent-color: var(--glass-accent);
+  accent-color: var(--accent);
 }
 
 .debug-row input[type='range']::-webkit-slider-runnable-track,
@@ -1076,18 +1059,18 @@ a.dashboard-nav-item {
 }
 
 .debug-row input[type='range']::-moz-range-progress {
-  background: var(--glass-accent);
+  background: var(--accent);
 }
 
 .debug-row input[type='range']::-webkit-slider-thumb,
 .debug-row input[type='range']::-moz-range-thumb {
   border-color: rgba(12, 18, 27, 0.9);
-  background: var(--glass-accent);
+  background: var(--accent);
 }
 
 .debug-panel :is(button, input, select):focus-visible,
 .random-family-panel :is(button, input):focus-visible {
-  outline: 2px solid var(--glass-accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -1105,15 +1088,15 @@ a.dashboard-nav-item {
 }
 
 .debug-clock-hand {
-  stroke: var(--glass-accent);
+  stroke: var(--accent);
 }
 
 .debug-clock-pivot {
-  fill: var(--glass-accent);
+  fill: var(--accent);
 }
 
 .random-family-panel {
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 12px;
   background: rgba(12, 18, 27, 0.9);
   color: #fff;
@@ -1121,65 +1104,45 @@ a.dashboard-nav-item {
 
 .random-family-hint,
 .random-family-success {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .member-field {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .member-field input,
 .member-field textarea,
 .member-field select {
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.07);
   color: #fff;
   color-scheme: dark;
 }
 
 .member-form-actions button {
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   background: transparent;
   color: #fff;
 }
 
 .member-form-actions button[type='submit'] {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
   background: rgba(127, 214, 255, 0.22);
 }
 
 @media (max-width: 700px) {
-  .dashboard-menu,
-  .dashboard-family,
-  .dashboard-actions {
-    top: 10px;
-  }
-
-  .dashboard-menu {
-    left: 10px;
-  }
-
-  .dashboard-actions {
-    top: 64px;
-    right: 10px;
-  }
-
-  .dashboard-family {
-    left: 114px;
-    right: 10px;
-    transform: none;
-  }
-
   .dashboard-family-name {
     max-width: none;
     overflow: hidden;
   }
 
+  /* Below the header's two rows. */
   .dashboard-board {
-    top: 64px;
-    left: 10px;
+    top: 112px;
+    right: 10px;
     width: calc(100vw - 20px);
-    max-height: calc(100dvh - 74px);
+    max-height: calc(100dvh - 122px);
   }
 
   .dashboard-menu[data-panel-open] .dashboard-nav {
@@ -1187,13 +1150,14 @@ a.dashboard-nav-item {
   }
 
   .debug-panel {
-    top: 116px;
-    background: rgba(12, 18, 27, 0.94);
+    top: 112px;
+    right: 10px;
+    background: var(--panel-strong);
     backdrop-filter: none;
   }
 
   .debug-panel-body {
-    max-height: calc(100dvh - 180px);
+    max-height: calc(100dvh - 176px);
   }
 
   .relation-legend {
@@ -1221,11 +1185,11 @@ a.dashboard-nav-item {
   display: grid;
   gap: 10px;
   padding: 14px 18px 18px;
-  font: 14px/1.3 Arial, sans-serif;
+  font: 14px/1.3 var(--font-ui);
 }
 
 .appearance-panel-body [data-disabled] {
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: not-allowed;
 }
 
@@ -1236,14 +1200,14 @@ a.dashboard-nav-item {
 .appearance-soon {
   margin-left: auto;
   padding: 2px 8px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 999px;
   font-size: 12px;
 }
 
 .profile-panel-body {
   padding: 0 18px 18px;
-  font: 14px/1.4 Arial, sans-serif;
+  font: 14px/1.4 var(--font-ui);
 }
 
 .profile-facts {
@@ -1254,7 +1218,7 @@ a.dashboard-nav-item {
 }
 
 .profile-facts dt {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .profile-facts dd {
@@ -1263,7 +1227,7 @@ a.dashboard-nav-item {
 }
 
 .profile-logout {
-  color: var(--glass-accent);
+  color: var(--accent);
   font-weight: 600;
 }
 
@@ -1298,7 +1262,7 @@ a.dashboard-nav-item {
 
 .auth-notice .auth-notice-action {
   padding: 6px 10px;
-  background: var(--glass-hover);
+  background: var(--hover);
   font-weight: 600;
   white-space: nowrap;
 }
@@ -1333,7 +1297,7 @@ a.dashboard-nav-item {
 
 .organic-only legend {
   padding: 0;
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 11px;
 }
 
@@ -1345,7 +1309,7 @@ a.dashboard-nav-item {
   border-radius: 4px;
   background: transparent;
   color: #e6fdff;
-  font: 600 14px/1.2 Arial, sans-serif;
+  font: 600 14px/1.2 var(--font-ui);
   text-shadow: 0 0 6px #00e5ff, 0 0 14px rgba(0, 229, 255, 0.6);
   white-space: nowrap;
   text-align: center;
@@ -1377,7 +1341,7 @@ a.dashboard-nav-item {
   border-radius: 4px;
   background: rgba(5, 8, 12, 0.85);
   color: #e6fdff;
-  font: 11px/1.2 Arial, sans-serif;
+  font: 11px/1.2 var(--font-ui);
   white-space: nowrap;
   cursor: pointer;
 }
@@ -1414,7 +1378,7 @@ a.dashboard-nav-item {
   bottom: 16px;
   box-sizing: border-box;
   width: min(640px, calc(100vw - 32px));
-  font: 12px/1.3 Arial, sans-serif;
+  font: 12px/1.3 var(--font-ui);
 }
 
 .relation-legend .person-header {
@@ -1433,7 +1397,7 @@ a.dashboard-nav-item {
 
 /* Quiet like the pin; the shared open-state background would make an unfolded legend look pressed. */
 .relation-legend .relation-legend-fold {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .relation-legend .relation-legend-fold:not(:hover) {
@@ -1532,15 +1496,15 @@ a.dashboard-nav-item {
   outline: 0;
   background: transparent;
   color: #fff;
-  font: 15px/1.2 Arial, sans-serif;
+  font: 15px/1.2 var(--font-ui);
 }
 
 .member-search-field input::placeholder {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .member-search-field:focus-within {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
 }
 
 .member-search-list {
@@ -1557,15 +1521,15 @@ a.dashboard-nav-item {
   padding: 10px 12px;
   border-radius: 8px;
   cursor: pointer;
-  font: 15px/1.2 Arial, sans-serif;
+  font: 15px/1.2 var(--font-ui);
 }
 
 .member-search-list li[aria-selected='true'] {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .member-search-list .member-search-empty {
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: default;
 }
 
@@ -1606,7 +1570,7 @@ a.dashboard-nav-item {
   max-height: calc(100dvh - 120px);
   overflow: hidden;
   color: #fff;
-  font-family: Arial, sans-serif;
+  font-family: var(--font-ui);
 }
 
 .person-header {
@@ -1614,7 +1578,7 @@ a.dashboard-nav-item {
   align-items: center;
   justify-content: space-between;
   padding: 8px 10px 8px 16px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border);
 }
 
 /* The header is the handle for dragging the panel; a pinned panel stays put. */
@@ -1645,12 +1609,12 @@ a.dashboard-nav-item {
 }
 
 .person-pin[aria-pressed='true'] {
-  background: var(--glass-hover);
-  color: var(--glass-accent);
+  background: var(--hover);
+  color: var(--accent);
 }
 
 .person-header-label {
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -1671,7 +1635,7 @@ a.dashboard-nav-item {
 
 .person-pin,
 .person-delete {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .person-pin:hover {
@@ -1684,7 +1648,7 @@ a.dashboard-nav-item {
 
 /* Red only on hover; deleting still asks first. */
 .person-delete:hover {
-  color: var(--glass-danger);
+  color: var(--danger);
 }
 
 /* Sets close apart from the actions on the person. */
@@ -1692,7 +1656,7 @@ a.dashboard-nav-item {
   width: 1px;
   height: 18px;
   margin: 0 8px;
-  background: var(--glass-border);
+  background: var(--border);
 }
 
 .person-icon-button {
@@ -1709,7 +1673,7 @@ a.dashboard-nav-item {
 
 .person-icon-button:hover,
 .person-icon-button[aria-expanded='true'] {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .person-panel button:focus-visible,
@@ -1717,7 +1681,7 @@ a.dashboard-nav-item {
 .person-panel select:focus-visible,
 .person-panel textarea:focus-visible,
 .person-panel summary:focus-visible {
-  outline: 2px solid var(--glass-accent);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -1751,7 +1715,7 @@ a.dashboard-nav-item {
 
 .person-muted {
   margin: 0;
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 13px;
 }
 
@@ -1761,11 +1725,11 @@ a.dashboard-nav-item {
   height: 40px;
   flex: none;
   place-items: center;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.07);
   object-fit: cover;
-  font: 600 13px/1 Arial, sans-serif;
+  font: 600 13px/1 var(--font-ui);
 }
 
 .person-avatar-large {
@@ -1791,7 +1755,7 @@ a.dashboard-nav-item {
 }
 
 .person-facts dt {
-  color: var(--glass-muted);
+  color: var(--muted);
 }
 
 .person-facts dd {
@@ -1801,7 +1765,7 @@ a.dashboard-nav-item {
 .person-note {
   margin: 0;
   padding-left: 12px;
-  border-left: 2px solid var(--glass-border);
+  border-left: 2px solid var(--border);
   color: rgba(255, 255, 255, 0.85);
   font-size: 14px;
   white-space: pre-wrap;
@@ -1809,7 +1773,7 @@ a.dashboard-nav-item {
 
 .person-error {
   margin: 0;
-  color: var(--glass-danger);
+  color: var(--danger);
   font-size: 13px;
 }
 
@@ -1817,7 +1781,7 @@ a.dashboard-nav-item {
   display: grid;
   gap: 26px;
   padding-top: 22px;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid var(--border);
 }
 
 .person-group {
@@ -1828,8 +1792,8 @@ a.dashboard-nav-item {
 .person-group h3,
 .person-more summary {
   margin: 0;
-  color: var(--glass-muted);
-  font: 600 12px/1 Arial, sans-serif;
+  color: var(--muted);
+  font: 600 12px/1 var(--font-ui);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
@@ -1862,7 +1826,7 @@ a.dashboard-nav-item {
 }
 
 .person-connector {
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -1922,7 +1886,7 @@ a.dashboard-nav-item {
 .person-branch-status {
   padding: 0 10px 4px 6px;
   border-bottom: 1px solid var(--branch-line);
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 11px;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -1938,13 +1902,13 @@ a.dashboard-nav-item {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: pointer;
   font-size: 12px;
 }
 
 .person-partner-toggle:hover {
-  background: var(--glass-hover);
+  background: var(--hover);
   color: #fff;
 }
 
@@ -1962,13 +1926,13 @@ a.dashboard-nav-item {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
 }
 
 .person-chip-current {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
 }
 
 .person-chip-main {
@@ -1990,7 +1954,7 @@ button.person-chip-main {
 }
 
 button.person-chip-main:hover {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .person-chip .person-avatar {
@@ -2012,7 +1976,7 @@ button.person-chip-main:hover {
 }
 
 .person-chip-years {
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 11px;
 }
 
@@ -2020,17 +1984,17 @@ button.person-chip-main:hover {
   align-self: stretch;
   padding: 0 8px;
   border: 0;
-  border-left: 1px solid var(--glass-border);
+  border-left: 1px solid var(--border);
   border-radius: 0 10px 10px 0;
   background: transparent;
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: pointer;
   font-size: 16px;
 }
 
 .person-chip-remove:hover {
-  background: var(--glass-hover);
-  color: var(--glass-danger);
+  background: var(--hover);
+  color: var(--danger);
 }
 
 /* Edit mode */
@@ -2062,7 +2026,7 @@ button.person-chip-main:hover {
   width: 100%;
   min-height: 36px;
   padding: 7px 10px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: rgba(255, 255, 255, 0.07);
   color: #fff;
@@ -2085,7 +2049,7 @@ button.person-chip-main:hover {
   display: grid;
   gap: 5px;
   min-width: 0;
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 12px;
   font-weight: 600;
 }
@@ -2101,13 +2065,13 @@ button.person-chip-main:hover {
   gap: 4px;
   justify-items: center;
   flex: none;
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: pointer;
   font-size: 11px;
 }
 
 .person-photo-drop-active .person-avatar {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
   background: rgba(127, 214, 255, 0.12);
 }
 
@@ -2120,7 +2084,7 @@ button.person-chip-main:hover {
 }
 
 .person-photo-drop:focus-within .person-avatar {
-  outline: 2px solid var(--glass-accent);
+  outline: 2px solid var(--accent);
 }
 
 .person-link-button {
@@ -2128,19 +2092,19 @@ button.person-chip-main:hover {
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--glass-accent);
+  color: var(--accent);
   cursor: pointer;
   font-size: 13px;
 }
 
 .person-link-danger {
-  color: var(--glass-danger);
+  color: var(--danger);
 }
 
 .person-tabs {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border);
 }
 
 .person-tabs button {
@@ -2149,13 +2113,13 @@ button.person-chip-main:hover {
   border: 0;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: pointer;
   font-size: 14px;
 }
 
 .person-tabs button[aria-selected='true'] {
-  border-bottom-color: var(--glass-accent);
+  border-bottom-color: var(--accent);
   color: #fff;
 }
 
@@ -2193,13 +2157,13 @@ button.person-chip-main:hover {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
 .person-partner-date input[aria-invalid='true'] {
-  border-color: var(--glass-danger);
-  color: var(--glass-danger);
+  border-color: var(--danger);
+  color: var(--danger);
 }
 
 .person-partner-details select,
@@ -2219,7 +2183,7 @@ button.person-chip-main:hover {
 }
 
 .person-parent-kind {
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 12px;
   white-space: nowrap;
 }
@@ -2236,16 +2200,16 @@ button.person-chip-main:hover {
   align-items: center;
   gap: 4px;
   padding: 6px 10px;
-  border: 1px dashed var(--glass-border);
+  border: 1px dashed var(--border);
   border-radius: 10px;
   background: transparent;
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: pointer;
   font-size: 13px;
 }
 
 .person-add:hover:not(:disabled) {
-  background: var(--glass-hover);
+  background: var(--hover);
   color: #fff;
 }
 
@@ -2287,12 +2251,12 @@ button.person-chip-main:hover {
 }
 
 .person-picker button:hover {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .person-picker button span,
 .person-picker-hint {
-  color: var(--glass-muted);
+  color: var(--muted);
   font-size: 12px;
 }
 
@@ -2308,7 +2272,7 @@ button.person-chip-main:hover {
 }
 
 .person-panel-new .person-header-label {
-  color: var(--glass-accent);
+  color: var(--accent);
 }
 
 .person-panel-new .person-hero-edit {
@@ -2335,11 +2299,11 @@ button.person-chip-main:hover {
 
 .person-group[data-linked] h3,
 .person-group[data-linked] .person-add {
-  color: var(--glass-accent);
+  color: var(--accent);
 }
 
 .person-group[data-linked] .person-add {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
   background: rgba(127, 214, 255, 0.12);
 }
 
@@ -2359,7 +2323,7 @@ button.person-chip-main:hover {
 
 .relation-link path {
   fill: none;
-  stroke: var(--glass-accent);
+  stroke: var(--accent);
 }
 
 .relation-link-glow {
@@ -2374,7 +2338,7 @@ button.person-chip-main:hover {
 }
 
 .relation-link circle {
-  fill: var(--glass-accent);
+  fill: var(--accent);
 }
 
 @keyframes relation-link-flow {
@@ -2396,7 +2360,7 @@ button.person-chip-main:hover {
   align-items: center;
   margin-top: 2px;
   background: rgba(127, 214, 255, 0.1);
-  color: var(--glass-accent);
+  color: var(--accent);
 }
 
 .person-picker .person-picker-create:hover {
@@ -2418,14 +2382,14 @@ button.person-chip-main:hover {
   gap: 8px;
   margin: 0 -16px -16px;
   padding: 12px 16px;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid var(--border);
   background: rgba(14, 21, 31, 0.97);
 }
 
 .person-footer button {
   min-height: 36px;
   padding: 0 14px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 6px;
   background: transparent;
   color: #fff;
@@ -2433,7 +2397,7 @@ button.person-chip-main:hover {
 }
 
 .person-footer .person-primary {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
   background: rgba(127, 214, 255, 0.22);
 }
 
@@ -2452,19 +2416,19 @@ button.person-chip-main:hover {
 
 /* Family name at the top centre: a button that opens the family card. */
 button.dashboard-family {
-  color: #fff;
+  color: var(--text);
   cursor: pointer;
 }
 
 button.dashboard-family:hover {
-  background: rgba(30, 40, 54, 0.8);
+  background: var(--panel-strong);
 }
 
 /* Family card: a person panel with a cover across its top, the header actions floating on it. */
 .family-card-cover {
   height: 112px;
   margin: -16px -16px -22px;
-  border-bottom: 1px solid var(--glass-border);
+  border-bottom: 1px solid var(--border);
   background:
     radial-gradient(circle at 18% 120%, rgba(127, 214, 255, 0.28), transparent 55%),
     radial-gradient(circle at 85% -20%, rgba(255, 255, 255, 0.1), transparent 50%),
@@ -2486,7 +2450,7 @@ button.dashboard-family:hover {
   border: 2px solid rgba(14, 21, 31, 0.97);
   border-radius: 14px;
   background: #24384b;
-  color: var(--glass-accent);
+  color: var(--accent);
 }
 
 .family-card-emblem .icon {
@@ -2505,7 +2469,7 @@ button.dashboard-family:hover {
   padding: 4px 10px;
   border-radius: 999px;
   background: rgba(127, 214, 255, 0.12);
-  color: var(--glass-accent);
+  color: var(--accent);
   font-size: 12px;
 }
 
@@ -2579,14 +2543,14 @@ button.dashboard-family:hover {
   border: 0;
   border-radius: 6px;
   background: transparent;
-  color: var(--glass-muted);
+  color: var(--muted);
   cursor: pointer;
   font-size: 13px;
 }
 
 .family-card-fit button[aria-checked='true'] {
   background: rgba(127, 214, 255, 0.18);
-  color: var(--glass-accent);
+  color: var(--accent);
 }
 
 /* Edit mode: drop field, name, tools, then delete apart from cancel and save. The top stays free for
@@ -2605,13 +2569,13 @@ button.dashboard-family:hover {
   place-items: center;
   border: 1.5px dashed rgba(127, 214, 255, 0.5);
   border-radius: 10px;
-  color: var(--glass-accent);
+  color: var(--accent);
   cursor: pointer;
 }
 
 .family-card-drop-active,
 .family-card-drop:focus-within {
-  border-color: var(--glass-accent);
+  border-color: var(--accent);
   background: rgba(127, 214, 255, 0.08);
 }
 
@@ -2639,7 +2603,7 @@ button.dashboard-family:hover {
   gap: 8px;
   min-height: 38px;
   padding: 0 14px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: transparent;
   color: #fff;
@@ -2648,7 +2612,7 @@ button.dashboard-family:hover {
 }
 
 .family-card-button:hover {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .family-card-button .icon {
@@ -2663,12 +2627,12 @@ button.dashboard-family:hover {
 
 .family-card-danger {
   border-color: rgba(255, 143, 122, 0.45);
-  color: var(--glass-danger);
+  color: var(--danger);
 }
 
 .family-card-primary {
-  border-color: var(--glass-accent);
-  background: var(--glass-accent);
+  border-color: var(--accent);
+  background: var(--accent);
   color: #0b141d;
 }
 
@@ -2681,7 +2645,7 @@ button.dashboard-family:hover {
   flex-wrap: wrap;
   gap: 8px;
   padding-top: 16px;
-  border-top: 1px solid var(--glass-border);
+  border-top: 1px solid var(--border);
 }
 
 .family-card-actions .family-card-danger {
@@ -2695,33 +2659,26 @@ button.dashboard-family:hover {
   background: rgba(12, 18, 27, 0.66);
 }
 
-/* Logo and released version, centred at the bottom; clicks pass through to the scene. */
+/* Version and legal links in one line, bottom centre, below the dock; clicks pass through to the scene. */
 .app-version {
   position: fixed;
   z-index: 3;
   left: 50%;
-  bottom: 10px;
+  bottom: 12px;
   transform: translateX(-50%);
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px 4px 6px;
-  color: var(--glass-muted);
-  font-size: 12px;
-  line-height: 1;
+  color: var(--muted);
+  font: 12px/1 var(--font-ui);
+  white-space: nowrap;
   pointer-events: none;
 }
 
-.logo-icon {
-  width: 20px;
-  height: 20px;
-}
-
-/* "Terms · Privacy" in the version badge; only the links take clicks. */
+/* "· Terms · Privacy" after the version; only the links take clicks. */
 .legal-links {
   display: flex;
-  gap: 4px;
-  margin-left: 4px;
+  gap: 6px;
 }
 
 .legal-links a {
@@ -2732,7 +2689,7 @@ button.dashboard-family:hover {
 
 .legal-links a:hover,
 .legal-links a:focus-visible {
-  color: #fff;
+  color: var(--text);
   text-decoration: underline;
 }
 

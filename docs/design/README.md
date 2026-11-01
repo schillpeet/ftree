@@ -39,6 +39,9 @@ If code and this folder disagree, this folder wins until it is updated.
 - Terms and privacy sit in one small line at the bottom centre (version · Nutzungsbedingungen · Datenschutz), below the dock.
 - Connection lines use the accent colour (amber in 3D) – thin, dim by default, glowing for the selected lineage.
 - In 3D, people stay papyrus scrolls; only TRON uses glass pills (2026-11-01).
+- "3D" is today's organic tree, "TRON" today's experimental grid view; the tiered tree moves into the evolution panel (2026-11-01).
+- The invitation card shows on the first visit of a shared tree; sharing keeps granting access right away, there is no pending state (2026-11-01).
+- The signed-in person is a member linked to the user in the BFF, not guessed from the name (2026-11-01).
 
 ## Open questions
 

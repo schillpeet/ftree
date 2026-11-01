@@ -1,47 +1,44 @@
 # Plan: Horizont redesign in ui/
 
-Each item is meant to become one pull request (titles follow AGENTS.md).
-Before implementing an item, create a detailed implementation plan for it from this folder (brainstorming, then writing-plans).
+The redesign lands in five pull requests; each is squash-merged into one commit with the title below (AGENTS.md).
+Inside a PR, parallel agents may work on separate branches that are merged into the PR's branch before review.
+Before implementing a PR, create a detailed implementation plan for it from this folder (brainstorming, then writing-plans).
 Status: [ ] open · [~] in progress · [x] merged.
+Journeys: N new user, I invited user, R returning user, V signed-out visitor ([journeys.md](journeys.md)).
 
-## Foundation
+## 1. [~] `feat(ui): introduce the horizont design system` (N I R V)
 
-- [ ] `refactor(ui): introduce design tokens for 3d and tron themes`
-  - Add `docs/design/tokens.css` values to `ui/` (for example `ui/app/tokens.css`) and set `data-theme` on the root from the appearance setting.
-  - Map the existing `--glass-*` variables in `ui/app/globals.css` onto the new names, then remove them; no visual change beyond colours.
-  - Load Instrument Serif, Inter, and JetBrains Mono via `next/font`.
-  - Rename the appearance options to "3D" and "TRON" (DE and EN).
+- Design tokens in `ui/`, `data-theme` from the appearance, fonts via `next/font`, appearances renamed to "3D" and "TRON" – [implementation plan](../superpowers/plans/2026-11-01-design-tokens.md).
+- Header with family switcher, theme and language segments, and burger menu top right.
+- Bottom dock; "Mitglied hinzufügen" moves out of the burger menu into the dock's "Person".
+- Evolution panel only with "Entwicklertools", behind a header button with DEV badge; crown, spacing, and the tiered tree (`organicExperimental`) move behind it.
+- Legal line at the bottom centre.
 
-## Navigation
+## 2. `feat(bff): link members to signed-in users` (N I R)
 
-- [ ] `feat(ui): add header with family switcher, theme and language segments, and burger menu top right`
-- [ ] `feat(ui): add bottom action dock`
-  - Move "Mitglied hinzufügen" out of the burger menu into the dock's "Person".
-- [ ] `feat(ui): show evolution panel only with dev tools permission`
-  - Header button with DEV badge; hidden without "Entwicklertools"; crown and spacing controls move back behind it.
-- [ ] `feat(ui): add legal line at the bottom centre`
+- A member can be linked to one user per family; `/me` or the family answer names the caller's own member.
+- Set when a tree is planted from the welcome card; "Nicht ich" removes the link; the API spec comes first, the UI client is regenerated.
 
-## Adding people
+## 3. `feat(ui): add relatives from the tree and highlight lineages` (N R)
 
-- [ ] `feat(ui): add relative slots and quick-add popover around the selected person`
-  - Slots only for missing relations; mother → father chaining; toast with undo.
-- [ ] `feat(ui): draw thin accent connection lines between scrolls and highlight the selected lineage`
-  - 3D keeps the papyrus scrolls; TRON uses glass pills (see components.md).
+- Relative slots and quick-add popover around the selected person: only missing relations, mother → father chaining, toast with undo.
+- Thin accent connection lines, the selected lineage highlighted; 3D keeps the papyrus scrolls, TRON uses glass pills (see components.md).
 
-## Onboarding
+## 4. `feat(ui): guide new, invited, and returning users` (N I R)
 
-- [ ] `feat(ui): add welcome card for signed-in users without a tree`
-  - Replaces the current empty-tree card (`ui/app/EmptyTree.tsx`) for users without any visible tree.
-- [ ] `feat(ui): add three-step intro tour`
-  - Shown once per user; remembered server-side or per browser.
-- [ ] `feat(ui): add invitation landing that shows the invited member`
+- Welcome card for signed-in users without a tree; replaces `ui/app/EmptyTree.tsx` for them.
+- Invitation card on the first visit of a shared tree; sharing keeps granting access right away, so "Einladung annehmen" only closes the card and starts the tour.
+- `/` opens the last tree and the camera settles on the own card with the "DU" badge.
+- Three-step intro tour, shown once per user and remembered per browser.
 
-## Landing
+## 5. `feat(ui): add public landing page with example family` (V)
 
-- [ ] `feat(ui): add public landing page at /`
-  - Needs `/` reachable without Cloudflare Access (see README open questions); signed-in users are redirected to their tree.
-- [ ] `feat(ui): add read-only example family`
+- Landing page for signed-out visitors; needs a public path outside Cloudflare Access (see README open questions).
+- Read-only example family bundled with the UI, no BFF call.
+- Lower and closer camera, warmer horizon light, and a new still for the landing.
 
-## 3D scene (separate from UI work)
+## Order
 
-- [ ] Lower and closer camera, warmer horizon light; then a new still for the landing.
+1. PRs 1 and 2 in parallel.
+2. PR 3 once PR 1 is merged; PR 4 once PRs 1 and 2 are merged; both in parallel.
+3. PR 5 once the Cloudflare Access question in ftree-infra is decided.
