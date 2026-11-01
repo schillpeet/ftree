@@ -10,6 +10,7 @@ import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AdminInvitation
 import com.github.bff.generated.model.AdminUser
 import com.github.bff.generated.model.AdminUserTree
+import com.github.bff.generated.model.MyInvitation
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.TreeRole
 import com.github.bff.generated.model.UpdateAdminUserRequest
@@ -106,23 +107,43 @@ class PeopleService(
 
     // Every membership of someone who never signed in, in a tree outside the trash, newest first.
     fun invitations(): List<AdminInvitation> =
+        invitationRows("u.first_seen IS NULL", "m.granted_at DESC, u.email, f.id").map { it.first }
+
+    // The memberships of other people the person invited (users.invited_by), in a tree outside the trash: pending ones first,
+    // then the newest.
+    fun invitationsSentBy(email: String): List<MyInvitation> =
+        invitationRows("u.invited_by = ? AND u.email <> u.invited_by", "(u.first_seen IS NULL) DESC, m.granted_at DESC, u.email, f.id", email.normalizedEmail())
+            .map { (invitation, pending) ->
+                MyInvitation(
+                    invitation.email,
+                    invitation.familyId,
+                    invitation.familyName,
+                    invitation.role,
+                    invitation.invitedAt,
+                    if (pending) MyInvitation.StatusEnum.PENDING else MyInvitation.StatusEnum.ACCEPTED,
+                )
+            }
+
+    private fun invitationRows(condition: String, order: String, vararg args: Any): List<Pair<AdminInvitation, Boolean>> =
         jdbc.query(
-            "SELECT u.id, u.email, u.display_name, f.id, f.name, f.slug, m.role, m.granted_at, m.granted_by " +
+            "SELECT u.id, u.email, u.display_name, f.id, f.name, f.slug, m.role, m.granted_at, m.granted_by, u.first_seen IS NULL " +
                 "FROM family_memberships m JOIN users u ON u.email = m.email JOIN families f ON f.id = m.family_id " +
-                "WHERE u.first_seen IS NULL AND f.deleted_at IS NULL ORDER BY m.granted_at DESC, u.email, f.id",
-        ) { rs, _ ->
-            AdminInvitation(
-                rs.getObject(1, UUID::class.java),
-                rs.getString(2),
-                displayNameOf(rs.getString(3), rs.getString(2)),
-                rs.getObject(4, UUID::class.java),
-                rs.getString(5),
-                rs.getString(6),
-                TreeRole.fromValue(rs.getString(7)),
-                rs.getObject(8, OffsetDateTime::class.java),
-                rs.getString(9),
-            )
-        }
+                "WHERE $condition AND f.deleted_at IS NULL ORDER BY $order",
+            { rs, _ ->
+                AdminInvitation(
+                    rs.getObject(1, UUID::class.java),
+                    rs.getString(2),
+                    displayNameOf(rs.getString(3), rs.getString(2)),
+                    rs.getObject(4, UUID::class.java),
+                    rs.getString(5),
+                    rs.getString(6),
+                    TreeRole.fromValue(rs.getString(7)),
+                    rs.getObject(8, OffsetDateTime::class.java),
+                    rs.getString(9),
+                ) to rs.getBoolean(10)
+            },
+            *args,
+        )
 
     fun profile(email: String): Profile {
         val key = email.normalizedEmail()
