@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.33.0](https://github.com/schillpeet/ftree/compare/v0.32.0...v0.33.0) (2026-11-01)
+
+
+### Features
+
+* **bff:** link members to signed-in users ([#295](https://github.com/schillpeet/ftree/issues/295)) ([edb855a](https://github.com/schillpeet/ftree/commit/edb855ac79031d60e7ea5c07d51cbf71da98dd66))
+* **ui:** add public landing page with example family ([#299](https://github.com/schillpeet/ftree/issues/299)) ([20f6094](https://github.com/schillpeet/ftree/commit/20f609415ab5703bbdd7de41e89f96894e0742c7))
+* **ui:** add relatives from the tree and highlight lineages ([#297](https://github.com/schillpeet/ftree/issues/297)) ([d6e85db](https://github.com/schillpeet/ftree/commit/d6e85db9e50e1864f44eb5894d9233e6db0cc742))
+* **ui:** guide new, invited, and returning users ([#298](https://github.com/schillpeet/ftree/issues/298)) ([3673a17](https://github.com/schillpeet/ftree/commit/3673a17a27eff01c56b1a4bb8ebb289fdc630edb))
+* **ui:** introduce the horizont design system ([#294](https://github.com/schillpeet/ftree/issues/294)) ([32e90d2](https://github.com/schillpeet/ftree/commit/32e90d2a7f2098a18209751a1d4c4e274d0a5abb))
+
 ## [0.32.0](https://github.com/schillpeet/ftree/compare/v0.31.0...v0.32.0) (2026-10-31)
 
 
