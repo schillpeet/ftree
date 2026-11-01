@@ -14,17 +14,25 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 - Centre: family switcher – people icon, family name in `--font-display`, divider, chevron; opens the families list.
 - Left, after the wordmark: "Evolution" with DEV badge (only with "Entwicklertools"), then the admin badge.
 - The admin badge is a status chip, not a button: check icon and "ADM" in the accent colour, title "Als Admin angemeldet"; it shows only in an admin session, with or without the Evolution button, and shrinks to the check mark on phones.
-- Right, in this order: theme segment (3D | TRON), language segment (DE | EN), burger; the public pages have their sign-in chip first.
+- Right, in this order: the "Angemeldet als <Name>" chip (plain text; hidden below 960px), theme segment (3D | TRON), language segment (DE | EN), burger; the public pages have their sign-in chip first.
 - The Evolution panel opens on the left, under the button.
 - Controls are `--size-control` high with `--radius-control`; segments use `--radius-pill`, the active option `--segment-on`.
 
 ## Burger menu (top right)
 
-- Profil, Familien, Momentaufnahme, GEDCOM importieren, Feedback, Admin-Tool (only with the permission), divider, Abmelden.
+- Profil, Familien, Momentaufnahme, Feedback, Admin-Tool (only with the permission), divider, Abmelden.
 - Admin-Tool ends in an external-link icon instead of a chevron, since it leaves the page (and, in production, the host); entries that open a board keep the chevron.
 - No appearance row: the 3D | TRON segment is always in the header, on phones too, where its segments get tighter.
 - The divider is a thin `--border` line across the menu, not a bare `hr` (which a grid shrinks to a dot).
 - No primary actions here; adding people lives in the dock.
+- GEDCOM import lives only in the Familien board; it has no menu entry of its own.
+
+## Menu boards (Profil, Familien)
+
+- Both open as a fixed glass board right next to the burger menu (`.dashboard-board`: 76px from the top, 288px from the right; full width below 700px); no board positions itself.
+- Familien: next to "GEDCOM importieren" sits a round ⓘ button (`aria-expanded`) that toggles a short text: what GEDCOM is, what gets imported, what to watch out for. The text only states what the importer does (new family, counts toward the limit of own trees, .ged up to about 5 MB read as UTF-8, up to 100 people, no photos or card positions).
+- Profil: sections with small headings – Name (inline edit: pencil, input, save/cancel; blank falls back to the email; saving refreshes `/me` everywhere), Privat, Entwickler-Tools, Meine Familien (role per family), Ausstehende Einladungen (counter badge; pending first, then accepted; hidden when `GET /me/invitations` is unavailable).
+- "Entwickler-Tools aktiv" is an accent badge with a soft pulsing glow, static under `prefers-reduced-motion`; without the permission a muted "nicht aktiv" line shows.
 
 ## Evolution panel (developers only)
 
@@ -44,6 +52,7 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 
 - Centred, `--radius-dock`, 44px above the bottom edge.
 - Primary "Person" (`--primary`, `--size-dock-primary`, `--radius-dock-primary`), then Suchen, Einladen, Ansicht as icon-over-label buttons.
+- Sizing: the dock stays compact; items are at least 56px wide with 8px/10px padding, the primary button has 14px side padding, bar padding 5px and gap 2px. Every button stays at least 44px tall for touch.
 - "Person" highlights the "+" slots and explains "Tippe auf ein + am Baum".
 
 ## Person card
@@ -104,9 +113,9 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 ## Landing (signed out, `/`)
 
 - Scene background, header with wordmark, glass navigation with the single entry "So funktioniert's" (the other destinations are the hero buttons and the legal line, so nothing appears twice), a glass status chip, theme and language segments.
-- The status chip reads "Angemeldet als <Name>" when signed in (display name, else email) and "Anmelden" otherwise; both lead to `/start`. It comes from a quiet `/me` probe, without the permissions provider.
-- Centre: chip "Privat · nur für eure Familie · Open Source", title "Eure Familie. Ein Baum, der mitwächst.", one sentence, "Baum anlegen" and "Beispielfamilie ansehen".
-- 3D: the hero is smaller and sits at the bottom, so the crown and trunk of the still stay visible; TRON keeps the centred hero.
+- The status chip reads "Angemeldet als <Name>" when signed in (display name, else email) as plain text without link or hover, and "Anmelden" otherwise, which leads to `/start`; the tree header shows the same chip. It comes from a quiet `/me` probe, without the permissions provider.
+- Centre: title "Eure Familie. Ein Baum, der mitwächst." on one line on desktop (it may reach over the tree up to the middle of the trunk), below it the chip "Privat · nur für eure Familie · Open Source:" followed by the GitHub mark and "schillpeet" (a link to github.com/schillpeet), then one sentence, "Baum anlegen" and "Beispielfamilie ansehen".
+- 3D and TRON share one hero position: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), everything else hangs below it.
 - The three steps are not on the landing page; "So funktioniert's" opens `/home/how`.
 
 ## How it works (`/home/how`)
