@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
-import { EyeIcon, EyeOffIcon, PencilIcon, PlusIcon, UploadIcon, UsersIcon, CloseIcon } from './icons';
+import { InfoIcon, EyeIcon, EyeOffIcon, PencilIcon, PlusIcon, UploadIcon, UsersIcon, CloseIcon } from './icons';
 import { importFamily, reorderFamilies, type FamilySummary } from '../lib/api/generated/members';
 import RandomFamilyPanel from './RandomFamilyPanel';
 import { useT } from './i18n';
 import { useCan, useMe } from './Permissions';
-import { atFamilyLimit } from './access';
+import { MAX_OWNED_FAMILIES, atFamilyLimit } from './access';
 import { problemCode } from './problems';
 
 export default function FamiliesPanel({
@@ -49,6 +49,7 @@ export default function FamiliesPanel({
   // At the limit the BFF would refuse a new family, so creating and importing are off and the reason shows right below.
   const atLimit = atFamilyLimit(useMe(), families);
   const [isImporting, setIsImporting] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
@@ -139,10 +140,30 @@ export default function FamiliesPanel({
               {t.families.create}
             </button>
             {atLimit && <p className="family-limit" id="family-limit" role="status">{t.treeLimit}</p>}
-            <button type="button" disabled={isImporting || atLimit} aria-describedby={atLimit ? 'family-limit' : undefined} onClick={() => fileRef.current?.click()}>
-              <UploadIcon />
-              {isImporting ? t.families.importing : t.families.import}
-            </button>
+            <div className="family-set-import-row">
+              <button type="button" disabled={isImporting || atLimit} aria-describedby={atLimit ? 'family-limit' : undefined} onClick={() => fileRef.current?.click()}>
+                <UploadIcon />
+                {isImporting ? t.families.importing : t.families.import}
+              </button>
+              <button
+                type="button"
+                className="gedcom-info-button"
+                aria-label={t.families.gedcomInfo}
+                title={t.families.gedcomInfo}
+                aria-expanded={infoOpen}
+                aria-controls="gedcom-info"
+                onClick={() => setInfoOpen((open) => !open)}
+              >
+                <InfoIcon />
+              </button>
+            </div>
+            {infoOpen && (
+              <div className="gedcom-info" id="gedcom-info">
+                <p>{t.families.gedcomWhat}</p>
+                <p>{t.families.gedcomImports}</p>
+                <p>{t.families.gedcomCare(MAX_OWNED_FAMILIES)}</p>
+              </div>
+            )}
             <input
               ref={fileRef}
               type="file"
