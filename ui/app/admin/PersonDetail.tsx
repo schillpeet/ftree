@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import {
   getAdminAudit,
-  updateAdminUser,
   type AdminFamily,
   type AdminUser,
   type AuditPage,
@@ -13,11 +12,12 @@ import {
 } from '../../lib/api/generated/members';
 import { useLanguage, useT } from '../i18n';
 import { ChevronLeftIcon, CloseIcon, PencilIcon, TrashIcon, TreeIcon } from '../icons';
-import { endSessions, revoke, share } from './accessActions';
+import { endSessions, revoke, share, updateUser } from './accessActions';
 import ActionMenu from './ActionMenu';
 import ActivityList from './ActivityList';
 import { initialsOf } from './adminData';
 import DeleteUser from './DeleteUser';
+import DevToolsSwitch from './DevToolsSwitch';
 import { LoadError } from './OverviewTab';
 import RolePicker from './RolePicker';
 import { useAdminLoad } from './useAdminLoad';
@@ -36,8 +36,8 @@ export function Avatar({ name, state, large }: { name: string; state: AvatarStat
 type Result = { ok: boolean; problem?: keyof ReturnType<typeof useT>['admin']['problems'] };
 
 // One person in full: their trees with a role each, their global rights, what they did lately, and, set apart, signing
-// them out and deleting them. The rare changes (name, developer tools) wait in the "⋯" menu; the admin right comes only
-// from the access file.
+// them out and deleting them. Developer tools are a switch under the rights; renaming waits in the "⋯" menu. The admin
+// right comes only from the access file.
 export default function PersonDetail({
   user,
   users,
@@ -80,11 +80,8 @@ export default function PersonDetail({
 
   const update = (body: UpdateAdminUserRequest) =>
     act(async () => {
-      try {
-        return { ok: (await updateAdminUser(user.id, body)).status === 200 };
-      } catch {
-        return { ok: false };
-      }
+      const result = await updateUser(user.id, body);
+      return result.ok ? { ok: true } : { ok: false, problem: result.problem };
     });
 
   const changeRole = (familyId: string, role: TreeRole) =>
@@ -163,14 +160,7 @@ export default function PersonDetail({
         <ActionMenu
           label={t.admin.people.more}
           disabled={busy}
-          actions={[
-            { label: t.admin.people.rename, icon: <PencilIcon />, onSelect: () => setRenaming(user.customName ?? '') },
-            {
-              label: user.canCreateTrees ? t.admin.people.revokeDev : t.admin.people.allowDev,
-              hidden: user.admin,
-              onSelect: () => void update({ canCreateTrees: !user.canCreateTrees }),
-            },
-          ]}
+          actions={[{ label: t.admin.people.rename, icon: <PencilIcon />, onSelect: () => setRenaming(user.customName ?? '') }]}
         />
       </div>
       {error && (
@@ -219,8 +209,19 @@ export default function PersonDetail({
       <h3>{t.admin.people.rightsTitle}</h3>
       <div className="admin-facts">
         {user.bootstrapAdmin && <span className="admin-badge admin-badge-accent">{t.admin.people.adminByFile}</span>}
-        {user.canCreateTrees && !user.admin && <span className="admin-badge">{t.admin.people.canCreate}</span>}
         {!user.admin && !user.canCreateTrees && <span className="admin-muted">{t.admin.people.noRights}</span>}
+      </div>
+      <div className="admin-right">
+        <span className="admin-right-text">
+          <strong>{t.admin.people.devTools}</strong>
+          <span className="admin-muted">{user.admin ? t.admin.people.devToolsAdmin : t.admin.people.devToolsHint}</span>
+        </span>
+        <DevToolsSwitch
+          checked={user.admin || user.canCreateTrees}
+          disabled={busy || user.admin}
+          label={t.admin.people.devTools}
+          onChange={(next) => void update({ canCreateTrees: next })}
+        />
       </div>
       <p className="admin-muted admin-dates">
         {user.invitedAt && <span>{t.admin.people.invitedOn(date(user.invitedAt), user.invitedBy)}</span>}

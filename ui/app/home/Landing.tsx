@@ -8,6 +8,7 @@ import ThemeRoot from '../ThemeRoot';
 import BrandLink from './BrandLink';
 // Imported rather than in `public/`, so it ships under `/_next/static` with the rest of the page.
 import still from './landing.jpg';
+import HomeEvolution from './HomeEvolution';
 import SignInChip from './SignInChip';
 import { useSignedIn } from './signedIn';
 import './landing.css';
@@ -23,7 +24,10 @@ export default function Landing() {
       <ThemeRoot />
       <div className="landing-backdrop" aria-hidden="true" style={{ '--landing-still': `url(${still.src})` } as CSSProperties} />
       <header className="landing-header">
-        <BrandLink />
+        <div className="landing-brand-group">
+          <BrandLink />
+          <HomeEvolution />
+        </div>
         <nav className="glass landing-nav" aria-label={t.landing.home}>
           <Link href="/home/how">{t.landing.how}</Link>
         </nav>

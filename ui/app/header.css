@@ -18,6 +18,34 @@
   pointer-events: auto;
 }
 
+.header-lead {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* The admin badge: a quiet status chip in the accent colour, no button. */
+.header-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 10px 0 8px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.header-admin .icon {
+  width: 14px;
+  height: 14px;
+}
+
 .header-brand {
   display: flex;
   align-items: center;
@@ -115,23 +143,6 @@
   outline-offset: 2px;
 }
 
-/* Inside the menu the segment sits on a stronger panel and has to fit beside its label. */
-.dashboard-nav .segment {
-  background: transparent;
-  backdrop-filter: none;
-}
-
-.dashboard-nav .segment button {
-  padding: 6px 10px;
-}
-
-/* The theme is in the burger menu too, so the header drops it first when room runs out. */
-@media (max-width: 960px) {
-  .header-theme {
-    display: none;
-  }
-}
-
 /* Two rows: wordmark and controls above, the family name across below. */
 @media (max-width: 700px) {
   .app-header {
@@ -147,6 +158,24 @@
     display: none;
   }
 
+  .header-lead {
+    gap: 8px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .header-evolution {
+    padding: 0 10px;
+  }
+
+  /* The theme switch stays on a phone, since the menu no longer has it, so the segments tighten to leave room for the rest. */
+  .segment button {
+    padding: 6px 9px;
+    font-size: 12px;
+  }
+
   .app-header .dashboard-family {
     grid-row: 2;
     grid-column: 1 / -1;
@@ -155,5 +184,18 @@
 
   .presence-bar {
     top: 110px;
+  }
+}
+
+/* Phones: the admin badge shrinks to its check mark and the Evolution button to its icon, so brand, badges, and segments fit one row. */
+@media (max-width: 480px) {
+  .header-admin {
+    font-size: 0;
+    gap: 0;
+    padding: 0 7px;
+  }
+
+  .header-evolution .header-dev {
+    display: none;
   }
 }

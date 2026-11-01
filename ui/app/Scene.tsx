@@ -5,7 +5,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
-import { useAppearance } from './appearance';
+import { APPEARANCES, useAppearance, type Appearance } from './appearance';
 import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
 import { arrangePins, relationDistance } from './arrange';
 import { generationBounds, generations, layerPins } from './generations';
@@ -592,6 +592,7 @@ export default function Scene({
   highlight,
   selfId = null,
   evolutionOpen,
+  devTools,
   onEvolutionClose,
   onOpen,
   onPlace,
@@ -607,6 +608,8 @@ export default function Scene({
   selfId?: string | null;
   // The Evolution panel (developers only); its button sits in the header, which owns the toggle.
   evolutionOpen: boolean;
+  // Whether the viewer holds the developer tools where no `PermissionsProvider` answers `useCan` (the public example).
+  devTools?: boolean;
   onEvolutionClose: () => void;
   onOpen: (id: string) => void;
   onPlace?: (id: string, placement: Placement) => void;
@@ -619,7 +622,8 @@ export default function Scene({
   const [language] = useLanguage();
   const [appearance, setAppearance] = useAppearance();
   // Evolution: time of day, view, lines, and the legend, for developers.
-  const evolution = useCan('dev.tools');
+  const mayUseTools = useCan('dev.tools');
+  const evolution = devTools ?? mayUseTools;
   const [showLines, setShowLines] = useShowLines();
   const [highlightCoreFamily, setHighlightCoreFamily] = useHighlightCoreFamily();
   const [highlightBlood, setHighlightBlood] = useHighlightBlood();
@@ -827,6 +831,17 @@ export default function Scene({
               </fieldset>
             </section>
             <section>
+              <h2>{t.tools.viewLab}</h2>
+              <label className="debug-row">
+                <span>{t.tools.appearance}</span>
+                <select value={appearance} onChange={(event) => setAppearance(event.target.value as Appearance)}>
+                  {APPEARANCES.map((option) => (
+                    <option key={option} value={option}>{t.tools.appearances[option]}</option>
+                  ))}
+                </select>
+              </label>
+            </section>
+            <section>
               <h2>{t.tools.view}</h2>
               <ZoomScale controls={controls} />
               <div className="camera-views" role="group" aria-label={t.tools.camera}>
@@ -838,14 +853,6 @@ export default function Scene({
               </div>
               <fieldset className="organic-only" disabled={experimental}>
                 {experimental && <legend>{t.tools.disabled}</legend>}
-                <label className="debug-check">
-                  <input
-                    type="checkbox"
-                    checked={appearance === 'organicExperimental'}
-                    onChange={(event) => setAppearance(event.target.checked ? 'organicExperimental' : 'organic')}
-                  />
-                  {t.tools.tiered}
-                </label>
                 <label className="debug-check pin-toggle">
                   <input type="checkbox" checked={showPins} disabled={!organic} onChange={(event) => setShowPins(event.target.checked)} />
                   {t.tools.pins}

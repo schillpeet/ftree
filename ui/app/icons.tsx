@@ -96,12 +96,16 @@ export const EvolutionIcon = () => (
   </Icon>
 );
 
-export const PaletteIcon = () => (
+export const ExternalLinkIcon = () => (
   <Icon>
-    <path d="M12 21a9 9 0 0 1 0-18c5 0 9 3.6 9 8 0 2.2-1.9 4-4.5 4h-2.5a2 2 0 0 0-1 3.75A1.3 1.3 0 0 1 12 21z" />
-    <circle cx="7.5" cy="10.5" r="1" />
-    <circle cx="12" cy="7.5" r="1" />
-    <circle cx="16.5" cy="10.5" r="1" />
+    <path d="M14 4h6v6M20 4l-9 9" />
+    <path d="M18 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4" />
+  </Icon>
+);
+
+export const CheckIcon = () => (
+  <Icon>
+    <path d="M5 12.5l4.5 4.5L19 7.5" />
   </Icon>
 );
 
