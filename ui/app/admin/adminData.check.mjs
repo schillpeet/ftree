@@ -130,6 +130,7 @@ assert.equal(accessProblem('FORBIDDEN'), 'forbidden');
 assert.equal(accessProblem('INTERNAL_ERROR'), 'failed');
 assert.equal(accessProblem(null), 'failed');
 assert.equal(accessProblem('ACCESS_UNAVAILABLE'), 'unavailable');
+assert.equal(accessProblem('SEATS_EXHAUSTED'), 'seatsExhausted');
 
 // Deleting: INVALID_REQUEST is the caller or a file admin here, USER_OWNS_TREES names the trees to hand over.
 assert.equal(deleteProblem('INVALID_REQUEST'), 'cannotDelete');
@@ -193,6 +194,9 @@ assert.equal(inPeopleFilter(someone({ lastSeen: daysAgo(200) }), 'inactive', ['M
 assert.equal(inPeopleFilter(someone({ lastSeen: null, status: 'invited' }), 'inactive', undefined, now), false);
 assert.equal(inPeopleFilter(someone({ admin: true }), 'admins', undefined, now), true);
 assert.equal(inPeopleFilter(someone(), 'admins', undefined, now), false);
+assert.equal(inPeopleFilter(someone({ canCreateTrees: true }), 'devTools', undefined, now), true);
+assert.equal(inPeopleFilter(someone({ admin: true, canCreateTrees: false }), 'devTools', undefined, now), true);
+assert.equal(inPeopleFilter(someone({ canCreateTrees: false }), 'devTools', undefined, now), false);
 
 // Searching ignores case, accents, and spaces around the query; an empty query matches everybody.
 assert.equal(matchesSearch('  mÜller ', 'Anna Müller', 'anna@example.org'), true);

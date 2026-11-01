@@ -96,7 +96,7 @@ export function sortedPeople<T extends Pick<AdminUser, 'displayName' | 'email'>>
   return [...users].sort((a, b) => a.displayName.localeCompare(b.displayName) || a.email.localeCompare(b.email));
 }
 
-export type AccessProblem = 'lastOwner' | 'notFound' | 'invalid' | 'forbidden' | 'unavailable' | 'ownsTrees' | 'cannotDelete' | 'failed';
+export type AccessProblem = 'lastOwner' | 'notFound' | 'invalid' | 'forbidden' | 'unavailable' | 'ownsTrees' | 'cannotDelete' | 'seatsExhausted' | 'failed';
 
 // What went wrong when sharing or removing, from the problem code of the answer (null without one). The BFF has no
 // code of its own for the last owner: demoting or removing them answers `INVALID_REQUEST`, and nothing else in these
@@ -113,6 +113,8 @@ export function accessProblem(code: string | null): AccessProblem {
       return 'forbidden';
     case 'ACCESS_UNAVAILABLE':
       return 'unavailable';
+    case 'SEATS_EXHAUSTED':
+      return 'seatsExhausted';
     default:
       return 'failed';
   }
@@ -164,16 +166,16 @@ export function initialsOf(name: string): string {
   return letters.join('').toUpperCase();
 }
 
-export const PEOPLE_FILTERS = ['all', 'online', 'invited', 'inactive', 'admins'] as const;
+export const PEOPLE_FILTERS = ['all', 'online', 'invited', 'inactive', 'admins', 'devTools'] as const;
 export type PeopleFilter = (typeof PEOPLE_FILTERS)[number];
 
 // Someone counts as inactive once their last sign-in lies this long back; people who never signed in do not.
 export const INACTIVE_DAYS = 90;
 
 // Whether a person belongs under a filter chip: online with a tab open, invited and never signed in, inactive for
-// `INACTIVE_DAYS` while not online, or an admin of any kind.
+// `INACTIVE_DAYS` while not online, an admin of any kind, or holding the developer tools (admins always do).
 export function inPeopleFilter(
-  user: Pick<AdminUser, 'admin' | 'status' | 'lastSeen'>,
+  user: Pick<AdminUser, 'admin' | 'canCreateTrees' | 'status' | 'lastSeen'>,
   filter: PeopleFilter,
   online: readonly string[] | undefined,
   now: number,
@@ -189,6 +191,8 @@ export function inPeopleFilter(
       return !online?.length && !!user.lastSeen && now - Date.parse(user.lastSeen) >= INACTIVE_DAYS * DAY;
     case 'admins':
       return user.admin;
+    case 'devTools':
+      return user.admin || user.canCreateTrees;
   }
 }
 
