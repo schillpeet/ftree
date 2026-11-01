@@ -22,19 +22,19 @@
   gap: 10px;
   min-width: 0;
   padding: 0 10px 0 14px;
-  border-radius: 12px 0 0 12px;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
 }
 
 .tree-switcher-toggle {
   flex: none;
   padding: 0 12px 0 10px;
-  border-left: 1px solid var(--glass-border);
-  border-radius: 0 12px 12px 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
 }
 
 .tree-switcher-name:hover,
 .tree-switcher-toggle:hover {
-  background: rgba(30, 40, 54, 0.8);
+  background: var(--hover);
 }
 
 .tree-switcher-toggle svg {
@@ -62,9 +62,9 @@
   overflow-y: auto;
   box-sizing: border-box;
   padding: 6px;
-  border: 1px solid var(--glass-border);
-  border-radius: 12px;
-  background: rgba(24, 32, 43, 0.94);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-menu);
+  background: var(--panel-strong);
   box-shadow: 0 10px 34px rgba(0, 0, 0, 0.32);
   transform: translateX(-50%);
 }
@@ -72,20 +72,20 @@
 .tree-switcher-item {
   padding: 10px 12px;
   border-radius: 8px;
-  color: #fff;
-  font: 600 14px/1.2 Arial, sans-serif;
+  color: var(--text);
+  font: 600 14px/1.2 var(--font-ui);
   text-decoration: none;
   white-space: nowrap;
 }
 
 .tree-switcher-item:hover,
 .tree-switcher-item:focus-visible {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--hover);
   outline: none;
 }
 
 .tree-switcher-item[aria-current='page'] {
-  box-shadow: inset 3px 0 0 var(--glass-accent);
+  box-shadow: inset 3px 0 0 var(--accent);
 }
 
 .tree-not-found,

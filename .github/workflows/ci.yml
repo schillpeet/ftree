@@ -125,6 +125,7 @@ jobs:
       - run: node app/panelPosition.check.mjs
       - run: node app/simpleLayout.check.mjs
       - run: node app/access.check.mjs
+      - run: node app/tokens.check.mjs
       - run: node app/slugRoute.check.mjs
       - run: node app/conflict.check.mjs
       - run: node app/share.check.mjs

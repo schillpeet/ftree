@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
@@ -22,7 +22,7 @@ import { tieredPlan } from './tieredLayout';
 import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onStorage, useLanguage, useT } from './i18n';
 import { useCan } from './Permissions';
-import { EvolutionIcon, LanguageIcon, SunIcon } from './icons';
+import type { CameraView } from './Dock';
 import Tree, { buildTree } from './Tree';
 
 // Sky colors (hemisphere sky, ground, haze) at night, with the sun low, and with the sun high.
@@ -554,22 +554,30 @@ export default function Scene({
   members,
   focus,
   highlight,
+  evolutionOpen,
+  onEvolutionClose,
   onOpen,
   onPlace,
+  cameraView,
 }: {
   familyId: string | null;
   members: Member[];
   focus: Focus;
   // The person whose panel is open, whose lines to their relatives can stand out.
   highlight: string | null;
+  // The Evolution panel (developers only); its button sits in the header, which owns the toggle.
+  evolutionOpen: boolean;
+  onEvolutionClose: () => void;
   onOpen: (id: string) => void;
   onPlace?: (id: string, placement: Placement) => void;
+  // The dock's "Ansicht": each new `nonce` moves the camera to the view (orbit toggles the flight).
+  cameraView?: { view: CameraView; nonce: number } | null;
 }) {
   const t = useT();
-  const [language, setLanguage] = useLanguage();
-  const [appearance] = useAppearance();
-  // Evolution: view, lines, and the legend, for every role.
-  const evolution = useCan('tree.appearance');
+  const [language] = useLanguage();
+  const [appearance, setAppearance] = useAppearance();
+  // Evolution: time of day, view, lines, and the legend, for developers.
+  const evolution = useCan('dev.tools');
   const [showLines, setShowLines] = useShowLines();
   const [highlightCoreFamily, setHighlightCoreFamily] = useHighlightCoreFamily();
   const [highlightBlood, setHighlightBlood] = useHighlightBlood();
@@ -599,20 +607,27 @@ export default function Scene({
     setOrbit(false);
     void controls?.setLookAt(Math.cos(VIEW_FRONT) * 0.01, TREE_BASE + TOP_HEIGHT, Math.sin(VIEW_FRONT) * 0.01, 0, TREE_BASE, 0, true);
   };
-  const [openTool, setOpenTool] = useState<'time' | 'evolution' | null>(null);
-  const toggleTool = (tool: 'time' | 'evolution') => setOpenTool((open) => (open === tool ? null : tool));
-  const actionsRef = useRef<HTMLDivElement>(null);
-  const toolRef = useRef<HTMLElement>(null);
-
-  // A press outside the buttons and the open tool closes it, like the burger menu.
+  const panelRef = useRef<HTMLElement>(null);
+  const showCameraView = useEffectEvent((view: CameraView) => {
+    if (view === 'front') lookFront();
+    else if (view === 'above') lookFromAbove();
+    else setOrbit((on) => !on);
+  });
   useEffect(() => {
-    if (!openTool) return;
+    // The dock's click is an external event; the effect only forwards it to the camera (and the orbit flag).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (cameraView) showCameraView(cameraView.view);
+  }, [cameraView]);
+
+  // A press outside the panel (and not on the header's button, which toggles it) or an Escape closes it, like the burger menu.
+  useEffect(() => {
+    if (!evolutionOpen) return;
     function closeOnOutsidePress(event: globalThis.PointerEvent) {
-      const target = event.target as Node;
-      if (!actionsRef.current?.contains(target) && !toolRef.current?.contains(target)) setOpenTool(null);
+      const target = event.target as Element;
+      if (!panelRef.current?.contains(target) && !target.closest?.('.header-evolution')) onEvolutionClose();
     }
     function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') setOpenTool(null);
+      if (event.key === 'Escape') onEvolutionClose();
     }
     document.addEventListener('pointerdown', closeOnOutsidePress);
     document.addEventListener('keydown', closeOnEscape);
@@ -620,7 +635,7 @@ export default function Scene({
       document.removeEventListener('pointerdown', closeOnOutsidePress);
       document.removeEventListener('keydown', closeOnEscape);
     };
-  }, [openTool]);
+  }, [evolutionOpen, onEvolutionClose]);
   const [now, setNow] = useState(() => new Date());
   const [location, setLocation] = useState(fallbackLocation);
   // Minutes after midnight shown by the debug clock, or null for the real time.
@@ -726,65 +741,27 @@ export default function Scene({
         />
         {orbit && controls && <Orbit controls={controls} onStop={stopOrbit} />}
       </Canvas>
-      <div className="dashboard-actions" role="group" aria-label={t.tools.label} ref={actionsRef}>
-        <button
-          className="glass glass-button"
-          type="button"
-          aria-expanded={openTool === 'time'}
-          aria-controls="time-panel"
-          disabled={experimental}
-          title={experimental ? t.tools.disabled : undefined}
-          onClick={() => toggleTool('time')}
-        >
-          <SunIcon />
-          {t.tools.time}
-        </button>
-        <button
-          className="glass glass-button"
-          type="button"
-          aria-label={t.language.switch}
-          onClick={() => setLanguage(language === 'en' ? 'de' : 'en')}
-        >
-          <LanguageIcon />
-          {t.language.short}
-        </button>
-        {evolution && (
-          <button
-            className="glass glass-button"
-            type="button"
-            aria-expanded={openTool === 'evolution'}
-            aria-controls="evolution-panel"
-            onClick={() => toggleTool('evolution')}
-          >
-            <EvolutionIcon />
-            {t.tools.evolution}
-          </button>
-        )}
-      </div>
       {experimental && showLegend && <RelationLegend onClose={() => setShowLegend(false)} />}
-      {openTool === 'time' && !experimental && (
-        <section className="glass debug-panel" id="time-panel" aria-label={t.tools.clock} ref={toolRef}>
+      {evolutionOpen && evolution && (
+        <section className="glass debug-panel" id="evolution-panel" aria-label={t.tools.evolution} ref={panelRef}>
           <div className="debug-panel-body">
             <section>
-              <h2>{t.tools.dayTime}</h2>
-              <label className="debug-check">
-                <input
-                  type="checkbox"
-                  checked={clock != null}
-                  onChange={(event) =>
-                    setClock(event.target.checked ? Math.round((now.getHours() * 60 + now.getMinutes()) / 5) * 5 % MINUTES_PER_DAY : null)
-                  }
-                />
-                {t.tools.previewTime}
-              </label>
-              {clock != null && <DebugClock minutes={clock} onMinutes={setClock} />}
+              <h2>{t.tools.time}</h2>
+              <fieldset className="organic-only" disabled={experimental}>
+                {experimental && <legend>{t.tools.disabled}</legend>}
+                <label className="debug-check">
+                  <input
+                    type="checkbox"
+                    checked={clock != null}
+                    onChange={(event) =>
+                      setClock(event.target.checked ? Math.round((now.getHours() * 60 + now.getMinutes()) / 5) * 5 % MINUTES_PER_DAY : null)
+                    }
+                  />
+                  {t.tools.previewTime}
+                </label>
+                {clock != null && <DebugClock minutes={clock} onMinutes={setClock} />}
+              </fieldset>
             </section>
-          </div>
-        </section>
-      )}
-      {openTool === 'evolution' && evolution && (
-        <section className="glass debug-panel" id="evolution-panel" aria-label={t.tools.evolution} ref={toolRef}>
-          <div className="debug-panel-body">
             <section>
               <h2>{t.tools.view}</h2>
               <ZoomScale controls={controls} />
@@ -797,6 +774,14 @@ export default function Scene({
               </div>
               <fieldset className="organic-only" disabled={experimental}>
                 {experimental && <legend>{t.tools.disabled}</legend>}
+                <label className="debug-check">
+                  <input
+                    type="checkbox"
+                    checked={appearance === 'organicExperimental'}
+                    onChange={(event) => setAppearance(event.target.checked ? 'organicExperimental' : 'organic')}
+                  />
+                  {t.tools.tiered}
+                </label>
                 <label className="debug-check pin-toggle">
                   <input type="checkbox" checked={showPins} disabled={!organic} onChange={(event) => setShowPins(event.target.checked)} />
                   {t.tools.pins}

@@ -1,7 +1,7 @@
 // Run with `node app/access.check.mjs`: permission checks, the appearance fallback without `tree.appearance`,
 // and which API answers count as a sign-in or permission problem.
 import assert from 'node:assert/strict';
-import { hostOf, APPEARANCES, MAX_OWNED_FAMILIES, atFamilyLimit, PUBLIC_APPEARANCE, allowedAppearance, authProblemOf, can, failedCallNeedsProbe, signedOutByProbe } from './access.ts';
+import { hostOf, APPEARANCES, MAX_OWNED_FAMILIES, atFamilyLimit, PUBLIC_APPEARANCE, allowedAppearance, themeOf, authProblemOf, can, failedCallNeedsProbe, signedOutByProbe } from './access.ts';
 
 const me = { email: 'x@example.org', admin: false, canCreateTrees: false, permissions: ['tree.appearance'], verified: true };
 const visited = { role: 'visitor', permissions: ['tree.view'] };
@@ -37,6 +37,13 @@ assert.equal(allowedAppearance(null, true), 'organic');
 assert.equal(allowedAppearance('junk', true), 'organic');
 // While `/me` loads, the stored choice stays, so the tree does not switch.
 assert.equal(allowedAppearance('organicExperimental', null), 'organicExperimental');
+
+// The theme follows the appearance: both organic ones are 3D, the experimental one is TRON.
+assert.equal(themeOf('organic'), '3d');
+assert.equal(themeOf('organicExperimental'), '3d');
+assert.equal(themeOf('experimental'), 'tron');
+// Without `tree.appearance` the forced appearance decides the theme.
+assert.equal(themeOf(allowedAppearance('organic', false)), 'tron');
 
 // Only this app's own API answers count, by their problem code.
 const origin = 'https://ftree.example.org';

@@ -22,7 +22,7 @@
 
 .conflict-dialog p {
   margin: 0;
-  color: var(--glass-muted);
+  color: var(--muted);
   line-height: 1.45;
 }
 
@@ -35,7 +35,7 @@
 
 .conflict-actions button {
   padding: 8px 14px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid var(--border);
   border-radius: 8px;
   background: transparent;
   color: inherit;
@@ -44,14 +44,14 @@
 }
 
 .conflict-actions button:hover:not(:disabled) {
-  background: var(--glass-hover);
+  background: var(--hover);
 }
 
 .conflict-actions .conflict-reload {
-  border-color: var(--glass-accent);
-  color: var(--glass-accent);
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .conflict-actions .conflict-overwrite {
-  color: var(--glass-danger);
+  color: var(--danger);
 }

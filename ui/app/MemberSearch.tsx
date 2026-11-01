@@ -8,13 +8,20 @@ import { memberLabel, searchMembers } from './nameSearch';
 
 type Props = {
   members: Member[];
+  // Opened and closed from outside (the dock's "Suchen"); the search closes itself by calling `onClose`.
+  open: boolean;
+  onClose: () => void;
   onSelect: (id: string) => void;
 };
 
-// A glass square next to the burger menu that widens to a search field with autocomplete.
-export default function MemberSearch({ members, onSelect }: Props) {
+// A glass search field with autocomplete, shown above the dock while open. The field is unmounted while closed, so
+// every opening starts with an empty query.
+export default function MemberSearch({ open, ...props }: Props) {
+  return open ? <SearchField {...props} /> : null;
+}
+
+function SearchField({ members, onClose, onSelect }: Omit<Props, 'open'>) {
   const t = useT();
-  const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -25,23 +32,25 @@ export default function MemberSearch({ members, onSelect }: Props) {
   const activeIndex = Math.min(active, Math.max(results.length - 1, 0));
 
   function close() {
-    setIsOpen(false);
     setQuery('');
     setActive(0);
+    onClose();
   }
 
   useEffect(() => {
-    if (isOpen) inputRef.current?.focus();
-  }, [isOpen]);
+    inputRef.current?.focus();
+  }, []);
 
   useEffect(() => {
-    if (!isOpen) return;
     const onPointerDown = (event: PointerEvent) => {
-      if (!rootRef.current?.contains(event.target as Node)) close();
+      const target = event.target as Element;
+      // The dock's own buttons decide (its "Suchen" toggles), so a press there is not an outside press.
+      if (!rootRef.current?.contains(target) && !target.closest('[data-dock]')) close();
     };
     document.addEventListener('pointerdown', onPointerDown);
     return () => document.removeEventListener('pointerdown', onPointerDown);
-  }, [isOpen]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `close` only resets state and calls the current `onClose`.
+  }, []);
 
   function choose(member: Member) {
     close();
@@ -63,12 +72,11 @@ export default function MemberSearch({ members, onSelect }: Props) {
     }
   }
 
-  const showList = isOpen && query.trim() !== '';
+  const showList = query.trim() !== '';
 
   return (
-    <div className="member-search" data-open={isOpen} ref={rootRef}>
-      {isOpen ? (
-        <div className="glass member-search-field">
+    <div className="member-search" data-open="true" ref={rootRef}>
+      <div className="glass member-search-field">
           <SearchIcon />
           <input
             ref={inputRef}
@@ -88,17 +96,7 @@ export default function MemberSearch({ members, onSelect }: Props) {
             }}
             onKeyDown={onKeyDown}
           />
-        </div>
-      ) : (
-        <button
-          className="glass glass-button glass-icon"
-          type="button"
-          aria-label={t.search.open}
-          onClick={() => setIsOpen(true)}
-        >
-          <SearchIcon />
-        </button>
-      )}
+      </div>
       {showList && (
         <ul className="glass member-search-list" id={listId} role="listbox" aria-label={t.search.label}>
           {results.length === 0 ? (

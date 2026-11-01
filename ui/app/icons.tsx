@@ -112,6 +112,12 @@ export const CameraIcon = () => (
   </Icon>
 );
 
+export const LogoutIcon = () => (
+  <Icon>
+    <path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" />
+  </Icon>
+);
+
 export const EyeIcon = () => (
   <Icon>
     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
@@ -234,4 +240,41 @@ export const ShareIcon = () => (
     <circle cx="18" cy="19" r="3" />
     <path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" />
   </Icon>
+);
+
+// The dock's icons are drawn on a 20px grid, like the design prototype.
+function DockIcon({ children, strokeWidth = 1.8 }: { children: ReactNode; strokeWidth?: number }) {
+  return (
+    <svg className="icon dock-icon" viewBox="0 0 20 20" strokeWidth={strokeWidth} aria-hidden="true">
+      {children}
+    </svg>
+  );
+}
+
+export const DockPlusIcon = () => (
+  <DockIcon strokeWidth={2}>
+    <path d="M10 4v12M4 10h12" />
+  </DockIcon>
+);
+
+export const DockSearchIcon = () => (
+  <DockIcon>
+    <circle cx="9" cy="9" r="5.5" />
+    <path d="M13.5 13.5l3.5 3.5" />
+  </DockIcon>
+);
+
+export const DockInviteIcon = () => (
+  <DockIcon>
+    <circle cx="7.5" cy="7" r="3" />
+    <path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" />
+    <path d="M15.5 6v6M12.5 9h6" />
+  </DockIcon>
+);
+
+export const DockViewIcon = () => (
+  <DockIcon>
+    <path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" />
+    <circle cx="10" cy="10" r="2.2" />
+  </DockIcon>
 );
