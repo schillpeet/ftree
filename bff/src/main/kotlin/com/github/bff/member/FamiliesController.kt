@@ -1,5 +1,7 @@
 package com.github.bff.member
 
+import com.github.bff.auth.CurrentUser
+import com.github.bff.auth.SelfMembers
 import com.github.bff.generated.api.FamiliesApi
 import com.github.bff.generated.model.AnonymizeFamilyRequest
 import com.github.bff.generated.model.ArchiveFamilyRequest
@@ -11,6 +13,7 @@ import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.RenameFamilyRequest
 import com.github.bff.generated.model.ReorderFamiliesRequest
 import com.github.bff.generated.model.SetFamilyPhotoFitRequest
+import com.github.bff.generated.model.SetSelfMemberRequest
 import com.github.bff.problem.ApiProblem
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.io.ByteArrayResource
@@ -30,6 +33,7 @@ class FamiliesController(
     private val familyService: FamilyService,
     private val familyVisibility: FamilyVisibility,
     private val trash: TrashService,
+    private val selfMembers: SelfMembers,
     // Request-scoped proxy; the generated interface does not pass the body's Content-Type.
     private val request: HttpServletRequest,
 ) : FamiliesApi {
@@ -111,6 +115,22 @@ class FamiliesController(
 
     override fun setFamilyPhotoFit(familyId: UUID, setFamilyPhotoFitRequest: SetFamilyPhotoFitRequest): ResponseEntity<FamilySummary> =
         familyService.setPhotoFit(familyId, setFamilyPhotoFitRequest.photoFit)?.let { ResponseEntity.ok(familyVisibility.withCallerRole(it)) } ?: throw ApiProblem(ProblemCode.NOT_FOUND)
+
+    // The caller's own member in the tree: SecurityConfiguration needs member.edit to set it and only tree.view to clear it.
+    override fun setSelfMember(familyId: UUID, setSelfMemberRequest: SetSelfMemberRequest): ResponseEntity<FamilySummary> {
+        val email = caller()
+        selfMembers.link(familyId, email, setSelfMemberRequest.memberId, email)
+        val summary = familyService.find(familyId) ?: throw ApiProblem(ProblemCode.NOT_FOUND)
+        return ResponseEntity.ok(familyVisibility.withCallerRole(summary))
+    }
+
+    override fun clearSelfMember(familyId: UUID): ResponseEntity<Void> {
+        val email = caller()
+        selfMembers.unlink(familyId, email, email)
+        return ResponseEntity.noContent().build()
+    }
+
+    private fun caller() = CurrentUser.current()?.email ?: throw ApiProblem(ProblemCode.UNAUTHENTICATED)
 
     override fun renameFamily(familyId: UUID, renameFamilyRequest: RenameFamilyRequest): ResponseEntity<FamilySummary> =
         when (val result = familyService.rename(familyId, renameFamilyRequest)) {

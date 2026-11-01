@@ -8,6 +8,7 @@ import com.github.bff.auth.AuditLog
 import com.github.bff.auth.MembershipService
 import com.github.bff.auth.Memberships
 import com.github.bff.auth.Role
+import com.github.bff.auth.SelfMembers
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.TreeRole
 import com.github.bff.generated.model.UpdateAdminUserRequest
@@ -49,8 +50,11 @@ class SeatLimitTest {
     @Autowired
     private lateinit var jdbc: JdbcTemplate
 
+    @Autowired
+    private lateinit var selfMembers: SelfMembers
+
     private val noSeats by lazy { AccessSeats(jdbc, accessPolicy, memberships, AccessSyncProperties(seatLimit = 0)) }
-    private val trees by lazy { TreeAccessService(jdbc, membershipService, auditLog, noSeats, "http://localhost:3000") }
+    private val trees by lazy { TreeAccessService(jdbc, membershipService, auditLog, noSeats, "http://localhost:3000", selfMembers) }
     private val people by lazy { PeopleService(jdbc, accessPolicy, auditLog, accessEvents, noSeats, NoopAccessGateway) }
 
     private fun assertSeatsExhausted(block: () -> Unit) =

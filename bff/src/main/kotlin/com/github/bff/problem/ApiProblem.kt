@@ -23,7 +23,7 @@ val ProblemCode.status: HttpStatus
         ProblemCode.FORBIDDEN -> HttpStatus.FORBIDDEN
         ProblemCode.NOT_FOUND -> HttpStatus.NOT_FOUND
         ProblemCode.METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED
-        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT, ProblemCode.SEATS_EXHAUSTED, ProblemCode.USER_OWNS_TREES,
+        ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT, ProblemCode.SEATS_EXHAUSTED, ProblemCode.MEMBER_TAKEN, ProblemCode.USER_OWNS_TREES,
         ProblemCode.TREE_LIMIT_REACHED, ProblemCode.MEMBER_LIMIT_REACHED -> HttpStatus.CONFLICT
         ProblemCode.PHOTO_TOO_LARGE -> HttpStatus.CONTENT_TOO_LARGE
         ProblemCode.UNSUPPORTED_MEDIA_TYPE -> HttpStatus.UNSUPPORTED_MEDIA_TYPE
@@ -44,6 +44,7 @@ private val ProblemCode.detail: String
         ProblemCode.PIN_TAKEN -> "Another member is already pinned to this place."
         ProblemCode.EDIT_CONFLICT -> "Someone else changed this member in the meantime; reload it and save again."
         ProblemCode.SEATS_EXHAUSTED -> "Every Cloudflare Access seat is taken; remove someone's access before inviting someone new."
+        ProblemCode.MEMBER_TAKEN -> "Someone else is already linked to this member of the tree."
         ProblemCode.USER_OWNS_TREES -> "The person is the only owner of trees; hand them over before deleting the person."
         ProblemCode.TREE_LIMIT_REACHED -> "You already own $MAX_OWNED_TREES trees; delete one before creating another."
         ProblemCode.MEMBER_LIMIT_REACHED -> "A tree holds at most $MAX_MEMBERS_PER_FAMILY people."

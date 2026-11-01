@@ -8,6 +8,8 @@ import com.github.bff.generated.model.ProblemCode
 import com.github.bff.generated.model.TreeRole
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
+import com.github.bff.member.MemberEntity
+import com.github.bff.member.MemberRepository
 import com.github.bff.problem.ApiProblem
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -33,6 +35,9 @@ class TreeAccessServiceTest {
 
     @Autowired
     private lateinit var familyRepository: FamilyRepository
+
+    @Autowired
+    private lateinit var memberRepository: MemberRepository
 
     @Autowired
     private lateinit var jdbc: JdbcTemplate
@@ -156,6 +161,47 @@ class TreeAccessServiceTest {
         assertTrue(audit[0].startsWith("membership.granted $OWNER") && GUEST in audit[0], audit[0])
         assertTrue(audit[1].startsWith("membership.changed $OWNER") && """"role": "editor"""" in audit[1], audit[1])
         assertTrue(audit[2].startsWith("membership.revoked $OWNER") && GUEST in audit[2], audit[2])
+    }
+
+    private fun member(family: UUID, firstName: String): UUID =
+        memberRepository.saveAndFlush(MemberEntity(firstName = firstName, lastName = "Access", family = familyRepository.getReferenceById(family))).id
+
+    private fun linkOf(email: String): UUID? =
+        jdbc.query(
+            "SELECT member_id FROM family_memberships WHERE family_id = ? AND email = ?",
+            { rs, _ -> rs.getObject(1, UUID::class.java) }, tree, email,
+        ).singleOrNull()
+
+    @Test
+    fun `sharing may name the member the person is, and sharing again without one keeps it`() {
+        val ada = member(tree, "Ada")
+        val bert = member(tree, "Bert")
+
+        val invitation = service.share(tree, GUEST, TreeRole.VISITOR, OWNER, null, ada)
+        assertEquals(ada, invitation.access.memberId)
+        assertEquals(ada, linkOf(GUEST))
+        service.share(tree, GUEST, TreeRole.EDITOR, OWNER, null)
+        assertEquals(ada, linkOf(GUEST))
+        service.share(tree, GUEST, TreeRole.EDITOR, OWNER, null, bert)
+        assertEquals(bert, linkOf(GUEST))
+
+        assertEquals(listOf(null, bert), service.list(tree).map { it.memberId })
+        assertTrue(audit().any { it.startsWith("membership.member.linked $OWNER") && GUEST in it && bert.toString() in it }, "${audit()}")
+    }
+
+    @Test
+    fun `a member taken by someone else or outside the tree changes nothing`() {
+        val ada = member(tree, "Ada")
+        service.share(tree, SECOND, TreeRole.EDITOR, OWNER, null, ada)
+        val other = familyRepository.saveAndFlush(FamilyEntity(name = "Access stranger $RUN", slug = "access-stranger-$RUN")).id
+        val stranger = member(other, "Clara")
+
+        assertProblem(ProblemCode.MEMBER_TAKEN) { service.share(tree, GUEST, TreeRole.VISITOR, OWNER, null, ada) }
+        assertProblem(ProblemCode.NOT_FOUND) { service.share(tree, GUEST, TreeRole.VISITOR, OWNER, null, stranger) }
+        assertProblem(ProblemCode.NOT_FOUND) { service.share(tree, GUEST, TreeRole.VISITOR, OWNER, null, UUID.randomUUID()) }
+
+        assertEquals(mapOf(OWNER to "owner", SECOND to "editor"), roles())
+        assertEquals(ada, linkOf(SECOND))
     }
 
     companion object {

@@ -31,7 +31,7 @@ class AccessController(
     override fun getTreeAccess(familyId: UUID): ResponseEntity<List<TreeAccessEntry>> = ResponseEntity.ok(trees.list(familyId))
 
     override fun shareTree(familyId: UUID, shareTreeRequest: ShareTreeRequest, acceptLanguage: String?): ResponseEntity<TreeInvitation> =
-        ResponseEntity.ok(trees.share(familyId, shareTreeRequest.email, shareTreeRequest.role, actor(), acceptLanguage))
+        ResponseEntity.ok(trees.share(familyId, shareTreeRequest.email, shareTreeRequest.role, actor(), acceptLanguage, shareTreeRequest.memberId))
 
     override fun revokeTreeAccess(familyId: UUID, userId: UUID): ResponseEntity<Void> {
         trees.revoke(familyId, userId, actor())

@@ -1328,6 +1328,82 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  /families/{familyId}/self:
+    parameters:
+      - name: familyId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    put:
+      operationId: setSelfMember
+      tags:
+        - Families
+      summary: Say which member of the tree you are
+      description: >-
+        Links the caller to a member of the tree, replacing a link the caller had there; the answer's `selfMemberId` names it.
+        A person is at most one member per tree and a member at most one person, so a member linked to someone else answers 409 `MEMBER_TAKEN` without naming them.
+        The link belongs to the caller's membership: an admin without a membership in the tree answers 400 `INVALID_REQUEST`.
+        Needs `member.edit` in the tree; deleting the member, removing the membership, or moving the member into another family removes the link.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetSelfMemberRequest"
+      responses:
+        "200":
+          description: The family with the caller's new `selfMemberId`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FamilySummary"
+        "400":
+          description: The body breaks the schema (`VALIDATION_FAILED`), or the caller has no membership in the tree (`INVALID_REQUEST`).
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "404":
+          description: Family not found, or the member is not in it. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "409":
+          description: Someone else is already linked to this member. Code `MEMBER_TAKEN`; nothing was changed.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      operationId: clearSelfMember
+      tags:
+        - Families
+      summary: Say that you are no member of the tree ("Nicht ich")
+      description: Removes the caller's link to a member of the tree, if there is one. Needs only `tree.view`, so everyone who sees the tree can undo a wrong link.
+      responses:
+        "204":
+          description: The caller is linked to no member of the tree.
+        "404":
+          description: Family not found. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /families/{familyId}/presence:
     parameters:
       - name: familyId
@@ -1418,6 +1494,8 @@ paths:
         Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have.
         Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`.
         Demoting the last owner answers 400 `INVALID_REQUEST`; someone new while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`.
+        With `memberId` the person is also linked to that member of the tree, as if they had said so themselves (see `PUT /families/{familyId}/self`); without it a link they have stays.
+        A member outside the tree answers 404 `NOT_FOUND`, one linked to someone else 409 `MEMBER_TAKEN`; then nothing is changed.
         Needs `family.share`; every change is written to the audit log.
       parameters:
         - name: Accept-Language
@@ -1447,13 +1525,14 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
         "404":
-          description: Family not found. Code `NOT_FOUND`.
+          description: Family not found, or `memberId` names no member of it. Code `NOT_FOUND`.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
         "409":
-          description: Every Cloudflare Access seat is taken, so nobody new can get access. Code `SEATS_EXHAUSTED`; nothing was changed.
+          description: >-
+            Every Cloudflare Access seat is taken, so nobody new can get access (`SEATS_EXHAUSTED`), or someone else is already linked to `memberId` (`MEMBER_TAKEN`); nothing was changed.
           content:
             application/problem+json:
               schema:
@@ -1872,6 +1951,7 @@ components:
         - `PIN_TAKEN` (409): another member is already pinned to this place.
         - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
         - `SEATS_EXHAUSTED` (409): every Cloudflare Access seat is taken, so nobody new can be given access.
+        - `MEMBER_TAKEN` (409): someone else is already linked to this member of the tree.
         - `USER_OWNS_TREES` (409): the person is the only owner of trees, which need a new owner before the person can be deleted.
         - `TREE_LIMIT_REACHED` (409): the caller already owns the most trees a non-admin may own (5, trash excluded).
         - `MEMBER_LIMIT_REACHED` (409): the tree would hold more than 100 people.
@@ -1890,6 +1970,7 @@ components:
         - PIN_TAKEN
         - EDIT_CONFLICT
         - SEATS_EXHAUSTED
+        - MEMBER_TAKEN
         - USER_OWNS_TREES
         - TREE_LIMIT_REACHED
         - MEMBER_LIMIT_REACHED
@@ -2378,6 +2459,7 @@ components:
         - photoFit
         - role
         - permissions
+        - selfMemberId
       properties:
         id:
           type: string
@@ -2422,6 +2504,23 @@ components:
           readOnly: true
           items:
             $ref: "#/components/schemas/Permission"
+        selfMemberId:
+          description: >-
+            The member of this family the caller is, set with `PUT /families/{familyId}/self` or by whoever shared the tree with them;
+            null when the caller is linked to no member, for example an admin without a membership in the tree.
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+    SetSelfMemberRequest:
+      type: object
+      required:
+        - memberId
+      properties:
+        memberId:
+          type: string
+          format: uuid
+          description: The member of the tree the caller is.
     PhotoFit:
       description: >-
         "cover" fills the family card's title area; "original" shows the photo at its natural size,
@@ -3017,6 +3116,7 @@ components:
         - status
         - grantedAt
         - lastSeen
+        - memberId
       properties:
         userId:
           type: string
@@ -3039,6 +3139,11 @@ components:
           format: date-time
           nullable: true
           description: The latest recorded sign-in, accurate to a few minutes; null until the person signs in.
+        memberId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The member of the tree this person is; null while they are linked to none.
     ShareTreeRequest:
       type: object
       required:
@@ -3053,6 +3158,11 @@ components:
           description: The email the person signs in with; trimmed and lowercased.
         role:
           $ref: "#/components/schemas/TreeRole"
+        memberId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The member of the tree the person is; when absent or null, a link they have stays as it is.
     TreeInvitation:
       type: object
       required:
