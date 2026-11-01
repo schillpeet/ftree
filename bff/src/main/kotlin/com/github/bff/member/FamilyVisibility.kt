@@ -4,6 +4,7 @@ import com.github.bff.auth.AccessPolicy
 import com.github.bff.auth.CurrentUser
 import com.github.bff.auth.Permission
 import com.github.bff.auth.Role
+import com.github.bff.auth.SelfMembers
 import com.github.bff.generated.model.FamilySummary
 import com.github.bff.generated.model.ProblemCode
 import com.github.bff.problem.ApiProblem
@@ -21,7 +22,11 @@ import com.github.bff.generated.model.Role as ApiRole
 // of their membership in the database, and only owners reach test families. Every other family looks as if it did not
 // exist.
 @Component
-class FamilyVisibility(private val familyRepository: FamilyRepository, private val accessPolicy: AccessPolicy) {
+class FamilyVisibility(
+    private val familyRepository: FamilyRepository,
+    private val accessPolicy: AccessPolicy,
+    private val selfMembers: SelfMembers,
+) {
     fun roleIn(familyId: UUID, user: CurrentUser? = CurrentUser.current()): Role? {
         user ?: return null
         val family = familyRepository.findById(familyId).orElse(null) ?: return null
@@ -36,12 +41,13 @@ class FamilyVisibility(private val familyRepository: FamilyRepository, private v
     fun allows(user: CurrentUser, familyId: UUID, permission: Permission): Boolean =
         roleIn(familyId, user)?.let { permission in it.permissions } ?: true
 
-    // The visible families, each with the user's role and permissions in it.
+    // The visible families, each with the user's role and permissions in it and the member they are.
     fun visible(families: List<FamilySummary>): List<FamilySummary> {
         val user = CurrentUser.current() ?: return emptyList()
         val entities = familyRepository.findAllById(families.map { it.id }).associateBy { it.id }
+        val self = selfMembers.of(user.email)
         return families.mapNotNull { family ->
-            entities[family.id]?.let { roleIn(it, user) }?.let { family.withRole(it) }
+            entities[family.id]?.let { roleIn(it, user) }?.let { family.withRole(it, self[family.id]) }
         }
     }
 
@@ -49,7 +55,7 @@ class FamilyVisibility(private val familyRepository: FamilyRepository, private v
     // owner membership of a family created in this request is newer than the user's access.
     fun withCallerRole(family: FamilySummary): FamilySummary {
         val user = CurrentUser.current()?.let { it.copy(access = accessPolicy.accessOf(it.email, it.adminSession)) }
-        return family.withRole(roleIn(family.id, user) ?: Role.VISITOR)
+        return family.withRole(roleIn(family.id, user) ?: Role.VISITOR, user?.let { selfMembers.of(it.email)[family.id] })
     }
 
     private fun roleIn(family: FamilyEntity, user: CurrentUser): Role? {
@@ -61,9 +67,10 @@ class FamilyVisibility(private val familyRepository: FamilyRepository, private v
         return role?.takeIf { family.totalUsers == null || it == Role.OWNER }
     }
 
-    private fun FamilySummary.withRole(role: Role) = apply {
+    private fun FamilySummary.withRole(role: Role, selfMemberId: UUID?) = apply {
         this.role = ApiRole.fromValue(role.name.lowercase())
         permissions = Permission.entries.filter { it in role.permissions }.map { ApiPermission.fromValue(it.key) }
+        this.selfMemberId = selfMemberId
     }
 }
 

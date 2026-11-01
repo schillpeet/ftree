@@ -3,6 +3,7 @@ package com.github.bff.access
 import com.github.bff.auth.AuditLog
 import com.github.bff.auth.MembershipService
 import com.github.bff.auth.Role
+import com.github.bff.auth.SelfMembers
 import com.github.bff.auth.access.AccessSeats
 import com.github.bff.auth.normalizedEmail
 import com.github.bff.generated.model.AccessStatus
@@ -30,17 +31,21 @@ class TreeAccessService(
     private val seats: AccessSeats,
     @Value("\${app.public-url:http://localhost:3000}")
     private val publicUrl: String,
+    private val selfMembers: SelfMembers,
 ) {
     // Owners first, then by name.
     fun list(familyId: UUID): List<TreeAccessEntry> = entries(familyId, null)
 
-    // Invites the person or changes their role, and returns the text to send them. Someone new needs a free seat.
+    // Invites the person or changes their role, and returns the text to send them. Someone new needs a free seat. With
+    // memberId the person is also linked to that member; it is checked first, so a refused link changes nothing.
     @Transactional
-    fun share(familyId: UUID, email: String, role: TreeRole, actor: String, language: String?): TreeInvitation {
+    fun share(familyId: UUID, email: String, role: TreeRole, actor: String, language: String?, memberId: UUID? = null): TreeInvitation {
         val key = email.normalizedEmail()
         if (!EMAIL.matches(key)) throw ApiProblem(ProblemCode.VALIDATION_FAILED)
+        memberId?.let { selfMembers.requireLinkable(familyId, key, it) }
         seats.requireSeatFor(key)
         membershipService.setRole(familyId, key, Role.valueOf(role.name), actor)
+        memberId?.let { selfMembers.link(familyId, key, it, actor) }
         val access = entries(familyId, key).single()
         val (name, slug) = jdbc.query("SELECT name, slug FROM families WHERE id = ?", { rs, _ -> rs.getString(1) to rs.getString(2) }, familyId)
             .single()
@@ -78,7 +83,7 @@ class TreeAccessService(
 
     private fun entries(familyId: UUID, email: String?): List<TreeAccessEntry> =
         jdbc.query(
-            "SELECT u.id, u.email, u.display_name, m.role, m.granted_at, u.first_seen, u.last_seen " +
+            "SELECT u.id, u.email, u.display_name, m.role, m.granted_at, u.first_seen, u.last_seen, m.member_id " +
                 "FROM family_memberships m JOIN users u ON u.email = m.email WHERE m.family_id = ? " +
                 (if (email == null) "" else "AND m.email = ? ") +
                 "ORDER BY m.role = 'owner' DESC, lower(coalesce(nullif(trim(u.display_name), ''), split_part(u.email, '@', 1))), u.email",
@@ -91,6 +96,7 @@ class TreeAccessService(
                     statusOf(rs.getObject(6, OffsetDateTime::class.java)),
                     rs.getObject(5, OffsetDateTime::class.java),
                     rs.getObject(7, OffsetDateTime::class.java),
+                    rs.getObject(8, UUID::class.java),
                 )
             },
             *listOfNotNull<Any>(familyId, email).toTypedArray(),

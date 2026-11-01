@@ -17,6 +17,7 @@
  * - `PIN_TAKEN` (409): another member is already pinned to this place.
  * - `EDIT_CONFLICT` (409): the member changed since the sent version was read.
  * - `SEATS_EXHAUSTED` (409): every Cloudflare Access seat is taken, so nobody new can be given access.
+ * - `MEMBER_TAKEN` (409): someone else is already linked to this member of the tree.
  * - `USER_OWNS_TREES` (409): the person is the only owner of trees, which need a new owner before the person can be deleted.
  * - `TREE_LIMIT_REACHED` (409): the caller already owns the most trees a non-admin may own (5, trash excluded).
  * - `MEMBER_LIMIT_REACHED` (409): the tree would hold more than 100 people.
@@ -39,6 +40,7 @@ export const ProblemCode = {
   PIN_TAKEN: 'PIN_TAKEN',
   EDIT_CONFLICT: 'EDIT_CONFLICT',
   SEATS_EXHAUSTED: 'SEATS_EXHAUSTED',
+  MEMBER_TAKEN: 'MEMBER_TAKEN',
   USER_OWNS_TREES: 'USER_OWNS_TREES',
   TREE_LIMIT_REACHED: 'TREE_LIMIT_REACHED',
   MEMBER_LIMIT_REACHED: 'MEMBER_LIMIT_REACHED',
@@ -461,6 +463,16 @@ export interface FamilySummary {
   role: Role;
   /** The caller's permissions in this family, from their role in it. */
   readonly permissions: readonly Permission[];
+  /**
+     * The member of this family the caller is, set with `PUT /families/{familyId}/self` or by whoever shared the tree with them; null when the caller is linked to no member, for example an admin without a membership in the tree.
+     * @nullable
+     */
+  readonly selfMemberId: string | null;
+}
+
+export interface SetSelfMemberRequest {
+  /** The member of the tree the caller is. */
+  memberId: string;
 }
 
 export interface SetFamilyPhotoFitRequest {
@@ -913,6 +925,11 @@ export interface TreeAccessEntry {
      * @nullable
      */
   lastSeen: string | null;
+  /**
+     * The member of the tree this person is; null while they are linked to none.
+     * @nullable
+     */
+  memberId: string | null;
 }
 
 export interface ShareTreeRequest {
@@ -923,6 +940,11 @@ export interface ShareTreeRequest {
      */
   email: string;
   role: TreeRole;
+  /**
+     * The member of the tree the person is; when absent or null, a link they have stays as it is.
+     * @nullable
+     */
+  memberId?: string | null;
 }
 
 export interface TreeInvitation {
@@ -3750,6 +3772,163 @@ export const streamFamilyEvents = async (familyId: string,
 
 
 
+export type setSelfMemberResponse200 = {
+  data: FamilySummary
+  status: 200
+}
+
+export type setSelfMemberResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type setSelfMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type setSelfMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type setSelfMemberResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type setSelfMemberResponse409 = {
+  data: Problem
+  status: 409
+}
+
+export type setSelfMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type setSelfMemberResponseSuccess = (setSelfMemberResponse200) & {
+  headers: Headers;
+};
+export type setSelfMemberResponseError = (setSelfMemberResponse400 | setSelfMemberResponse401 | setSelfMemberResponse403 | setSelfMemberResponse404 | setSelfMemberResponse409 | setSelfMemberResponse500) & {
+  headers: Headers;
+};
+
+export type setSelfMemberResponse = (setSelfMemberResponseSuccess | setSelfMemberResponseError)
+
+export const getSetSelfMemberUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/self`
+}
+
+/**
+ * Links the caller to a member of the tree, replacing a link the caller had there; the answer's `selfMemberId` names it. A person is at most one member per tree and a member at most one person, so a member linked to someone else answers 409 `MEMBER_TAKEN` without naming them. The link belongs to the caller's membership: an admin without a membership in the tree answers 400 `INVALID_REQUEST`. Needs `member.edit` in the tree; deleting the member, removing the membership, or moving the member into another family removes the link.
+ * @summary Say which member of the tree you are
+ */
+export const setSelfMember = async (familyId: string,
+    setSelfMemberRequest: SetSelfMemberRequest, options?: RequestInit): Promise<setSelfMemberResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getSetSelfMemberUrl(familyId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setSelfMemberRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: setSelfMemberResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as setSelfMemberResponse
+}
+
+
+
+export type clearSelfMemberResponse204 = {
+  data: void
+  status: 204
+}
+
+export type clearSelfMemberResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type clearSelfMemberResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type clearSelfMemberResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type clearSelfMemberResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type clearSelfMemberResponseSuccess = (clearSelfMemberResponse204) & {
+  headers: Headers;
+};
+export type clearSelfMemberResponseError = (clearSelfMemberResponse401 | clearSelfMemberResponse403 | clearSelfMemberResponse404 | clearSelfMemberResponse500) & {
+  headers: Headers;
+};
+
+export type clearSelfMemberResponse = (clearSelfMemberResponseSuccess | clearSelfMemberResponseError)
+
+export const getClearSelfMemberUrl = (familyId: string,) => {
+
+
+
+
+  return `/api/families/${familyId}/self`
+}
+
+/**
+ * Removes the caller's link to a member of the tree, if there is one. Needs only `tree.view`, so everyone who sees the tree can undo a wrong link.
+ * @summary Say that you are no member of the tree ("Nicht ich")
+ */
+export const clearSelfMember = async (familyId: string, options?: RequestInit): Promise<clearSelfMemberResponse> => {
+
+  const res = await fetch(getClearSelfMemberUrl(familyId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: clearSelfMemberResponse['data'] = body ? JSON.parse(body) : undefined
+  return { data, status: res.status, headers: res.headers } as clearSelfMemberResponse
+}
+
+
+
 export type updateFamilyPresenceResponse204 = {
   data: void
   status: 204
@@ -3955,7 +4134,7 @@ export const getShareTreeUrl = (familyId: string,) => {
 }
 
 /**
- * Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have. Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`. Demoting the last owner answers 400 `INVALID_REQUEST`; someone new while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. Needs `family.share`; every change is written to the audit log.
+ * Gives the person with this email the role in the tree, adding them to `users` as invited when they are new, or changes the role they have. Nothing is sent: the answer carries an invitation text with the tree's link to copy, in German or English by `Accept-Language`. Demoting the last owner answers 400 `INVALID_REQUEST`; someone new while every Cloudflare Access seat is taken answers 409 `SEATS_EXHAUSTED`. With `memberId` the person is also linked to that member of the tree, as if they had said so themselves (see `PUT /families/{familyId}/self`); without it a link they have stays. A member outside the tree answers 404 `NOT_FOUND`, one linked to someone else 409 `MEMBER_TAKEN`; then nothing is changed. Needs `family.share`; every change is written to the audit log.
  * @summary Invite someone to a tree or change their role
  */
 export const shareTree = async (familyId: string,

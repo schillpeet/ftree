@@ -140,6 +140,9 @@ class SecurityConfiguration(
                     "/families/{familyId}/members/*/photo",
                 ).access(inFamily(MEMBER_EDIT))
                 it.requestMatchers(DELETE, "/families/{familyId}/members/*/photo").access(inFamily(MEMBER_EDIT))
+                // The caller's own member in the tree: claiming one is an edit, saying "not me" is open to every viewer.
+                it.requestMatchers(PUT, "/families/{familyId}/self").access(inFamily(MEMBER_EDIT))
+                it.requestMatchers(DELETE, "/families/{familyId}/self").access(inFamily(TREE_VIEW))
                 // Live: presence and change events of one family.
                 it.requestMatchers(GET, "/families/{familyId}/events").access(inFamily(TREE_VIEW))
                 it.requestMatchers(PUT, "/families/{familyId}/presence").access(inFamily(TREE_VIEW))

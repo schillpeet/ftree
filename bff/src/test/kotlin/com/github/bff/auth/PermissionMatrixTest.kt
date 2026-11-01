@@ -84,6 +84,9 @@ class PermissionMatrixTest {
         // Live: presence and change events.
         Endpoint(GET, "/families/$family/events?clientId=matrix", TREE_VIEW),
         Endpoint(PUT, "/families/$family/presence", TREE_VIEW, MediaType.APPLICATION_JSON),
+        // The caller's own member: claiming one is an edit (the empty body answers 400), "not me" is open to viewers.
+        Endpoint(PUT, "/families/$family/self", MEMBER_EDIT, MediaType.APPLICATION_JSON),
+        Endpoint(DELETE, "/families/$family/self", TREE_VIEW),
         // Trash: a visible family is not in the trash, so these answer 404 to admins.
         Endpoint(GET, "/admin/trash", FAMILY_MANAGE),
         Endpoint(POST, "/admin/trash/$family/restore", FAMILY_MANAGE),

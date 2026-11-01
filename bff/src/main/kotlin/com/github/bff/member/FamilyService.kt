@@ -125,6 +125,8 @@ class FamilyService(
         if (name.isEmpty() || name.length > 100 || members.isEmpty()) return FamilyArchiveResult.INVALID
         if (nameTaken(name)) return FamilyArchiveResult.NAME_TAKEN
         val archived = saveNew(FamilyEntity(name = name, slug = newSlug(), createdBy = creator()))
+        // The members leave the family, so nobody there is one of them any more.
+        jdbc.update("UPDATE family_memberships SET member_id = NULL WHERE family_id = ? AND member_id IS NOT NULL", id)
         members.forEach { it.family = archived }
         memberRepository.flush()
         changed(id)
@@ -271,6 +273,12 @@ class FamilyService(
         family.photoFit = fit.value
         familyRepository.flush()
         changed(id)
+        return family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id), photoTimes()[id])
+    }
+
+    // One family outside the trash, like an entry of findAll.
+    fun find(id: UUID): FamilySummary? {
+        val family = familyRepository.findById(id).orElse(null)?.takeIf { it.deletedAt == null } ?: return null
         return family.toSummary(memberRepository.findAllByFamilyIdOrderByLastNameAscFirstNameAsc(id), photoTimes()[id])
     }
 
