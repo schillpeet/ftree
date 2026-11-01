@@ -13,7 +13,7 @@ export default async function LegalPage({ page, lang }: { page: 'terms' | 'priva
   return (
     <div className="legal-page">
       <header className="legal-header">
-        <Link className="glass glass-button" href="/">
+        <Link className="glass glass-button" href="/home">
           <ChevronLeftIcon />
           {t.back}
         </Link>

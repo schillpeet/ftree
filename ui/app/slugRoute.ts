@@ -4,10 +4,11 @@ import type { FamilySummary } from '../lib/api/generated/members';
 type Family = Pick<FamilySummary, 'id' | 'name' | 'slug'>;
 
 // First path segments that are routes of their own and therefore never name a tree; a family with such a slug could
-// not be opened by its URL. `admin` is the admin page, `terms` and `privacy` the legal pages, and `healthz` the probe,
-// static routes that win over `[slug]`; the `/api` rewrite runs before dynamic routes; `cdn-cgi` is Cloudflare's.
+// not be opened by its URL. `admin` is the admin page, `home` the public landing page, `start` the tree's entry, `terms`
+// and `privacy` the legal pages, and `healthz` the probe, static routes that win over `[slug]`; the `/api` rewrite runs
+// before dynamic routes; `cdn-cgi` is Cloudflare's.
 // New families get random 10-character slugs (FamilySlugs.kt), which never match one of these.
-export const RESERVED_SLUGS = ['admin', 'api', 'healthz', 'cdn-cgi', 'terms', 'privacy'] as const;
+export const RESERVED_SLUGS = ['admin', 'api', 'healthz', 'cdn-cgi', 'home', 'start', 'terms', 'privacy'] as const;
 
 // The BFF's slug format: lowercase ASCII words joined by `-`.
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;
@@ -20,14 +21,14 @@ export function familyOfSlug<F extends Family>(families: readonly F[], slug: str
   return families.find((family) => family.slug === slug) ?? null;
 }
 
-// The tree `/` opens: the family named "default", else the first visible one.
+// The tree `/start` opens: the family named "default", else the first visible one.
 export function firstFamily<F extends Family>(families: readonly F[]): F | null {
   return families.find((family) => family.name.toLocaleLowerCase() === 'default') ?? families[0] ?? null;
 }
 
 export const pathOf = (family: Pick<Family, 'slug'>) => `/${family.slug}`;
 
-// Where `/` leads once the families are known: the tree last open in this browser while it is still visible, else
+// Where `/start` leads once the families are known: the tree last open in this browser while it is still visible, else
 // `firstFamily`; null keeps it (no family visible).
 export function homePath(families: readonly Family[], lastSlug?: string | null): string | null {
   const family = familyOfSlug(families, lastSlug ?? undefined) ?? firstFamily(families);
@@ -41,7 +42,7 @@ export function switcherEntries(families: readonly Family[], activeId: string | 
     .map((family) => ({ id: family.id, name: family.name, href: pathOf(family), active: family.id === activeId }));
 }
 
-// What a blank start shows instead of an empty board: 'noTree' at `/` while no tree is visible at all, 'noPeople' for an
+// What a blank start shows instead of an empty board: 'noTree' at `/start` while no tree is visible at all, 'noPeople' for an
 // open tree without members, null otherwise (still loading, a failed load, or a tree with people).
 export function emptyTreeOf(
   families: readonly Family[] | null,

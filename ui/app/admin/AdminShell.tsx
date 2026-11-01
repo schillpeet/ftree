@@ -42,7 +42,7 @@ export default function AdminShell({ appUrl, children }: { appUrl: string | null
             {t.admin.toApp}
           </a>
         ) : (
-          <Link className="glass glass-button" href="/">
+          <Link className="glass glass-button" href="/start">
             <ChevronLeftIcon />
             {t.admin.back}
           </Link>
