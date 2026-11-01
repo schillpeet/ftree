@@ -299,9 +299,21 @@ function CardPresence({ memberId, position }: { memberId: string; position: Poin
   );
 }
 
+// The "DU" badge on the own card's rod, like the presence dot an <Html> that follows the card.
+function CardSelf({ position }: { position: Point }) {
+  const t = useT();
+  return (
+    <Html position={position} center zIndexRange={[3, 0]}>
+      <span className="self-badge self-badge-floating" data-self="">
+        {t.tour.you}
+      </span>
+    </Html>
+  );
+}
+
 // Papyrus scroll with a rod on top and a rolled-up bottom edge, written on both sides. 'label'
 // turns to the camera and glows a little, so it stays readable against the low sun.
-export function ScrollCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, mode, evening }: CardProps & { mode: 'scroll' | 'label'; evening: number }) {
+export function ScrollCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, mode, evening, isSelf = false }: CardProps & { mode: 'scroll' | 'label'; evening: number; isSelf?: boolean }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, mode === 'label' ? 'face-camera' : 'sway', seed);
   const face = useCardTexture(member, familyId, SCROLL.width * PX, SCROLL.height * PX, drawScroll);
@@ -314,6 +326,7 @@ export function ScrollCard({ member, familyId, position, onOpen, onDrag, selecte
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
       {selected && <Halo position={[0, sheetY, -0.3]} width={width} height={height} />}
       <CardPresence memberId={member.id} position={[width / 2, -rope - 0.2, 0.15]} />
+      {isSelf && <CardSelf position={[0, -rope + 0.22, 0.12]} />}
       <Rope from={[0, 0, 0]} to={[-width / 2 - 0.05, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 + 0.05, -rope, 0]} />
       <mesh position={[0, -rope, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
@@ -342,7 +355,7 @@ export function ScrollCard({ member, familyId, position, onOpen, onDrag, selecte
 
 // Wooden board with burnt-in name and dates, the photo in a medallion beside them; written on
 // both sides like the scroll.
-export function SignCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, evening }: CardProps & { evening: number }) {
+export function SignCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, evening, isSelf = false }: CardProps & { evening: number; isSelf?: boolean }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, 'sway', seed);
   const face = useCardTexture(member, familyId, SIGN.width * PX, SIGN.height * PX, drawSign);
@@ -355,6 +368,7 @@ export function SignCard({ member, familyId, position, onOpen, onDrag, selected,
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
       {selected && <Halo position={[0, -rope - height / 2, -0.3]} width={width} height={height} />}
       <CardPresence memberId={member.id} position={[width / 2, -rope, depth]} />
+      {isSelf && <CardSelf position={[0, -rope + 0.2, depth]} />}
       <Rope from={[0, 0, 0]} to={[-width / 2 + 0.15, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 - 0.15, -rope, 0]} />
       <mesh position={[0, -rope - height / 2, 0]} castShadow receiveShadow>

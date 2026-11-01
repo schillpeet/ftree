@@ -32,7 +32,7 @@ If code and this folder disagree, this folder wins until it is updated.
 ## Decisions
 
 - The themes are called "3D" and "TRON" in the UI (not "Abend").
-- `/` shows the landing page to signed-out visitors; signed-in users go straight to their tree.
+- The landing page lives at `/home` and is public (Cloudflare Access bypass for `/home` and its static assets); `/` redirects to `/home`, and the ftree logo in the header links there; signed-in users go on to their last tree from the landing (2026-11-01).
 - Only invited (allowed) users can sign in; the welcome card is for signed-in users who are not assigned to any tree yet.
 - The burger menu stays, top right, for secondary actions; language (DE/EN) stays visible in the header.
 - "Evolution" is a header button with a DEV badge, shown only with the "Entwicklertools" permission.
@@ -45,7 +45,6 @@ If code and this folder disagree, this folder wins until it is updated.
 
 ## Open questions
 
-- Landing behind Cloudflare Access: `/` must be reachable without sign-in (Access bypass for `/` and static assets, or the landing served outside the protected app).
 - Pre-rendered landing still vs. short video loop of the scene.
 - 3D scene tuning: lower, closer camera (tree ~50–60 % of the height, horizon ~55 %), warmer horizon light.
 

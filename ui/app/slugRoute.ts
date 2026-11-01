@@ -27,9 +27,10 @@ export function firstFamily<F extends Family>(families: readonly F[]): F | null 
 
 export const pathOf = (family: Pick<Family, 'slug'>) => `/${family.slug}`;
 
-// Where `/` leads once the families are known; null keeps it (no family visible).
-export function homePath(families: readonly Family[]): string | null {
-  const family = firstFamily(families);
+// Where `/` leads once the families are known: the tree last open in this browser while it is still visible, else
+// `firstFamily`; null keeps it (no family visible).
+export function homePath(families: readonly Family[], lastSlug?: string | null): string | null {
+  const family = familyOfSlug(families, lastSlug ?? undefined) ?? firstFamily(families);
   return family ? pathOf(family) : null;
 }
 
