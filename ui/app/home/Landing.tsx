@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { CSSProperties } from 'react';
 import { LanguageSegment, ThemeSegment } from '../Header';
 import { useT } from '../i18n';
+import { GithubIcon } from '../icons';
 import ThemeRoot from '../ThemeRoot';
 import BrandLink from './BrandLink';
 // Imported rather than in `public/`, so it ships under `/_next/static` with the rest of the page.
@@ -38,8 +39,14 @@ export default function Landing() {
         </div>
       </header>
       <main className="landing-hero">
-        <p className="landing-chip">{t.landing.chip}</p>
         <h1>{t.landing.title}</h1>
+        <p className="landing-chip">
+          {t.landing.chip}
+          <a href="https://github.com/schillpeet" target="_blank" rel="noopener noreferrer" aria-label={t.landing.githubLabel}>
+            <GithubIcon />
+            schillpeet
+          </a>
+        </p>
         <p className="landing-lead">{t.landing.lead}</p>
         <div className="landing-actions">
           {/* A plain link: `/start` sits behind Cloudflare Access, which needs a full page load to sign in. */}
