@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.34.0](https://github.com/schillpeet/ftree/compare/v0.33.0...v0.34.0) (2026-11-01)
+
+
+### Features
+
+* **bff:** let invitees accept, decline or postpone an invitation ([#303](https://github.com/schillpeet/ftree/issues/303)) ([5324c99](https://github.com/schillpeet/ftree/commit/5324c9922c6e34c144a30c04fbbe54437b0dad81))
+* **ui:** add a view lab to the evolution panel and drop appearance from the burger menu ([#302](https://github.com/schillpeet/ftree/issues/302)) ([1503b1f](https://github.com/schillpeet/ftree/commit/1503b1f74763bd6e21ac737f81002246f4c56ef4))
+* **ui:** declutter the landing page and move the steps to /home/how ([#300](https://github.com/schillpeet/ftree/issues/300)) ([989a849](https://github.com/schillpeet/ftree/commit/989a849a71f92d575f870b1706bd45f15305dde6))
+* **ui:** edit a person from a pencil slot beside their card, with the form on the left ([#303](https://github.com/schillpeet/ftree/issues/303)) ([5324c99](https://github.com/schillpeet/ftree/commit/5324c9922c6e34c144a30c04fbbe54437b0dad81))
+* **ui:** frame the selected card with its slots beside the person panel ([#303](https://github.com/schillpeet/ftree/issues/303)) ([5324c99](https://github.com/schillpeet/ftree/commit/5324c9922c6e34c144a30c04fbbe54437b0dad81))
+* **ui:** grant and revoke developer tools with a switch on the person page and filter people by them ([#302](https://github.com/schillpeet/ftree/issues/302)) ([1503b1f](https://github.com/schillpeet/ftree/commit/1503b1f74763bd6e21ac737f81002246f4c56ef4))
+* **ui:** show an admin badge in the header of admin sessions ([#302](https://github.com/schillpeet/ftree/issues/302)) ([1503b1f](https://github.com/schillpeet/ftree/commit/1503b1f74763bd6e21ac737f81002246f4c56ef4))
+* **ui:** show the evolution button on the public pages and next to the logo for developers ([#302](https://github.com/schillpeet/ftree/issues/302)) ([1503b1f](https://github.com/schillpeet/ftree/commit/1503b1f74763bd6e21ac737f81002246f4c56ef4))
+
+
+### Bug Fixes
+
+* **ui:** keep the landing page off the admin host ([#302](https://github.com/schillpeet/ftree/issues/302)) ([1503b1f](https://github.com/schillpeet/ftree/commit/1503b1f74763bd6e21ac737f81002246f4c56ef4))
+* **ui:** rename the administration to admin tool and mark it as an external link ([#302](https://github.com/schillpeet/ftree/issues/302)) ([1503b1f](https://github.com/schillpeet/ftree/commit/1503b1f74763bd6e21ac737f81002246f4c56ef4))
+* **ui:** show the burger menu divider as a line instead of a dot ([#302](https://github.com/schillpeet/ftree/issues/302)) ([1503b1f](https://github.com/schillpeet/ftree/commit/1503b1f74763bd6e21ac737f81002246f4c56ef4))
+
 ## [0.33.0](https://github.com/schillpeet/ftree/compare/v0.32.0...v0.33.0) (2026-11-01)
 
 
