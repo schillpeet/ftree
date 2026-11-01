@@ -1,6 +1,7 @@
 ## Project Guidance
 
 - Read `docs/project-overview.md` before work that changes product behavior, data, or architecture.
+- Read `docs/design/README.md` before UI work; follow its tokens and components, and work through `docs/design/plan.md` for the redesign.
 - This project aims to become a shared family-tree web service. The Next.js UI is in `ui/`; `bff/` contains the Kotlin/Spring Boot Backend for Frontend.
 - `api/openapi.yaml` defines the member contract; `ui/` and `bff/` generate clients/interfaces from it. Do not edit generated files; update the spec and regenerate instead.
 - The BFF implements families and their members under `/families/{familyId}/members` (parent/child links with a kind and partner links with status and dates; siblings and half-siblings derived from shared parents) with PostgreSQL persistence, plus roles, `GET /me`, tree sharing with copyable invitations (no email is sent), Cloudflare Access JWT verification (dev mode locally), and permission enforcement (non-admins see only the first real family), plus Actuator health probes and Prometheus metrics on management port 8081, and answers errors as RFC 9457 problem details with a machine-readable `code`. Member-to-user links, other relationship types, and production migrations are not implemented yet.

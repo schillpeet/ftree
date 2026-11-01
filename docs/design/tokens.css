@@ -1,0 +1,27 @@
+/* ftree design tokens – mirror of tokens.json. Set data-theme="3d" or "tron" on the root element. */
+:root {
+  --font-display: 'Instrument Serif', serif;
+  --font-ui: Inter, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --radius-pill: 999px; --radius-control: 12px; --radius-panel: 20px; --radius-dock: 22px; --radius-dock-primary: 16px; --radius-menu: 16px;
+  --size-control: 42px; --size-dock-primary: 54px; --size-person-pill: 42px; --size-avatar: 30px; --size-slot: 36px;
+  --blur-glass: blur(16px) saturate(140%);
+}
+:root, [data-theme="3d"] {
+  --bg: #0B0F10; --text: #F4F1EA; --muted: rgba(244,241,234,.68);
+  --accent: #F2C38B; --accent-ink: #0F1214;
+  --panel: rgba(16,20,22,.55); --panel-strong: rgba(16,20,22,.86); --border: rgba(255,255,255,.16); --node: rgba(16,20,22,.6);
+  --primary: #F4EEE3; --primary-ink: #0F1214; --primary-glow: 0 8px 24px rgba(0,0,0,.3);
+  --segment-on: rgba(244,238,227,.92); --segment-on-ink: #0F1214; --slot-border: rgba(242,195,139,.75);
+  --line-on: #F2C38B; --line-dim: rgba(242,195,139,.3); --glow: rgba(242,195,139,.5);
+  --avatar: #F2C38B; --avatar-dim: #B9A68C;
+}
+[data-theme="tron"] {
+  --bg: #02050A; --text: #E8FCFF; --muted: #8FBAC2;
+  --accent: #48E5FF; --accent-ink: #02050A;
+  --panel: rgba(2,10,16,.72); --panel-strong: rgba(2,10,16,.9); --border: rgba(72,229,255,.35); --node: rgba(2,7,12,.92);
+  --primary: #48E5FF; --primary-ink: #02050A; --primary-glow: 0 0 22px rgba(72,229,255,.5);
+  --segment-on: #48E5FF; --segment-on-ink: #02050A; --slot-border: rgba(72,229,255,.6);
+  --line-on: #48E5FF; --line-dim: rgba(72,229,255,.22); --glow: rgba(72,229,255,.55);
+  --avatar: #48E5FF; --avatar-dim: #2B5560;
+}

@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>TRON-Ansicht</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B0F10}
+a{color:inherit}
+.pn{backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%)}
+.node{font:inherit;cursor:pointer;text-align:left}
+.dk{font:inherit;font-size:13px;background:transparent;border:0;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 14px;cursor:pointer;min-width:68px}
+.hb{font:inherit;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.scroll{font:inherit;position:absolute;width:104px;padding:0;border:0;background:transparent;cursor:pointer;color:#4a3218;font-family:Georgia,'Times New Roman',serif;text-align:center;transition:opacity .3s,filter .3s}
+.scroll-rod{position:relative;z-index:1;height:9px;margin:0 -9px -3px;border-radius:5px;background:radial-gradient(circle at 50% 35%,#a2683a,#5a3214 70%) left/9px 100% no-repeat,radial-gradient(circle at 50% 35%,#a2683a,#5a3214 70%) right/9px 100% no-repeat,linear-gradient(#d4a46c,#b07a45 45%,#7a4a22)}
+.scroll-sheet{padding:9px 8px 10px;background:radial-gradient(ellipse at 50% 45%,rgba(255,240,205,.9),transparent 70%),linear-gradient(90deg,#c9975a,#e7c48e 12%,#ecd09e 50%,#e2bb82 88%,#c08a4c);clip-path:polygon(3% 0,97% 0,98% 8%,96% 14%,99% 22%,97% 34%,100% 46%,96% 52%,98% 63%,97% 74%,100% 86%,97% 100%,3% 100%,0 90%,3% 80%,1% 68%,4% 60%,1% 48%,3% 38%,0 28%,3% 18%,1% 8%)}
+.scroll-av{display:block;width:30px;height:30px;margin:0 auto 4px;border-radius:50%;border:2px solid #b8894f;background:#d9b67f;color:#5a3214;font:600 11px/26px Inter,sans-serif}
+.scroll-name{display:block;font-size:13px;font-weight:600;line-height:1.15}
+.scroll-sub{display:block;font-size:10px;margin-top:1px}
+.scroll-curl{height:10px;margin:-4px -4px 0;border-radius:5px;background:linear-gradient(#f0d6a6,#d2a468 50%,#9c6a36)}
+.scroll-me{position:absolute;top:-9px;right:-14px;z-index:2;font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;background:#F2C38B;color:#0F1214;border-radius:999px;padding:3px 6px}
+</style>
+</helmet>
+<div style="position:relative;width:100%;height:900px;overflow:hidden;font-family:Inter,system-ui,sans-serif;color:{{T.text}};background:{{T.bg}}">
+
+  <sc-if value="{{is3d}}" hint-placeholder-val="{{true}}">
+    <img src="/_blob/4dfe9ba9f7aa0857eeec406bed737af2" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;transform:scale(1.5);transform-origin:50% 20%">
+    <div style="position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(rgba(6,9,8,0),rgba(6,9,8,.6))"></div>
+  </sc-if>
+  <sc-if value="{{isTron}}" hint-placeholder-val="{{false}}">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+      <defs>
+        <linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#02050A"></stop><stop offset="1" stop-color="#061A26"></stop></linearGradient>
+        <filter id="tglow"><feGaussianBlur stdDeviation="6"></feGaussianBlur></filter>
+      </defs>
+      <rect width="1440" height="560" fill="url(#tsky)"></rect>
+      <g stroke="#48E5FF" stroke-width="1" opacity=".3">
+        <sc-for list="{{gridV}}" as="g" hint-placeholder-count="12"><line x1="720" y1="560" x2="{{g.x}}" y2="900"></line></sc-for>
+        <sc-for list="{{gridH}}" as="g" hint-placeholder-count="6"><line x1="0" y1="{{g.y}}" x2="1440" y2="{{g.y}}"></line></sc-for>
+      </g>
+      <rect y="556" width="1440" height="8" fill="#48E5FF" filter="url(#tglow)" opacity=".7"></rect>
+      <line x1="0" y1="560" x2="1440" y2="560" stroke="#9AF3FF" stroke-width="1.2"></line>
+    </svg>
+  </sc-if>
+
+  <!-- header: identical in both themes -->
+  <header style="position:absolute;top:20px;left:28px;right:28px;display:flex;align-items:center;justify-content:space-between;gap:12px;z-index:6">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="{{T.accent}}" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13"></path><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z"></path><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z"></path><path d="M9 27h12"></path></svg>
+      <span style="font-family:'Instrument Serif',serif;font-size:28px">ftree</span>
+    </div>
+    <button class="pn hb" style="gap:10px;height:44px;padding:0 8px 0 16px;border-radius:14px;background:{{T.panel}};border:1px solid {{T.border}};color:{{T.text}}">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="7.5" cy="7" r="3"></circle><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17"></path><path d="M13.5 4.5a3 3 0 010 5M15 12.5c1.6.6 2.6 2 3 4.5"></path></svg>
+      <span style="font-family:'Instrument Serif',serif;font-size:21px">Familie Berger</span>
+      <span style="width:1px;height:24px;background:{{T.border}};margin-left:6px"></span>
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M9 12l5 5 5-5"></path></svg>
+    </button>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="pn" role="group" aria-label="Darstellung" style="display:flex;padding:3px;border-radius:999px;background:{{T.panel}};border:1px solid {{T.border}}">
+        <a href="Baum3D.dc.html" style="text-decoration:none;font-size:13px;padding:7px 13px;border-radius:999px;background:{{seg3dBg}};color:{{seg3dFg}}">3D</a>
+        <a href="Tron.dc.html" style="text-decoration:none;font-size:13px;padding:7px 13px;border-radius:999px;background:{{segTronBg}};color:{{segTronFg}}">TRON</a>
+      </div>
+      <div class="pn" role="group" aria-label="Sprache" style="display:flex;padding:3px;border-radius:999px;background:{{T.panel}};border:1px solid {{T.border}}">
+        <span style="font-size:13px;padding:7px 11px;border-radius:999px;background:{{T.segOn}};color:{{T.segOnInk}}">DE</span>
+        <span style="font-size:13px;padding:7px 11px">EN</span>
+      </div>
+      <button class="pn hb" onClick="{{toggleEvo}}" aria-expanded="{{evoOpen}}" style="gap:8px;height:42px;padding:0 12px;border-radius:12px;background:{{evoBg}};border:1px solid {{T.border}};color:{{T.text}};font-size:14px">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 4h7M12 4h2M2 8h2M7 8h7M2 12h9"></path><circle cx="10.5" cy="4" r="1.5"></circle><circle cx="5.5" cy="8" r="1.5"></circle><circle cx="12.5" cy="12" r="1.5"></circle></svg>
+        Evolution
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;border-radius:5px;padding:1px 5px;background:{{T.accent}};color:{{T.accentInk}}">DEV</span>
+      </button>
+      <button class="pn hb" onClick="{{toggleMenu}}" aria-label="Menü" aria-expanded="{{menuOpen}}" style="width:42px;height:42px;border-radius:12px;background:{{T.panel}};border:1px solid {{T.border}};color:{{T.text}}">
+        <svg width="18" height="18" viewBox="0 0 18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 5h12M3 9h12M3 13h12"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{false}}">
+    <div class="pn" role="menu" style="position:absolute;top:72px;right:28px;width:250px;border-radius:16px;padding:8px;z-index:7;display:flex;flex-direction:column;background:{{T.panelStrong}};border:1px solid {{T.border}}">
+      <sc-for list="{{menuItems}}" as="m" hint-placeholder-count="5">
+        <button style="font:inherit;font-size:14px;color:{{T.text}};background:transparent;border:0;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer">{{m}}</button>
+      </sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{evoOpen}}" hint-placeholder-val="{{false}}">
+    <div class="pn" style="position:absolute;top:72px;right:80px;width:280px;border-radius:16px;padding:16px;z-index:7;display:flex;flex-direction:column;gap:12px;background:{{T.panelStrong}};border:1px solid {{T.border}}">
+      <div style="display:flex;justify-content:space-between;align-items:center"><span style="font-family:'Instrument Serif',serif;font-size:24px">Evolution</span><span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:{{T.muted}}">NUR ENTWICKLER</span></div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:{{T.accent}}">ANSICHT</span>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px">Zoom<input type="range" min="0" max="100" value="{{zoom}}" onChange="{{setZoom}}" style="accent-color:{{T.accent}}"></label>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:{{T.accent}}">VORSCHAU</span>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px">Kronen-Skala<input type="range" min="0" max="100" value="{{crown}}" onChange="{{setCrown}}" style="accent-color:{{T.accent}}"></label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" checked="{{yes}}" onChange="{{noop}}" style="accent-color:{{T.accent}}"> Verbindungslinien</label>
+    </div>
+  </sc-if>
+
+  <!-- family -->
+  <div style="position:absolute;left:50%;top:{{stageTop}}px;width:1100px;margin-left:-550px;height:540px;z-index:3">
+    <svg width="1100" height="540" style="position:absolute;inset:0" aria-hidden="true">
+      <defs><filter id="lg"><feGaussianBlur stdDeviation="2.5"></feGaussianBlur></filter></defs>
+      <sc-for list="{{lines}}" as="l" hint-placeholder-count="8">
+        <path d="{{l.d}}" stroke="{{l.c}}" stroke-width="{{l.w}}" fill="none" filter="url(#lg)"></path>
+        <path d="{{l.d}}" stroke="{{l.c}}" stroke-width="1.3" fill="none"></path>
+      </sc-for>
+    </svg>
+    <sc-if value="{{is3d}}" hint-placeholder-val="{{true}}">
+    <sc-for list="{{nodes}}" as="n" hint-placeholder-count="11">
+      <button class="scroll" onClick="{{n.pick}}" aria-pressed="{{n.on}}" aria-label="{{n.label}}" style="left:{{n.x}}px;top:{{n.y}}px;transform:translate(-50%,-50%);opacity:{{n.op}};filter:{{n.scrollShadow}}">
+        <sc-if value="{{n.me}}" hint-placeholder-val="{{false}}"><span class="scroll-me">DU</span></sc-if>
+        <span class="scroll-rod" style="display:block"></span>
+        <span class="scroll-sheet" style="display:block">
+          <span class="scroll-av">{{n.ini}}</span>
+          <span class="scroll-name">{{n.label}}</span>
+          <span class="scroll-sub">{{n.sub}}</span>
+        </span>
+        <span class="scroll-curl" style="display:block"></span>
+      </button>
+    </sc-for>
+    </sc-if>
+    <sc-if value="{{isTron}}" hint-placeholder-val="{{false}}">
+    <sc-for list="{{nodes}}" as="n" hint-placeholder-count="11">
+      <button class="node pn" onClick="{{n.pick}}" aria-pressed="{{n.on}}" style="position:absolute;left:{{n.x}}px;top:{{n.y}}px;transform:translate(-50%,-50%);height:42px;box-sizing:border-box;background:{{T.node}};border:1px solid {{n.border}};border-radius:999px;box-shadow:{{n.glow}};color:{{n.color}};display:flex;align-items:center;gap:8px;padding:0 14px 0 5px;opacity:{{n.op}};white-space:nowrap">
+        <span style="width:30px;height:30px;border-radius:50%;background:{{n.av}};color:{{T.accentInk}};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600">{{n.ini}}</span>
+        <span style="display:flex;flex-direction:column"><span style="font-size:13px;font-weight:500">{{n.label}}</span><span style="font-size:10px;opacity:.7">{{n.sub}}</span></span>
+      </button>
+    </sc-for>
+    </sc-if>
+    <button class="node" style="position:absolute;left:620px;top:{{ghostY}}px;transform:translate(-50%,-50%);height:36px;padding:0 14px;background:transparent;border:1.5px dashed {{T.ghost}};border-radius:999px;color:{{T.text}};font-size:13px">+ Partner:in</button>
+  </div>
+
+  <aside class="pn" style="position:absolute;right:28px;top:96px;width:270px;border-radius:20px;padding:18px;z-index:4;display:flex;flex-direction:column;gap:10px;background:{{T.panel}};border:1px solid {{T.border}}">
+    <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.16em;color:{{T.accent}}">AUSGEWÄHLT</span>
+    <span style="font-family:'Instrument Serif',serif;font-size:32px;line-height:1">{{selName}}</span>
+    <span style="font-size:13px;color:{{T.muted}}">{{selSub}}</span>
+    <div style="height:1px;background:{{T.border}}"></div>
+    <sc-for list="{{selRel}}" as="r" hint-placeholder-count="3">
+      <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px"><span style="color:{{T.muted}}">{{r.k}}</span><span style="text-align:right">{{r.v}}</span></div>
+    </sc-for>
+    <span style="font-size:12px;color:{{T.muted}};line-height:1.5;margin-top:4px">Klick eine Person: Ihre Linie leuchtet – Vorfahren und Nachkommen.</span>
+  </aside>
+
+  <nav class="pn" aria-label="Hauptaktionen" style="position:absolute;left:50%;bottom:44px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:6px;border-radius:22px;z-index:5;background:{{T.panel}};border:1px solid {{T.border}}">
+    <button style="font:inherit;font-size:15px;font-weight:500;border:0;border-radius:16px;height:54px;padding:0 20px;display:flex;gap:8px;align-items:center;cursor:pointer;background:{{T.primary}};color:{{T.primaryInk}};box-shadow:{{T.primaryGlow}}">
+      <svg width="18" height="18" viewBox="0 0 18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 3v12M3 9h12"></path></svg>Person
+    </button>
+    <button class="dk" style="color:{{T.text}}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5"></circle><path d="M13.5 13.5l3.5 3.5"></path></svg>Suchen</button>
+    <button class="dk" style="color:{{T.text}}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3"></circle><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17"></path><path d="M15.5 6v6M12.5 9h6"></path></svg>Einladen</button>
+    <button class="dk" style="color:{{T.text}}"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"></path><circle cx="10" cy="10" r="2.2"></circle></svg>Ansicht</button>
+  </nav>
+
+  <footer style="position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:8px;font-size:12px;color:{{T.muted}};z-index:5">
+    <span>v0.32.0</span><span aria-hidden="true">·</span><a href="#terms" style="color:{{T.muted}}">Nutzungsbedingungen</a><span aria-hidden="true">·</span><a href="#privacy" style="color:{{T.muted}}">Datenschutz</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"thema":{"editor":"enum","options":["3D","TRON"],"default":"TRON"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { sel: 'p', menu: false, evo: false, zoom: 50, crown: 50 }; }
+  theme(t) {
+    if (t === 'TRON') return {
+      bg: '#02050A', text: '#E8FCFF', muted: '#8FBAC2', accent: '#48E5FF', accentInk: '#02050A',
+      panel: 'rgba(2,10,16,.72)', panelStrong: 'rgba(2,10,16,.9)', border: 'rgba(72,229,255,.35)', node: 'rgba(2,7,12,.92)',
+      primary: '#48E5FF', primaryInk: '#02050A', primaryGlow: '0 0 22px rgba(72,229,255,.5)',
+      segOn: '#48E5FF', segOnInk: '#02050A', ghost: 'rgba(72,229,255,.6)',
+      lineOn: '#48E5FF', lineDim: 'rgba(72,229,255,.22)', glow: 'rgba(72,229,255,.55)', av: '#48E5FF', avDim: '#2B5560'
+    };
+    return {
+      bg: '#0B0F10', text: '#F4F1EA', muted: 'rgba(244,241,234,.68)', accent: '#F2C38B', accentInk: '#0F1214',
+      panel: 'rgba(16,20,22,.55)', panelStrong: 'rgba(16,20,22,.86)', border: 'rgba(255,255,255,.16)', node: 'rgba(16,20,22,.6)',
+      primary: '#F4EEE3', primaryInk: '#0F1214', primaryGlow: '0 8px 24px rgba(0,0,0,.3)',
+      segOn: 'rgba(244,238,227,.92)', segOnInk: '#0F1214', ghost: 'rgba(242,195,139,.75)',
+      lineOn: '#F2C38B', lineDim: 'rgba(242,195,139,.3)', glow: 'rgba(242,195,139,.5)', av: '#F2C38B', avDim: '#B9A68C'
+    };
+  }
+  data() {
+    return {
+      a: { n: 'Anna', s: '* 1938', x: 200, r: 0, par: [], pt: 'h' },
+      h: { n: 'Heinz', s: '1935–2015', x: 360, r: 0, par: [], pt: 'a' },
+      i: { n: 'Ilse', s: '* 1940', x: 640, r: 0, par: [], pt: 'o' },
+      o: { n: 'Otto', s: '1937–2019', x: 800, r: 0, par: [], pt: 'i' },
+      m: { n: 'Maria', s: '* 1962', x: 280, r: 1, par: ['a', 'h'], pt: 'k' },
+      k: { n: 'Klaus', s: '* 1960', x: 720, r: 1, par: ['i', 'o'], pt: 'm' },
+      e: { n: 'Eva', s: '* 1966', x: 900, r: 1, par: ['i', 'o'], pt: null },
+      s: { n: 'Sophie', s: '* 1991', x: 240, r: 2, par: [], pt: 'p' },
+      p: { n: 'Peter', s: 'Du · * 1990', x: 440, r: 2, par: ['m', 'k'], pt: 's' },
+      l: { n: 'Lena', s: '* 1994', x: 620, r: 2, par: ['m', 'k'], pt: null },
+      t: { n: 'Tom', s: '* 2021', x: 340, r: 3, par: ['p', 's'], pt: null }
+    };
+  }
+  renderVals() {
+    const mode = this.props.thema || '3D';
+    const T = this.theme(mode);
+    const is3d = mode !== 'TRON';
+    const rowY = is3d ? [50, 160, 270, 380] : [50, 180, 320, 450];
+    const R = 8;
+    const route = (mx, y0, ch, px, y1) => {
+      const d = px - mx, sg = d > 0 ? 1 : -1;
+      if (!is3d || Math.abs(d) < 2 * R) return 'M' + mx + ' ' + y0 + ' V' + ch + ' H' + px + ' V' + y1;
+      return 'M' + mx + ' ' + y0 + ' V' + (ch - R) + ' Q' + mx + ' ' + ch + ' ' + (mx + sg * R) + ' ' + ch + ' H' + (px - sg * R) + ' Q' + px + ' ' + ch + ' ' + px + ' ' + (ch + R) + ' V' + y1;
+    };
+    const D = this.data();
+    const ids = Object.keys(D);
+    ids.forEach((id) => { D[id].y = rowY[D[id].r]; });
+    const sel = this.state.sel;
+    const on = {}; on[sel] = true;
+    const up = (id) => D[id].par.forEach((q) => { if (!on[q]) { on[q] = true; up(q); } });
+    const down = (id) => ids.forEach((c) => { if (D[c].par.indexOf(id) >= 0 && !on[c]) { on[c] = true; down(c); } });
+    up(sel); down(sel);
+    if (D[sel].pt) on[D[sel].pt] = true;
+    const lines = []; const seen = {};
+    const half = is3d ? 42 : 21;
+    ids.forEach((id) => {
+      const p = D[id];
+      if (p.pt && !seen[p.pt + id]) {
+        seen[id + p.pt] = true;
+        const q = D[p.pt];
+        const a = Math.min(p.x, q.x) + 60, b = Math.max(p.x, q.x) - 60;
+        const hl = on[id] && on[p.pt];
+        lines.push({ d: 'M' + a + ' ' + p.y + ' H' + b, c: hl ? T.lineOn : T.lineDim, w: hl ? 4 : 0 });
+      }
+      if (p.par.length) {
+        const pa = p.par.map((q) => D[q]);
+        const mx = Math.round(pa.reduce((s, q) => s + q.x, 0) / pa.length);
+        const y0 = pa[0].y, ch = Math.round((y0 + half + p.y - half) / 2);
+        const hl = on[id] && p.par.some((q) => on[q]);
+        lines.push({ d: route(mx, y0, ch, p.x, p.y - half), c: hl ? T.lineOn : T.lineDim, w: hl ? 4 : 0 });
+      }
+    });
+    const s = D[sel];
+    const kids = ids.filter((c) => D[c].par.indexOf(sel) >= 0).map((c) => D[c].n);
+    const rel = [{ k: 'Eltern', v: s.par.length ? s.par.map((q) => D[q].n).join(' & ') : '–' }];
+    if (s.pt) rel.push({ k: 'Partner:in', v: D[s.pt].n });
+    if (kids.length) rel.push({ k: 'Kinder', v: kids.join(', ') });
+    const gridV = []; for (let i = -10; i <= 10; i++) gridV.push({ x: 720 + i * 170 });
+    const gridH = []; for (let k = 1; k <= 8; k++) gridH.push({ y: Math.round(560 + Math.pow(k, 1.9) * 5.2) });
+    const st = this.state;
+    return {
+      T: T, is3d: is3d, isTron: !is3d, gridV: gridV, gridH: gridH, lines: lines,
+      stageTop: is3d ? 40 : 110, ghostY: rowY[3],
+      seg3dBg: is3d ? T.segOn : 'transparent', seg3dFg: is3d ? T.segOnInk : T.text,
+      segTronBg: is3d ? 'transparent' : T.segOn, segTronFg: is3d ? T.text : T.segOnInk,
+      menuOpen: st.menu, evoOpen: st.evo,
+      evoBg: st.evo ? T.border : T.panel,
+      toggleMenu: () => this.setState({ menu: !st.menu, evo: false }),
+      toggleEvo: () => this.setState({ evo: !st.evo, menu: false }),
+      menuItems: ['Familien', 'Darstellung: 3D · TRON', 'Momentaufnahme', 'GEDCOM importieren', 'Feedback', 'Abmelden'],
+      zoom: st.zoom, crown: st.crown, yes: true, noop: () => {},
+      setZoom: (e) => this.setState({ zoom: Number(e.target.value) }),
+      setCrown: (e) => this.setState({ crown: Number(e.target.value) }),
+      nodes: ids.map((id) => ({
+        x: D[id].x, y: D[id].y, label: D[id].n, sub: D[id].s, on: id === sel ? 'true' : 'false',
+        ini: D[id].n.slice(0, 2).toUpperCase(),
+        av: on[id] ? T.av : T.avDim,
+        border: id === sel ? T.lineOn : (on[id] ? T.lineOn : T.border),
+        glow: id === sel ? '0 0 0 1px ' + T.lineOn + ', 0 0 26px ' + T.glow : (on[id] ? '0 0 14px ' + T.glow : 'none'),
+        color: T.text, op: on[id] ? 1 : 0.62,
+        me: id === 'p',
+        scrollShadow: id === sel ? 'drop-shadow(0 0 10px ' + T.glow + ') drop-shadow(0 0 2px ' + T.lineOn + ')' : (on[id] ? 'drop-shadow(0 6px 8px rgba(20,12,4,.45)) drop-shadow(0 0 6px ' + T.glow + ')' : 'drop-shadow(0 6px 8px rgba(20,12,4,.45)) saturate(.6)'),
+        pick: () => this.setState({ sel: id })
+      })),
+      selName: s.n, selSub: s.s, selRel: rel
+    };
+  }
+}
+</script>
+</body>
+</html>

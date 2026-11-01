@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>ftree Landing</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1214}
+a{color:#fff}a:hover{color:#FFE3BC}
+.glass{background:rgba(255,255,255,.12);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(255,255,255,.22)}
+.nl{color:rgba(255,255,255,.88);text-decoration:none;font-size:15px;padding:8px 12px;border-radius:10px}
+.nl:hover{background:rgba(255,255,255,.12);color:#fff}
+.seg{font:inherit;font-size:13px;border:0;border-radius:999px;padding:6px 12px;cursor:pointer;min-height:32px}
+</style>
+</helmet>
+<div style="position:relative;width:100%;height:900px;overflow:hidden;font-family:Inter,system-ui,sans-serif;color:#fff;background:{{bg}}">
+
+  <sc-if value="{{organic3d}}" hint-placeholder-val="{{true}}">
+    <img src="/_blob/4dfe9ba9f7aa0857eeec406bed737af2" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;transform:scale(1.04);filter:blur(1px)">
+    <div style="position:absolute;left:0;right:0;bottom:0;height:60%;background:linear-gradient(rgba(5,9,7,0),rgba(5,9,7,.7))"></div>
+  </sc-if>
+  <sc-if value="{{organicIllus}}" hint-placeholder-val="{{false}}">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+      <defs>
+        <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#1F2347"></stop>
+          <stop offset=".38" stop-color="#5B4A7A"></stop>
+          <stop offset=".66" stop-color="#C9788A"></stop>
+          <stop offset=".86" stop-color="#F2A27A"></stop>
+          <stop offset="1" stop-color="#FBD3A0"></stop>
+        </linearGradient>
+        <radialGradient id="glow" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="#FFE9C2" stop-opacity=".95"></stop>
+          <stop offset="1" stop-color="#FFE9C2" stop-opacity="0"></stop>
+        </radialGradient>
+        <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#F3B98F"></stop>
+          <stop offset=".22" stop-color="#C98A8E"></stop>
+          <stop offset=".65" stop-color="#4C3F6A"></stop>
+          <stop offset="1" stop-color="#1C1A33"></stop>
+        </linearGradient>
+        <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#0F1214" stop-opacity="0"></stop>
+          <stop offset="1" stop-color="#0F1214" stop-opacity=".78"></stop>
+        </linearGradient>
+        <filter id="soft"><feGaussianBlur stdDeviation="14"></feGaussianBlur></filter>
+        <filter id="lamp"><feGaussianBlur stdDeviation="3"></feGaussianBlur></filter>
+      </defs>
+      <rect width="1440" height="600" fill="url(#sky)"></rect>
+      <g filter="url(#soft)" opacity=".45">
+        <ellipse cx="260" cy="210" rx="260" ry="40" fill="#E8A9A0"></ellipse>
+        <ellipse cx="980" cy="150" rx="320" ry="36" fill="#D99AA6"></ellipse>
+        <ellipse cx="1240" cy="330" rx="260" ry="30" fill="#F4BE98"></ellipse>
+        <ellipse cx="620" cy="380" rx="300" ry="26" fill="#F2B49A"></ellipse>
+      </g>
+      <circle cx="960" cy="575" r="280" fill="url(#glow)" opacity=".75"></circle>
+      <circle cx="960" cy="578" r="44" fill="#FFF1D6"></circle>
+      <path d="M0 600 L0 556 L90 538 L210 552 L330 512 L450 548 L560 530 L700 560 L820 546 L1040 562 L1160 528 L1290 548 L1440 532 L1440 600Z" fill="#B5708A" opacity=".55"></path>
+      <path d="M0 600 L0 574 L140 566 L260 582 L420 568 L600 588 L1180 584 L1300 570 L1440 578 L1440 600Z" fill="#8A577C" opacity=".75"></path>
+      <rect y="600" width="1440" height="300" fill="url(#sea)"></rect>
+      <g fill="#FFE3BC">
+        <rect x="900" y="606" width="120" height="3" rx="1.5" opacity=".8"></rect>
+        <rect x="912" y="622" width="96" height="3" rx="1.5" opacity=".6"></rect>
+        <rect x="926" y="642" width="70" height="3" rx="1.5" opacity=".45"></rect>
+        <rect x="936" y="668" width="50" height="2" rx="1" opacity=".32"></rect>
+        <rect x="944" y="700" width="34" height="2" rx="1" opacity=".22"></rect>
+      </g>
+      <path d="M0 900 L0 690 C150 640 330 626 500 664 C640 696 720 780 780 900Z" fill="#1E1B32"></path>
+      <g stroke="#1E1B32" stroke-linecap="round" fill="none">
+        <path d="M330 672 C326 600 300 560 296 500" stroke-width="13"></path>
+        <path d="M352 672 C356 610 380 560 410 506" stroke-width="12"></path>
+        <path d="M342 672 C344 600 346 540 350 470" stroke-width="10"></path>
+        <path d="M300 540 C260 520 230 520 200 500" stroke-width="6"></path>
+        <path d="M396 530 C440 512 480 512 520 494" stroke-width="6"></path>
+        <path d="M220 506 V600 M250 512 V620 M470 506 V610 M505 498 V590" stroke-width="1.6" opacity=".9"></path>
+      </g>
+      <g fill="#1E1B32">
+        <ellipse cx="350" cy="440" rx="190" ry="72"></ellipse>
+        <ellipse cx="240" cy="472" rx="90" ry="40"></ellipse>
+        <ellipse cx="470" cy="466" rx="100" ry="42"></ellipse>
+        <ellipse cx="330" cy="392" rx="120" ry="50"></ellipse>
+        <ellipse cx="420" cy="404" rx="80" ry="40"></ellipse>
+      </g>
+      <g fill="#F2C38B">
+        <g filter="url(#lamp)" opacity=".9">
+          <circle cx="250" cy="470" r="6"></circle><circle cx="318" cy="420" r="6"></circle><circle cx="400" cy="440" r="6"></circle><circle cx="470" cy="470" r="6"></circle><circle cx="356" cy="380" r="6"></circle><circle cx="196" cy="486" r="5"></circle><circle cx="520" cy="478" r="5"></circle>
+        </g>
+        <circle cx="250" cy="470" r="2.2"></circle><circle cx="318" cy="420" r="2.2"></circle><circle cx="400" cy="440" r="2.2"></circle><circle cx="470" cy="470" r="2.2"></circle><circle cx="356" cy="380" r="2.2"></circle><circle cx="196" cy="486" r="2"></circle><circle cx="520" cy="478" r="2"></circle>
+      </g>
+      <g stroke="#2B2447" stroke-width="1.6" fill="none" stroke-linecap="round">
+        <path d="M1080 250 q7 -6 14 0 q7 -6 14 0"></path>
+        <path d="M1124 232 q5 -4 10 0 q5 -4 10 0"></path>
+        <path d="M1050 276 q4 -3 8 0 q4 -3 8 0"></path>
+      </g>
+      <rect y="520" width="1440" height="380" fill="url(#fade)"></rect>
+    </svg>
+  </sc-if>
+
+  <sc-if value="{{tron}}" hint-placeholder-val="{{false}}">
+    <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+      <defs>
+        <linearGradient id="tsky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#02050A"></stop>
+          <stop offset="1" stop-color="#08202E"></stop>
+        </linearGradient>
+        <filter id="tglow"><feGaussianBlur stdDeviation="6"></feGaussianBlur></filter>
+        <linearGradient id="tfade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#02050A" stop-opacity="0"></stop>
+          <stop offset="1" stop-color="#02050A" stop-opacity=".9"></stop>
+        </linearGradient>
+      </defs>
+      <rect width="1440" height="600" fill="url(#tsky)"></rect>
+      <rect y="600" width="1440" height="300" fill="#02050A"></rect>
+      <g stroke="#48E5FF" fill="none">
+        <path d="M560 600 A160 160 0 0 1 880 600" stroke-width="1.5" opacity=".7"></path>
+        <path d="M600 600 A120 120 0 0 1 840 600" stroke-width="1" opacity=".4"></path>
+        <polyline points="0,600 120,560 220,580 340,530 460,575 560,560" stroke-width="1" opacity=".35"></polyline>
+        <polyline points="880,560 1000,540 1120,575 1240,525 1360,565 1440,550" stroke-width="1" opacity=".35"></polyline>
+      </g>
+      <g stroke="#48E5FF" stroke-width="1" opacity=".45">
+        <sc-for list="{{gridV}}" as="g" hint-placeholder-count="12"><line x1="720" y1="600" x2="{{g.x}}" y2="900"></line></sc-for>
+        <sc-for list="{{gridH}}" as="g" hint-placeholder-count="8"><line x1="0" y1="{{g.y}}" x2="1440" y2="{{g.y}}"></line></sc-for>
+      </g>
+      <rect y="596" width="1440" height="8" fill="#48E5FF" filter="url(#tglow)" opacity=".8"></rect>
+      <line x1="0" y1="600" x2="1440" y2="600" stroke="#9AF3FF" stroke-width="1.5"></line>
+      <g stroke="#48E5FF" stroke-width="1.5" fill="none" opacity=".9">
+        <path d="M720 520 V470 M640 470 H800 M640 470 V440 M800 470 V440 M720 470 V440"></path>
+        <path d="M600 440 V410 M680 440 V410 M600 410 H680 M760 440 H840 M760 440 V410 M840 440 V410"></path>
+      </g>
+      <g fill="#02050A" stroke="#9AF3FF" stroke-width="1.5">
+        <rect x="700" y="520" width="40" height="14" rx="4"></rect>
+        <rect x="620" y="428" width="40" height="14" rx="4"></rect><rect x="700" y="428" width="40" height="14" rx="4"></rect><rect x="780" y="428" width="40" height="14" rx="4"></rect>
+        <rect x="580" y="398" width="40" height="14" rx="4"></rect><rect x="660" y="398" width="40" height="14" rx="4"></rect><rect x="740" y="398" width="40" height="14" rx="4"></rect><rect x="820" y="398" width="40" height="14" rx="4"></rect>
+      </g>
+      <rect y="560" width="1440" height="340" fill="url(#tfade)"></rect>
+    </svg>
+  </sc-if>
+
+  <header style="position:absolute;top:20px;left:28px;right:28px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;z-index:3">
+    <a href="#" style="display:flex;align-items:center;gap:10px;text-decoration:none;color:#fff">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="{{accent}}" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13"></path><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z"></path><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z"></path><path d="M9 27h12"></path></svg>
+      <span style="font-family:'Instrument Serif',serif;font-size:28px;letter-spacing:.01em">ftree</span>
+    </a>
+    <nav class="glass" aria-label="Hauptnavigation" style="display:flex;align-items:center;gap:2px;padding:5px;border-radius:14px">
+      <a class="nl" href="#so">So funktioniert’s</a>
+      <a class="nl" href="#privat">Privatsphäre</a>
+      <a class="nl" href="Tron.dc.html">Beispielfamilie</a>
+      <a href="#login" style="text-decoration:none;font-size:15px;font-weight:500;background:{{ctaBg}};color:{{ctaFg}};padding:9px 16px;border-radius:10px;margin-left:4px">Anmelden</a>
+    </nav>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="glass" role="group" aria-label="Darstellung" style="display:flex;padding:3px;border-radius:999px">
+        <button class="seg" onClick="{{setOrganic}}" style="background:{{orgBg}};color:{{orgFg}}">3D</button>
+        <button class="seg" onClick="{{setTron}}" style="background:{{tronBg}};color:{{tronFg}};font-family:'JetBrains Mono',monospace">TRON</button>
+      </div>
+      <div class="glass" role="group" aria-label="Sprache" style="display:flex;padding:3px;border-radius:999px">
+        <button class="seg" style="background:rgba(255,255,255,.9);color:#0F1214">DE</button>
+        <button class="seg" style="background:transparent;color:#fff">EN</button>
+      </div>
+      <button class="glass" aria-label="Menü" style="width:40px;height:40px;border-radius:12px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg width="18" height="18" viewBox="0 0 18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 5h12M3 9h12M3 13h12"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <main style="position:absolute;left:0;right:0;bottom:170px;display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;padding:0 20px;z-index:2">
+    <span class="glass" style="display:inline-flex;gap:10px;align-items:center;font-size:13px;padding:7px 14px;border-radius:999px;font-family:{{chipFont}}">
+      <span style="width:6px;height:6px;border-radius:50%;background:{{accent}}"></span>Privat · nur für eure Familie · Open Source
+    </span>
+    <h1 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:84px;line-height:.98;letter-spacing:-.01em;max-width:900px;color:{{h1Color}};text-shadow:{{h1Shadow}}">Eure Familie.<br><span style="font-style:italic">Ein Baum, der mitwächst.</span></h1>
+    <p style="margin:0;font-size:19px;line-height:1.5;max-width:600px;color:rgba(255,255,255,.86)">Leg dich selbst an, lade deine Familie ein und seht gemeinsam zu, wie aus Namen eine Geschichte wird.</p>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center">
+      <a href="Willkommen.dc.html" style="text-decoration:none;font-size:16px;font-weight:500;background:{{ctaBg}};color:{{ctaFg}};padding:15px 28px;border-radius:999px;box-shadow:{{ctaShadow}}">Baum anlegen</a>
+      <a href="Tron.dc.html" class="glass" style="text-decoration:none;font-size:16px;font-weight:500;color:#fff;padding:15px 28px;border-radius:999px">Beispielfamilie ansehen</a>
+    </div>
+  </main>
+
+  <section id="so" aria-label="So funktioniert’s" style="position:absolute;left:0;right:0;bottom:48px;display:flex;justify-content:center;gap:12px;flex-wrap:wrap;padding:0 20px;z-index:2">
+    <sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+      <div class="glass" style="display:flex;gap:12px;align-items:center;padding:12px 18px;border-radius:16px;min-width:240px">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:{{accent}}">{{s.n}}</span>
+        <span style="display:flex;flex-direction:column;text-align:left"><b style="font-weight:600;font-size:14px">{{s.t}}</b><span style="font-size:13px;color:rgba(255,255,255,.74)">{{s.d}}</span></span>
+      </div>
+    </sc-for>
+  </section>
+  <footer style="position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:8px;font-size:12px;color:rgba(244,241,234,.62);z-index:5">
+    <span>v0.32.0</span><span aria-hidden="true">·</span><a href="#terms" style="color:rgba(244,241,234,.62)">Nutzungsbedingungen</a><span aria-hidden="true">·</span><a href="#privacy" style="color:rgba(244,241,234,.62)">Datenschutz</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mode":{"editor":"enum","options":["3D","TRON"],"default":"3D"},"hintergrund":{"editor":"enum","options":["3D-Szene","Illustration"],"default":"3D-Szene"},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { mode: null }; }
+  renderVals() {
+    const mode = this.state.mode || this.props.mode || '3D';
+    const t = mode === 'TRON';
+    const gridV = [];
+    for (let i = -10; i <= 10; i++) gridV.push({ x: 720 + i * 170 });
+    const gridH = [];
+    for (let k = 1; k <= 9; k++) gridH.push({ y: Math.round(600 + Math.pow(k, 1.9) * 4.2) });
+    return {
+      organic: !t, tron: t,
+      organic3d: !t && (this.props.hintergrund || '3D-Szene') === '3D-Szene',
+      organicIllus: !t && (this.props.hintergrund || '3D-Szene') !== '3D-Szene', gridV: gridV, gridH: gridH,
+      bg: t ? '#02050A' : '#0F1214',
+      accent: t ? '#48E5FF' : '#F2C38B',
+      ctaBg: t ? '#48E5FF' : '#F4EEE3', ctaFg: t ? '#02050A' : '#0F1214',
+      ctaShadow: t ? '0 0 24px rgba(72,229,255,.55)' : '0 10px 30px rgba(0,0,0,.25)',
+      h1Color: t ? '#E8FCFF' : '#F4EEE3',
+      h1Shadow: t ? '0 0 22px rgba(72,229,255,.45)' : '0 2px 30px rgba(15,18,20,.35)',
+      chipFont: t ? "'JetBrains Mono',monospace" : 'Inter,sans-serif',
+      orgBg: t ? 'transparent' : 'rgba(255,255,255,.9)', orgFg: t ? '#fff' : '#0F1214',
+      tronBg: t ? '#48E5FF' : 'transparent', tronFg: t ? '#02050A' : '#fff',
+      setOrganic: () => this.setState({ mode: '3D' }),
+      setTron: () => this.setState({ mode: 'TRON' }),
+      steps: [
+        { n: '01', t: 'Dich anlegen', d: 'In 30 Sekunden steht dein Platz' },
+        { n: '02', t: 'Familie einladen', d: 'Jede:r pflegt den eigenen Ast' },
+        { n: '03', t: 'Gemeinsam wachsen', d: 'Fotos, Daten, Geschichten' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

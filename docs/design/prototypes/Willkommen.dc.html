@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Willkommen – neuer Baum</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0F1214}
+a{color:#FFE3BC}a:hover{color:#fff}
+.glass{background:rgba(255,255,255,.12);backdrop-filter:blur(18px) saturate(140%);-webkit-backdrop-filter:blur(18px) saturate(140%);border:1px solid rgba(255,255,255,.22)}
+.dglass{background:rgba(16,20,22,.52);backdrop-filter:blur(16px) saturate(140%);-webkit-backdrop-filter:blur(16px) saturate(140%);border:1px solid rgba(255,255,255,.16)}
+.fi{font:inherit;font-size:16px;color:#fff;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.26);border-radius:12px;padding:12px 14px;width:100%;box-sizing:border-box}
+.fi::placeholder{color:rgba(255,255,255,.55)}
+.fi:focus{outline:2px solid #F2C38B;outline-offset:1px}
+.lb{display:flex;flex-direction:column;gap:6px;font-size:13px;color:rgba(255,255,255,.78)}
+.slot{font:inherit;font-size:14px;font-weight:500;color:#F4EEE3;background:rgba(16,20,22,.35);border:1.5px dashed rgba(242,195,139,.7);border-radius:999px;padding:0 16px;height:40px;cursor:pointer;white-space:nowrap}
+.slot:hover{background:rgba(16,20,22,.6);border-style:solid}
+.dk{font:inherit;font-size:13px;color:#fff;background:transparent;border:0;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 14px;cursor:pointer;min-width:68px}
+.dk:hover{background:rgba(255,255,255,.12)}
+.mi{font:inherit;font-size:14px;color:#fff;background:transparent;border:0;text-align:left;padding:10px 12px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%}
+.mi:hover{background:rgba(255,255,255,.1)}
+.sprout{animation:sprout .7s cubic-bezier(.2,.8,.2,1)}
+@keyframes sprout{0%{transform:translate(-50%,-50%) scale(.3);opacity:0}70%{transform:translate(-50%,-50%) scale(1.06);opacity:1}100%{transform:translate(-50%,-50%) scale(1)}}
+.pulse{animation:pulse 1.2s ease-in-out 3}
+@keyframes pulse{50%{box-shadow:0 0 0 8px rgba(242,195,139,.35)}}
+</style>
+</helmet>
+<div style="position:relative;width:100%;height:900px;overflow:hidden;font-family:Inter,system-ui,sans-serif;color:#fff;background:#0F1214">
+
+  <sc-if value="{{scene3d}}" hint-placeholder-val="{{true}}">
+    <img src="/_blob/4dfe9ba9f7aa0857eeec406bed737af2" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;transform:{{imgTf}};filter:{{imgFilter}};transition:transform 1.2s cubic-bezier(.2,.8,.2,1),filter 1.2s">
+    <div style="position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(rgba(6,10,8,0),rgba(6,10,8,.55))"></div>
+  </sc-if>
+  <sc-if value="{{illus}}" hint-placeholder-val="{{false}}">
+  <svg viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;width:100%;height:100%" aria-hidden="true">
+    <defs>
+      <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#1F2347"></stop><stop offset=".38" stop-color="#5B4A7A"></stop><stop offset=".66" stop-color="#C9788A"></stop><stop offset=".86" stop-color="#F2A27A"></stop><stop offset="1" stop-color="#FBD3A0"></stop>
+      </linearGradient>
+      <radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#FFE9C2" stop-opacity=".95"></stop><stop offset="1" stop-color="#FFE9C2" stop-opacity="0"></stop></radialGradient>
+      <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#F3B98F"></stop><stop offset=".22" stop-color="#C98A8E"></stop><stop offset=".65" stop-color="#4C3F6A"></stop><stop offset="1" stop-color="#1C1A33"></stop>
+      </linearGradient>
+      <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0F1214" stop-opacity="0"></stop><stop offset="1" stop-color="#0F1214" stop-opacity=".7"></stop></linearGradient>
+      <filter id="soft"><feGaussianBlur stdDeviation="14"></feGaussianBlur></filter>
+      <filter id="lamp"><feGaussianBlur stdDeviation="3"></feGaussianBlur></filter>
+    </defs>
+    <rect width="1440" height="600" fill="url(#sky)"></rect>
+    <g filter="url(#soft)" opacity=".45">
+      <ellipse cx="260" cy="210" rx="260" ry="40" fill="#E8A9A0"></ellipse><ellipse cx="980" cy="150" rx="320" ry="36" fill="#D99AA6"></ellipse><ellipse cx="1240" cy="330" rx="260" ry="30" fill="#F4BE98"></ellipse>
+    </g>
+    <circle cx="{{sunX}}" cy="575" r="280" fill="url(#glow)" opacity=".75"></circle>
+    <circle cx="{{sunX}}" cy="578" r="44" fill="#FFF1D6"></circle>
+    <path d="M0 600 L0 556 L90 538 L210 552 L330 512 L450 548 L560 530 L700 560 L820 546 L1040 562 L1160 528 L1290 548 L1440 532 L1440 600Z" fill="#B5708A" opacity=".55"></path>
+    <path d="M0 600 L0 574 L140 566 L260 582 L420 568 L600 588 L1180 584 L1300 570 L1440 578 L1440 600Z" fill="#8A577C" opacity=".75"></path>
+    <rect y="600" width="1440" height="300" fill="url(#sea)"></rect>
+    <g transform="{{treeTf}}">
+      <path d="M-120 900 L-120 700 C100 640 330 626 520 660 C680 690 800 780 860 900Z" fill="#1E1B32"></path>
+      <g stroke="#1E1B32" stroke-linecap="round" fill="none">
+        <path d="M330 672 C326 600 300 560 296 500" stroke-width="13"></path><path d="M352 672 C356 610 380 560 410 506" stroke-width="12"></path><path d="M342 672 C344 600 346 540 350 470" stroke-width="10"></path>
+        <path d="M300 540 C260 520 230 520 200 500" stroke-width="6"></path><path d="M396 530 C440 512 480 512 520 494" stroke-width="6"></path>
+        <path d="M220 506 V600 M250 512 V620 M470 506 V610 M505 498 V590" stroke-width="1.6"></path>
+      </g>
+      <g fill="#1E1B32">
+        <ellipse cx="350" cy="440" rx="190" ry="72"></ellipse><ellipse cx="240" cy="472" rx="90" ry="40"></ellipse><ellipse cx="470" cy="466" rx="100" ry="42"></ellipse><ellipse cx="330" cy="392" rx="120" ry="50"></ellipse><ellipse cx="420" cy="404" rx="80" ry="40"></ellipse>
+      </g>
+      <g fill="#F2C38B" opacity="{{lampOpacity}}">
+        <g filter="url(#lamp)"><circle cx="250" cy="470" r="6"></circle><circle cx="318" cy="420" r="6"></circle><circle cx="400" cy="440" r="6"></circle><circle cx="470" cy="470" r="6"></circle><circle cx="356" cy="380" r="6"></circle></g>
+        <circle cx="250" cy="470" r="2.2"></circle><circle cx="318" cy="420" r="2.2"></circle><circle cx="400" cy="440" r="2.2"></circle><circle cx="470" cy="470" r="2.2"></circle><circle cx="356" cy="380" r="2.2"></circle>
+      </g>
+    </g>
+    <rect y="560" width="1440" height="340" fill="url(#fade)"></rect>
+  </svg>
+  </sc-if>
+
+  <!-- top bar -->
+  <header style="position:absolute;top:20px;left:28px;right:28px;display:flex;align-items:center;justify-content:space-between;gap:16px;z-index:6">
+    <div style="display:flex;align-items:center;gap:10px">
+      <svg width="30" height="30" viewBox="0 0 30 30" fill="none" stroke="#F2C38B" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13"></path><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z"></path><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z"></path><path d="M9 27h12"></path></svg>
+      <span style="font-family:'Instrument Serif',serif;font-size:28px">ftree</span>
+    </div>
+    <sc-if value="{{inTree}}" hint-placeholder-val="{{false}}">
+      <span class="glass" style="font-family:'Instrument Serif',serif;font-size:21px;padding:8px 18px;border-radius:14px">{{familyName}}</span>
+    </sc-if>
+    <div style="display:flex;gap:8px;align-items:center">
+      <div class="glass" role="group" aria-label="Darstellung" style="display:flex;padding:3px;border-radius:999px">
+        <a href="Baum3D.dc.html" style="text-decoration:none;font-size:13px;padding:7px 13px;border-radius:999px;background:rgba(244,238,227,.92);color:#0F1214">3D</a>
+        <a href="Tron.dc.html" style="text-decoration:none;font-size:13px;padding:7px 13px;border-radius:999px;color:#F4F1EA">TRON</a>
+      </div>
+      <div class="glass" role="group" aria-label="Sprache" style="display:flex;padding:3px;border-radius:999px">
+        <button onClick="{{langDe}}" style="font:inherit;font-size:13px;border:0;border-radius:999px;padding:6px 12px;min-height:32px;cursor:pointer;background:{{deBg}};color:{{deFg}}">DE</button>
+        <button onClick="{{langEn}}" style="font:inherit;font-size:13px;border:0;border-radius:999px;padding:6px 12px;min-height:32px;cursor:pointer;background:{{enBg}};color:{{enFg}}">EN</button>
+      </div>
+      <sc-if value="{{showEvoBtn}}" hint-placeholder-val="{{false}}">
+        <button class="glass" onClick="{{toggleEvo}}" aria-expanded="{{evoOpen}}" style="height:42px;border-radius:12px;color:#fff;cursor:pointer;display:flex;align-items:center;gap:8px;padding:0 12px;font:inherit;font-size:14px;background:{{evoBtnBg}}">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><path d="M2 4h7M12 4h2M2 8h2M7 8h7M2 12h9M14 12h0"></path><circle cx="10.5" cy="4" r="1.5"></circle><circle cx="5.5" cy="8" r="1.5"></circle><circle cx="12.5" cy="12" r="1.5"></circle></svg>
+          Evolution
+          <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:#0F1214;background:#F2C38B;border-radius:5px;padding:1px 5px">DEV</span>
+        </button>
+      </sc-if>
+      <button class="glass" onClick="{{toggleMenu}}" aria-label="Menü" aria-expanded="{{menuOpen}}" style="width:42px;height:42px;border-radius:12px;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center">
+        <svg width="18" height="18" viewBox="0 0 18 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 5h12M3 9h12M3 13h12"></path></svg>
+      </button>
+    </div>
+  </header>
+
+  <sc-if value="{{evoOpen}}" hint-placeholder-val="{{false}}">
+    <div class="dglass" style="position:absolute;top:72px;right:80px;width:300px;border-radius:16px;padding:16px;z-index:7;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-family:'Instrument Serif',serif;font-size:24px">Evolution</span>
+        <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:rgba(255,255,255,.6)">NUR ENTWICKLER</span>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#F2C38B">ANSICHT</span>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px">Zoom<input type="range" min="0" max="100" value="{{zoom}}" onChange="{{setZoom}}" style="accent-color:#F2C38B"></label>
+      <div style="display:flex;gap:6px">
+        <button class="glass" style="flex:1;height:34px;border-radius:10px;color:#fff;font:inherit;font-size:13px;cursor:pointer">Front</button>
+        <button class="glass" style="flex:1;height:34px;border-radius:10px;color:#fff;font:inherit;font-size:13px;cursor:pointer">Oben</button>
+        <button class="glass" style="flex:1;height:34px;border-radius:10px;color:#fff;font:inherit;font-size:13px;cursor:pointer">Orbit</button>
+      </div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;color:#F2C38B">VORSCHAU</span>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px">Kronen-Skala<input type="range" min="0" max="100" value="{{crown}}" onChange="{{setCrown}}" style="accent-color:#F2C38B"></label>
+      <label style="display:flex;flex-direction:column;gap:6px;font-size:13px">Beziehungs-Abstand<input type="range" min="0" max="100" value="{{spacing}}" onChange="{{setSpacing}}" style="accent-color:#F2C38B"></label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" checked="{{yes}}" onChange="{{noop}}" style="accent-color:#F2C38B"> Verbindungslinien</label>
+      <label style="display:flex;gap:8px;align-items:center;font-size:13px"><input type="checkbox" checked="{{yes}}" onChange="{{noop}}" style="accent-color:#F2C38B"> Leuchtkugeln</label>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{menuOpen}}" hint-placeholder-val="{{false}}">
+    <div class="dglass" role="menu" style="position:absolute;top:72px;right:28px;width:260px;border-radius:16px;padding:8px;z-index:7;display:flex;flex-direction:column">
+      <button class="mi">Familien <span style="font-size:12px;opacity:.6">1</span></button>
+      <button class="mi">Darstellung <span style="font-size:12px;opacity:.6">3D · TRON</span></button>
+      <button class="mi">Momentaufnahme</button>
+      <button class="mi">GEDCOM importieren</button>
+      <button class="mi">Feedback</button>
+      <div style="height:1px;background:rgba(255,255,255,.14);margin:6px 4px"></div>
+      <button class="mi">Datenschutz &amp; Nutzungsbedingungen</button>
+      <button class="mi">Abmelden</button>
+    </div>
+  </sc-if>
+
+  <!-- WELCOME -->
+  <sc-if value="{{inWelcome}}" hint-placeholder-val="{{true}}">
+    <form onSubmit="{{plant}}" class="dglass" style="position:absolute;left:6%;bottom:72px;width:520px;max-width:88%;border-radius:28px;padding:32px;display:flex;flex-direction:column;gap:18px;z-index:4">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#F2C38B">Willkommen bei ftree</span>
+      <h1 style="margin:0;font-family:'Instrument Serif',serif;font-weight:400;font-size:56px;line-height:1">Lass uns deinen <span style="font-style:italic">Baum pflanzen.</span></h1>
+      <p style="margin:0;font-size:16px;line-height:1.5;color:rgba(255,255,255,.82)">Er beginnt mit dir – stimmt das so?</p>
+      <div style="display:flex;gap:16px;align-items:center">
+        <div style="flex:none;width:64px;height:64px;border-radius:50%;background:#F2C38B;color:#0F1214;display:flex;align-items:center;justify-content:center;font-family:'Instrument Serif',serif;font-size:28px;box-shadow:0 0 0 6px rgba(242,195,139,.22)">{{ini}}</div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <span style="font-family:'Instrument Serif',serif;font-size:26px">{{fullName}}</span>
+          <span style="font-size:13px;color:rgba(255,255,255,.7)">{{yearLabel}}</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+        <label class="lb">Vorname<input class="fi" value="{{first}}" onChange="{{setFirst}}"></label>
+        <label class="lb">Nachname<input class="fi" value="{{last}}" onChange="{{setLast}}"></label>
+        <label class="lb">Geburtsjahr<input class="fi" value="{{year}}" onChange="{{setYear}}" placeholder="optional" inputmode="numeric"></label>
+      </div>
+      <button type="submit" style="font:inherit;font-size:16px;font-weight:500;border:0;border-radius:999px;background:#F4EEE3;color:#0F1214;height:52px;cursor:pointer">Baum pflanzen</button>
+      <div style="display:flex;gap:18px;flex-wrap:wrap;font-size:14px">
+        <a href="#gedcom">Stammbaum-Datei importieren (GEDCOM)</a>
+        <a href="Tron.dc.html">Erst die Beispielfamilie ansehen</a>
+      </div>
+    </form>
+  </sc-if>
+
+  <!-- TREE -->
+  <sc-if value="{{inTree}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;left:50%;top:0;width:1440px;height:900px;margin-left:-720px;z-index:3">
+      <svg width="1440" height="900" style="position:absolute;inset:0" aria-hidden="true">
+        <sc-for list="{{lines}}" as="l" hint-placeholder-count="2"><path d="{{l.d}}" stroke="rgba(242,195,139,.75)" stroke-width="1.5" fill="none"></path></sc-for>
+      </svg>
+      <sc-for list="{{cards}}" as="c" hint-placeholder-count="1">
+        <div class="sprout dglass" style="position:absolute;left:{{c.x}}px;top:{{c.y}}px;transform:translate(-50%,-50%);display:flex;align-items:center;gap:10px;padding:8px 16px 8px 8px;border-radius:999px;box-shadow:{{c.shadow}};border-color:{{c.border}}">
+          <span style="width:36px;height:36px;border-radius:50%;background:{{c.av}};color:#0F1214;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600">{{c.ini}}</span>
+          <span style="display:flex;flex-direction:column"><span style="font-size:15px;font-weight:500;white-space:nowrap">{{c.name}}</span><span style="font-size:12px;color:rgba(255,255,255,.7)">{{c.sub}}</span></span>
+        </div>
+      </sc-for>
+      <sc-for list="{{slots}}" as="s" hint-placeholder-count="4">
+        <button class="slot {{pulseClass}}" onClick="{{s.open}}" style="position:absolute;left:{{s.x}}px;top:{{s.y}}px;transform:translate(-50%,-50%)">+ {{s.label}}</button>
+      </sc-for>
+
+      <sc-if value="{{showPop}}" hint-placeholder-val="{{false}}">
+        <form onSubmit="{{save}}" class="dglass" style="position:absolute;left:{{popX}}px;top:{{popY}}px;width:280px;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px;z-index:8;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-family:'Instrument Serif',serif;font-size:24px">{{popTitle}}</span>
+            <button type="button" onClick="{{closePop}}" aria-label="Schließen" style="width:32px;height:32px;border:0;border-radius:8px;background:transparent;color:#fff;cursor:pointer">
+              <svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"></path></svg>
+            </button>
+          </div>
+          <input class="fi" aria-label="Vorname" placeholder="Vorname" value="{{draft.first}}" onChange="{{dFirst}}" onKeyDown="{{esc}}" autoFocus="{{yes}}">
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+            <input class="fi" aria-label="Nachname" placeholder="Nachname" value="{{draft.last}}" onChange="{{dLast}}" onKeyDown="{{esc}}">
+            <input class="fi" aria-label="Geburtsjahr" placeholder="Jahr" value="{{draft.year}}" onChange="{{dYear}}" onKeyDown="{{esc}}">
+          </div>
+          <button type="submit" style="font:inherit;font-size:15px;font-weight:500;border:0;border-radius:999px;background:#F4EEE3;color:#0F1214;height:44px;cursor:pointer">Hinzufügen ↵</button>
+          <span style="font-size:12px;color:rgba(255,255,255,.65)">{{popHint}}</span>
+        </form>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{showToast}}" hint-placeholder-val="{{false}}">
+      <div class="dglass" role="status" style="position:absolute;left:50%;top:84px;transform:translateX(-50%);border-radius:999px;padding:10px 18px;font-size:14px;z-index:6">{{toast}}</div>
+    </sc-if>
+
+    <nav class="dglass" aria-label="Hauptaktionen" style="position:absolute;left:50%;bottom:44px;transform:translateX(-50%);display:flex;align-items:center;gap:4px;padding:6px;border-radius:22px;z-index:{{zDock}}">
+      <button onClick="{{hintSlots}}" style="font:inherit;font-size:15px;font-weight:500;border:0;border-radius:16px;background:#F4EEE3;color:#0F1214;height:54px;padding:0 20px;display:flex;gap:8px;align-items:center;cursor:pointer">
+        <svg width="18" height="18" viewBox="0 0 18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 3v12M3 9h12"></path></svg>Person
+      </button>
+      <button class="dk"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5"></circle><path d="M13.5 13.5l3.5 3.5"></path></svg>Suchen</button>
+      <button class="dk"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3"></circle><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17"></path><path d="M15.5 6v6M12.5 9h6"></path></svg>Einladen</button>
+      <button class="dk"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z"></path><circle cx="10" cy="10" r="2.2"></circle></svg>Ansicht</button>
+    </nav>
+
+    <sc-if value="{{touring}}" hint-placeholder-val="{{false}}">
+      <div class="dglass" role="dialog" aria-label="Kurze Einführung" style="position:absolute;left:{{tipX}};top:{{tipY}};bottom:{{tipB}};transform:translateX(-50%);width:330px;border-radius:20px;padding:18px 20px;z-index:9;display:flex;flex-direction:column;gap:8px;box-shadow:0 24px 60px rgba(0,0,0,.35)">
+        <span style="font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;color:#F2C38B">{{tipStep}}</span>
+        <span style="font-family:'Instrument Serif',serif;font-size:26px;line-height:1.05">{{tipTitle}}</span>
+        <span style="font-size:14px;line-height:1.5;color:rgba(255,255,255,.82)">{{tipText}}</span>
+        <div style="display:flex;justify-content:space-between;margin-top:6px">
+          <button onClick="{{skipTour}}" style="font:inherit;font-size:14px;border:0;background:transparent;color:rgba(255,255,255,.7);cursor:pointer;min-height:40px">Überspringen</button>
+          <button onClick="{{nextTip}}" style="font:inherit;font-size:14px;font-weight:500;border:0;border-radius:999px;background:#F4EEE3;color:#0F1214;padding:0 18px;min-height:40px;cursor:pointer">{{tipNext}}</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <button onClick="{{restart}}" style="position:absolute;left:28px;bottom:28px;font:inherit;font-size:12px;border:0;background:transparent;color:rgba(255,255,255,.55);cursor:pointer;z-index:5">Prototyp neu starten</button>
+  </sc-if>
+  <footer style="position:absolute;left:0;right:0;bottom:12px;display:flex;justify-content:center;gap:8px;font-size:12px;color:rgba(244,241,234,.62);z-index:5">
+    <span>v0.32.0</span><span aria-hidden="true">·</span><a href="#terms" style="color:rgba(244,241,234,.62)">Nutzungsbedingungen</a><span aria-hidden="true">·</span><a href="#privacy" style="color:rgba(244,241,234,.62)">Datenschutz</a>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"hintergrund":{"editor":"enum","options":["3D-Szene","Illustration"],"default":"3D-Szene"},"entwickler":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = this.fresh(); }
+  fresh() {
+    return { phase: 'welcome', first: 'Peter', last: 'Berger', year: '', lang: 'de', menu: false, tour: 0,
+      people: {}, slot: null, draft: { first: '', last: '', year: '' }, toast: '', pulse: false };
+  }
+  renderVals() {
+    const st = this.state;
+    const inTree = st.phase === 'tree';
+    const full = (st.first + ' ' + st.last).trim() || 'Dein Name';
+    const ini = full.split(/\s+/).map((w) => w[0]).join('').slice(0, 2).toUpperCase();
+    const s3 = (this.props.hintergrund || '3D-Szene') === '3D-Szene';
+    const dy = s3 ? -220 : 0;
+    const P = { me: { x: 720, y: 470 + dy }, mother: { x: 600, y: 330 + dy }, father: { x: 840, y: 330 + dy }, partner: { x: 935, y: 470 + dy }, child: { x: 720, y: 600 + dy } };
+    const labels = { mother: 'Mutter', father: 'Vater', partner: 'Partner:in', child: 'Kind' };
+    const ppl = st.people;
+    const cards = [{ x: P.me.x, y: P.me.y, name: full, sub: 'Das bist du', ini: ini, av: '#F2C38B', shadow: '0 0 0 6px rgba(242,195,139,.22), 0 0 40px rgba(242,195,139,.35)', border: 'rgba(242,195,139,.8)' }];
+    Object.keys(ppl).forEach((k) => {
+      const p = ppl[k];
+      cards.push({ x: P[k].x, y: P[k].y, name: (p.first + ' ' + p.last).trim(), sub: labels[k] + (p.year ? ' · * ' + p.year : ''), ini: ((p.first[0] || '') + (p.last[0] || '')).toUpperCase() || '?', av: '#D9C3A5', shadow: 'none', border: 'rgba(255,255,255,.16)' });
+    });
+    const slots = ['mother', 'father', 'partner', 'child'].filter((k) => !ppl[k] && k !== st.slot).map((k) => ({ x: P[k].x, y: P[k].y, label: labels[k], open: () => this.openSlot(k) }));
+    const lines = [];
+    if (ppl.mother || ppl.father) {
+      const a = 446 + dy, b = 400 + dy, c = 354 + dy;
+      lines.push({ d: 'M720 ' + a + ' V' + b + ' ' + (ppl.mother ? 'M720 ' + b + ' H600 V' + c + ' ' : '') + (ppl.father ? 'M720 ' + b + ' H840 V' + c : '') });
+    }
+    if (ppl.partner) lines.push({ d: 'M800 ' + (470 + dy) + ' H860' });
+    if (ppl.child) lines.push({ d: 'M720 ' + (494 + dy) + ' V' + (576 + dy) });
+    const tips = [
+      { title: 'Das bist du.', text: 'Beim Öffnen fliegt die Kamera immer zu deiner Karte. Ziehen dreht den Baum, Scrollen zoomt.', x: '50%', y: s3 ? '420px' : '520px', b: 'auto' },
+      { title: 'Tippe auf ein +', text: 'Die gestrichelten Plätze zeigen, wer noch fehlt. Ein Vorname reicht – Enter, fertig.', x: '50%', y: s3 ? '440px' : '130px', b: 'auto' },
+      { title: 'Alles Wichtige unten', text: 'Person hinzufügen, Suchen, Familie einladen, Ansicht. Einstellungen, Sprache und Darstellung findest du oben rechts.', x: '50%', y: 'auto', b: '104px' }
+    ];
+    const t = tips[Math.min(st.tour, 2)];
+    const touring = inTree && st.tour < 3 && !st.slot;
+    const slot = st.slot;
+    const who = st.first || 'dir';
+    const de = st.lang === 'de';
+    const nextOpen = (s) => { const order = ['mother', 'father']; const i = order.indexOf(s); return (i === 0 && !st.people.father) ? 'father' : null; };
+    return {
+      inWelcome: !inTree, inTree: inTree,
+      sunX: inTree ? 1120 : 960,
+      treeTf: inTree ? 'translate(720 700) scale(1.55) translate(-350 -672)' : 'translate(0 0)',
+      lampOpacity: inTree ? 0.35 : 1,
+      familyName: 'Familie ' + (st.last || 'ohne Namen'),
+      first: st.first, last: st.last, year: st.year, fullName: full, ini: ini,
+      yearLabel: st.year ? '* ' + st.year : 'Das bist du',
+      setFirst: (e) => this.setState({ first: e.target.value }),
+      setLast: (e) => this.setState({ last: e.target.value }),
+      setYear: (e) => this.setState({ year: e.target.value }),
+      plant: (e) => { e.preventDefault(); this.setState({ phase: 'tree', tour: 0 }); },
+      deBg: de ? 'rgba(255,255,255,.9)' : 'transparent', deFg: de ? '#0F1214' : '#fff',
+      enBg: de ? 'transparent' : 'rgba(255,255,255,.9)', enFg: de ? '#fff' : '#0F1214',
+      langDe: () => this.setState({ lang: 'de' }), langEn: () => this.setState({ lang: 'en' }),
+      menuOpen: st.menu, toggleMenu: () => this.setState({ menu: !st.menu, evo: false }),
+      scene3d: (this.props.hintergrund || '3D-Szene') === '3D-Szene',
+      illus: (this.props.hintergrund || '3D-Szene') !== '3D-Szene',
+      imgTf: inTree ? 'translateX(0) scale(1.08)' : 'translateX(16%) scale(1)',
+      imgFilter: inTree ? 'none' : 'blur(1.5px) brightness(.92)',
+      showEvoBtn: inTree && (this.props.entwickler ?? true),
+      evoOpen: !!st.evo, evoBtnBg: st.evo ? 'rgba(242,195,139,.28)' : 'rgba(255,255,255,.12)',
+      toggleEvo: () => this.setState({ evo: !st.evo, menu: false }),
+      zoom: st.zoom ?? 50, crown: st.crown ?? 50, spacing: st.spacing ?? 50,
+      setZoom: (e) => this.setState({ zoom: Number(e.target.value) }),
+      setCrown: (e) => this.setState({ crown: Number(e.target.value) }),
+      setSpacing: (e) => this.setState({ spacing: Number(e.target.value) }),
+      noop: () => {},
+      cards: cards, slots: slots, lines: lines,
+      pulseClass: st.pulse ? 'pulse' : '',
+      hintSlots: () => this.setState({ pulse: false }, () => this.setState({ pulse: true, toast: 'Tippe auf ein + am Baum, um die Person einzuhängen' })),
+      showPop: !!slot,
+      popX: slot ? Math.min(P[slot].x + 40, 1440 - 300) : 0,
+      popY: slot ? Math.max(P[slot].y - 60, 80) : 0,
+      popTitle: slot ? labels[slot] + ' von ' + who : '',
+      popHint: slot === 'mother' ? 'Danach geht es direkt mit dem Vater weiter.' : 'Esc schließt · Details später im Profil',
+      draft: st.draft, yes: true,
+      dFirst: (e) => { const v = e.target.value; this.setState((s) => ({ draft: Object.assign({}, s.draft, { first: v }) })); },
+      dLast: (e) => { const v = e.target.value; this.setState((s) => ({ draft: Object.assign({}, s.draft, { last: v }) })); },
+      dYear: (e) => { const v = e.target.value; this.setState((s) => ({ draft: Object.assign({}, s.draft, { year: v }) })); },
+      esc: (e) => { if (e.key === 'Escape') this.setState({ slot: null }); },
+      closePop: () => this.setState({ slot: null }),
+      save: (e) => {
+        e.preventDefault();
+        const d = st.draft; if (!d.first.trim() && !d.last.trim()) return;
+        const people = Object.assign({}, st.people, { [slot]: { first: d.first.trim(), last: d.last.trim(), year: d.year.trim() } });
+        const nx = nextOpen(slot);
+        this.setState({ people: people, slot: nx, draft: { first: '', last: nx === 'father' ? st.last : '', year: '' },
+          toast: (d.first.trim() || 'Person') + ' wächst jetzt in deinem Baum', pulse: false });
+      },
+      showToast: !!st.toast && !slot, toast: st.toast,
+      zDock: touring && st.tour === 2 ? 9 : 5,
+      touring: touring, tipStep: 'EINFÜHRUNG ' + (Math.min(st.tour, 2) + 1) + '/3',
+      tipTitle: t.title, tipText: t.text, tipX: t.x, tipY: t.y, tipB: t.b,
+      tipNext: st.tour === 2 ? 'Los geht’s' : 'Weiter',
+      nextTip: () => this.setState({ tour: st.tour + 1 }),
+      skipTour: () => this.setState({ tour: 3 }),
+      restart: () => this.setState(this.fresh())
+    };
+  }
+  openSlot(k) {
+    this.setState((s) => ({ slot: k, tour: 3, menu: false, toast: '', draft: { first: '', last: (k === 'father' || k === 'child') ? s.last : '', year: '' } }));
+  }
+}
+</script>
+</body>
+</html>
