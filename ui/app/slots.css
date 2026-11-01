@@ -1,0 +1,217 @@
+/* "+" slots around the selected person, their quick-add popover, and the toast after adding. Tokens from tokens.css. */
+
+/* The shape the slots surround: the hanging card (180 x 240 CSS px, its top edge on the Html's position, like
+   `.scroll`) or the TRON label (a point). Only the slots themselves take pointer events. */
+.relative-slots {
+  position: relative;
+  pointer-events: none;
+  font-family: var(--font-ui);
+}
+
+.relative-slots-scroll {
+  transform: translateY(50%);
+}
+
+.relative-slots-parents,
+.relative-slots-partner,
+.relative-slots-child {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+}
+
+.relative-slots-parents {
+  bottom: calc(100% + 28px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.relative-slots-partner {
+  top: 50%;
+  left: calc(100% + 24px);
+  transform: translateY(-50%);
+}
+
+.relative-slots-child {
+  top: calc(100% + 24px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Around a label: parents half a row up, partner to the right, child half a row down. */
+.relative-slots-pill .relative-slots-parents {
+  bottom: 40px;
+}
+
+.relative-slots-pill .relative-slots-partner {
+  left: 64px;
+}
+
+.relative-slots-pill .relative-slots-child {
+  top: 40px;
+}
+
+.relative-slot {
+  height: var(--size-slot);
+  padding: 0 14px;
+  border: 1.5px dashed var(--slot-border);
+  border-radius: var(--radius-pill);
+  background: var(--node);
+  color: var(--text);
+  font: 500 13px/1 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.relative-slot:hover,
+.relative-slot.is-open {
+  border-style: solid;
+  background: var(--panel-strong);
+}
+
+.relative-slot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.quick-add {
+  position: fixed;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  width: min(280px, calc(100vw - 32px));
+  padding: 18px;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+}
+
+.quick-add-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.quick-add-head h2 {
+  margin: 0;
+  font: 400 24px/1.1 var(--font-display);
+}
+
+.quick-add-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.quick-add-close:hover {
+  background: var(--hover);
+}
+
+.quick-add-field {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--size-control);
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--hover);
+  color: var(--text);
+  /* 16px keeps iOS from zooming into the field. */
+  font: 16px var(--font-ui);
+}
+
+.quick-add-field::placeholder {
+  color: var(--muted);
+}
+
+.quick-add-field:focus-visible,
+.quick-add-close:focus-visible,
+.quick-add-save:focus-visible,
+.added-toast button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.quick-add-save {
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--primary-ink);
+  font: 500 15px var(--font-ui);
+  cursor: pointer;
+}
+
+.quick-add-save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quick-add-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.quick-add-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Above the dock, like the relation legend on phones. */
+.added-toast {
+  position: fixed;
+  z-index: 8;
+  bottom: calc(44px + var(--size-dock-primary) + 24px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 6px 6px 6px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  transform: translateX(-50%);
+  animation: added-toast-in 0.25s ease-out;
+}
+
+.added-toast button {
+  flex: none;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--accent);
+  font: 500 14px var(--font-ui);
+  cursor: pointer;
+}
+
+.added-toast button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+@keyframes added-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .added-toast {
+    animation: none;
+  }
+}

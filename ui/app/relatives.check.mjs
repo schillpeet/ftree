@@ -1,7 +1,7 @@
 // Run with `node app/relatives.check.mjs`: parents, children, and partners follow the stored links,
 // siblings share all parents, half-siblings only some.
 import assert from 'node:assert/strict';
-import { ancestorsOf, bloodRelativesOf, relativesOf } from './relatives.ts';
+import { ancestorsOf, bloodRelativesOf, lineageOf, relativesOf } from './relatives.ts';
 
 const person = (id, parentIds = [], partnerIds = []) => ({ id, parentIds, partnerIds });
 const ids = (relatives) => Object.fromEntries(Object.entries(relatives).map(([key, list]) => [key, list.map((m) => m.id)]));
@@ -73,4 +73,27 @@ const blood = [
   person('kid', ['me']),
 ];
 assert.deepEqual([...bloodRelativesOf(blood.find((m) => m.id === 'me'), blood)].sort(), ['aunt', 'cousin', 'dad', 'gran', 'grandpa', 'half', 'kid', 'me', 'mum']);
+// Lineage: ancestors, descendants, and partners light up; siblings, aunts, cousins, the partner's
+// parents, and a child's partner stay out, and a parent loop cannot hang it.
+const lineage = [
+  person('gran', [], ['grandpa']),
+  person('grandpa', [], ['gran']),
+  person('aunt', ['gran', 'grandpa']),
+  person('cousin', ['aunt']),
+  person('mum', ['gran', 'grandpa'], ['dad']),
+  person('dad', [], ['mum']),
+  person('in-law-mum', [], []),
+  person('me', ['mum', 'dad'], ['wife']),
+  person('wife', ['in-law-mum'], ['me']),
+  person('sister', ['mum', 'dad']),
+  person('half', ['dad']),
+  person('kid', ['me', 'wife'], ['kid-partner']),
+  person('kid-partner', [], ['kid']),
+  person('grandkid', ['kid', 'kid-partner']),
+  person('loop-a', ['loop-b']),
+  person('loop-b', ['loop-a']),
+];
+const lineageIds = (id) => [...lineageOf(lineage.find((m) => m.id === id), lineage)].sort();
+assert.deepEqual(lineageIds('me'), ['dad', 'gran', 'grandkid', 'grandpa', 'kid', 'me', 'mum', 'wife']);
+assert.deepEqual(lineageIds('loop-a'), ['loop-a', 'loop-b']);
 console.log('relatives ok');

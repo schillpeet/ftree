@@ -61,3 +61,19 @@ export function bloodRelativesOf<T extends Linked>(member: T, members: T[]) {
       }
   return found;
 }
+
+// The selected person's lineage, which the tree lights up: the member, everyone they descend from,
+// everyone descending from them, and their partners. Siblings, aunts, cousins, and the partners'
+// own families stay out; a loop in the data cannot hang it.
+export function lineageOf<T extends Person>(member: T, members: T[]) {
+  const found = new Set([member.id, ...ancestorsOf(member, members), ...member.partnerIds]);
+  for (const queue = [member.id]; queue.length; ) {
+    const id = queue.pop()!;
+    for (const child of members)
+      if (child.parentIds.includes(id) && !found.has(child.id)) {
+        found.add(child.id);
+        queue.push(child.id);
+      }
+  }
+  return found;
+}

@@ -16,9 +16,9 @@ export type Glyph = { at: XY; glyph: '⚭' | '⚯' | '⚮'; people: [string, str
 export type Stub = { child: string; parents: string[]; at: XY };
 // bridges: where a union's vertical crosses a partnership line, which hops over it.
 export type Routes = { segments: Segment[]; junctions: XY[]; glyphs: Glyph[]; stubs: Stub[]; bridges: XY[] };
-// Name label size as rendered. Partner lines start NAME_CLEAR below a name; sibling bars stay BAR_CLEAR
+// Person pill size as rendered (42 x ~132 CSS px, see `.simple-name`). Partner lines start NAME_CLEAR below a name; sibling bars stay BAR_CLEAR
 // above the children's names, so every child hangs on a visible riser.
-export const NAME_W = 5.6, NAME_H = 2.4, NAME_CLEAR = 1.8, BAR_CLEAR = 2.1, TRACK = 0.6, MIN_TRACK = 0.3;
+export const NAME_W = 8.5, NAME_H = 2.7, NAME_CLEAR = 1.8, BAR_CLEAR = 2.1, TRACK = 0.6, MIN_TRACK = 0.3;
 // A bridge keeps this far from a partnership symbol on its line.
 const GLYPH_CLEAR = 1.2;
 

@@ -176,13 +176,14 @@ Typing shows up to eight matching members of the selected family as autocomplete
 Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.
 "Mitglied hinzufügen" in the burger menu opens the form for a new person in the shown family; the members themselves are listed in the family card, and relatives are shown in the profile.
 A person panel in the middle of the screen (`ui/app/PersonPanel.tsx`) replaces the former profile dialog and member form: it sits below the top bar and has no dimmed backdrop, so the tree and camera stay usable around it.
-The panel can be dragged by its header (a grab cursor shows the handle); each newly opened panel starts in the middle again.
+The panel can be dragged by its header (a grab cursor shows the handle); each newly opened panel starts at the right edge again, so the selected card in the middle stays free.
 The pin in the panel header fixes the panel at its current position: it can no longer be dragged, and every panel opens there, also after a reload (remembered per browser in `localStorage`) until it is unpinned.
 The photo is shown large (112 px) beside the name.
 The panel shows a member's photo (or their initials in its place), name, years and age, birth and death dates with places, the note as a quote, and relatives as chips with avatar, name, and years: parents, then the person next to their partners (with the partnership status), then children, with siblings and half-siblings in collapsed sections.
 Members have an optional birth name (for example a maiden name that was given up), edited as "Geburtsname" and shown as "geb. …" in the profile when it differs from the surname.
 GEDCOM export writes a differing birth name as a second NAME with TYPE birth; import also reads TYPE maiden, a NAME of TYPE married as the current name, and `_MARNM`.
 First and last name may be left empty for a person whose name is unknown (the BFF trims names and stores unknown ones as empty strings); such a person is shown as "Unbekannt" (small and italic on their card) and with "?" as initials.
+With `member.edit`, clicking a card also flies the camera to it, and dashed "+" slots around it ("+ Mutter" and "+ Vater", "+ Elternteil" with one known parent, "+ Partner:in", "+ Kind") open a quick-add popover with first and last name; after a mother it moves on to the father, and a toast with "Rückgängig" deletes the person just added.
 Clicking a relative in the panel shows that person and moves the camera to their scroll; a back arrow in the panel header walks back through the people visited this way.
 The pencil in the panel header turns the same panel into the edit form in place.
 The edit form keeps the avatar (click or drop an image to change the photo) beside the name fields on top and splits the rest into two tabs, so nothing needs scrolling: "Persönliche Daten" ("Geboren am/in" and "Verstorben am/in" in two columns, the note) and "Beziehungen", saved together with the person, so relatives can also be assigned while creating someone.
@@ -226,6 +227,8 @@ A drop less than a card height plus gap below a placed parent or above a placed 
 
 Light lines drawn over the foliage connect families between the cards' current positions: each parent drops to a bar joining the parents, a stem from its middle leads to a bar from which the children hang, and where two families' bars would overlap in a row they get different heights.
 Partners without shared children are joined by a gold line.
+The lines are thin and drawn in the `--line-dim` token; the selected person's lineage (ancestors, descendants, and partners) is drawn in `--line-on` with a glow, and the other cards are dimmed while it is shown.
+In TRON people are glass pills with initials, short first name, and years, and the lines keep right angles.
 
 ### Concurrent edits
 

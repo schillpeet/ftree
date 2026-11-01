@@ -675,6 +675,17 @@ textarea {
   touch-action: none;
 }
 
+/* The selected person's scroll: a soft halo in the theme's glow. */
+.scroll.is-selected {
+  filter: drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 2px var(--line-on));
+}
+
+/* Outside the highlighted lineage: faded and desaturated. */
+.scroll.is-dimmed {
+  opacity: 0.62;
+  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) saturate(0.6);
+}
+
 .debug-clock {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
@@ -1301,32 +1312,85 @@ a.dashboard-nav-item {
   font-size: 11px;
 }
 
-/* Floating names in the experimental view. */
+/* A person in the TRON view: a glass pill with the avatar, the first name, and one line of years. Its
+   width is capped to the room the layout leaves per person (NAME_W = 8.5 units in experimental/routing.ts). */
 .simple-name {
   position: relative;
-  padding: 2px 6px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: #e6fdff;
-  font: 600 14px/1.2 var(--font-ui);
-  text-shadow: 0 0 6px #00e5ff, 0 0 14px rgba(0, 229, 255, 0.6);
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 7px;
+  max-width: 132px;
+  height: var(--size-person-pill);
+  padding: 0 12px 0 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--node);
+  backdrop-filter: var(--blur-glass);
+  color: var(--text);
+  font: 500 13px/1.2 var(--font-ui);
   white-space: nowrap;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
+}
+
+.simple-name-avatar {
+  display: grid;
+  flex: none;
+  width: var(--size-avatar);
+  height: var(--size-avatar);
+  place-items: center;
+  border-radius: 50%;
+  background: var(--avatar);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.simple-name-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.simple-name-text > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simple-name-years {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.simple-name.is-lineage {
+  border-color: var(--line-on);
+  box-shadow: 0 0 14px var(--glow);
+}
+
+.simple-name.is-selected {
+  border-color: var(--line-on);
+  box-shadow: 0 0 0 1px var(--line-on), 0 0 26px var(--glow);
+}
+
+.simple-name.is-dimmed {
+  opacity: 0.62;
+}
+
+.simple-name.is-dimmed .simple-name-avatar {
+  background: var(--avatar-dim);
 }
 
 .simple-glyph {
   display: block;
-  color: #e6fdff;
+  color: var(--muted);
   font: 14px/1 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
-  text-shadow: 0 0 6px #00e5ff;
   pointer-events: none;
 }
 
 .simple-glyph.is-focus {
-  color: #ff4fd8;
-  text-shadow: 0 0 6px #ff4fd8;
+  color: var(--line-on);
+  text-shadow: 0 0 6px var(--glow);
 }
 
 .simple-glyph.is-blood {
@@ -1337,10 +1401,10 @@ a.dashboard-nav-item {
 /* A parent link the lines leave out: a label above the child that opens the parent. */
 .simple-stub {
   padding: 1px 6px;
-  border: 1px solid rgba(0, 229, 255, 0.5);
+  border: 1px solid var(--border);
   border-radius: 4px;
-  background: rgba(5, 8, 12, 0.85);
-  color: #e6fdff;
+  background: var(--panel-strong);
+  color: var(--text);
   font: 11px/1.2 var(--font-ui);
   white-space: nowrap;
   cursor: pointer;
@@ -1348,19 +1412,18 @@ a.dashboard-nav-item {
 
 /* Opaque, so the label stays readable where it sits over a line. */
 .simple-stub:hover {
-  background: #0c2a33;
+  background: linear-gradient(var(--hover), var(--hover)), var(--panel-strong);
 }
 
 .simple-stub:focus-visible {
-  outline: 2px solid #00e5ff;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
-/* A stub on the focused person's line of descent: the highlight continues at the parents it opens. */
+/* A stub on the selected person's lineage: the highlight continues at the parents it opens. */
 .simple-stub.is-focus {
-  border-color: #ff4fd8;
-  color: #ffd6f6;
-  box-shadow: 0 0 8px rgba(255, 79, 216, 0.6);
+  border-color: var(--line-on);
+  box-shadow: 0 0 8px var(--glow);
 }
 
 .simple-stub.is-blood {
@@ -1459,11 +1522,11 @@ a.dashboard-nav-item {
 }
 
 .simple-name:hover {
-  background: rgba(0, 229, 255, 0.12);
+  background: linear-gradient(var(--hover), var(--hover)), var(--node);
 }
 
 .simple-name:focus-visible {
-  outline: 2px solid #00e5ff;
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
@@ -1558,15 +1621,14 @@ a.dashboard-nav-item {
 /* Person panel: one side panel for looking at and editing a person, so the tree stays in view. */
 .person-panel {
   position: fixed;
-  /* Above the dashboard's family name, which sits at the top centre. */
+  /* On the right (components.md), so the selected card and its "+" slots in the middle stay free. */
   z-index: 7;
   top: 104px;
-  left: 50%;
-  transform: translateX(-50%);
+  right: 16px;
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
-  width: min(560px, calc(100vw - 32px));
+  width: min(440px, calc(100vw - 32px));
   max-height: calc(100dvh - 120px);
   overflow: hidden;
   color: #fff;
@@ -2409,6 +2471,7 @@ button.person-chip-main:hover {
 @media (max-width: 700px) {
   .person-panel {
     top: 64px;
+    right: 10px;
     width: calc(100vw - 20px);
     max-height: calc(100dvh - 74px);
   }

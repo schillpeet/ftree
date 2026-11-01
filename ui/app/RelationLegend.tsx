@@ -6,13 +6,17 @@ import { useT } from './i18n';
 import { useLegendFolded } from './lines';
 import { CENTRE, type Offset } from './panelPosition';
 import { usePanelDrag, usePanelPin } from './PersonPanel';
-import { BLOOD_COLOR, FOCUS_COLOR, LINE_COLOR } from './SimpleTree';
+import { BLOOD_COLOR } from './SimpleTree';
+
+// The lines' colours as the tree draws them: idle, and on the selected person's lineage.
+const LINE = 'var(--line-on)';
+const DIM = 'var(--line-dim)';
 
 // A short stretch of line as the experimental view draws it, with an optional mark in the middle.
-function Sample({ color = LINE_COLOR, dash, children }: { color?: string; dash?: string; children?: ReactNode }) {
+function Sample({ color = DIM, dash, children }: { color?: string; dash?: string; children?: ReactNode }) {
   return (
     <svg className="relation-legend-sample" viewBox="0 0 40 14" aria-hidden>
-      <line x1="2" y1="7" x2="38" y2="7" stroke={color} strokeWidth="2" strokeDasharray={dash} strokeLinecap={dash ? 'round' : undefined} />
+      <line x1="2" y1="7" x2="38" y2="7" style={{ stroke: color }} strokeWidth="2" strokeDasharray={dash} strokeLinecap={dash ? 'round' : undefined} />
       {children}
     </svg>
   );
@@ -47,18 +51,18 @@ export default function RelationLegend({ onClose }: { onClose: () => void }) {
     [<Sample key="dotted" dash="0.5 4" />, t.legend.notBiological],
     [
       <Sample key="dot">
-        <line x1="20" y1="7" x2="20" y2="14" stroke={LINE_COLOR} strokeWidth="2" />
-        <circle cx="20" cy="7" r="3" fill={LINE_COLOR} />
+        <line x1="20" y1="7" x2="20" y2="14" style={{ stroke: DIM }} strokeWidth="2" />
+        <circle cx="20" cy="7" r="3" style={{ fill: DIM }} />
       </Sample>,
       t.legend.branch,
     ],
     [
       <svg key="bridge" className="relation-legend-sample" viewBox="0 0 40 14" aria-hidden>
-        <path d="M2 10 H15 A5 5 0 0 1 25 10 H38 M20 2 V14" fill="none" stroke={LINE_COLOR} strokeWidth="2" />
+        <path d="M2 10 H15 A5 5 0 0 1 25 10 H38 M20 2 V14" fill="none" style={{ stroke: DIM }} strokeWidth="2" />
       </svg>,
       t.legend.bridge,
     ],
-    [<Sample key="focus" color={FOCUS_COLOR} />, t.legend.focus],
+    [<Sample key="focus" color={LINE} />, t.legend.focus],
     [<Sample key="blood" color={BLOOD_COLOR} />, t.legend.blood],
     [glyph('⚭'), t.legend.married],
     [glyph('⚯'), t.legend.together],

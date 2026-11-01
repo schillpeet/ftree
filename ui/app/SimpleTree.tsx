@@ -4,14 +4,18 @@ import { useMemo } from 'react';
 import { Html, Line } from '@react-three/drei';
 import { useThree } from '@react-three/fiber';
 import type { Member } from '../lib/api/generated/members';
-import { bloodLinks, coreFamilyLinks, linkKey } from './experimental/highlight';
+import { bloodLinks, lineageLinks, linkKey } from './experimental/highlight';
 import { buildModel } from './experimental/model';
 import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
 import PresenceDot from './live/PresenceDot';
-import { isNameless, nameOf, shortFirstName } from './names';
+import { initialsOf, isNameless, nameOf, shortFirstName } from './names';
+import { lifeSpan } from './PersonPanel';
 import type { Point } from './pins';
+import type { SlotMount } from './RelativeSlots';
+import { lineageOf } from './relatives';
 import { simpleLayout } from './simpleLayout';
+import { useTokenPaint } from './tokenColor';
 
 // The lowest row floats this far above the floor.
 const LIFT = 2;
@@ -19,62 +23,29 @@ const LIFT = 2;
 // name is about NAME_W x NAME_H units, which the layout's gaps rely on.
 const NAME_SCALE = 50;
 const NAME_SCALE_HEIGHT = 768;
-export const LINE_COLOR = '#00e5ff';
-export const FOCUS_COLOR = '#ff4fd8';
+// Blood relatives (a developer option) keep a hue of their own, since the legend tells them apart
+// from the lineage; every other line takes its colour from the tokens.
 export const BLOOD_COLOR = '#ffb347';
-// How a line stands out: for the core family, for blood relatives, or not at all.
+// How a line stands out: on the selected person's lineage, for blood relatives, or not at all.
 type Mark = 'focus' | 'blood' | undefined;
-const MARK_COLOR = { none: LINE_COLOR, focus: FOCUS_COLOR, blood: BLOOD_COLOR };
-const DOT_RADIUS = 0.18;
+// Screen pixels: the thin lines, and the soft glow under the lit lineage.
+const LINE_WIDTH = 1.3;
+const GLOW_WIDTH = 5;
+const DOT_RADIUS = 0.12;
 // A partnership symbol floats this far above its line.
 const GLYPH_LIFT = 0.5;
+// The lines keep their token colour exactly: no tone mapping.
 const STYLES = {
-  solid: {},
-  dashed: { dashed: true, dashSize: 0.6, gapSize: 0.5 },
-  dotted: { dashed: true, dashSize: 0.12, gapSize: 0.25 },
+  solid: { toneMapped: false },
+  dashed: { toneMapped: false, dashed: true, dashSize: 0.6, gapSize: 0.5 },
+  dotted: { toneMapped: false, dashed: true, dashSize: 0.12, gapSize: 0.25 },
 } as const;
 
-// Corner radius where a bar turns into a riser or stem.
-const CORNER = 0.12;
 // Half width and height of the hop where a partnership line bridges a crossing vertical.
 const HOP_W = 0.3;
 const HOP_H = 0.25;
 
 const flat = ([x, y]: XY): Point => [x, y, 0];
-
-// Rounds the corners of the routed lines: where exactly two segments end at a right angle and no
-// junction is, both are shortened and joined by a short curve. Junctions stay sharp.
-function soften(segments: Segment[], junctions: XY[]): Segment[] {
-  const key = ([x, y]: XY) => `${Math.round(x * 1000)},${Math.round(y * 1000)}`;
-  const dots = new Set(junctions.map(key));
-  const ends = new Map<string, { s: number; end: 'a' | 'b' }[]>();
-  for (const [s, seg] of segments.entries())
-    for (const end of ['a', 'b'] as const) ends.set(key(seg[end]), [...(ends.get(key(seg[end])) ?? []), { s, end }]);
-  const out = segments.map((s) => ({ ...s, a: [...s.a] as XY, b: [...s.b] as XY }));
-  const curves: Segment[] = [];
-  for (const [k, here] of ends) {
-    if (here.length !== 2 || dots.has(k)) continue;
-    const [p, q] = here.map(({ s, end }) => ({ seg: out[s], end }));
-    const dir = ({ seg, end }: typeof p): XY => {
-      const [from, to] = end === 'a' ? [seg.a, seg.b] : [seg.b, seg.a];
-      return [to[0] - from[0], to[1] - from[1]];
-    };
-    const [u, v] = [dir(p), dir(q)];
-    // Only right angles: one horizontal, one vertical.
-    if ((u[0] === 0) === (v[0] === 0)) continue;
-    const corner = p.seg[p.end];
-    const r = Math.min(CORNER, Math.hypot(...u) / 2, Math.hypot(...v) / 2);
-    const step = ([dx, dy]: XY): XY => [corner[0] + (dx / Math.hypot(dx, dy)) * r, corner[1] + (dy / Math.hypot(dx, dy)) * r];
-    const [from, to] = [step(u), step(v)];
-    p.seg[p.end] = from;
-    q.seg[q.end] = to;
-    // A quadratic curve with the corner as control point, in a few straight pieces.
-    const at = (t: number): XY => [0, 1].map((i) => (1 - t) ** 2 * from[i] + 2 * (1 - t) * t * corner[i] + t ** 2 * to[i]) as XY;
-    // Each half of the curve belongs to the segment it continues, so focus marks it the same way.
-    for (let i = 0; i < 6; i++) curves.push({ a: at(i / 6), b: at((i + 1) / 6), style: (i < 3 ? p : q).seg.style, links: (i < 3 ? p : q).seg.links });
-  }
-  return [...out, ...curves];
-}
 
 // Draws each bridge as a hop: the horizontal line through it leaves a gap around the crossing and
 // arcs over it in a few straight pieces.
@@ -100,27 +71,33 @@ function hop(segments: Segment[], bridges: XY[]): Segment[] {
   return out;
 }
 
-// The experimental view's family tree: names floating on one row per generation, joined by lines drawn
-// like a circuit diagram (`experimental/routing.ts`), at positions that follow from the relations alone.
-// `facing` turns it toward the camera.
+// The experimental (TRON) view's family tree: people as glass pills on one row per generation, joined
+// by lines drawn like a circuit diagram (`experimental/routing.ts`) with sharp right angles, at positions
+// that follow from the relations alone. `facing` turns it toward the camera.
 export default function SimpleTree({
   members,
   base,
   facing,
   showLines,
   focusId,
+  selectedId,
   bloodId,
   onOpen,
+  slots,
 }: {
   members: Member[];
   base: number;
   facing: number;
   showLines: boolean;
-  // Whose lines to their core family stand out, or null.
+  // Whose lineage stands out (lines lit, everyone else dimmed), or null.
   focusId: string | null;
+  // The person whose panel is open, whose pill glows.
+  selectedId: string | null;
   // Whose lines to their blood relatives stand out, or null.
   bloodId: string | null;
   onOpen: (id: string) => void;
+  // The "+" slots around the selected name, missing without the permission to add people.
+  slots?: SlotMount;
 }) {
   const t = useT();
   const scale = (NAME_SCALE * useThree((state) => state.size.height)) / NAME_SCALE_HEIGHT;
@@ -129,17 +106,23 @@ export default function SimpleTree({
     const positions = simpleLayout(members, model.gen);
     const at = new Map([...positions].map(([id, [x, y]]): [string, XY] => [id, [x, y]]));
     const routes = route(model, at);
-    return { positions, routes: { ...routes, segments: hop(soften(routes.segments, routes.junctions), routes.bridges) } };
+    return { positions, routes: { ...routes, segments: hop(routes.segments, routes.bridges) } };
   }, [members]);
-  // The pairs whose lines stand out (`experimental/highlight.ts`): the core family over the blood
+  // The pairs whose lines stand out (`experimental/highlight.ts`): the lineage over the blood
   // relatives where both apply.
   const marked = useMemo(() => {
-    const of = (id: string | null, links: typeof coreFamilyLinks) => {
+    const of = (id: string | null, links: typeof lineageLinks) => {
       const focus = members.find((m) => m.id === id);
       return focus ? links(focus, members) : new Set<string>();
     };
-    return { focus: of(focusId, coreFamilyLinks), blood: of(bloodId, bloodLinks) };
+    return { focus: of(focusId, lineageLinks), blood: of(bloodId, bloodLinks) };
   }, [members, focusId, bloodId]);
+  const lineage = useMemo(() => {
+    const focus = members.find((m) => m.id === focusId);
+    return focus ? lineageOf(focus, members) : null;
+  }, [members, focusId]);
+  const paint = { none: useTokenPaint('--line-dim'), focus: useTokenPaint('--line-on'), blood: { color: BLOOD_COLOR, opacity: 1 } };
+  const glow = useTokenPaint('--glow');
   const markOf = (links: Segment['links']) =>
     (['focus', 'blood'] as const).find((mark) => links.some(([x, y]) => marked[mark].has(linkKey(x, y))));
   const markClass = (links: Segment['links']) => {
@@ -148,6 +131,12 @@ export default function SimpleTree({
   };
   const lines = (style: Segment['style'], mark: Mark) =>
     routes.segments.filter((s) => s.style === style && markOf(s.links) === mark).flatMap((s) => [flat(s.a), flat(s.b)]);
+  // A junction dot takes the strongest mark of the lines meeting there.
+  const dotMark = ([x, y]: XY): Mark => {
+    const meeting = routes.segments.filter((s) => [s.a, s.b].some(([px, py]) => Math.abs(px - x) < 1e-6 && Math.abs(py - y) < 1e-6));
+    const marks = meeting.map((s) => markOf(s.links));
+    return marks.includes('focus') ? 'focus' : marks.includes('blood') ? 'blood' : undefined;
+  };
   const byId = new Map(members.map((m) => [m.id, m]));
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
@@ -155,20 +144,29 @@ export default function SimpleTree({
         (['solid', 'dashed', 'dotted'] as const).flatMap((style) =>
           ([undefined, 'blood', 'focus'] as const).map((mark) => {
             const points = lines(style, mark);
+            const { color, opacity } = paint[mark ?? 'none'];
             return (
               points.length > 0 && (
-                <Line key={`${style}-${mark}`} points={points} segments color={MARK_COLOR[mark ?? 'none']} lineWidth={mark ? 3 : 2} {...STYLES[style]} />
+                <group key={`${style}-${mark}`}>
+                  {mark === 'focus' && (
+                    <Line points={points} segments color={glow.color} opacity={glow.opacity} transparent lineWidth={GLOW_WIDTH} {...STYLES[style]} />
+                  )}
+                  <Line points={points} segments color={color} opacity={opacity} transparent lineWidth={LINE_WIDTH} {...STYLES[style]} />
+                </group>
               )
             );
           }),
         )}
       {showLines &&
-        routes.junctions.map((at) => (
-          <mesh key={at.join()} position={flat(at)}>
-            <circleGeometry args={[DOT_RADIUS, 12]} />
-            <meshBasicMaterial color={LINE_COLOR} toneMapped={false} />
-          </mesh>
-        ))}
+        routes.junctions.map((at) => {
+          const { color, opacity } = paint[dotMark(at) ?? 'none'];
+          return (
+            <mesh key={at.join()} position={flat(at)}>
+              <circleGeometry args={[DOT_RADIUS, 12]} />
+              <meshBasicMaterial color={color} opacity={opacity} transparent toneMapped={false} />
+            </mesh>
+          );
+        })}
       {showLines &&
         routes.glyphs.map(({ at, glyph, people }) => (
           <Html key={people.join()} position={[at[0], at[1] + GLYPH_LIFT, 0]} center distanceFactor={scale}>
@@ -185,24 +183,32 @@ export default function SimpleTree({
             </button>
           </Html>
         ))}
-      {members.map((member) => (
-        // Labels scale with the distance and the window height like the rest of the scene, so the gaps between them hold.
-        <Html key={member.id} position={positions.get(member.id)} center distanceFactor={scale}>
-          <button className="simple-name" type="button" title={nameOf(member, t.members.unknown)} onClick={() => onOpen(member.id)}>
-            {isNameless(member) ? (
-              t.members.unknown
-            ) : (
-              <>
-                {member.deathDate ? '† ' : ''}
-                {shortFirstName(member.firstName)}
-                <br />
-                {member.lastName}
-              </>
-            )}
-            <PresenceDot memberId={member.id} />
-          </button>
-        </Html>
-      ))}
+      {members.map((member) => {
+        const state = member.id === selectedId ? ' is-selected' : !lineage ? '' : lineage.has(member.id) ? ' is-lineage' : ' is-dimmed';
+        const years = lifeSpan(member);
+        return (
+          // Pills scale with the distance and the window height like the rest of the scene, so the gaps between them hold.
+          <Html key={member.id} position={positions.get(member.id)} center distanceFactor={scale}>
+            <button
+              className={`simple-name${state}`}
+              type="button"
+              title={nameOf(member, t.members.unknown)}
+              aria-label={t.profile.open(nameOf(member, t.members.unknown))}
+              onClick={() => onOpen(member.id)}
+            >
+              <span className="simple-name-avatar" aria-hidden="true">
+                {isNameless(member) ? '?' : initialsOf(member)}
+              </span>
+              <span className="simple-name-text">
+                <span>{isNameless(member) ? t.members.unknown : shortFirstName(member.firstName) || member.lastName}</span>
+                {years && <span className="simple-name-years">{years}</span>}
+              </span>
+              <PresenceDot memberId={member.id} />
+            </button>
+          </Html>
+        );
+      })}
+      {slots && positions.has(slots.memberId) && slots.render(positions.get(slots.memberId)!, scale)}
     </group>
   );
 }

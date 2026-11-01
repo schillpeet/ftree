@@ -13,19 +13,24 @@ export const CLICK_TOLERANCE = 5;
 
 // Papyrus scroll in the scene: a DOM card that always faces the camera. Clicking it opens the
 // member's profile. A drag that starts on it orbits the camera, or moves the card when `onDrag`
-// is set (while the pins are shown).
+// is set (while the pins are shown). The selected person's scroll gets a soft halo; while a lineage
+// is highlighted, the scrolls outside it fade and lose colour.
 export default function Scroll({
   member,
   familyId,
   position,
   onOpen,
   onDrag,
+  selected = false,
+  dimmed = false,
 }: {
   member: Member;
   familyId: string | null;
   position: [number, number, number];
   onOpen: () => void;
   onDrag?: (event: PointerEvent<HTMLDivElement>) => void;
+  selected?: boolean;
+  dimmed?: boolean;
 }) {
   const t = useT();
   const birth = formatDate(member.birthDate);
@@ -39,7 +44,7 @@ export default function Scroll({
         role="button"
         tabIndex={0}
         aria-label={t.profile.open(nameOf(member, t.members.unknown))}
-        className={onDrag ? 'scroll scroll-draggable' : 'scroll'}
+        className={['scroll', onDrag && 'scroll-draggable', selected && 'is-selected', dimmed && 'is-dimmed'].filter(Boolean).join(' ')}
         onPointerDown={(event) => {
           pressedAt.current = { x: event.clientX, y: event.clientY };
           if (!onDrag) return; // the camera controls on the canvas container must still see the press
