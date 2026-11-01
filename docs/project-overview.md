@@ -21,6 +21,10 @@ The burger menu's entries are "Profil", "Familien" (`family.create`), "Darstellu
 The Evolution button and panel need `dev.tools`; the panel's "Zeit" section holds the former "Zeit" button's time-of-day preview, and its "Stufenbaum" checkbox switches the stored appearance between `organic` and `organicExperimental` (disabled in TRON).
 The version, "Nutzungsbedingungen", and "Datenschutz" sit in one small line at the bottom centre of every page.
 `/` redirects to the public landing page at `/home` (outside the `(tree)` group, so it needs no `/me`), and the ftree logo in every header links there; the tree's entry, formerly `/`, is `/start`, which opens the last tree (or the welcome card), and the landing page's "Anmelden" / "Baum anlegen" lead there (they read "Zu deinem Baum" once a quiet `/api/me` probe succeeds).
+The landing page's navigation has the single entry "So funktioniert's", which opens `/home/how` (public like `/home`) with the three steps explained; the steps are no longer on the landing page.
+The public pages show a small status chip in the header, "Angemeldet als <Name>" or "Anmelden", from the same quiet `/api/me` probe and linking to `/start`.
+`/home/how` and `/home/example` have a "← Zurück" control next to the logo that leads to `/home`.
+In the 3D theme the landing hero is smaller and sits low so that the tree in the backdrop stays visible.
 `/home/example` shows a read-only example family (`ui/app/home/exampleFamily.ts`, bundled with the UI, no BFF call) in the real scene; a click lights up a person's lineage and names them in a small card.
 `home` and `start` are reserved slugs; Cloudflare Access must let `/home` and `/_next/static` through for the landing page to work signed out.
 The UI reads its colours, radii, sizes, and fonts from design tokens (`ui/app/tokens.css`, a copy of `docs/design/tokens.css` that `tokens.check.mjs` keeps equal) and switches between the 3D and TRON themes through `data-theme` on `<html>`, set from the appearance by `ThemeRoot`; the stored appearances `organic` and `organicExperimental` are 3D, `experimental` is TRON.

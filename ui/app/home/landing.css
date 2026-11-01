@@ -59,8 +59,35 @@
 
 .landing-segments {
   display: flex;
+  align-items: center;
   gap: 8px;
   justify-self: end;
+}
+
+.landing-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-status,
+.landing-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.landing-status:hover,
+.landing-status:focus-visible,
+.landing-back:hover,
+.landing-back:focus-visible {
+  background: var(--hover);
 }
 
 .landing-hero {
@@ -71,6 +98,28 @@
   justify-content: center;
   padding: 48px 0 32px;
   text-align: center;
+}
+
+/* 3D: the hero sits low and smaller, so the crown and trunk of the still stay visible above it. */
+[data-theme='3d'] .landing-hero {
+  justify-content: flex-end;
+  padding: 32px 0 16px;
+}
+
+[data-theme='3d'] .landing-hero h1 {
+  max-width: 30ch;
+  font-size: clamp(30px, 4.2vw, 54px);
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.7);
+}
+
+[data-theme='3d'] .landing-lead {
+  margin: 14px 0 22px;
+  font-size: 17px;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8);
+}
+
+[data-theme='3d'] .landing-chip {
+  margin-bottom: 16px;
 }
 
 .landing-chip {
@@ -143,34 +192,74 @@
   filter: brightness(1.06);
 }
 
+.landing-how {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0 32px;
+  text-align: center;
+}
+
+.landing-how h1 {
+  max-width: 20ch;
+  margin: 0;
+  font: 400 clamp(34px, 5vw, 60px) / 1.05 var(--font-display);
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='tron'] .landing-how h1 {
+  text-shadow: 0 0 22px var(--glow);
+}
+
+.landing-how .landing-lead {
+  margin-bottom: 32px;
+}
+
+.landing-how .landing-actions {
+  margin-top: 32px;
+}
+
+/* The steps page is text-heavy, so the still is dimmed behind it. */
+.landing-backdrop-dim {
+  filter: brightness(0.7);
+}
+
 .landing-steps {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 260px));
+  grid-template-columns: repeat(3, minmax(0, 320px));
   justify-content: center;
   gap: 14px;
   margin: 0;
   padding: 0;
   list-style: none;
-  scroll-margin-top: 24px;
 }
 
 .landing-steps li {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  padding: 16px 18px;
+  padding: 18px 20px;
   border-radius: var(--radius-panel);
   color: var(--muted);
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.5;
+  text-align: left;
 }
 
 .landing-steps strong {
   display: block;
-  margin-bottom: 2px;
   color: var(--text);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
+}
+
+.landing-steps em {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  font-style: normal;
 }
 
 .landing-step-number {
@@ -183,6 +272,10 @@
     grid-template-columns: 1fr auto;
   }
 
+  .landing-header > span:empty {
+    display: none;
+  }
+
   .landing-nav {
     grid-row: 2;
     grid-column: 1 / -1;
@@ -192,7 +285,23 @@
   }
 
   .landing-steps {
-    grid-template-columns: minmax(0, 420px);
+    grid-template-columns: minmax(0, 480px);
+  }
+}
+
+/* Phones: brand, status chip and segments wrap onto rows instead of overflowing. */
+@media (max-width: 560px) {
+  .landing-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .landing-nav,
+  .example-title {
+    order: 3;
+    flex-basis: auto;
+    margin: 0 auto;
   }
 }
 
@@ -205,11 +314,6 @@
     padding: 7px 8px;
     font-size: 13px;
     white-space: nowrap;
-  }
-
-  /* The hero's second button leads there too; without it the nav fits a phone. */
-  .landing-nav .landing-nav-example {
-    display: none;
   }
 
   .landing-chip {

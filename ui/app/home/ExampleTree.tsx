@@ -7,8 +7,10 @@ import { nameOf } from '../names';
 import { lifeSpan } from '../PersonPanel';
 import Scene from '../Scene';
 import ThemeRoot from '../ThemeRoot';
+import BackLink from './BackLink';
 import BrandLink from './BrandLink';
 import { EXAMPLE_MEMBERS } from './exampleFamily';
+import SignInChip from './SignInChip';
 import './landing.css';
 
 const noop = () => {};
@@ -32,12 +34,16 @@ export default function ExampleTree() {
         onEvolutionClose={noop}
       />
       <header className="landing-header example-header">
-        <BrandLink />
+        <div className="landing-brand-group">
+          <BrandLink />
+          <BackLink />
+        </div>
         <div className="glass example-title">
           <strong>{t.landing.exampleLabel}</strong>
           <span>{t.landing.exampleHint}</span>
         </div>
         <div className="landing-segments">
+          <SignInChip />
           <ThemeSegment />
           <LanguageSegment />
         </div>

@@ -28,4 +28,5 @@
 ## Signed-out visitor
 
 1. `/` shows the landing page.
-2. "Beispielfamilie ansehen" opens a read-only example tree; "Anmelden" / "Baum anlegen" start sign-in.
+2. "So funktioniert's" opens `/home/how` with the three steps; "Beispielfamilie ansehen" opens a read-only example tree; "Anmelden" (status chip) / "Baum anlegen" start sign-in.
+3. "← Zurück" on the steps and example pages leads back to the landing page.

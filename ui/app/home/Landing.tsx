@@ -8,14 +8,16 @@ import ThemeRoot from '../ThemeRoot';
 import BrandLink from './BrandLink';
 // Imported rather than in `public/`, so it ships under `/_next/static` with the rest of the page.
 import still from './landing.jpg';
+import SignInChip from './SignInChip';
 import { useSignedIn } from './signedIn';
 import './landing.css';
 
 // The landing page of the prototype (`docs/design/prototypes/Landing.dc.html`): the 3D still or the TRON grid behind a
-// header, the claim with its two buttons, and three steps. Signed-in visitors get "Zu deinem Baum" instead of "Anmelden".
+// header, the claim with its two buttons. The three steps live on `/home/how`. Signed-in visitors get "Zu deinem Baum"
+// instead of "Baum anlegen", and the header chip names them.
 export default function Landing() {
   const t = useT();
-  const signedIn = useSignedIn();
+  const signedIn = useSignedIn() !== null;
   return (
     <div className="landing">
       <ThemeRoot />
@@ -23,15 +25,10 @@ export default function Landing() {
       <header className="landing-header">
         <BrandLink />
         <nav className="glass landing-nav" aria-label={t.landing.home}>
-          <a href="#steps">{t.landing.how}</a>
-          <Link href="/privacy">{t.landing.privacy}</Link>
-          <Link className="landing-nav-example" href="/home/example">
-            {t.landing.example}
-          </Link>
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- `/start` needs a full load for Cloudflare Access */}
-          <a href="/start">{signedIn ? t.landing.toTree : t.landing.signIn}</a>
+          <Link href="/home/how">{t.landing.how}</Link>
         </nav>
         <div className="landing-segments">
+          <SignInChip />
           <ThemeSegment />
           <LanguageSegment />
         </div>
@@ -51,17 +48,6 @@ export default function Landing() {
           </Link>
         </div>
       </main>
-      <ol id="steps" className="landing-steps">
-        {t.landing.steps.map((step, i) => (
-          <li key={step.title} className="glass">
-            <span className="landing-step-number">{String(i + 1).padStart(2, '0')}</span>
-            <span>
-              <strong>{step.title}</strong>
-              {step.text}
-            </span>
-          </li>
-        ))}
-      </ol>
     </div>
   );
 }
