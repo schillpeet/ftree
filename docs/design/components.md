@@ -79,9 +79,20 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 
 ## Landing (signed out, `/`)
 
-- Scene background, header with wordmark, glass navigation (So funktioniert's, Privatsphäre, Beispielfamilie, Anmelden), theme and language segments, burger.
+- Scene background, header with wordmark, glass navigation with the single entry "So funktioniert's" (the other destinations are the hero buttons and the legal line, so nothing appears twice), a glass status chip, theme and language segments.
+- The status chip reads "Angemeldet als <Name>" when signed in (display name, else email) and "Anmelden" otherwise; both lead to `/start`. It comes from a quiet `/me` probe, without the permissions provider.
 - Centre: chip "Privat · nur für eure Familie · Open Source", title "Eure Familie. Ein Baum, der mitwächst.", one sentence, "Baum anlegen" and "Beispielfamilie ansehen".
-- Three glass step cards above the legal line.
+- 3D: the hero is smaller and sits at the bottom, so the crown and trunk of the still stay visible; TRON keeps the centred hero.
+- The three steps are not on the landing page; "So funktioniert's" opens `/home/how`.
+
+## How it works (`/home/how`)
+
+- Landing look (dimmed still or TRON grid, same header), a "← Zurück" control next to the wordmark leading to `/home`, and the status chip.
+- Title, one intro sentence, three glass step cards (number, title, short line, two sentences of explanation), then "Baum anlegen" and "Beispielfamilie ansehen".
+
+## Example family (`/home/example`)
+
+- Header with wordmark, "← Zurück" (to `/home`), the title card, the status chip, theme and language segments; "Eigenen Baum anlegen" at the bottom.
 
 ## Legal line
 

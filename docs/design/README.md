@@ -33,6 +33,9 @@ If code and this folder disagree, this folder wins until it is updated.
 
 - The themes are called "3D" and "TRON" in the UI (not "Abend").
 - The landing page lives at `/home` and is public (Cloudflare Access bypass for `/home` and its static assets); `/` redirects to `/home`, and the ftree logo in the header links there; signed-in users go on to their last tree from the landing through `/start` (2026-11-01).
+- The landing navigation holds only "So funktioniert's", with no entry the hero buttons or the footer repeat; the three steps moved to `/home/how` and are explained in more detail (2026-11-01).
+- The landing header carries a glass sign-in chip ("Angemeldet als <Name>" / "Anmelden", to `/start`), also on `/home/how` and `/home/example`; `/home/how` and `/home/example` have a "← Zurück" control to `/home` (2026-11-01).
+- In 3D the landing hero is smaller and sits low, so the tree in the backdrop stays visible (2026-11-01).
 - The 3D start view is lower and closer (tree ~60 % of the height, horizon ~57 % on desktop), and the horizon haze is warmer (2026-11-01).
 - Only invited (allowed) users can sign in; the welcome card is for signed-in users who are not assigned to any tree yet.
 - The burger menu stays, top right, for secondary actions; language (DE/EN) stays visible in the header.

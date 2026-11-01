@@ -133,6 +133,7 @@ jobs:
       - run: node app/conflict.check.mjs
       - run: node app/share.check.mjs
       - run: node app/home/exampleFamily.check.mjs
+      - run: node app/home/chipName.check.mjs
       - run: node app/slots.check.mjs
       - run: node app/welcomed.check.mjs
       - run: node app/admin/adminData.check.mjs
