@@ -8,6 +8,8 @@ import './dock.css';
 export type CameraView = 'front' | 'above' | 'orbit';
 
 const VIEWS: CameraView[] = ['front', 'above', 'orbit'];
+// How long the hint to the "+" slots stays.
+const SLOT_HINT_MS = 4_000;
 
 type Props = {
   // The caller may add members / share the open family. Without the permission the button is hidden.
@@ -15,6 +17,8 @@ type Props = {
   canShare: boolean;
   // Whether a family is open; without one Person and Einladen stay visible but disabled, with the reason as title.
   hasFamily?: boolean;
+  // Whether a person is selected, around whom "+" slots offer the missing relatives; Person then also points to them.
+  hasSelection?: boolean;
   onPerson: () => void;
   onSearch: () => void;
   onInvite: () => void;
@@ -22,9 +26,11 @@ type Props = {
 };
 
 // The bottom dock: the primary "Person" action, then search, invitation and the camera view as icon-over-label buttons.
-export default function Dock({ canAdd, canShare, hasFamily = true, onPerson, onSearch, onInvite, onView }: Props) {
+export default function Dock({ canAdd, canShare, hasFamily = true, hasSelection = false, onPerson, onSearch, onInvite, onView }: Props) {
   const t = useT();
   const [viewOpen, setViewOpen] = useState(false);
+  // A new number per Person click with a selection, so a second click restarts the hint's time.
+  const [slotHint, setSlotHint] = useState<number | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const reason = hasFamily ? undefined : t.dock.needsFamily;
 
@@ -44,8 +50,19 @@ export default function Dock({ canAdd, canShare, hasFamily = true, onPerson, onS
     };
   }, [viewOpen]);
 
+  useEffect(() => {
+    if (slotHint === null) return;
+    const timer = setTimeout(() => setSlotHint(null), SLOT_HINT_MS);
+    return () => clearTimeout(timer);
+  }, [slotHint]);
+
   return (
     <div className="dock-root" ref={rootRef}>
+      {slotHint !== null && hasSelection && (
+        <div className="glass dock-hint" role="status">
+          {t.slots.dockHint}
+        </div>
+      )}
       {viewOpen && (
         <div className="glass dock-popover" role="menu" aria-label={t.dock.viewMenu}>
           {VIEWS.map((view) => (
@@ -72,6 +89,7 @@ export default function Dock({ canAdd, canShare, hasFamily = true, onPerson, onS
             title={reason}
             onClick={() => {
               setViewOpen(false);
+              if (hasSelection) setSlotHint((current) => (current ?? 0) + 1);
               onPerson();
             }}
           >

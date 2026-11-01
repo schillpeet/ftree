@@ -6,7 +6,7 @@ Before implementing a PR, create a detailed implementation plan for it from this
 Status: [ ] open · [~] in progress · [x] merged.
 Journeys: N new user, I invited user, R returning user, V signed-out visitor ([journeys.md](journeys.md)).
 
-## 1. [~] `feat(ui): introduce the horizont design system` (N I R V)
+## 1. [x] `feat(ui): introduce the horizont design system` (N I R V)
 
 - Design tokens in `ui/`, `data-theme` from the appearance, fonts via `next/font`, appearances renamed to "3D" and "TRON" – [implementation plan](../superpowers/plans/2026-11-01-design-tokens.md).
 - Header with family switcher, theme and language segments, and burger menu top right.
@@ -14,12 +14,12 @@ Journeys: N new user, I invited user, R returning user, V signed-out visitor ([j
 - Evolution panel only with "Entwicklertools", behind a header button with DEV badge; crown, spacing, and the tiered tree (`organicExperimental`) move behind it.
 - Legal line at the bottom centre.
 
-## 2. `feat(bff): link members to signed-in users` (N I R)
+## 2. [x] `feat(bff): link members to signed-in users` (N I R)
 
 - A member can be linked to one user per family; `/me` or the family answer names the caller's own member.
 - Set when a tree is planted from the welcome card; "Nicht ich" removes the link; the API spec comes first, the UI client is regenerated.
 
-## 3. `feat(ui): add relatives from the tree and highlight lineages` (N R)
+## 3. [~] `feat(ui): add relatives from the tree and highlight lineages` (N R)
 
 - Relative slots and quick-add popover around the selected person: only missing relations, mother → father chaining, toast with undo.
 - Thin accent connection lines, the selected lineage highlighted; 3D keeps the papyrus scrolls, TRON uses glass pills (see components.md).

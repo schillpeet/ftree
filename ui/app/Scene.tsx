@@ -8,14 +8,17 @@ import type { Member, Placement } from '../lib/api/generated/members';
 import { useAppearance } from './appearance';
 import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
 import { arrangePins, relationDistance } from './arrange';
-import { relationLines } from './familyLayout';
 import { generationBounds, generations, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
 import RelationLegend from './RelationLegend';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
+import RelativeSlots, { type SlotMount } from './RelativeSlots';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
+import { scrollLines } from './scrollLines';
+import { lineageOf } from './relatives';
+import { useTokenPaint } from './tokenColor';
 import SimpleTree from './SimpleTree';
 import TieredTree, { TIERED_OPTIONS, buildTieredTree } from './TieredTree';
 import { tieredPlan } from './tieredLayout';
@@ -62,10 +65,12 @@ const TOP_HEIGHT = 90;
 const ORBIT_SPEED = 0.15;
 // A child's card hangs fully below its parents' cards.
 const GENERATION_GAP = CARD.height + CARD_GAP;
-// Relation lines run through the canopy; like the scrolls they are drawn over the leaves.
-const ON_TOP = { depthTest: false, renderOrder: 1 };
-// Lines to the relatives of the person whose panel is open.
-const FOCUS_COLOR = '#ff7a45';
+// Relation lines run through the canopy; like the scrolls they are drawn over the leaves, in their
+// token colour exactly: no tone mapping, no haze.
+const ON_TOP = { depthTest: false, renderOrder: 1, toneMapped: false, fog: false };
+// Screen pixels: the thin lines, and the soft glow under the lit lineage.
+const LINE_WIDTH = 1.3;
+const GLOW_WIDTH = 5;
 const MIN_DISTANCE = 8;
 const MAX_DISTANCE = 150;
 // camera-controls divides trackpad deltas by 10, so the default speed needs a lot of pinching.
@@ -358,6 +363,7 @@ function Scrolls({
   showPins,
   showLines,
   focusId,
+  selectedId,
   cardStyle,
   spacing,
   evening,
@@ -365,6 +371,7 @@ function Scrolls({
   controlsRef,
   onOpen,
   onPlace,
+  slots,
 }: {
   familyId: string | null;
   members: Member[];
@@ -372,8 +379,10 @@ function Scrolls({
   pins: Point[];
   showPins: boolean;
   showLines: boolean;
-  // Whose lines to their relatives stand out, or null.
+  // Whose lineage stands out (lines lit, everyone else dimmed), or null.
   focusId: string | null;
+  // The person whose panel is open: their card gets a halo.
+  selectedId: string | null;
   cardStyle: CardStyle;
   // Relation spacing while bundling, otherwise null.
   spacing: number | null;
@@ -385,6 +394,8 @@ function Scrolls({
   onOpen: (id: string) => void;
   // Missing without the permission to place cards; they cannot be dragged then.
   onPlace?: (id: string, placement: Placement) => void;
+  // The "+" slots around the selected card, missing without the permission to add people.
+  slots?: SlotMount;
 }) {
   const { camera, events, gl } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
@@ -419,7 +430,14 @@ function Scrolls({
     [placed, drag],
   );
 
-  const links = useMemo(() => relationLines(members, positions, undefined, 0, focusId), [members, positions, focusId]);
+  const lineage = useMemo(() => {
+    const focused = members.find((m) => m.id === focusId);
+    return focused ? lineageOf(focused, members) : null;
+  }, [members, focusId]);
+  const lines = useMemo(() => scrollLines(members, positions, lineage ?? new Set()), [members, positions, lineage]);
+  const lineDim = useTokenPaint('--line-dim');
+  const lineOn = useTokenPaint('--line-on');
+  const glow = useTokenPaint('--glow');
 
   useEffect(() => {
     const target = focus && placed.get(focus.id);
@@ -529,6 +547,8 @@ function Scrolls({
           position: positions.get(member.id)!,
           onOpen: () => onOpen(member.id),
           onDrag: onPlace && showPins && spacing == null ? (event: { clientX: number; clientY: number }) => startDrag(member.id, event) : undefined,
+          selected: member.id === selectedId,
+          dimmed: lineage != null && !lineage.has(member.id),
         };
         if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} />;
         if (cardStyle === 'sign') return <SignCard key={member.id} {...card} evening={evening} />;
@@ -540,10 +560,15 @@ function Scrolls({
             <meshBasicMaterial color={i === highlighted ? '#ffd23f' : '#d42020'} depthTest={false} />
           </mesh>
         ))}
-      {showLines && links.parents.length > 0 && <Line points={links.parents} segments color="#f5e6c4" lineWidth={3} {...ON_TOP} />}
-      {showLines && links.partners.length > 0 && <Line points={links.partners} segments color="#e8b54a" lineWidth={4} {...ON_TOP} />}
-      {showLines && links.focused.length > 0 && (
-        <Line points={links.focused} segments color={FOCUS_COLOR} lineWidth={5} {...ON_TOP} renderOrder={2} />
+      {slots && positions.has(slots.memberId) && slots.render(positions.get(slots.memberId)!, 8)}
+      {showLines && lines.dim.length > 0 && (
+        <Line points={lines.dim} segments color={lineDim.color} opacity={lineDim.opacity} transparent lineWidth={LINE_WIDTH} {...ON_TOP} />
+      )}
+      {showLines && lines.lit.length > 0 && (
+        <>
+          <Line points={lines.lit} segments color={glow.color} opacity={glow.opacity} transparent lineWidth={GLOW_WIDTH} {...ON_TOP} renderOrder={2} />
+          <Line points={lines.lit} segments color={lineOn.color} opacity={lineOn.opacity} transparent lineWidth={LINE_WIDTH} {...ON_TOP} renderOrder={3} />
+        </>
       )}
     </>
   );
@@ -558,6 +583,7 @@ export default function Scene({
   onEvolutionClose,
   onOpen,
   onPlace,
+  onAdded,
   cameraView,
 }: {
   familyId: string | null;
@@ -570,6 +596,8 @@ export default function Scene({
   onEvolutionClose: () => void;
   onOpen: (id: string) => void;
   onPlace?: (id: string, placement: Placement) => void;
+  // A person was added through a "+" slot around `highlight`; missing without the permission to add people, which hides the slots.
+  onAdded?: (member: Member) => void;
   // The dock's "Ansicht": each new `nonce` moves the camera to the view (orbit toggles the flight).
   cameraView?: { view: CameraView; nonce: number } | null;
 }) {
@@ -690,6 +718,25 @@ export default function Scene({
     void controls?.setLookAt(...CAMERA_START, ...CAMERA_TARGET, false);
   }, []);
 
+  const selected = members.find((m) => m.id === highlight);
+  const slots = (card: 'scroll' | 'pill'): SlotMount | undefined =>
+    selected && familyId && onAdded
+      ? {
+          memberId: selected.id,
+          render: (position, distanceFactor) => (
+            <RelativeSlots
+              key={selected.id}
+              member={selected}
+              familyId={familyId}
+              position={position}
+              card={card}
+              distanceFactor={distanceFactor}
+              onAdded={onAdded}
+            />
+          ),
+        }
+      : undefined;
+
   return (
     <>
       <Canvas
@@ -702,7 +749,7 @@ export default function Scene({
         {experimental ? (
           <>
             <GridFloor />
-            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} bloodId={bloodId} onOpen={onOpen} />
+            <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} selectedId={highlight} bloodId={bloodId} onOpen={onOpen} slots={slots('pill')} />
           </>
         ) : (
           <>
@@ -721,6 +768,7 @@ export default function Scene({
               showPins={organic && showPins}
               showLines={showLines}
               focusId={focusId}
+              selectedId={highlight}
               cardStyle={cardStyle}
               spacing={organic && bundle ? spacing : null}
               evening={eveningFactor}
@@ -728,6 +776,7 @@ export default function Scene({
               controlsRef={controlsRef}
               onOpen={onOpen}
               onPlace={onPlace}
+              slots={slots('scroll')}
             />
           </>
         )}

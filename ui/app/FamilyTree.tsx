@@ -16,6 +16,7 @@ import type { FamilyCardMode } from './FamilyCard';
 import Header from './Header';
 import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
+import { AddedToast } from './QuickAdd';
 import ShareDialog from './ShareDialog';
 import Scene, { type Focus } from './Scene';
 import { useT } from './i18n';
@@ -65,6 +66,9 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [profile, setProfile] = useState<Focus>(null);
   const [shownId, setShownId] = useState<string | null>(null);
   const [isEditingShown, setIsEditingShown] = useState(false);
+  // The person last added through a "+" slot, whose toast offers to undo it; a new key per person restarts the toast.
+  const [added, setAdded] = useState<{ member: Member; familyId: string; key: number } | null>(null);
+  const hideAdded = useCallback(() => setAdded(null), []);
   const onShownChange = useCallback((id: string | null, editing: boolean) => {
     setShownId(id);
     setIsEditingShown(editing);
@@ -110,6 +114,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
     setFollowing(null);
     setIsSharing(false);
     setIsSearchOpen(false);
+    setAdded(null);
   }
 
   // `quiet` keeps the board as it is while the families load again.
@@ -246,11 +251,19 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         highlight={shownId}
         onOpen={(id) => {
           stopFollowing();
+          // Editors get the "+" slots around the card, which are only usable up close.
+          if (canPlace) setFocus({ id });
           setProfile({ id });
         }}
         evolutionOpen={isEvolutionOpen}
         onEvolutionClose={closeEvolution}
         onPlace={canPlace ? (id, placement) => void placeMember(id, placement) : undefined}
+        // The members follow through the live events, like any other save.
+        onAdded={
+          canPlace && activeFamilyId
+            ? (member) => setAdded((current) => ({ member, familyId: activeFamilyId, key: (current?.key ?? 0) + 1 }))
+            : undefined
+        }
         cameraView={cameraView}
       />
       <Header
@@ -293,6 +306,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
       )}
       {activeFamilyId && following && <FollowChip email={following.email} onStop={stopFollowing} />}
       {activeFamilyId && <LiveToasts members={members ?? []} editingId={isEditingShown ? shownId : null} />}
+      {added && <AddedToast key={added.key} added={added} onDone={hideAdded} />}
       {notFound && <TreeNotFound home={homePath(families)} />}
       {emptyTree && (
         <EmptyTree
@@ -309,6 +323,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         canAdd={canPlace}
         canShare={canShare}
         hasFamily={!!activeFamily}
+        hasSelection={!!shownId}
         onPerson={addMember}
         onSearch={() => setIsSearchOpen((open) => !open)}
         onInvite={() => {

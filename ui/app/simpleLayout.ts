@@ -18,7 +18,8 @@ type Person = {
   birthDate?: string | null;
 };
 
-export const NAME_GAP = 6.5;
+// Centre distance of two people in a row: room for a person pill (NAME_W in experimental/routing.ts).
+export const NAME_GAP = 9.5;
 export const FAMILY_GAP = 3;
 export const ROW_GAP = 6.8;
 

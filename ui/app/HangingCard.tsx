@@ -14,6 +14,7 @@ import { isNameless, nameOf } from './names';
 import type { Point } from './pins';
 import { seededRandom } from './random';
 import { CLICK_TOLERANCE } from './Scroll';
+import { useTokenPaint } from './tokenColor';
 
 // Member cards as real 3D objects hanging from their pin on two ropes: lit by the sun, casting
 // shadows, and hidden behind leaves. Both must fit the card footprint `CARD` in pins.ts.
@@ -26,6 +27,9 @@ type CardProps = {
   position: Point;
   onOpen: () => void;
   onDrag?: (event: PointerStart) => void;
+  // The selected person's card glows softly; outside a highlighted lineage a card fades.
+  selected?: boolean;
+  dimmed?: boolean;
 };
 
 // Canvas pixels per world unit of card surface.
@@ -261,6 +265,29 @@ function GlowOrbs({ width, rope, seed, evening }: { width: number; rope: number;
   );
 }
 
+// Multiplies a dimmed card's colours: darker and greyer, like the faded scrolls.
+const DIMMED = '#8f8a84';
+const shade = (dimmed?: boolean) => (dimmed ? { color: DIMMED } : {});
+
+// A soft halo in the theme's glow behind the selected card's sheet (local position and size).
+function Halo({ position, width, height }: { position: Point; width: number; height: number }) {
+  const glow = useTokenPaint('--glow');
+  return (
+    <sprite position={position} scale={[width * 1.8, height * 1.5, 1]}>
+      <spriteMaterial
+        map={glowTexture()}
+        color={glow.color}
+        opacity={glow.opacity}
+        transparent
+        blending={AdditiveBlending}
+        depthWrite={false}
+        fog={false}
+        toneMapped={false}
+      />
+    </sprite>
+  );
+}
+
 // The presence dot at a card's upper right corner, only mounted while someone is there: every <Html> follows its
 // card on each frame.
 function CardPresence({ memberId, position }: { memberId: string; position: Point }) {
@@ -274,17 +301,18 @@ function CardPresence({ memberId, position }: { memberId: string; position: Poin
 
 // Papyrus scroll with a rod on top and a rolled-up bottom edge, written on both sides. 'label'
 // turns to the camera and glows a little, so it stays readable against the low sun.
-export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode, evening }: CardProps & { mode: 'scroll' | 'label'; evening: number }) {
+export function ScrollCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, mode, evening }: CardProps & { mode: 'scroll' | 'label'; evening: number }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, mode === 'label' ? 'face-camera' : 'sway', seed);
   const face = useCardTexture(member, familyId, SCROLL.width * PX, SCROLL.height * PX, drawScroll);
   const surface = plainTextures().papyrus;
-  const glow = mode === 'label' ? 0.45 : 0.08 + 0.42 * evening;
+  const glow = (mode === 'label' ? 0.45 : 0.08 + 0.42 * evening) * (dimmed ? 0.5 : 1);
   const { width, height, rope } = SCROLL;
   const sheetY = -rope - height / 2 - 0.02;
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
+      {selected && <Halo position={[0, sheetY, -0.3]} width={width} height={height} />}
       <CardPresence memberId={member.id} position={[width / 2, -rope - 0.2, 0.15]} />
       <Rope from={[0, 0, 0]} to={[-width / 2 - 0.05, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 + 0.05, -rope, 0]} />
@@ -299,14 +327,14 @@ export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode, e
         </mesh>
       ))}
       <mesh geometry={FRONT_SHEET} position={[0, sheetY, 0]} castShadow receiveShadow>
-        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} />
+        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed)} />
       </mesh>
       <mesh geometry={BACK_SHEET} position={[0, sheetY, 0]} rotation={[0, Math.PI, 0]} castShadow receiveShadow>
-        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} />
+        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed)} />
       </mesh>
       <mesh position={[0, -rope - height - 0.06, -0.1]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
         <cylinderGeometry args={[0.12, 0.12, width + 0.02, 16]} />
-        <meshStandardMaterial map={surface} emissiveMap={surface} emissive="#ffffff" emissiveIntensity={glow * 0.6} roughness={0.95} />
+        <meshStandardMaterial map={surface} emissiveMap={surface} emissive="#ffffff" emissiveIntensity={glow * 0.6} roughness={0.95} {...shade(dimmed)} />
       </mesh>
     </group>
   );
@@ -314,7 +342,7 @@ export function ScrollCard({ member, familyId, position, onOpen, onDrag, mode, e
 
 // Wooden board with burnt-in name and dates, the photo in a medallion beside them; written on
 // both sides like the scroll.
-export function SignCard({ member, familyId, position, onOpen, onDrag, evening }: CardProps & { evening: number }) {
+export function SignCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, evening }: CardProps & { evening: number }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, 'sway', seed);
   const face = useCardTexture(member, familyId, SIGN.width * PX, SIGN.height * PX, drawSign);
@@ -325,6 +353,7 @@ export function SignCard({ member, familyId, position, onOpen, onDrag, evening }
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
+      {selected && <Halo position={[0, -rope - height / 2, -0.3]} width={width} height={height} />}
       <CardPresence memberId={member.id} position={[width / 2, -rope, depth]} />
       <Rope from={[0, 0, 0]} to={[-width / 2 + 0.15, -rope, 0]} />
       <Rope from={[0, 0, 0]} to={[width / 2 - 0.15, -rope, 0]} />
@@ -337,8 +366,9 @@ export function SignCard({ member, familyId, position, onOpen, onDrag, evening }
             map={map}
             emissiveMap={map}
             emissive="#ffffff"
-            emissiveIntensity={map === face ? 0.3 + 0.25 * evening : 0.15 + 0.15 * evening}
+            emissiveIntensity={(map === face ? 0.3 + 0.25 * evening : 0.15 + 0.15 * evening) * (dimmed ? 0.5 : 1)}
             roughness={0.85}
+            {...shade(dimmed)}
           />
         ))}
       </mesh>

@@ -176,7 +176,8 @@ export function usePanelDrag(panelRef: RefObject<HTMLElement | null>, offset: Of
 
 // The one panel for looking at and editing a person; it sits beside the tree, so the tree stays in view.
 // It opens at the top centre (shifted by offset), can be dragged by its header unless pinned, and closes
-// on Escape or ×; with closeOnOutsideClick also on a click (not a drag) outside every panel unless pinned.
+// on Escape or ×; with closeOnOutsideClick also on a click (not a drag) outside every panel unless pinned. Elements marked
+// `data-keeps-panel` (the "+" slots around the shown person and their popover) count as inside.
 // hideLabel leaves the label to screen readers, for a panel whose content says it all; its actions then
 // float in the top-right corner, level with the content.
 export function PanelShell({
@@ -242,7 +243,7 @@ export function PanelShell({
   useEffect(() => {
     if (!closeOnOutsideClick || pinned) return;
     let start: { x: number; y: number } | null = null;
-    const outside = (event: PointerEvent) => !(event.target as Element).closest?.('.person-panel');
+    const outside = (event: PointerEvent) => !(event.target as Element).closest?.('.person-panel, [data-keeps-panel]');
     function down(event: PointerEvent) {
       start = event.button === 0 && outside(event) ? { x: event.clientX, y: event.clientY } : null;
     }
@@ -266,7 +267,7 @@ export function PanelShell({
       aria-label={label}
       ref={panelRef}
       tabIndex={-1}
-      style={{ transform: `translate(calc(-50% + ${offset.x}px), ${offset.y}px)` }}
+      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
       onKeyDown={(event) => {
         if (event.key !== 'Escape') return;
         if (!event.defaultPrevented) onClose();
