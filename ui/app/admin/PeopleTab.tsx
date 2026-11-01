@@ -139,7 +139,7 @@ export default function PeopleTab() {
                   </span>
                   <span className="admin-person-badges">
                     {user.admin && <span className="admin-badge admin-badge-accent">{t.admin.people.admin}</span>}
-                    {user.canCreateTrees && !user.admin && <span className="admin-badge">{t.admin.people.canCreate}</span>}
+                    {user.canCreateTrees && !user.admin && <span className="admin-badge">{t.admin.people.devTools}</span>}
                     <span className="admin-badge">{t.admin.people.treeCount(user.trees.length)}</span>
                     {owned > 0 && <span className="admin-badge">{t.admin.people.ownerOf(owned)}</span>}
                   </span>

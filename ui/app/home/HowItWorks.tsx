@@ -8,6 +8,7 @@ import ThemeRoot from '../ThemeRoot';
 import BackLink from './BackLink';
 import BrandLink from './BrandLink';
 import still from './landing.jpg';
+import HomeEvolution from './HomeEvolution';
 import SignInChip from './SignInChip';
 import './landing.css';
 
@@ -21,6 +22,7 @@ export default function HowItWorks() {
       <header className="landing-header">
         <div className="landing-brand-group">
           <BrandLink />
+          <HomeEvolution />
           <BackLink />
         </div>
         <span />

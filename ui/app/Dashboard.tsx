@@ -5,8 +5,7 @@ import Link from 'next/link';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { useT } from './i18n';
-import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, LogoutIcon, MailIcon, PaletteIcon, SettingsIcon, UploadIcon, UserIcon, UsersIcon } from './icons';
-import { ThemeSegment } from './Header';
+import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, ExternalLinkIcon, LogoutIcon, MailIcon, SettingsIcon, UploadIcon, UserIcon, UsersIcon } from './icons';
 import { Can, useMe, useMeLoaded } from './Permissions';
 
 export type DashboardPanel = 'profile' | 'families';
@@ -107,11 +106,6 @@ export default function Dashboard({
         <nav className="glass dashboard-nav" id="dashboard-nav" aria-label={t.menu.label}>
           {boardItem('profile', t.menu.profile, <UserIcon />)}
           <Can permission="family.create">{boardItem('families', t.menu.families, <UsersIcon />)}</Can>
-          <div className="dashboard-nav-item dashboard-nav-row">
-            <PaletteIcon />
-            <span>{t.menu.appearance}</span>
-            <ThemeSegment />
-          </div>
           <button type="button" className="dashboard-nav-item" onClick={() => void takeSnapshot()}>
             <CameraIcon />
             <span>{t.menu.snapshot}</span>
@@ -133,7 +127,7 @@ export default function Dashboard({
             <Link className="dashboard-nav-item" href="/admin">
               <SettingsIcon />
               <span>{t.menu.admin}</span>
-              <ChevronIcon />
+              <ExternalLinkIcon />
             </Link>
           </Can>
           <hr className="dashboard-nav-divider" />

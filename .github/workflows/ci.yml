@@ -129,6 +129,7 @@ jobs:
       - run: node app/scrollLines.check.mjs
       - run: node app/tokenColor.check.mjs
       - run: node app/access.check.mjs
+      - run: node app/adminHost.check.mjs
       - run: node app/tokens.check.mjs
       - run: node app/slugRoute.check.mjs
       - run: node app/conflict.check.mjs

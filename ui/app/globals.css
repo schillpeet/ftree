@@ -29,7 +29,7 @@ textarea {
   position: fixed;
   z-index: 5;
   top: 76px;
-  right: 16px;
+  left: 16px;
   border: 1px solid rgba(23, 58, 43, 0.16);
   border-radius: 8px;
   background: rgba(250, 248, 238, 0.9);
@@ -63,6 +63,12 @@ textarea {
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.debug-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .debug-button {
@@ -556,7 +562,7 @@ textarea {
 @media (max-width: 700px) {
   .debug-panel {
     top: 64px;
-    right: 10px;
+    left: 10px;
     /* A backdrop filter would trap the fixed boards below inside the panel. */
     background: rgba(250, 248, 238, 0.97);
     backdrop-filter: none;
@@ -812,6 +818,15 @@ textarea {
   text-align: left;
 }
 
+/* A bare `hr` in this grid keeps the browser's auto side margins, which shrink it to a dot; the line spans the menu instead. */
+.dashboard-nav-divider {
+  width: auto;
+  height: 0;
+  margin: 4px 12px;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
 /* The admin entry is a link, not a button. */
 a.dashboard-nav-item {
   text-decoration: none;
@@ -1021,7 +1036,7 @@ a.dashboard-nav-item {
   outline-offset: 1px;
 }
 
-/* Evolution board, below the header's button. */
+/* Evolution board, below the header's button on the left. */
 .debug-panel {
   border: 1px solid var(--border);
   border-radius: var(--radius-menu);
@@ -1162,7 +1177,7 @@ a.dashboard-nav-item {
 
   .debug-panel {
     top: 112px;
-    right: 10px;
+    left: 10px;
     background: var(--panel-strong);
     backdrop-filter: none;
   }
@@ -1190,30 +1205,6 @@ a.dashboard-nav-item {
     top: 116px;
     max-height: calc(100dvh - 126px);
   }
-}
-
-.appearance-panel-body {
-  display: grid;
-  gap: 10px;
-  padding: 14px 18px 18px;
-  font: 14px/1.3 var(--font-ui);
-}
-
-.appearance-panel-body [data-disabled] {
-  color: var(--muted);
-  cursor: not-allowed;
-}
-
-.appearance-panel-body [data-disabled] input {
-  cursor: not-allowed;
-}
-
-.appearance-soon {
-  margin-left: auto;
-  padding: 2px 8px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  font-size: 12px;
 }
 
 .profile-panel-body {

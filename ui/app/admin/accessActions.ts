@@ -8,6 +8,8 @@ import {
   revokeTreeAccess,
   shareTree,
   transferTreeOwnership,
+  updateAdminUser,
+  type UpdateAdminUserRequest,
 } from '../../lib/api/generated/members';
 import type { Language } from '../i18n';
 import { problemCode } from '../problems';
@@ -54,6 +56,17 @@ export async function transfer(familyId: string, userId: string): Promise<Access
   try {
     const response = await transferTreeOwnership(familyId, { userId });
     if (response.status === 204) return { ok: true, data: null };
+    return { ok: false, problem: accessProblem(problemCode(response.data)) };
+  } catch {
+    return { ok: false, problem: 'failed' };
+  }
+}
+
+// Changes the person's display name or developer tools; the BFF answers `SEATS_EXHAUSTED` when they need a seat that is not left.
+export async function updateUser(userId: string, body: UpdateAdminUserRequest): Promise<AccessResult<null>> {
+  try {
+    const response = await updateAdminUser(userId, body);
+    if (response.status === 200) return { ok: true, data: null };
     return { ok: false, problem: accessProblem(problemCode(response.data)) };
   } catch {
     return { ok: false, problem: 'failed' };

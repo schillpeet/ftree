@@ -46,6 +46,10 @@ If code and this folder disagree, this folder wins until it is updated.
 - Connection lines use the accent colour (amber in 3D) – thin, dim by default, glowing for the selected lineage.
 - In 3D, people stay papyrus scrolls; only TRON uses glass pills (2026-11-01).
 - "3D" is today's organic tree, "TRON" today's experimental grid view; the tiered tree moves into the evolution panel (2026-11-01).
+- The burger menu has no appearance row, since the header always shows the 3D | TRON segment; developers pick the appearance (including the tiered tree) in the Evolution panel's "Ansichts-Labor" (2026-11-01).
+- The administration is called "Admin-Tool" in the UI; developer tools are granted with a visible switch on the person's page, and the people list has a filter for who holds them (2026-11-01).
+- The Evolution button sits left, right after the wordmark, followed by an "ADM" status chip for admin sessions; the Evolution panel opens on the left (2026-11-01).
+- The Evolution button shows everywhere for holders of the developer tools, the public pages included, and Admin-Tool in the burger menu has an external-link icon (2026-11-01).
 - The invitation card shows on the first visit of a shared tree; sharing keeps granting access right away, there is no pending state (2026-11-01).
 - The signed-in person is a member linked to the user in the BFF, not guessed from the name (2026-11-01).
 

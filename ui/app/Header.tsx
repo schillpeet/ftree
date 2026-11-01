@@ -5,8 +5,8 @@ import type { FamilySummary } from '../lib/api/generated/members';
 import { PUBLIC_APPEARANCE, themeOf, type Appearance, type Theme } from './access';
 import { useAppearance } from './appearance';
 import { useLanguage, useT, type Language } from './i18n';
-import { EvolutionIcon, UsersIcon } from './icons';
-import { useCan, useMeLoaded } from './Permissions';
+import { CheckIcon, EvolutionIcon, UsersIcon } from './icons';
+import { useCan, useMe, useMeLoaded } from './Permissions';
 import TreeSwitcher from './TreeSwitcher';
 import BrandLink from './home/BrandLink';
 import './header.css';
@@ -62,9 +62,33 @@ export function LanguageSegment() {
   );
 }
 
-// The top of every signed-in screen: the wordmark, the centred family name (with several trees a switcher sits beside it,
-// and it opens the family card), and on the right the theme and language segments, the developers' Evolution button, and
-// the burger menu (`menu`, rendered by `Dashboard`); the Evolution panel itself is drawn by `Scene`.
+// A status chip, not a button: shown while the person is signed in as an admin (`Me.admin` is true only in an admin session).
+export function AdminBadge() {
+  const t = useT();
+  return (
+    <span className="glass header-admin" title={t.menu.adminSession} aria-label={t.menu.adminSession} role="status">
+      <CheckIcon />
+      ADM
+    </span>
+  );
+}
+
+// The developers' Evolution button with its DEV badge; the signed-in header, the public pages, and the example share it.
+export function EvolutionButton({ open, onClick }: { open: boolean; onClick: () => void }) {
+  const t = useT();
+  return (
+    <button type="button" className="glass header-button header-evolution" aria-expanded={open} aria-controls="evolution-panel" onClick={onClick}>
+      <EvolutionIcon />
+      <span className="header-evolution-label">{t.tools.evolution}</span>
+      <span className="header-dev">DEV</span>
+    </button>
+  );
+}
+
+// The top of every signed-in screen: the wordmark with the developers' Evolution button and the admin badge beside it, the
+// centred family name (with several trees a switcher sits beside it, and it opens the family card), and on the right the
+// theme and language segments and the burger menu (`menu`, rendered by `Dashboard`); the Evolution panel itself is drawn by
+// `Scene`, under its button.
 export default function Header({
   families,
   activeFamilyId,
@@ -83,13 +107,18 @@ export default function Header({
 }) {
   const t = useT();
   const evolution = useCan('dev.tools');
+  const admin = !!useMe()?.admin;
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
   // Whoever sees more than one tree switches between them at the family name.
   const switchable = !!families && families.length > 1;
 
   return (
     <header className="app-header">
-      <BrandLink />
+      <div className="header-lead">
+        <BrandLink />
+        {evolution && <EvolutionButton open={evolutionOpen} onClick={onEvolution} />}
+        {admin && <AdminBadge />}
+      </div>
       {switchable ? (
         <TreeSwitcher families={families ?? []} activeFamily={activeFamily ?? null} onFamilyClick={onFamilyClick} />
       ) : (
@@ -106,19 +135,6 @@ export default function Header({
       <div className="header-actions">
         <ThemeSegment className="header-theme" />
         <LanguageSegment />
-        {evolution && (
-          <button
-            type="button"
-            className="glass header-button header-evolution"
-            aria-expanded={evolutionOpen}
-            aria-controls="evolution-panel"
-            onClick={onEvolution}
-          >
-            <EvolutionIcon />
-            <span className="header-evolution-label">{t.tools.evolution}</span>
-            <span className="header-dev">DEV</span>
-          </button>
-        )}
         {menu}
       </div>
     </header>

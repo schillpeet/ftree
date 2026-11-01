@@ -12,18 +12,33 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 
 - Left: f-monogram in `--accent` and the wordmark "ftree" in `--font-display`.
 - Centre: family switcher – people icon, family name in `--font-display`, divider, chevron; opens the families list.
-- Right, in this order: theme segment (3D | TRON), language segment (DE | EN), "Evolution" with DEV badge (only with "Entwicklertools"), burger.
+- Left, after the wordmark: "Evolution" with DEV badge (only with "Entwicklertools"), then the admin badge.
+- The admin badge is a status chip, not a button: check icon and "ADM" in the accent colour, title "Als Admin angemeldet"; it shows only in an admin session, with or without the Evolution button, and shrinks to the check mark on phones.
+- Right, in this order: theme segment (3D | TRON), language segment (DE | EN), burger; the public pages have their sign-in chip first.
+- The Evolution panel opens on the left, under the button.
 - Controls are `--size-control` high with `--radius-control`; segments use `--radius-pill`, the active option `--segment-on`.
 
 ## Burger menu (top right)
 
-- Familien, Darstellung (3D · TRON), Momentaufnahme, GEDCOM importieren, Feedback, divider, Abmelden.
+- Profil, Familien, Momentaufnahme, GEDCOM importieren, Feedback, Admin-Tool (only with the permission), divider, Abmelden.
+- Admin-Tool ends in an external-link icon instead of a chevron, since it leaves the page (and, in production, the host); entries that open a board keep the chevron.
+- No appearance row: the 3D | TRON segment is always in the header, on phones too, where its segments get tighter.
+- The divider is a thin `--border` line across the menu, not a bare `hr` (which a grid shrinks to a dot).
 - No primary actions here; adding people lives in the dock.
 
 ## Evolution panel (developers only)
 
-- Opens below its header button; sections "Ansicht" (zoom, Front / Oben / Orbit) and "Vorschau" (crown scale, relation spacing), plus toggles for connection lines and light orbs.
+- Opens below its header button; sections "Ansichts-Labor" (a select over every appearance: 3D, Stufenbaum, TRON), "Ansicht" (zoom, Front / Oben / Orbit) and "Vorschau" (crown scale, relation spacing), plus toggles for connection lines and light orbs.
 - Hidden entirely without the "Entwicklertools" permission; opening it closes the burger menu and vice versa.
+- The button also shows on the public pages (`/home`, `/home/how`, `/home/example`) for signed-in holders, from the quiet `/me` probe; there the panel is the full one on the example, and only the "Ansichts-Labor" with a hint on the pages without a scene.
+
+## Admin people (`/admin/people`)
+
+- The admin area is called "Admin-Tool" (menu entry, page title, audit category).
+- Developer tools are a visible on/off switch on the person's page under "Rechte" with a hint (for admins it is on and disabled, "Für Admins immer an"); the list only shows a badge.
+- A chip "Mit Entwicklerwerkzeugen" in the filters lists everyone who holds them, admins included.
+- The "⋯" menu holds only "Umbenennen".
+- A failed change shows the BFF's problem, for example that no Cloudflare Access seat is left.
 
 ## Bottom dock
 

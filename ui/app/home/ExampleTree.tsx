@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { LanguageSegment, ThemeSegment } from '../Header';
+import { AdminBadge, EvolutionButton, LanguageSegment, ThemeSegment } from '../Header';
 import { useT } from '../i18n';
 import { nameOf } from '../names';
 import { lifeSpan } from '../PersonPanel';
@@ -11,15 +11,17 @@ import BackLink from './BackLink';
 import BrandLink from './BrandLink';
 import { EXAMPLE_MEMBERS } from './exampleFamily';
 import SignInChip from './SignInChip';
+import { hasDevTools, useSignedIn } from './signedIn';
 import './landing.css';
-
-const noop = () => {};
 
 // The example family in the real scene, read-only: no BFF, no placing, no "+" slots; a click lights up the person's
 // lineage and names them in a small card.
 export default function ExampleTree() {
   const t = useT();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [evolutionOpen, setEvolutionOpen] = useState(false);
+  const me = useSignedIn();
+  const devTools = hasDevTools(me);
   const selected = EXAMPLE_MEMBERS.find((member) => member.id === selectedId) ?? null;
   return (
     <div className="example-page">
@@ -30,12 +32,15 @@ export default function ExampleTree() {
         focus={null}
         highlight={selectedId}
         onOpen={(id) => setSelectedId((current) => (current === id ? null : id))}
-        evolutionOpen={false}
-        onEvolutionClose={noop}
+        evolutionOpen={evolutionOpen}
+        devTools={devTools}
+        onEvolutionClose={() => setEvolutionOpen(false)}
       />
       <header className="landing-header example-header">
         <div className="landing-brand-group">
           <BrandLink />
+          {devTools && <EvolutionButton open={evolutionOpen} onClick={() => setEvolutionOpen(!evolutionOpen)} />}
+          {me?.admin && <AdminBadge />}
           <BackLink />
         </div>
         <div className="glass example-title">
