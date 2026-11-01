@@ -179,7 +179,7 @@ const en = {
     loadFailed: 'The families could not be loaded. Is the BFF reachable?',
     importName: 'Under which name should the GEDCOM file be created as a new family?',
     importInvalid:
-      'The file could not be imported: no readable GEDCOM, more than 2000 people, ' +
+      'The file could not be imported: no readable GEDCOM, more than 100 people, ' +
       'someone would be their own ancestor, or the name is longer than 100 characters.',
     importFailed: 'The GEDCOM file could not be imported. Is the BFF reachable?',
     confirmDelete: (name: string, count: number) => `Permanently delete “${name}” with ${count} people and all relationships?`,
@@ -977,7 +977,7 @@ const de: typeof en = {
     loadFailed: 'Die Familien konnten nicht geladen werden. Ist das BFF erreichbar?',
     importName: 'Unter welchem Namen soll die GEDCOM-Datei als neue Familie angelegt werden?',
     importInvalid:
-      'Die Datei konnte nicht importiert werden: kein lesbares GEDCOM, mehr als 2000 Personen, ' +
+      'Die Datei konnte nicht importiert werden: kein lesbares GEDCOM, mehr als 100 Personen, ' +
       'jemand wäre sein eigener Vorfahre oder der Name ist länger als 100 Zeichen.',
     importFailed: 'Die GEDCOM-Datei konnte nicht importiert werden. Ist das BFF erreichbar?',
     confirmDelete: (name, count) => `„${name}“ mit ${count} Personen und allen Beziehungen endgültig löschen?`,

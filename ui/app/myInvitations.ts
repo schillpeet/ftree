@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import type { Role } from '../lib/api/generated/members';
 
-// Mirrors `GET /me/invitations` of the BFF: the invitations to trees the signed-in person received. Swap it for the
+// Mirrors `GET /me/invitations` of the BFF: the invitations to trees the signed-in person sent. Swap it for the
 // generated client once the endpoint is part of `api/openapi.yaml`.
 export type MyInvitation = {
   email: string;
