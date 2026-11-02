@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.36.1](https://github.com/schillpeet/ftree/compare/v0.36.0...v0.36.1) (2026-11-02)
+
+
+### Bug Fixes
+
+* **ui:** keep the landing page behind cloudflare access ([#315](https://github.com/schillpeet/ftree/issues/315)) ([1ddb65c](https://github.com/schillpeet/ftree/commit/1ddb65c62466fdec2ac6958704190b53aef1f4fa))
+
 ## [0.36.0](https://github.com/schillpeet/ftree/compare/v0.35.0...v0.36.0) (2026-11-02)
 
 
