@@ -36,14 +36,17 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - A selected card is framed with all its slots and moved beside the person panel; editing from the tree's pencil slot opens the form on the left, with the card on the right (2026-11-01).
 - The themes are called "3D" and "TRON" in the UI (not "Abend").
 - The landing page lives at `/home` and is public (Cloudflare Access bypass for `/home` and its static assets); `/` redirects to `/home`, and the ftree logo in the header links there; signed-in users go on to their last tree from the landing through `/start` (2026-11-01).
-- The landing navigation holds only "So funktioniert's", with no entry the hero buttons or the footer repeat; the three steps moved to `/home/how` and are explained in more detail (2026-11-01).
-- The landing header carries a glass sign-in chip ("Angemeldet als <Name>" / "Anmelden", to `/start`), also on `/home/how` and `/home/example`; `/home/how` and `/home/example` have a "← Zurück" control to `/home` (2026-11-01).
-- The landing hero is the same in 3D and TRON: the headline's bottom at 61.8 % of the viewport height, the chip with the GitHub link below the headline (2026-11-01).
+- The landing page has no navigation: the hero offers "Baum anlegen" / "Zu deinem Baum" and "So funktioniert's"; the three steps and the example family live on `/home/how` (2026-11-02).
+- The public headers show only what switches, plus "Anmelden" for signed-out visitors; "Angemeldet als <Name>" sits as a small line under the main button, and signed out that line says access needs an invitation (2026-11-02).
+- `/home/how` and `/home/example` have a "← Zurück" control to `/home` (2026-11-01).
+- Signed in, the steps on `/home/how` are links into the own tree and tick off what is done (2026-11-02).
+- The GitHub link sits in the legal line at the bottom, not in the hero (2026-11-02).
+- The landing hero is the same in 3D and TRON: the headline's bottom at 61.8 % of the viewport height, the "Privat · nur für eure Familie" chip below the headline (2026-11-01).
 - The 3D start view is lower and closer (tree ~60 % of the height, horizon ~57 % on desktop), and the horizon haze is warmer (2026-11-01).
 - Only invited (allowed) users can sign in; the welcome card is for signed-in users who are not assigned to any tree yet.
 - The burger menu stays, top right, for secondary actions; language (DE/EN) stays visible in the header.
 - "Evolution" is a header button with a DEV badge, shown only with the "Entwicklertools" permission.
-- Terms and privacy sit in one small line at the bottom centre (version · Nutzungsbedingungen · Datenschutz), below the dock.
+- Terms and privacy sit in one small line at the bottom centre (version · Nutzungsbedingungen · Datenschutz · GitHub), below the dock.
 - Connection lines use the accent colour (amber in 3D) – thin, dim by default, glowing for the selected lineage.
 - In 3D, people stay papyrus scrolls; only TRON uses glass pills (2026-11-01).
 - "3D" is today's organic tree, "TRON" today's experimental grid view; the tiered tree moves into the evolution panel (2026-11-01).

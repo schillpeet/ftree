@@ -3,7 +3,7 @@
 export type ChipMe = { displayName?: string | null; email?: string | null };
 
 // The name to greet: the display name, else the email address, else nothing (then the chip reads "Your tree").
-export function chipName(me: ChipMe | null): string | null {
+export function chipName(me: ChipMe | null | undefined): string | null {
   if (!me) return null;
   return me.displayName?.trim() || me.email?.trim() || null;
 }

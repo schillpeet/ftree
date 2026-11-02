@@ -182,20 +182,21 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Landing (signed out, `/home`)
 
-- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a radial cyan glow and two cyan grids in CSS, `ui/app/home/landing.css`), header with wordmark, glass navigation with the single entry "So funktioniert's" (the other destinations are the hero buttons and the legal line, so nothing appears twice), a glass status chip, theme and language segments.
-- The status chip reads "Angemeldet als <Name>" when signed in (display name, else email) as plain text without link or hover, and "Anmelden" otherwise, which leads to `/start`; the tree header shows the same chip. It comes from a quiet `/me` probe, without the permissions provider.
-- Centre: title "Eure Familie. Ein Baum, der mitwächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie · Open Source:" (in `tron` in `--font-mono`) followed by the GitHub mark and "schillpeet" (a link to github.com/schillpeet), then one sentence, "Baum anlegen" ("Zu deinem Baum" when signed in) and "Beispielfamilie ansehen".
+- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a radial cyan glow and two cyan grids in CSS, `ui/app/home/landing.css`), header with wordmark on the left and, on the right, "Anmelden" (signed out only), theme and language segments; there is no navigation.
+- Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither "Anmelden" nor a name shows. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Zugang derzeit nur mit Einladung". The tree header keeps its "Angemeldet als <Name>" chip.
+- Centre: title "Eure Familie. Ein Baum, der mitwächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie" (in `tron` in `--font-mono`), then one sentence, "Baum anlegen" ("Zu deinem Baum" when signed in) and "So funktioniert's"; the GitHub link sits in the legal line.
 - 3D and TRON share one hero position: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), everything else hangs below it.
-- The three steps are not on the landing page; "So funktioniert's" opens `/home/how`.
+- The three steps and the example family are not on the landing page; "So funktioniert's" opens `/home/how`.
 
 ## How it works (`/home/how`)
 
-- Landing look (dimmed still or TRON grid, same header), a "← Zurück" control next to the wordmark leading to `/home`, and the status chip.
-- Title, one intro sentence, three glass step cards (number, title, short line, two sentences of explanation), then "Baum anlegen" and "Beispielfamilie ansehen".
+- Landing look (dimmed still or TRON grid, same header), a "← Zurück" control next to the wordmark leading to `/home`.
+- Title, one intro sentence, three glass step cards (number, title, short line, two sentences of explanation), then "Baum anlegen" ("Zu deinem Baum" when signed in) and "Beispielfamilie ansehen", and the signed-in or invitation line.
+- Signed in, each card is a link into the own tree (step 2 opens the share dialog); a done step shows "✓" instead of its number, and the first open one is outlined in `--accent`. Signed out, only step 1 is a link, to sign-in.
 
 ## Example family (`/home/example`)
 
-- Header with wordmark, "← Zurück" (to `/home`), the title card "Beispielfamilie / Nur ansehen · tippe auf eine Person, um ihre Linie zu sehen", the status chip, theme and language segments; "Eigenen Baum anlegen" at the bottom.
+- Header with wordmark, "← Zurück" (to `/home`), the title card "Beispielfamilie / Nur ansehen · tippe auf eine Person, um ihre Linie zu sehen", "Anmelden" (signed out), theme and language segments; "Eigenen Baum anlegen" ("Zu deinem Baum" when signed in) at the bottom.
 - Twelve people over four generations in the real scene; a click highlights the lineage and shows a small card with name, birth name, and life span; there is no dock, panel, or slot.
 
 ## Legal line and pages

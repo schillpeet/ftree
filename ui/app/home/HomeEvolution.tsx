@@ -4,16 +4,16 @@ import { APPEARANCES, useAppearance, type Appearance } from '../appearance';
 import { AdminBadge, EvolutionButton } from '../Header';
 import { useT } from '../i18n';
 import { useState } from 'react';
-import { hasDevTools, useSignedIn } from './signedIn';
+import type { Me } from '../../lib/api/generated/members';
+import { hasDevTools } from './signedIn';
 
 // What the public headers show beside the brand for a signed-in person: the Evolution button for holders of the developer
 // tools and the admin badge for admins. There is no tree here, so the panel only has the view lab; the tools for time,
 // camera, lines, and preview wait in a tree.
-export default function HomeEvolution() {
+export default function HomeEvolution({ me }: { me: Me | null | undefined }) {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [appearance, setAppearance] = useAppearance();
-  const me = useSignedIn();
   return (
     <>
       {hasDevTools(me) && <EvolutionButton open={open} onClick={() => setOpen(!open)} />}

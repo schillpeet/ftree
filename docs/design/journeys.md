@@ -32,5 +32,7 @@
 ## Signed-out visitor
 
 1. `/` redirects to the landing page `/home`.
-2. "So funktioniert's" opens `/home/how` with the three steps; "Beispielfamilie ansehen" opens a read-only example tree; "Anmelden" (status chip) / "Baum anlegen" start sign-in.
-3. "← Zurück" on the steps and example pages leads back to the landing page.
+2. The hero offers "Baum anlegen" (sign-in) and "So funktioniert's"; below it a note says that access needs an invitation, and "Anmelden" sits top right.
+3. `/home/how` explains the three steps and leads on to "Beispielfamilie ansehen", a read-only example tree, or to signing in.
+4. Signed in, the steps link into the own tree and tick off what is done (own card, tree shared, three people); step 2 opens the share dialog.
+5. "← Zurück" on the steps and example pages leads back to the landing page.

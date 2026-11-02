@@ -788,7 +788,8 @@ export default function Scene({
         // Lower exposure keeps the bright sky shader from washing out to white; lights compensate.
         gl={{ toneMappingExposure: 0.6, preserveDrawingBuffer: true }}
         camera={{ position: CAMERA_START, fov: FOV, far: 10000 }}
-        style={{ position: 'fixed', inset: 0 }}
+        // The theme's background until the first frame, instead of a white page while the scene loads.
+        style={{ position: 'fixed', inset: 0, background: 'var(--bg)' }}
       >
         {experimental ? (
           <>

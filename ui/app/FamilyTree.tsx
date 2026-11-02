@@ -81,6 +81,9 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [editRequest, setEditRequest] = useState<Focus>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  // `?share=1` (step 2 on `/home/how`, through `/start`) opens the share dialog once the tree is there; the scene stays
+  // mounted from `/start` to the tree, so the flag survives the redirect.
+  const [shareFromLink, setShareFromLink] = useState(() => typeof location !== 'undefined' && new URLSearchParams(location.search).has('share'));
   const [cameraView, setCameraView] = useState<{ view: CameraView; nonce: number } | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   // The own card of a tree just planted: focused once the members are loaded, since the camera needs the card placed.
@@ -492,8 +495,15 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           onView={(view) => setCameraView((current) => ({ view, nonce: (current?.nonce ?? 0) + 1 }))}
         />
       )}
-      {isSharing && activeFamily && canShare && (
-        <ShareDialog family={activeFamily} onClose={() => setIsSharing(false)} onChanged={() => void loadFamilies(true)} />
+      {(isSharing || shareFromLink) && activeFamily && canShare && (
+        <ShareDialog
+          family={activeFamily}
+          onClose={() => {
+            setIsSharing(false);
+            setShareFromLink(false);
+          }}
+          onChanged={() => void loadFamilies(true)}
+        />
       )}
       <MemberSearch
         members={members ?? []}

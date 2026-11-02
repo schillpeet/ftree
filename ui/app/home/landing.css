@@ -37,26 +37,6 @@
   gap: 16px;
 }
 
-.landing-nav {
-  display: flex;
-  gap: 2px;
-  padding: 4px;
-  border-radius: var(--radius-pill);
-}
-
-.landing-nav a {
-  padding: 8px 14px;
-  border-radius: var(--radius-pill);
-  color: var(--text);
-  font-size: 15px;
-  text-decoration: none;
-}
-
-.landing-nav a:hover,
-.landing-nav a:focus-visible {
-  background: var(--hover);
-}
-
 .landing-segments {
   display: flex;
   align-items: center;
@@ -138,25 +118,6 @@ a.landing-status:focus-visible,
   letter-spacing: 0.02em;
 }
 
-.landing-chip a {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  color: inherit;
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.landing-chip a:hover,
-.landing-chip a:focus-visible {
-  text-decoration: underline;
-}
-
-.landing-chip .github-icon {
-  width: 14px;
-  height: 14px;
-}
-
 [data-theme='tron'] .landing-chip {
   font-family: var(--font-mono);
 }
@@ -184,6 +145,14 @@ a.landing-status:focus-visible,
     margin: 12px 0 18px;
     font-size: 16px;
   }
+}
+
+/* Under the main buttons: who is signed in, or that signing in needs an invitation. */
+.landing-note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
 }
 
 .landing-actions {
@@ -294,6 +263,47 @@ a.landing-status:focus-visible,
   font: 500 13px/1.6 var(--font-mono);
 }
 
+/* Signed in, every step is a link into the own tree; done steps carry a tick, and the next open one is outlined. */
+.landing-steps li > a {
+  display: flex;
+  flex: 1;
+  align-items: flex-start;
+  gap: 14px;
+  margin: -18px -20px;
+  padding: 18px 20px;
+  border-radius: inherit;
+  color: inherit;
+  text-decoration: none;
+}
+
+.landing-steps li > a:hover,
+.landing-steps li > a:focus-visible {
+  background: var(--hover);
+}
+
+.landing-step-done .landing-step-number {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 14px var(--glow);
+  color: var(--accent-ink);
+  font: 700 15px/1 var(--font-ui);
+}
+
+.landing-step-done {
+  border-color: var(--accent);
+}
+
+.landing-step-next {
+  outline: 1px solid var(--accent);
+  box-shadow: var(--primary-glow);
+}
+
 @media (max-width: 860px) {
   .landing-header {
     grid-template-columns: 1fr auto;
@@ -301,14 +311,6 @@ a.landing-status:focus-visible,
 
   .landing-header > span:empty {
     display: none;
-  }
-
-  .landing-nav {
-    grid-row: 2;
-    grid-column: 1 / -1;
-    justify-self: center;
-    max-width: 100%;
-    overflow-x: auto;
   }
 
   .landing-steps {
@@ -324,7 +326,6 @@ a.landing-status:focus-visible,
     justify-content: space-between;
   }
 
-  .landing-nav,
   .example-title {
     order: 3;
     flex-basis: auto;
@@ -335,12 +336,6 @@ a.landing-status:focus-visible,
 @media (max-width: 480px) {
   .landing {
     padding: 14px 16px 48px;
-  }
-
-  .landing-nav a {
-    padding: 7px 8px;
-    font-size: 13px;
-    white-space: nowrap;
   }
 
   .landing-chip {
