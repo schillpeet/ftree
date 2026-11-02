@@ -42,7 +42,9 @@ The UI reads its colours, radii, sizes, and fonts from design tokens (`ui/app/to
 The 3D | TRON segment switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
 In TRON an "Animation" toggle sits left of the 3D | TRON segment (`ui/app/motion.ts`); it is off by default, remembered per browser in `localStorage` (`ftree.motion`), and set on `<html>` as `data-motion` by `ThemeRoot`.
 The TRON horizon and rides play only with the animation toggle on and the system not asking for reduced motion; the toggle never overrides the system setting.
-Switching the animation toggle on while the system reduces motion shows a dismissible hint that names the system's "Reduce motion" setting, and the toggle's tooltip says why nothing moves.
+Switching the animation toggle on while the system reduces motion shows a dismissible hint that links to the FAQ entry on allowing motion (`/home/faq#animations`), and the toggle's tooltip says why nothing moves.
+`/home/faq` is a server-rendered questions-and-answers page in German and English (`?lang=en`), laid out like the legal pages, with texts in `ui/app/faqTexts.ts` and every entry reachable by its anchor.
+The FAQ's first entry explains the animation toggle and where macOS, Windows, iOS, Android, and GNOME let people allow motion again.
 The burger menu's "Momentaufnahme" ("Snapshot") entry downloads the current view as `ftree-<family>-<yyyy-mm-dd>.png`, showing only the scene and the family name, without any controls.
 The burger menu ends with "Feedback", a `mailto:` link to `OPERATOR_EMAIL`, which the `(tree)` layout reads from the server's environment per request; without it the entry is hidden.
 The experimental view is a dark floor with a glowing grid and no cards yet; it is the starting point for a simpler family tree, and organic-only controls (time, pins, light orbs, card style, crown, bundling) are greyed out there.
@@ -89,6 +91,7 @@ The family is centred on the front of the tree; when the wedges do not fit aroun
 The tiered tree is rebuilt when the family's generations change; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy" ("Nutzungsbedingungen · Datenschutz") open `/terms` and `/privacy` in the chosen language.
+Between "Datenschutz" and GitHub, a footer link "FAQ" opens `/home/faq` in the chosen language; like the landing page it stays behind Cloudflare Access.
 `/terms` (Nutzungsbedingungen) and `/privacy` (Datenschutzhinweise) are server-rendered text pages in German (binding, the default) and English (`?lang=en`), with a back link and a language link (`ui/app/LegalPage.tsx`, texts in `ui/app/legalTexts.ts`).
 The legal pages call no BFF and do not need a signed-in user; `PermissionsProvider` (and so `/me`) lives in the `(tree)` and admin layouts instead of the root layout.
 The legal pages fill in the operator's name and email from `OPERATOR_NAME` and `OPERATOR_EMAIL`, read per request through `connection()` (`ui/app/operator.ts`), so they are never baked into the build; unset, they read "nicht hinterlegt".

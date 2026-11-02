@@ -1468,6 +1468,11 @@ a.dashboard-nav-item {
   width: min(560px, calc(100vw - 32px));
 }
 
+.motion-notice a {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
 /* Features the experimental view does not support yet stay visible but greyed out. */
 .organic-only {
   display: grid;
