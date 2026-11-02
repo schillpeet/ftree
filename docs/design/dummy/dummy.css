@@ -1,0 +1,4463 @@
+/* ftree click dummy: shared building blocks. Colours, sizes and fonts come from ../tokens.css (linked before this file).
+   Part 1 is the dummy's own glue (backdrop, screens, tree, theme switch); part 2 below holds the app's rules, copied from
+   ui/app with their class names, so markup in the dummy reads like the app's JSX. */
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+}
+
+/* The scene behind every screen: the 3D still, or the TRON floor grid (recipe from home/landing.css). */
+.backdrop {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 15, 16, 0.25) 0%, rgba(11, 15, 16, 0) 30%, rgba(11, 15, 16, 0.55) 100%),
+    url(../prototypes/ftree-scene.jpg) center 62% / cover no-repeat,
+    var(--bg);
+}
+
+[data-theme='tron'] .backdrop {
+  background:
+    radial-gradient(ellipse 70% 30% at 50% 58%, rgba(72, 229, 255, 0.22), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg) 58%, transparent 58%),
+    repeating-linear-gradient(90deg, rgba(72, 229, 255, 0.3) 0 1px, transparent 1px 90px),
+    repeating-linear-gradient(180deg, rgba(72, 229, 255, 0.3) 0 1px, transparent 1px 48px),
+    var(--bg);
+}
+
+/* Hidden by dummy.js (data-show), whatever display the element's own rule sets. */
+[hidden] {
+  display: none !important;
+}
+
+/* Screens: one <section class="screen" id="…"> per state, shown while the URL ends in #id; without a hash the first one. */
+.screen {
+  display: none;
+}
+
+.screen:target,
+body:not(:has(.screen:target)) .screen:first-of-type {
+  display: block;
+}
+
+/* 3D: the real scene as a picture (shots of the app's Three.js scene), scaled like `object-fit: cover`; transparent
+   hotspots lie over the cards that show, so they stay on their card at any window size. A page sets the picture's
+   aspect ratio with --scene-ratio when it is not 1600 x 1000. */
+.scene3d {
+  position: fixed;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: max(100vw, 100vh * var(--scene-ratio, 1.6));
+  aspect-ratio: var(--scene-ratio, 1.6);
+  transform: translate(-50%, -50%);
+}
+
+.scene3d img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.node.hotspot {
+  position: absolute;
+  border-radius: 6px;
+  transform: none;
+}
+
+.node.hotspot:hover,
+.node.hotspot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+[data-theme='tron'] .scene3d,
+[data-theme='3d'] .tree,
+[data-theme='3d'] .relation-legend {
+  display: none;
+}
+
+/* TRON: the tree in the layout's world units, as SimpleTree draws it. At a window height of 768 px one unit is about
+   16 px (NAME_SCALE in SimpleTree.tsx), the lowest row at 69 % of the height; a page can move it with --tree-floor. */
+.tree {
+  --u: calc(100vh * 15.95 / 768);
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tree-origin {
+  position: absolute;
+  top: var(--tree-floor, 69vh);
+  left: 50%;
+}
+
+.tree-lines {
+  position: absolute;
+  top: calc(-30 * var(--u));
+  left: calc(-30 * var(--u));
+  width: calc(60 * var(--u));
+  height: calc(32 * var(--u));
+  overflow: visible;
+}
+
+.tree-lines path {
+  fill: none;
+  stroke: var(--line-dim);
+  stroke-width: 1.3;
+  vector-effect: non-scaling-stroke;
+}
+
+.tree-lines circle {
+  fill: var(--line-dim);
+}
+
+/* The selected person's lineage: lit lines over a soft glow (LINE_WIDTH and GLOW_WIDTH in SimpleTree.tsx). */
+.tree-lines path.is-focus {
+  stroke: var(--line-on);
+  filter: drop-shadow(0 0 2px var(--glow));
+}
+
+.tree-lines circle.is-focus {
+  fill: var(--line-on);
+}
+
+.tree .simple-glyph,
+.tree .node {
+  position: absolute;
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--y) * var(--u) * -1);
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.node {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Selection and lineage sit on the node (dummy.js) and reach the pill like SimpleTree's state classes. */
+.node.is-lineage .simple-name {
+  border-color: var(--line-on);
+  box-shadow: 0 0 14px var(--glow);
+}
+
+.node.is-selected .simple-name {
+  border-color: var(--line-on);
+  box-shadow: 0 0 0 1px var(--line-on), 0 0 26px var(--glow);
+}
+
+.node.is-dimmed .simple-name {
+  opacity: 0.62;
+}
+
+.node.is-dimmed .simple-name-avatar {
+  background: var(--avatar-dim);
+}
+
+/* The "+" slots around a person: in the app RelativeSlots positions them around the card or the pill. */
+.node .relative-slots {
+  position: absolute;
+  inset: 0;
+}
+
+/* A landing screen inside a tree page covers the scene. */
+.screen > .backdrop {
+  z-index: 1;
+}
+
+.screen > .landing {
+  z-index: 2;
+}
+
+/* A signed-in landing page inside a tree page hides the tree's header, dock, and scene. */
+body:has(.landing-screen:target) :is(.app-header, .dock-root, .app-version, .relation-legend, .tree, .scene3d, .tron-floor) {
+  display: none;
+}
+
+/* Which state a screen shows when the app has more than one (signed in or out); not part of the app. */
+.dummy-state {
+  position: fixed;
+  z-index: 20;
+  bottom: 48px;
+  left: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  font: 500 12px/1 var(--font-mono);
+}
+
+/* TRON floor: the cyan grid of Scene.tsx (GridFloor: cells of one unit, sections of ten, fading toward the horizon). */
+.tron-floor {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  background: #05070a;
+  perspective: 60vh;
+  perspective-origin: 50% 62%;
+}
+
+.tron-floor::before {
+  position: absolute;
+  top: 62%;
+  left: -150vw;
+  width: 400vw;
+  height: 300vh;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.85) 0 1.5px, transparent 1.5px calc(10 * var(--grid))),
+    repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.85) 0 1.5px, transparent 1.5px calc(10 * var(--grid))),
+    repeating-linear-gradient(90deg, #0b4f5c 0 1px, transparent 1px var(--grid)),
+    repeating-linear-gradient(0deg, #0b4f5c 0 1px, transparent 1px var(--grid));
+  background-position: center top;
+  content: '';
+  -webkit-mask-image: linear-gradient(transparent, #000 6%);
+  mask-image: linear-gradient(transparent, #000 6%);
+  transform: rotateX(78deg);
+  transform-origin: 50% 0;
+  --grid: 3vh;
+}
+
+[data-theme='3d'] .tron-floor {
+  display: none;
+}
+
+/* Facts and lines the selected person has no value for stay out, as in the app. */
+.person-facts dt:has(+ dd:empty),
+.person-facts dd:empty,
+.person-muted:empty {
+  display: none;
+}
+
+/* The tour, quick-add, and toast stand at fixed spots here; the app measures their anchors. */
+.dummy-center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* The hub page. */
+.hub {
+  box-sizing: border-box;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.hub header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+.hub h1 {
+  margin: 0 0 12px;
+  font: 400 clamp(34px, 5vw, 56px) / 1.05 var(--font-display);
+}
+
+.hub h2 {
+  margin: 32px 0 12px;
+  font: 400 28px/1.1 var(--font-display);
+}
+
+.hub p,
+.hub li {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.hub code {
+  color: var(--accent);
+  font: 13px var(--font-mono);
+}
+
+.hub-journeys {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.hub-journeys a {
+  display: grid;
+  gap: 4px;
+  padding: 18px 20px;
+  border-radius: var(--radius-panel);
+  text-decoration: none;
+}
+
+.hub-journeys a:hover {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+
+.hub-journeys strong {
+  color: var(--text);
+  font: 400 24px/1.1 var(--font-display);
+}
+
+.hub-journeys span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Back to the hub, bottom left on every journey page. */
+.dummy-hub-link {
+  position: fixed;
+  z-index: 20;
+  bottom: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 12px;
+  text-decoration: none;
+}
+
+/* ===================================================================================================================
+   App rules, copied unchanged from ui/app so class names and values match main. Edit them here to try a design, then
+   carry the change back to the file named in the section header.
+   =================================================================================================================== */
+
+/* ---- From ui/app/globals.css (glass, icons, menu, family name, boards) ---- */
+.glass {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--panel);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.32);
+  backdrop-filter: var(--blur-glass);
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.glass-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  cursor: pointer;
+  font: 600 14px/1.2 var(--font-ui);
+}
+
+.glass-button:hover,
+.glass-button[aria-expanded='true'] {
+  background: rgba(40, 52, 68, 0.78);
+}
+
+.glass-icon {
+  justify-content: center;
+  width: 44px;
+  padding: 0;
+}
+
+.dashboard-menu {
+  position: relative;
+}
+
+/* The burger menu drops down from the header's right end. */
+.dashboard-nav {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 8px);
+  right: 0;
+  display: grid;
+  box-sizing: border-box;
+  width: min(264px, calc(100vw - 20px));
+  padding: 6px;
+  background: var(--panel-strong);
+  border-radius: var(--radius-menu);
+}
+
+.dashboard-nav-item {
+  display: grid;
+  grid-template-columns: 20px 1fr 20px;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: 500 15px/1.2 var(--font-ui);
+  text-align: left;
+}
+
+/* A bare `hr` in this grid keeps the browser's auto side margins, which shrink it to a dot; the line spans the menu instead. */
+.dashboard-nav-divider {
+  width: auto;
+  height: 0;
+  margin: 4px 12px;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+/* The admin entry is a link, not a button. */
+a.dashboard-nav-item {
+  text-decoration: none;
+}
+
+.dashboard-nav-item:hover,
+.dashboard-nav-item[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.dashboard-family {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: var(--size-control);
+  box-sizing: border-box;
+  padding: 0 14px;
+}
+
+.dashboard-family select,
+.debug-row select {
+  max-width: 220px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font: 600 15px/1.2 var(--font-ui);
+}
+
+.dashboard-family-name {
+  max-width: 260px;
+  overflow: hidden;
+  font: 400 21px/1.2 var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-family select option,
+.debug-row select option {
+  background: #18202b;
+  color: #fff;
+}
+
+.dashboard-board {
+  position: fixed;
+  z-index: 5;
+  top: 76px;
+  right: 288px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: min(400px, calc(100vw - 312px));
+  max-height: calc(100dvh - 92px);
+  overflow: hidden;
+}
+
+.dashboard-board-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 14px 12px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.dashboard-board-header h2 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  font: 600 17px/1.2 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-board-header button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.dashboard-subhead {
+  margin: 16px 0 8px;
+  color: var(--muted);
+  font: 600 12px/1 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dashboard-board button:focus-visible,
+.dashboard-nav-item:focus-visible,
+.glass-button:focus-visible,
+.dashboard-family:focus-within,
+.header-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.families-panel-body {
+  overflow-y: auto;
+  padding: 14px 16px 16px;
+}
+
+.families-panel-body {
+  display: block;
+}
+
+.members-error,
+.member-form-error {
+  color: var(--danger);
+}
+
+.members-empty,
+.members-loading {
+  color: var(--muted);
+}
+
+/* ---- From ui/app/globals.css (families board) ---- */
+.families-panel-body {
+  padding: 12px 16px 16px;
+  font-family: var(--font-ui);
+  font-size: 14px;
+}
+
+.family-set-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-set-item {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  cursor: grab;
+}
+
+.family-set-item[data-drop='before'] {
+  box-shadow: 0 -3px 0 #e89155;
+}
+
+.family-set-item[data-drop='after'] {
+  box-shadow: 0 3px 0 #e89155;
+}
+
+.family-set-select {
+  display: grid;
+  flex: 1;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(23, 58, 43, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+  cursor: pointer;
+  text-align: left;
+}
+
+.family-set-select[aria-pressed='true'] {
+  border-color: #173a2b;
+  background: #edf1e8;
+  box-shadow: inset 3px 0 #173a2b;
+}
+
+.family-set-select strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.family-set-select span {
+  color: #42564a;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.family-set-delete {
+  width: 40px;
+  flex: 0 0 40px;
+  border: 1px solid rgba(139, 50, 29, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #8b321d;
+  cursor: pointer;
+  font: 22px/1 var(--font-ui);
+}
+
+.family-set-visibility {
+  display: grid;
+  width: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 1px solid rgba(23, 58, 43, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+  cursor: pointer;
+}
+
+/* The download link looks like the visibility toggle. */
+.family-set-export {
+  display: grid;
+  width: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  border: 1px solid rgba(23, 58, 43, 0.2);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+}
+
+.family-set-import > button {
+  margin-top: 12px;
+  padding: 8px 12px;
+  border: 1px solid rgba(23, 58, 43, 0.25);
+  border-radius: 5px;
+  background: #fffdf7;
+  color: #173a2b;
+  cursor: pointer;
+}
+
+.family-set-visibility[aria-pressed='true'] {
+  background: #edf1e8;
+}
+
+.family-set-visibility svg,
+.family-set-export svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+}
+
+.family-set-delete:disabled,
+.family-set-select:disabled,
+.family-set-visibility:disabled,
+.family-set-import > button:disabled,
+.random-family-control > button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.family-set-import > button[aria-describedby='family-limit']:disabled {
+  cursor: not-allowed;
+}
+
+.family-limit {
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid rgba(176, 112, 24, 0.35);
+  border-radius: 5px;
+  background: #fdf3e1;
+  color: #7a4a0c;
+  font-size: 13px;
+}
+
+.family-set-select:focus-visible,
+.family-set-delete:focus-visible,
+.family-set-visibility:focus-visible,
+.family-set-export:focus-visible,
+.families-panel button:focus-visible,
+.random-family-panel button:focus-visible {
+  outline: 3px solid #e89155;
+  outline-offset: 2px;
+}
+.family-set-select {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+}
+
+.family-set-select:hover {
+  background: var(--hover);
+}
+
+.family-set-select[aria-pressed='true'] {
+  border-color: var(--accent);
+  background: rgba(127, 214, 255, 0.14);
+  box-shadow: none;
+}
+
+.family-set-select span {
+  color: var(--muted);
+}
+
+.icon-button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  flex: none;
+  place-items: center;
+  align-self: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  background: var(--hover);
+  color: #fff;
+}
+
+.icon-button[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.icon-button:disabled {
+  cursor: wait;
+  opacity: 0.5;
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---- From ui/app/globals.css (families board: import row, GEDCOM info) ---- */
+
+.family-set-import {
+  display: grid;
+  gap: 8px;
+}
+
+.family-set-import > button,
+.random-family-control > button,
+.members-error button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 0;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  font: 500 14px/1.2 var(--font-ui);
+}
+
+.family-set-import-row {
+  display: flex;
+  gap: 8px;
+}
+
+.family-set-import-row > button:first-child {
+  flex: 1;
+}
+
+.family-set-import > .family-set-import-row > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  font: 500 14px/1.2 var(--font-ui);
+}
+
+.family-set-import-row > .gedcom-info-button {
+  flex: none;
+  width: 40px;
+  padding: 0;
+}
+
+.family-set-import-row > button:hover:not(:disabled),
+.family-set-import-row > .gedcom-info-button[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.family-set-import-row > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.gedcom-info {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font: 13px/1.45 var(--font-ui);
+}
+
+.gedcom-info p {
+  margin: 0;
+}
+
+.family-set-import > button:hover,
+.random-family-control > button:hover,
+.random-family-control > button[aria-expanded='true'],
+.members-error button:hover {
+  background: var(--hover);
+}
+
+
+/* ---- From ui/app/globals.css (TRON glyphs, stubs, relation legend) ---- */
+.simple-glyph {
+  display: block;
+  color: var(--muted);
+  font: 14px/1 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
+  pointer-events: none;
+}
+
+.simple-glyph.is-focus {
+  color: var(--line-on);
+  text-shadow: 0 0 6px var(--glow);
+}
+
+.simple-glyph.is-blood {
+  color: #ffb347;
+  text-shadow: 0 0 6px #ffb347;
+}
+
+/* A parent link the lines leave out: a label above the child that opens the parent. */
+.simple-stub {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font: 11px/1.2 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Opaque, so the label stays readable where it sits over a line. */
+.simple-stub:hover {
+  background: linear-gradient(var(--hover), var(--hover)), var(--panel-strong);
+}
+
+.simple-stub:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A stub on the selected person's lineage: the highlight continues at the parents it opens. */
+.simple-stub.is-focus {
+  border-color: var(--line-on);
+  box-shadow: 0 0 8px var(--glow);
+}
+
+.simple-stub.is-blood {
+  border-color: #ffb347;
+  color: #ffe9cc;
+  box-shadow: 0 0 8px rgba(255, 179, 71, 0.6);
+}
+
+/* The key to the experimental view's lines and symbols, below the tool boards: wide and low, so the
+   tree stays in view, with the lines in the left column and the symbols in the right. */
+.relation-legend {
+  position: fixed;
+  z-index: 4;
+  right: 16px;
+  bottom: 16px;
+  box-sizing: border-box;
+  width: min(640px, calc(100vw - 32px));
+  font: 12px/1.3 var(--font-ui);
+}
+
+.relation-legend .person-header {
+  gap: 16px;
+  padding: 4px 6px 4px 14px;
+}
+
+/* Folded, only the header remains, anchored at the same bottom right corner. */
+.relation-legend[data-folded='true'] {
+  width: auto;
+}
+
+.relation-legend[data-folded='true'] .person-header {
+  border-bottom: 0;
+}
+
+/* Quiet like the pin; the shared open-state background would make an unfolded legend look pressed. */
+.relation-legend .relation-legend-fold {
+  color: var(--muted);
+}
+
+.relation-legend .relation-legend-fold:not(:hover) {
+  background: transparent;
+}
+
+.relation-legend .relation-legend-fold:hover {
+  color: #fff;
+}
+
+.relation-legend-fold[aria-expanded='false'] .icon {
+  transform: rotate(180deg);
+}
+
+.relation-legend ul[hidden] {
+  display: none;
+}
+
+.relation-legend ul {
+  display: grid;
+  grid-template-rows: repeat(6, auto);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  list-style: none;
+}
+
+.relation-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.relation-legend-sample {
+  flex: none;
+  width: 40px;
+  height: 14px;
+}
+
+.relation-legend-glyph {
+  color: #e6fdff;
+  font: 14px/14px 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
+  text-align: center;
+  text-shadow: 0 0 6px #00e5ff;
+}
+
+.relation-legend-stub {
+  flex: none;
+  box-sizing: border-box;
+  width: 40px;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  border-radius: 4px;
+  background: rgba(5, 8, 12, 0.85);
+  color: #e6fdff;
+  font-size: 10px;
+  text-align: center;
+}
+
+
+/* ---- From ui/app/globals.css (3D papyrus scroll) ---- */
+.scroll {
+  position: relative;
+  width: 180px;
+  color: #4a3218;
+  font-family: Georgia, 'Times New Roman', serif;
+  text-align: center;
+  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45));
+  cursor: pointer;
+  /* drei's Html centres its content on the position; move the card down so its top edge sits there. */
+  transform: translateY(50%);
+}
+
+.scroll-rod {
+  position: relative;
+  z-index: 1;
+  height: 14px;
+  margin: 0 -14px -4px;
+  border-radius: 7px;
+  background:
+    radial-gradient(circle at 50% 35%, #a2683a, #5a3214 70%) left / 14px 100% no-repeat,
+    radial-gradient(circle at 50% 35%, #a2683a, #5a3214 70%) right / 14px 100% no-repeat,
+    linear-gradient(#d4a46c, #b07a45 45%, #7a4a22);
+}
+
+.scroll-sheet {
+  padding: 18px 16px 20px;
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(255, 240, 205, 0.9), transparent 70%),
+    linear-gradient(90deg, #c9975a, #e7c48e 12%, #ecd09e 50%, #e2bb82 88%, #c08a4c);
+  /* Uneven, slightly torn side edges like the reference scrolls. */
+  clip-path: polygon(
+    3% 0, 97% 0, 98% 8%, 96% 14%, 99% 22%, 97% 34%, 100% 46%, 96% 52%, 98% 63%, 97% 74%, 100% 86%, 97% 100%,
+    3% 100%, 0 90%, 3% 80%, 1% 68%, 4% 60%, 1% 48%, 3% 38%, 0 28%, 3% 18%, 1% 8%
+  );
+}
+
+.scroll-photo {
+  display: block;
+  width: 92px;
+  height: 112px;
+  margin: 0 auto 10px;
+  object-fit: cover;
+  border: 3px solid #b8894f;
+  border-radius: 50%;
+  background: #d9b67f;
+}
+
+.scroll h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.scroll h3.scroll-unknown {
+  font-size: 13px;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.scroll p {
+  margin: 2px 0;
+  font-size: 13px;
+}
+
+.scroll-note {
+  display: -webkit-box;
+  margin-top: 8px !important;
+  padding-top: 8px;
+  overflow: hidden;
+  border-top: 1px solid rgba(90, 50, 20, 0.3);
+  font-style: italic;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+
+.scroll-curl {
+  height: 16px;
+  margin: -6px -6px 0;
+  border-radius: 8px;
+  background: linear-gradient(#f0d6a6, #d2a468 50%, #9c6a36);
+}
+
+.scroll-draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+/* The selected person's scroll: a soft halo in the theme's glow. */
+.scroll.is-selected {
+  filter: drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 2px var(--line-on));
+}
+
+/* Outside the highlighted lineage: faded and desaturated. */
+.scroll.is-dimmed {
+  opacity: 0.62;
+  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) saturate(0.6);
+}
+
+
+/* ---- From ui/app/globals.css (profile board) ---- */
+.profile-panel-body {
+  padding: 0 18px 18px;
+  font: 14px/1.4 var(--font-ui);
+}
+
+.profile-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  margin: 0 0 16px;
+}
+
+.profile-facts dt {
+  color: var(--muted);
+}
+
+.profile-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.profile-panel-body {
+  overflow-y: auto;
+}
+
+.profile-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+}
+
+.profile-name strong {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+
+.profile-name input {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+}
+
+.profile-icon-button {
+  display: grid;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.profile-icon-button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.profile-icon-button .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.profile-hint {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.profile-count {
+  display: inline-grid;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 8px;
+  padding: 0 5px;
+  box-sizing: border-box;
+  place-items: center;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 600 11px/1 var(--font-ui);
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
+.profile-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.profile-invite {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.profile-invite small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.profile-tag {
+  flex: none;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.profile-tag[data-status='pending'] {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.profile-dev {
+  display: inline-block;
+  margin: 0;
+}
+
+.profile-dev-active {
+  padding: 6px 12px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font-weight: 600;
+  animation: profile-dev-glow 2.8s ease-in-out infinite;
+}
+
+@keyframes profile-dev-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 6px 0 color-mix(in srgb, var(--accent) 35%, transparent);
+  }
+  50% {
+    box-shadow: 0 0 16px 3px color-mix(in srgb, var(--accent) 55%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-dev-active {
+    animation: none;
+    box-shadow: 0 0 10px 1px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+}
+
+.profile-logout {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Explains a 401 or 403 from the API; above the boards, at the bottom centre. */
+
+/* ---- From ui/app/globals.css (TRON name pill) ---- */
+.simple-name {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  align-items: center;
+  gap: 7px;
+  max-width: 132px;
+  height: var(--size-person-pill);
+  padding: 0 12px 0 5px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--node);
+  backdrop-filter: var(--blur-glass);
+  color: var(--text);
+  font: 500 13px/1.2 var(--font-ui);
+  white-space: nowrap;
+  text-align: left;
+  cursor: pointer;
+}
+
+.simple-name-avatar {
+  display: grid;
+  flex: none;
+  width: var(--size-avatar);
+  height: var(--size-avatar);
+  place-items: center;
+  border-radius: 50%;
+  background: var(--avatar);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.simple-name-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.simple-name-text > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.simple-name-years {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.simple-name.is-lineage {
+  border-color: var(--line-on);
+  box-shadow: 0 0 14px var(--glow);
+}
+
+.simple-name.is-selected {
+  border-color: var(--line-on);
+  box-shadow: 0 0 0 1px var(--line-on), 0 0 26px var(--glow);
+}
+
+.simple-name.is-dimmed {
+  opacity: 0.62;
+}
+
+.simple-name.is-dimmed .simple-name-avatar {
+  background: var(--avatar-dim);
+}
+
+
+/* ---- From ui/app/globals.css (pill states, search, person panel, family card, version line) ---- */
+.simple-name:hover {
+  background: linear-gradient(var(--hover), var(--hover)), var(--node);
+}
+
+.simple-name:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* The signed-in user's own card: "DU" badge on the scroll's rod; in the experimental view a ring and glow instead. */
+.self-badge {
+  position: absolute;
+  z-index: 2;
+  top: -9px;
+  right: -6px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 700 10px/1.3 var(--font-ui);
+  letter-spacing: 0.06em;
+  pointer-events: none;
+}
+
+.simple-name[data-self] {
+  box-shadow:
+    0 0 0 1.5px var(--line-on),
+    0 0 14px var(--glow);
+}
+
+.self-badge-floating {
+  position: static;
+}
+
+.simple-name[data-self] .self-badge {
+  top: -8px;
+  right: -8px;
+}
+
+/* Member search: a square next to the burger that widens to a search field. */
+.member-search {
+  position: fixed;
+  z-index: 7;
+  top: 16px;
+  left: 68px;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+}
+
+.member-search-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 280px;
+  height: 44px;
+  padding: 0 14px;
+  animation: member-search-open 0.18s ease-out;
+}
+
+.member-search-field input {
+  min-width: 0;
+  flex: 1;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+  font: 15px/1.2 var(--font-ui);
+}
+
+.member-search-field input::placeholder {
+  color: var(--muted);
+}
+
+.member-search-field:focus-within {
+  border-color: var(--accent);
+}
+
+.member-search-list {
+  box-sizing: border-box;
+  width: 280px;
+  max-height: 50vh;
+  margin: 0;
+  padding: 6px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.member-search-list li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font: 15px/1.2 var(--font-ui);
+}
+
+.member-search-list li[aria-selected='true'] {
+  background: var(--hover);
+}
+
+.member-search-list .member-search-empty {
+  color: var(--muted);
+  cursor: default;
+}
+
+@keyframes member-search-open {
+  from {
+    width: 44px;
+  }
+}
+
+@media (max-width: 700px) {
+  .member-search {
+    top: 10px;
+    left: 62px;
+  }
+
+  .member-search[data-open='true'] {
+    right: 10px;
+  }
+
+  .member-search-field,
+  .member-search-list {
+    width: 100%;
+  }
+}
+
+/* Person panel: one side panel for looking at and editing a person, so the tree stays in view. */
+.person-panel {
+  position: fixed;
+  /* On the right (components.md), so the selected card and its "+" slots in the middle stay free. */
+  z-index: 7;
+  top: 104px;
+  right: 16px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  width: min(440px, calc(100vw - 32px));
+  max-height: calc(100dvh - 120px);
+  overflow: hidden;
+  color: #fff;
+  font-family: var(--font-ui);
+}
+
+.person-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 10px 8px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* The header is the handle for dragging the panel; a pinned panel stays put. */
+/* Without a label the header lies over the top of the content, so its actions sit level with the photo;
+   the strip stays the drag handle, and the name keeps clear of the actions. */
+.person-header[data-bare='true'] {
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: 16px 16px 0;
+  border-bottom: 0;
+}
+
+.person-panel-bare .person-hero-text {
+  padding-right: 128px;
+}
+
+.person-header[data-draggable='true'] {
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.person-header[data-dragging='true'] {
+  cursor: grabbing;
+}
+
+.person-pin[aria-pressed='true'] {
+  background: var(--hover);
+  color: var(--accent);
+}
+
+.person-header-label {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.person-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+}
+
+/* 18 px icons on 36 px targets; pin and delete stay quiet, edit (the main action) is the brightest. */
+.person-header-actions .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.person-pin,
+.person-delete {
+  color: var(--muted);
+}
+
+.person-pin:hover {
+  color: #fff;
+}
+
+.person-edit {
+  color: #fff;
+}
+
+/* Red only on hover; deleting still asks first. */
+.person-delete:hover {
+  color: var(--danger);
+}
+
+/* Sets close apart from the actions on the person. */
+.person-header-divider {
+  width: 1px;
+  height: 18px;
+  margin: 0 8px;
+  background: var(--border);
+}
+
+.person-icon-button {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.person-icon-button:hover,
+.person-icon-button[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.person-panel button:focus-visible,
+.person-panel input:focus-visible,
+.person-panel select:focus-visible,
+.person-panel textarea:focus-visible,
+.person-panel summary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.person-body {
+  display: grid;
+  align-content: start;
+  gap: 22px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.person-hero {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.person-hero-text,
+.person-name-fields {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.person-name {
+  margin: 0;
+  font: 500 24px/1.15 Georgia, 'Times New Roman', serif;
+  overflow-wrap: anywhere;
+}
+
+.person-muted {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.person-avatar {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: none;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.07);
+  object-fit: cover;
+  font: 600 13px/1 var(--font-ui);
+}
+
+.person-avatar-large {
+  width: 112px;
+  height: 112px;
+  border-radius: 12px;
+  font-size: 36px;
+}
+
+.person-hero-edit .person-avatar-large {
+  width: 136px;
+  height: 168px;
+  border-radius: 14px;
+  font-size: 40px;
+}
+
+.person-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px 12px;
+  margin: 0;
+  font-size: 14px;
+}
+
+.person-facts dt {
+  color: var(--muted);
+}
+
+.person-facts dd {
+  margin: 0;
+}
+
+.person-note {
+  margin: 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--border);
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.person-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.person-family {
+  display: grid;
+  gap: 26px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+
+.person-group {
+  display: grid;
+  gap: 12px;
+}
+
+.person-group h3,
+.person-more summary {
+  margin: 0;
+  color: var(--muted);
+  font: 600 12px/1 var(--font-ui);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.person-more summary {
+  cursor: pointer;
+}
+
+.person-more summary span {
+  margin-left: 4px;
+  letter-spacing: 0;
+}
+
+.person-more[open] summary {
+  margin-bottom: 8px;
+}
+
+.person-chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.person-partner {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.person-connector {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.person-partners {
+  --branch-line: rgba(255, 255, 255, 0.2);
+  display: grid;
+  justify-items: start;
+}
+
+.person-partner-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Each further partner hangs from a hairline that leaves the person's avatar, bends with a soft corner,
+   and runs under the status to the partner's chip. */
+.person-partner-branches {
+  display: grid;
+  margin: 0 0 0 21px;
+  padding: 0;
+  list-style: none;
+}
+
+.person-partner-branch {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 56px;
+  padding-left: 22px;
+}
+
+.person-partner-branch::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 22px;
+  height: 50%;
+  border-bottom: 1px solid var(--branch-line);
+  border-left: 1px solid var(--branch-line);
+  border-bottom-left-radius: 12px;
+  content: '';
+}
+
+/* The trunk goes on to the partners below. */
+.person-partner-branch:not(:last-child)::after {
+  position: absolute;
+  top: 50%;
+  bottom: 0;
+  left: 0;
+  border-left: 1px solid var(--branch-line);
+  content: '';
+}
+
+/* Centred, then lifted by half its height, so its underline continues the branch and the text sits on it. */
+.person-branch-status {
+  padding: 0 10px 4px 6px;
+  border-bottom: 1px solid var(--branch-line);
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transform: translateY(-50%);
+}
+
+.person-partner-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0 0 14px;
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.person-partner-toggle:hover {
+  background: var(--hover);
+  color: #fff;
+}
+
+.person-partner-toggle .icon {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.15s ease;
+}
+
+.person-partner-toggle[aria-expanded='true'] .icon {
+  transform: rotate(90deg);
+}
+
+.person-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.person-chip-current {
+  border-color: var(--accent);
+}
+
+.person-chip-main {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 10px 4px 4px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  text-align: left;
+}
+
+button.person-chip-main {
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+button.person-chip-main:hover {
+  background: var(--hover);
+}
+
+.person-chip .person-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 11px;
+}
+
+.person-chip-text {
+  display: grid;
+  min-width: 0;
+}
+
+.person-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.person-chip-years {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.person-chip-remove {
+  align-self: stretch;
+  padding: 0 8px;
+  border: 0;
+  border-left: 1px solid var(--border);
+  border-radius: 0 10px 10px 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.person-chip-remove:hover {
+  background: var(--hover);
+  color: var(--danger);
+}
+
+/* Edit mode */
+.person-form {
+  display: grid;
+  gap: 16px;
+}
+
+/* Portrait photo and name fields as one centred block, the photo about as tall as the fields. */
+.person-hero-edit {
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
+}
+
+.person-hero-edit .person-name-fields {
+  flex: 0 1 320px;
+  gap: 8px;
+}
+
+.person-name-fields input,
+.person-field input,
+.person-field textarea,
+.person-edit-item select,
+.person-edit-item input,
+.person-picker input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  color-scheme: dark;
+  font-size: 14px;
+}
+
+.person-field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.person-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 10px;
+}
+
+.person-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.person-field input,
+.person-field textarea {
+  font-weight: 400;
+}
+
+.person-photo-drop {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  justify-items: center;
+  flex: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.person-photo-drop-active .person-avatar {
+  border-color: var(--accent);
+  background: rgba(127, 214, 255, 0.12);
+}
+
+/* The avatar replaces the native picker's look; the input stays for keyboard and click. */
+.person-photo-drop input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.person-photo-drop:focus-within .person-avatar {
+  outline: 2px solid var(--accent);
+}
+
+.person-link-button {
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.person-link-danger {
+  color: var(--danger);
+}
+
+.person-tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.person-tabs button {
+  margin-bottom: -1px;
+  padding: 8px 12px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.person-tabs button[aria-selected='true'] {
+  border-bottom-color: var(--accent);
+  color: #fff;
+}
+
+.person-tabpanel {
+  display: grid;
+  gap: 16px;
+}
+
+.person-tabpanel[hidden] {
+  display: none;
+}
+
+.person-relatives-edit {
+  display: grid;
+  gap: 22px;
+}
+
+.person-edit-item {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.person-partner-details {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* A date with a short caption in front, e.g. "seit". */
+.person-partner-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.person-partner-date input[aria-invalid='true'] {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.person-partner-details select,
+.person-partner-details input {
+  width: auto;
+  min-height: 30px;
+  padding: 3px 6px;
+  font-size: 13px;
+}
+
+.person-parent {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.person-parent-kind {
+  color: var(--muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.person-shared-parent {
+  width: auto;
+  min-height: 30px;
+  padding: 3px 6px;
+  font-size: 13px;
+}
+
+.person-add {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.person-add:hover:not(:disabled) {
+  background: var(--hover);
+  color: #fff;
+}
+
+.person-add:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.person-add .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.person-picker {
+  flex: 1 1 100%;
+  display: grid;
+  gap: 4px;
+}
+
+.person-picker ul {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person-picker button {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: left;
+}
+
+.person-picker button:hover {
+  background: var(--hover);
+}
+
+.person-picker button span,
+.person-picker-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.person-picker-hint {
+  padding: 6px 10px;
+}
+
+/* A person being created for a relation: their panel, the relation they are created for, and the line between. */
+.person-panel-new {
+  width: min(480px, calc(100vw - 32px));
+  border-color: rgba(127, 214, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(127, 214, 255, 0.25), 0 0 32px rgba(127, 214, 255, 0.18);
+}
+
+.person-panel-new .person-header-label {
+  color: var(--accent);
+}
+
+.person-panel-new .person-hero-edit {
+  gap: 18px;
+}
+
+.person-panel-new .person-hero-edit .person-name-fields {
+  flex-basis: 260px;
+}
+
+.person-panel-new .person-hero-edit .person-avatar-large {
+  width: 116px;
+  height: 144px;
+  font-size: 34px;
+}
+
+.person-group[data-linked] {
+  margin: -8px;
+  padding: 8px;
+  border-radius: 10px;
+  background: rgba(127, 214, 255, 0.07);
+  box-shadow: inset 0 0 0 1px rgba(127, 214, 255, 0.35);
+}
+
+.person-group[data-linked] h3,
+.person-group[data-linked] .person-add {
+  color: var(--accent);
+}
+
+.person-group[data-linked] .person-add {
+  border-color: var(--accent);
+  background: rgba(127, 214, 255, 0.12);
+}
+
+.relation-link {
+  position: fixed;
+  z-index: 8;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.relation-link[data-visible='false'] {
+  display: none;
+}
+
+.relation-link path {
+  fill: none;
+  stroke: var(--accent);
+}
+
+.relation-link-glow {
+  stroke-width: 7;
+  opacity: 0.18;
+}
+
+.relation-link-line {
+  stroke-width: 2;
+  stroke-dasharray: 6 5;
+  animation: relation-link-flow 0.8s linear infinite;
+}
+
+.relation-link circle {
+  fill: var(--accent);
+}
+
+@keyframes relation-link-flow {
+  to {
+    stroke-dashoffset: -11;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .relation-link-line {
+    animation: none;
+  }
+}
+
+/* Creating the typed name as a new person, set apart from the matches by the accent colour. */
+.person-picker .person-picker-create {
+  justify-content: flex-start;
+  gap: 6px;
+  align-items: center;
+  margin-top: 2px;
+  background: rgba(127, 214, 255, 0.1);
+  color: var(--accent);
+}
+
+.person-picker .person-picker-create:hover {
+  background: rgba(127, 214, 255, 0.18);
+}
+
+.person-picker-create .icon {
+  width: 14px;
+  height: 14px;
+}
+
+/* Only a changed form (or a new person) shows the actions; they stay at the bottom while the form scrolls. */
+.person-footer {
+  position: sticky;
+  z-index: 1;
+  bottom: -16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 0 -16px -16px;
+  padding: 12px 16px;
+  border-top: 1px solid var(--border);
+  background: rgba(14, 21, 31, 0.97);
+}
+
+.person-footer button {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+}
+
+.person-footer .person-primary {
+  border-color: var(--accent);
+  background: rgba(127, 214, 255, 0.22);
+}
+
+.person-footer button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+/* Editing a person in the tree: the form sits on the left and their card on the right (cardFrame.ts). */
+@media (min-width: 701px) {
+  .person-panel-left {
+    right: auto;
+    left: 16px;
+  }
+}
+
+@media (max-width: 700px) {
+  .person-panel {
+    top: 64px;
+    right: 10px;
+    width: calc(100vw - 20px);
+    max-height: calc(100dvh - 74px);
+  }
+}
+
+/* Family name at the top centre: a button that opens the family card. */
+button.dashboard-family {
+  color: var(--text);
+  cursor: pointer;
+}
+
+button.dashboard-family:hover {
+  background: var(--panel-strong);
+}
+
+/* Family card: a person panel with a cover across its top, the header actions floating on it. */
+.family-card-cover {
+  height: 112px;
+  margin: -16px -16px -22px;
+  border-bottom: 1px solid var(--border);
+  background:
+    radial-gradient(circle at 18% 120%, rgba(127, 214, 255, 0.28), transparent 55%),
+    radial-gradient(circle at 85% -20%, rgba(255, 255, 255, 0.1), transparent 50%),
+    rgba(127, 214, 255, 0.06);
+}
+
+.family-card-hero {
+  display: grid;
+  gap: 10px;
+}
+
+.family-card-emblem {
+  position: relative;
+  display: grid;
+  width: 56px;
+  height: 56px;
+  margin-top: -28px;
+  place-items: center;
+  border: 2px solid rgba(14, 21, 31, 0.97);
+  border-radius: 14px;
+  background: #24384b;
+  color: var(--accent);
+}
+
+.family-card-emblem .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.family-card-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+}
+
+.family-card-stats span {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(127, 214, 255, 0.12);
+  color: var(--accent);
+  font-size: 12px;
+}
+
+.family-card-generation {
+  display: flex;
+  justify-content: space-between;
+}
+
+.family-card-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* The family photo fills the cover. */
+.family-card-cover {
+  position: relative;
+  overflow: hidden;
+}
+
+.family-card-cover img,
+.family-card-drop img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* In original size the photo keeps its own size, centred and capped so the card stays mostly card;
+   small photos are not scaled up. The cover leaves room for the header actions and the emblem. */
+.family-card-cover[data-fit='original'],
+.family-card-drop[data-fit='original'] {
+  display: grid;
+  height: auto;
+  place-items: center;
+  box-sizing: border-box;
+}
+
+.family-card-cover[data-fit='original'] {
+  min-height: 112px;
+  padding: 62px 16px 34px;
+}
+
+.family-card-drop[data-fit='original'] {
+  min-height: 130px;
+  padding: 12px;
+}
+
+.family-card-cover[data-fit='original'] img,
+.family-card-drop[data-fit='original'] img {
+  position: static;
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 240px;
+  border-radius: 6px;
+}
+
+.family-card-fit {
+  display: flex;
+  justify-self: start;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.family-card-fit button {
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.family-card-fit button[aria-checked='true'] {
+  background: rgba(127, 214, 255, 0.18);
+  color: var(--accent);
+}
+
+/* Edit mode: drop field, name, tools, then delete apart from cancel and save. The top stays free for
+   the floating header actions. */
+.family-card-edit {
+  display: grid;
+  gap: 16px;
+  padding-top: 30px;
+}
+
+.family-card-drop {
+  position: relative;
+  display: grid;
+  height: 130px;
+  overflow: hidden;
+  place-items: center;
+  border: 1.5px dashed rgba(127, 214, 255, 0.5);
+  border-radius: 10px;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.family-card-drop-active,
+.family-card-drop:focus-within {
+  border-color: var(--accent);
+  background: rgba(127, 214, 255, 0.08);
+}
+
+.family-card-drop-hint {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* The field replaces the native picker's look; the input stays for keyboard and click. */
+.family-card-drop input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.family-card-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.family-card-button:hover {
+  background: var(--hover);
+}
+
+.family-card-button .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.family-card-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.family-card-danger {
+  border-color: rgba(255, 143, 122, 0.45);
+  color: var(--danger);
+}
+
+.family-card-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #0b141d;
+}
+
+.family-card-primary:hover {
+  background: #a6e3ff;
+}
+
+.family-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.family-card-actions .family-card-danger {
+  margin-right: auto;
+}
+
+/* On a photo the floating header actions need a backdrop to stay readable. */
+.family-card .person-header-actions {
+  padding: 2px;
+  border-radius: 10px;
+  background: rgba(12, 18, 27, 0.66);
+}
+
+/* Version and legal links in one line, bottom centre, below the dock; clicks pass through to the scene. */
+.app-version {
+  position: fixed;
+  z-index: 3;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font: 12px/1 var(--font-ui);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* "· Terms · Privacy" after the version; only the links take clicks. */
+.legal-links {
+  display: flex;
+  gap: 6px;
+}
+
+.legal-links a {
+  color: inherit;
+  text-decoration: none;
+  pointer-events: auto;
+}
+
+.legal-links a:hover,
+.legal-links a:focus-visible {
+  color: var(--text);
+  text-decoration: underline;
+}
+
+/* Above a tree opened on the administration's host: a reminder that this is an admin's view, clear of the legal links. */
+.admin-view-banner {
+  position: fixed;
+  bottom: 40px;
+  left: 50%;
+  z-index: 8;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  margin: 0;
+  padding: 8px 14px;
+  border-color: rgba(255, 196, 120, 0.6);
+  font-size: 13px;
+  line-height: 1.4;
+  text-align: center;
+  transform: translateX(-50%);
+}
+
+/* ---- From ui/app/header.css ---- */
+/* The header on all signed-in screens: wordmark, family name, theme and language segments, Evolution, burger. */
+
+.app-header {
+  position: fixed;
+  z-index: 6;
+  top: 16px;
+  right: 16px;
+  left: 16px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+  /* Only the controls take clicks; the rest passes through to the scene. */
+  pointer-events: none;
+}
+
+.app-header > * {
+  pointer-events: auto;
+}
+
+.header-lead {
+  display: flex;
+  align-items: center;
+  justify-self: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+/* The admin badge: a quiet status chip in the accent colour, no button. */
+.header-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  box-sizing: border-box;
+  padding: 0 10px 0 8px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.06em;
+}
+
+.header-admin .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: start;
+  color: var(--text);
+  text-decoration: none;
+}
+
+.header-monogram {
+  width: 30px;
+  height: 30px;
+  color: var(--accent);
+}
+
+.header-wordmark {
+  font: 400 28px/1 var(--font-display);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: 8px;
+}
+
+.app-header .dashboard-family {
+  justify-self: center;
+}
+
+/* Square and text buttons in the header's glass. */
+.header-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--size-control);
+  box-sizing: border-box;
+  padding: 0 12px;
+  cursor: pointer;
+  font: 500 14px/1 var(--font-ui);
+}
+
+.header-button-icon {
+  width: var(--size-control);
+  padding: 0;
+}
+
+.header-button:hover,
+.header-button[aria-expanded='true'] {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+
+.header-dev {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: 500 10px/1 var(--font-mono);
+}
+
+/* A pill with two or more options, one of them on. */
+.segment {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  backdrop-filter: var(--blur-glass);
+  font-family: var(--font-ui);
+}
+
+.segment button {
+  padding: 7px 13px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: 500 13px/1 var(--font-ui);
+}
+
+.segment button[aria-pressed='true'] {
+  background: var(--segment-on);
+  color: var(--segment-on-ink);
+}
+
+.segment button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.segment button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Two rows: wordmark and controls above, the family name across below. */
+/* The "Signed in as" chip has no room on phones, where the theme and language segments already fill the row. */
+@media (max-width: 960px) {
+  .header-signed-in {
+    display: none;
+  }
+}
+
+@media (max-width: 700px) {
+  .app-header {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    grid-template-columns: auto 1fr;
+    row-gap: 8px;
+  }
+
+  .header-wordmark,
+  .header-evolution-label {
+    display: none;
+  }
+
+  .header-lead {
+    gap: 8px;
+  }
+
+  .header-actions {
+    gap: 6px;
+  }
+
+  .header-evolution {
+    padding: 0 10px;
+  }
+
+  /* The theme switch stays on a phone, since the menu no longer has it, so the segments tighten to leave room for the rest. */
+  .segment button {
+    padding: 6px 9px;
+    font-size: 12px;
+  }
+
+  .app-header .dashboard-family {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: stretch;
+  }
+
+  .presence-bar {
+    top: 110px;
+  }
+}
+
+/* Phones: the admin badge shrinks to its check mark and the Evolution button to its icon, so brand, badges, and segments fit one row. */
+@media (max-width: 480px) {
+  .header-admin {
+    font-size: 0;
+    gap: 0;
+    padding: 0 7px;
+  }
+
+  .header-evolution .header-dev {
+    display: none;
+  }
+}
+
+/* ---- From ui/app/dock.css ---- */
+/* Bottom dock: glass bar, centred, 44px above the bottom edge. Colours and sizes come from tokens.css. */
+.dock-root {
+  position: fixed;
+  z-index: 6;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 32px);
+}
+
+.dock {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px;
+  border-radius: var(--radius-dock);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.dock::-webkit-scrollbar {
+  display: none;
+}
+
+.dock button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.dock button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.dock-primary {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  height: var(--size-dock-primary);
+  padding: 0 14px;
+  border: 0;
+  border-radius: var(--radius-dock-primary);
+  background: var(--primary);
+  color: var(--primary-ink);
+  box-shadow: var(--primary-glow);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.dock-item {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 56px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+}
+
+.dock-item:hover:not(:disabled),
+.dock-item[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.dock-item:focus-visible,
+.dock-primary:focus-visible,
+.dock-popover button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.dock .dock-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.dock-primary .dock-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* The view menu opens above the dock, right-aligned to the "Ansicht" end. */
+.dock-popover {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 10px);
+  display: grid;
+  min-width: 140px;
+  padding: 6px;
+  border-radius: var(--radius-menu);
+  background: var(--panel-strong);
+}
+
+.dock-popover button {
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dock-popover button:hover {
+  background: var(--hover);
+}
+
+/* The member search opens above the dock instead of next to the burger. */
+body .member-search {
+  top: auto;
+  left: 50%;
+  bottom: calc(44px + var(--size-dock-primary) + 12px + 12px);
+  transform: translateX(-50%);
+  justify-items: stretch;
+  flex-direction: column-reverse;
+  display: flex;
+  max-width: calc(100vw - 32px);
+}
+
+@media (max-width: 700px) {
+  body .member-search,
+  body .member-search[data-open='true'] {
+    right: auto;
+    left: 50%;
+    width: calc(100vw - 32px);
+  }
+}
+
+/* Narrow phones: tighter buttons so all four fit without scrolling. */
+@media (max-width: 420px) {
+  .dock {
+    gap: 2px;
+  }
+
+  .dock-primary {
+    padding: 0 12px;
+  }
+
+  .dock-item {
+    min-width: 0;
+    padding: 8px 6px;
+  }
+}
+
+/* On phones the relation legend spans the width; it moves above the dock instead of covering it. */
+@media (max-width: 700px) {
+  body .relation-legend {
+    bottom: calc(44px + var(--size-dock-primary) + 24px);
+  }
+}
+
+/* "Tippe auf ein + am Baum": shown for a few seconds above the dock after Person while someone is selected. */
+.dock-hint {
+  position: absolute;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--panel-strong);
+  font-size: 14px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* ---- From ui/app/slots.css ---- */
+/* "+" slots around the selected person, their quick-add popover, and the toast after adding. Tokens from tokens.css. */
+
+/* The shape the slots surround: the hanging card (180 x 240 CSS px, its top edge on the Html's position, like
+   `.scroll`) or the TRON label (a point). Only the slots themselves take pointer events. */
+.relative-slots {
+  position: relative;
+  pointer-events: none;
+  font-family: var(--font-ui);
+}
+
+.relative-slots-scroll {
+  transform: translateY(50%);
+}
+
+.relative-slots-parents,
+.relative-slots-partner,
+.relative-slots-child,
+.relative-slots-edit {
+  position: absolute;
+  display: flex;
+  gap: 8px;
+}
+
+.relative-slots-parents {
+  bottom: calc(100% + 28px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.relative-slots-partner {
+  top: 50%;
+  left: calc(100% + 24px);
+  transform: translateY(-50%);
+}
+
+.relative-slots-edit {
+  top: 50%;
+  right: calc(100% + 24px);
+  transform: translateY(-50%);
+}
+
+/* A round pencil instead of a "+ …" pill: editing is not adding. */
+.relative-slot-edit {
+  display: grid;
+  place-items: center;
+  width: var(--size-slot);
+  padding: 0;
+}
+
+.relative-slot-edit .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.relative-slots-child {
+  top: calc(100% + 24px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Around a label: parents half a row up, partner to the right, child half a row down. */
+.relative-slots-pill .relative-slots-parents {
+  bottom: 40px;
+}
+
+.relative-slots-pill .relative-slots-partner {
+  left: 64px;
+}
+
+.relative-slots-pill .relative-slots-child {
+  top: 40px;
+}
+
+.relative-slot {
+  height: var(--size-slot);
+  padding: 0 14px;
+  border: 1.5px dashed var(--slot-border);
+  border-radius: var(--radius-pill);
+  background: var(--node);
+  color: var(--text);
+  font: 500 13px/1 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.relative-slot:hover,
+.relative-slot.is-open {
+  border-style: solid;
+  background: var(--panel-strong);
+}
+
+.relative-slot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.quick-add {
+  position: fixed;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+  width: min(280px, calc(100vw - 32px));
+  padding: 18px;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+}
+
+.quick-add-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.quick-add-head h2 {
+  margin: 0;
+  font: 400 24px/1.1 var(--font-display);
+}
+
+.quick-add-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.quick-add-close:hover {
+  background: var(--hover);
+}
+
+.quick-add-field {
+  box-sizing: border-box;
+  width: 100%;
+  height: var(--size-control);
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--hover);
+  color: var(--text);
+  /* 16px keeps iOS from zooming into the field. */
+  font: 16px var(--font-ui);
+}
+
+.quick-add-field::placeholder {
+  color: var(--muted);
+}
+
+.quick-add-field:focus-visible,
+.quick-add-close:focus-visible,
+.quick-add-save:focus-visible,
+.added-toast button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.quick-add-save {
+  height: 44px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--primary-ink);
+  font: 500 15px var(--font-ui);
+  cursor: pointer;
+}
+
+.quick-add-save:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.quick-add-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.quick-add-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Above the dock, like the relation legend on phones. */
+.added-toast {
+  position: fixed;
+  z-index: 8;
+  bottom: calc(44px + var(--size-dock-primary) + 24px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  padding: 6px 6px 6px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  transform: translateX(-50%);
+  animation: added-toast-in 0.25s ease-out;
+}
+
+.added-toast button {
+  flex: none;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--accent);
+  font: 500 14px var(--font-ui);
+  cursor: pointer;
+}
+
+.added-toast button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+@keyframes added-toast-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .added-toast {
+    animation: none;
+  }
+}
+
+/* ---- From ui/app/tour.css ---- */
+/* Intro tour: a glass tooltip above the scene; position and sizes come from IntroTour, colours from tokens.css. */
+.tour-tip {
+  position: fixed;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(330px, calc(100vw - 32px));
+  padding: 18px 20px;
+  border-radius: var(--radius-panel);
+  transform: translateX(-50%);
+}
+
+.tour-step {
+  color: var(--accent);
+  font: 11px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+}
+
+.tour-title {
+  margin: 0;
+  font: 400 26px/1.05 var(--font-display);
+}
+
+.tour-text {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.tour-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+
+.tour-skip,
+.tour-next {
+  min-height: 40px;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tour-skip {
+  background: transparent;
+  color: var(--muted);
+}
+
+.tour-next {
+  padding: 0 18px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  color: var(--primary-ink);
+  font-weight: 500;
+}
+
+.tour-skip:focus-visible,
+.tour-next:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---- From ui/app/welcome.css ---- */
+/* Welcome card (no tree yet), invitation card (first visit of a shared tree), and its task list. Tokens only. */
+
+/* Blurs the scene behind the card; the header and dock (z-index 6) stay sharp above it. */
+.welcome-veil,
+.invitation-veil {
+  position: fixed;
+  z-index: 4;
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 35%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.welcome-card,
+.invitation-card {
+  position: fixed;
+  z-index: 5;
+  display: grid;
+  gap: 18px;
+  box-sizing: border-box;
+  padding: 32px;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+}
+
+.welcome-card {
+  bottom: 72px;
+  left: 6%;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+}
+
+.invitation-card {
+  top: 50%;
+  left: 50%;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 150px);
+  overflow-y: auto;
+  justify-items: center;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+@media (max-width: 700px) {
+  .welcome-card {
+    left: 16px;
+    bottom: 56px;
+    padding: 22px;
+  }
+
+  .invitation-card {
+    padding: 24px;
+  }
+}
+
+.welcome-eyebrow {
+  color: var(--accent);
+  font: 500 12px/1.2 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.welcome-card h1,
+.invitation-card h1 {
+  margin: 0;
+  font: 400 clamp(34px, 6vw, 52px) / 1.02 var(--font-display);
+}
+
+.invitation-card h1 {
+  font-size: clamp(30px, 5vw, 44px);
+}
+
+.welcome-card h1 em,
+.invitation-card h1 em {
+  font-style: italic;
+}
+
+.welcome-lead {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.welcome-preview {
+  display: flex;
+  justify-content: center;
+}
+
+/* The scene's scroll, un-centred and a little smaller for the card. */
+.welcome-scroll {
+  width: 150px;
+  transform: none;
+  cursor: default;
+}
+
+.welcome-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--size-person-pill);
+  padding: 0 16px 0 6px;
+  border: 1px solid var(--line-on);
+  border-radius: var(--radius-pill);
+  background: var(--node);
+  box-shadow: 0 0 18px var(--glow);
+  color: var(--text);
+}
+
+.welcome-pill-avatar {
+  display: grid;
+  place-items: center;
+  width: var(--size-avatar);
+  height: var(--size-avatar);
+  border-radius: 50%;
+  background: var(--avatar);
+  color: var(--accent-ink);
+  font: 600 12px/1 var(--font-ui);
+}
+
+.welcome-pill-name {
+  font: 500 14px/1.2 var(--font-ui);
+  white-space: nowrap;
+}
+
+.welcome-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.welcome-field {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.welcome-field input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--size-control);
+  padding: 0 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--hover);
+  color: var(--text);
+  font: 16px var(--font-ui);
+}
+
+.welcome-field input:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.welcome-primary {
+  width: 100%;
+  height: var(--size-dock-primary);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  box-shadow: var(--primary-glow);
+  color: var(--primary-ink);
+  cursor: pointer;
+  font: 500 16px/1 var(--font-ui);
+}
+
+.welcome-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.welcome-primary:focus-visible,
+.welcome-link:focus-visible,
+.invitation-task:focus-visible,
+.invitation-tasks-close:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.welcome-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  cursor: pointer;
+  font: 14px/1.3 var(--font-ui);
+  text-decoration: underline;
+}
+
+.invitation-self .welcome-link {
+  font-size: 13px;
+}
+
+.welcome-link:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.welcome-note,
+.welcome-error {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.welcome-note {
+  color: var(--muted);
+}
+
+.welcome-error {
+  color: var(--danger);
+}
+
+.invitation-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.invitation-chip {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  font-size: 13px;
+}
+
+.invitation-self {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid var(--line-on);
+  border-radius: var(--radius-menu);
+  background: var(--hover);
+  text-align: left;
+}
+
+.invitation-self-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--avatar);
+  color: var(--accent-ink);
+  font-weight: 600;
+}
+
+.invitation-self-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.invitation-self-text strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.invitation-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* The retry notice for a tree planted without its first person. */
+.welcome-retry {
+  position: fixed;
+  z-index: 5;
+  top: 84px;
+  left: 50%;
+  display: grid;
+  gap: 10px;
+  width: min(420px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 16px 20px;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+  transform: translateX(-50%);
+}
+
+.welcome-retry p {
+  margin: 0;
+  line-height: 1.4;
+}
+
+.welcome-retry .welcome-primary {
+  height: var(--size-control);
+}
+
+.invitation-tasks {
+  position: fixed;
+  z-index: 5;
+  top: 96px;
+  right: 28px;
+  display: grid;
+  gap: 10px;
+  width: min(340px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 22px;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+}
+
+.invitation-tasks p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.invitation-tasks-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.invitation-tasks-close:hover,
+.invitation-task:hover {
+  background: var(--hover);
+}
+
+.invitation-task {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: 14px/1.3 var(--font-ui);
+  text-align: left;
+}
+
+.invitation-task span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* Steps aside while the menu or a person or family panel is open, like the empty-tree card. */
+body:has(.dashboard-nav, .person-panel) .welcome-card,
+body:has(.dashboard-nav, .person-panel) .welcome-veil {
+  display: none;
+}
+
+/* "Du wurdest in den Baum / {Name} / eingeladen." on three lines, the name in the middle. */
+.invitation-title span,
+.invitation-title em {
+  display: block;
+}
+
+.invitation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 24px;
+}
+
+.invitation-actions .welcome-link {
+  justify-self: center;
+}
+
+.invitation-confirm {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+}
+
+.invitation-confirm p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.invitation-actions .welcome-primary {
+  width: auto;
+  padding: 0 24px;
+}
+
+.invitation-danger {
+  background: var(--danger);
+  box-shadow: none;
+}
+
+/* The invitation put aside: a reminder above the dock (z-index 6), which brings the card back. */
+.invitation-pending {
+  position: fixed;
+  z-index: 5;
+  bottom: calc(var(--size-dock-primary) + 72px);
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-sizing: border-box;
+  width: min(560px, calc(100vw - 32px));
+  padding: 12px 12px 12px 20px;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+  transform: translateX(-50%);
+}
+
+.invitation-pending-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  font: 14px/1.35 var(--font-ui);
+}
+
+.invitation-pending-text span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.invitation-pending .welcome-primary {
+  width: auto;
+  padding: 0 20px;
+}
+
+/* ---- From ui/app/share.css ---- */
+/* Share dialog: a person panel listing the people with access, an invitation form, and the text to copy. */
+.share-panel {
+  width: min(520px, calc(100vw - 32px));
+}
+
+.share-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.share-who {
+  display: grid;
+  min-width: 0;
+}
+
+.share-name,
+.share-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.share-email {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.share-badge,
+.share-status {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.share-badge {
+  margin-left: 6px;
+}
+
+.share-status[data-status='invited'] {
+  color: var(--accent);
+}
+
+.share-select,
+.share-invite select {
+  box-sizing: border-box;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  color-scheme: dark;
+  font: inherit;
+}
+
+.share-row-tools {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+}
+
+.share-row-tools:empty {
+  display: none;
+}
+
+.share-confirm {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.share-confirm p {
+  flex: 1 1 100%;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.share-invite {
+  display: grid;
+  gap: 10px;
+}
+
+.share-invite-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 140px;
+  gap: 10px;
+}
+
+.share-invite .family-card-button {
+  justify-self: end;
+}
+
+.share-text {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.share-copy {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.share-button {
+  margin-left: auto;
+}
+
+/* ---- From ui/app/treeRoute.css ---- */
+/* Tree URLs: the switcher at the centred family name and the "tree not found" card. */
+
+.dashboard-family.tree-switcher {
+  gap: 0;
+  padding: 0;
+}
+
+.tree-switcher-name,
+.tree-switcher-toggle {
+  display: flex;
+  align-items: center;
+  align-self: stretch;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+/* The name takes the room the pill gets on narrow screens. */
+.tree-switcher-name {
+  flex: 1;
+  gap: 10px;
+  min-width: 0;
+  padding: 0 10px 0 14px;
+  border-radius: var(--radius-control) 0 0 var(--radius-control);
+}
+
+.tree-switcher-toggle {
+  flex: none;
+  padding: 0 12px 0 10px;
+  border-left: 1px solid var(--border);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+
+.tree-switcher-name:hover,
+.tree-switcher-toggle:hover {
+  background: var(--hover);
+}
+
+.tree-switcher-toggle svg {
+  transform: rotate(90deg);
+  transition: transform 150ms ease;
+}
+
+.tree-switcher-toggle[aria-expanded='true'] svg {
+  transform: rotate(-90deg);
+}
+
+.tree-switcher-name:focus-visible,
+.tree-switcher-toggle:focus-visible {
+  outline: none;
+}
+
+/* Inside the pill's backdrop filter a nested blur shows nothing behind it, so the list is nearly opaque. */
+.tree-switcher-list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  display: grid;
+  min-width: 100%;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  box-sizing: border-box;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-menu);
+  background: var(--panel-strong);
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.32);
+  transform: translateX(-50%);
+}
+
+.tree-switcher-item {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: var(--text);
+  font: 600 14px/1.2 var(--font-ui);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.tree-switcher-item:hover,
+.tree-switcher-item:focus-visible {
+  background: var(--hover);
+  outline: none;
+}
+
+.tree-switcher-item[aria-current='page'] {
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.tree-not-found,
+.empty-tree {
+  position: fixed;
+  z-index: 5;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  width: min(420px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 24px;
+  text-align: center;
+  transform: translate(-50%, -50%);
+}
+
+.tree-not-found h2,
+.empty-tree h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.tree-not-found p,
+.empty-tree p {
+  margin: 0;
+  opacity: 0.85;
+  line-height: 1.4;
+}
+
+.tree-not-found .glass-button,
+.empty-tree .glass-button {
+  text-decoration: none;
+}
+
+.empty-tree-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Steps aside while the menu, a board, or a person or family card is open, so the flows it starts stay unobstructed. */
+body:has(.dashboard-nav, .person-panel) .empty-tree {
+  display: none;
+}
+
+/* ---- From ui/app/home/landing.css ---- */
+/* Landing page: the scene still (3D) or the grid (TRON) fills the window, the UI sits on glass above it. */
+.landing {
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: 18px 24px 52px;
+  color: var(--text);
+  font-family: var(--font-ui);
+}
+
+.landing-backdrop {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(11, 15, 16, 0.25) 0%, rgba(11, 15, 16, 0) 30%, rgba(11, 15, 16, 0.55) 100%),
+    var(--landing-still) center 62% / cover no-repeat,
+    var(--bg);
+}
+
+/* TRON: a cyan floor grid toward a dark horizon instead of the still. */
+[data-theme='tron'] .landing-backdrop {
+  background:
+    radial-gradient(ellipse 70% 30% at 50% 58%, rgba(72, 229, 255, 0.22), transparent 70%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg) 58%, transparent 58%),
+    repeating-linear-gradient(90deg, rgba(72, 229, 255, 0.3) 0 1px, transparent 1px 90px),
+    repeating-linear-gradient(180deg, rgba(72, 229, 255, 0.3) 0 1px, transparent 1px 48px),
+    var(--bg);
+}
+
+.landing-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.landing-nav {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  border-radius: var(--radius-pill);
+}
+
+.landing-nav a {
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.landing-nav a:hover,
+.landing-nav a:focus-visible {
+  background: var(--hover);
+}
+
+.landing-segments {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: end;
+}
+
+.landing-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.landing-status,
+.landing-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  color: var(--text);
+  font-size: 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+a.landing-status:hover,
+a.landing-status:focus-visible,
+.landing-back:hover,
+.landing-back:focus-visible {
+  background: var(--hover);
+}
+
+/* The same hero for 3D and TRON: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), the chip,
+   the sentence and the buttons hang below it. The headline is out of the flow, so a second line grows upward. */
+.landing-hero {
+  --landing-golden: 61.8dvh;
+  position: absolute;
+  top: var(--landing-golden);
+  right: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.landing-hero h1 {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  max-width: none;
+  margin: 0 auto 6px;
+  font: 400 clamp(30px, 4.8vw, 68px) / 1.05 var(--font-display);
+  letter-spacing: -0.01em;
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.6);
+  text-wrap: balance;
+}
+
+[data-theme='tron'] .landing-hero h1 {
+  text-shadow: 0 0 22px var(--glow);
+}
+
+.landing-chip {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: var(--panel);
+  backdrop-filter: var(--blur-glass);
+  color: var(--accent);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.landing-chip a {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.landing-chip a:hover,
+.landing-chip a:focus-visible {
+  text-decoration: underline;
+}
+
+.landing-chip .github-icon {
+  width: 14px;
+  height: 14px;
+}
+
+[data-theme='tron'] .landing-chip {
+  font-family: var(--font-mono);
+}
+
+.landing-lead {
+  max-width: 34rem;
+  margin: 16px 0 24px;
+  color: var(--text);
+  font-size: 18px;
+  line-height: 1.5;
+  text-shadow: 0 1px 14px rgba(0, 0, 0, 0.8);
+}
+
+@media (max-width: 700px) {
+  .landing {
+    padding-inline: 16px;
+  }
+
+  .landing-hero {
+    right: 16px;
+    left: 16px;
+  }
+
+  .landing-lead {
+    margin: 12px 0 18px;
+    font-size: 16px;
+  }
+}
+
+.landing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.landing-primary,
+.landing-secondary {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 24px;
+  border-radius: var(--radius-pill);
+  font: 600 16px/1 var(--font-ui);
+  text-decoration: none;
+}
+
+.landing-primary {
+  background: var(--primary);
+  box-shadow: var(--primary-glow);
+  color: var(--primary-ink);
+}
+
+.landing-secondary {
+  font-weight: 500;
+}
+
+.landing-primary:hover,
+.landing-secondary:hover {
+  filter: brightness(1.06);
+}
+
+.landing-how {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 0 32px;
+  text-align: center;
+}
+
+.landing-how h1 {
+  max-width: 20ch;
+  margin: 0;
+  font: 400 clamp(34px, 5vw, 60px) / 1.05 var(--font-display);
+  text-shadow: 0 2px 30px rgba(0, 0, 0, 0.35);
+}
+
+[data-theme='tron'] .landing-how h1 {
+  text-shadow: 0 0 22px var(--glow);
+}
+
+.landing-how .landing-lead {
+  margin-bottom: 32px;
+}
+
+.landing-how .landing-actions {
+  margin-top: 32px;
+}
+
+/* The steps page is text-heavy, so the still is dimmed behind it. */
+.landing-backdrop-dim {
+  filter: brightness(0.7);
+}
+
+.landing-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 320px));
+  justify-content: center;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.landing-steps li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px;
+  border-radius: var(--radius-panel);
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.landing-steps strong {
+  display: block;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.landing-steps em {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--accent);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.landing-step-number {
+  color: var(--accent);
+  font: 500 13px/1.6 var(--font-mono);
+}
+
+@media (max-width: 860px) {
+  .landing-header {
+    grid-template-columns: 1fr auto;
+  }
+
+  .landing-header > span:empty {
+    display: none;
+  }
+
+  .landing-nav {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .landing-steps {
+    grid-template-columns: minmax(0, 480px);
+  }
+}
+
+/* Phones: brand, status chip and segments wrap onto rows instead of overflowing. */
+@media (max-width: 560px) {
+  .landing-header {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+  }
+
+  .landing-nav,
+  .example-title {
+    order: 3;
+    flex-basis: auto;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 480px) {
+  .landing {
+    padding: 14px 16px 48px;
+  }
+
+  .landing-nav a {
+    padding: 7px 8px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .landing-chip {
+    font-size: 12px;
+  }
+
+  .landing-lead {
+    font-size: 16px;
+  }
+}
+
+/* Example tree: the bar and the cards float over the full-window scene. */
+.example-header {
+  position: fixed;
+  z-index: 5;
+  top: 0;
+  right: 0;
+  left: 0;
+  padding: 16px 20px;
+  pointer-events: none;
+}
+
+.example-header > * {
+  pointer-events: auto;
+}
+
+.example-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 8px 18px;
+  border-radius: var(--radius-panel);
+  font-size: 13px;
+  text-align: center;
+}
+
+.example-title strong {
+  font: 400 22px/1.1 var(--font-display);
+}
+
+.example-title span {
+  color: var(--muted);
+}
+
+.example-person {
+  position: fixed;
+  z-index: 5;
+  top: 96px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 180px;
+  padding: 14px 18px;
+  border-radius: var(--radius-panel);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.example-person strong {
+  color: var(--text);
+  font: 400 24px/1.15 var(--font-display);
+}
+
+.example-cta {
+  position: fixed;
+  z-index: 5;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* On phones the legend steps up above the button, as it does above the dock in the tree. */
+@media (max-width: 700px) {
+  .example-page .relation-legend {
+    bottom: 104px;
+  }
+}
+
+@media (max-width: 860px) {
+  .example-title {
+    grid-row: 2;
+    grid-column: 1 / -1;
+    justify-self: center;
+  }
+
+  .example-person {
+    top: auto;
+    right: 16px;
+    bottom: 160px;
+    left: 16px;
+  }
+}
