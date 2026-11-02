@@ -5,8 +5,8 @@ import { hostDecision } from './app/adminHost';
 // (`/`, `/home`) nor anything else public; the tree's host has no `/admin` at all. Trees stay reachable on the admin host,
 // which is where admins open them. Unset, as locally, both live together.
 // The BFF decides the rights either way; this only keeps each host to what it is for.
-// On the tree's host `/` is the public landing page at `/home` (outside Cloudflare Access); signed-in users go on from
-// there to `/start`.
+// On the tree's host `/` is the landing page at `/home`, which like every page but the legal ones sits behind
+// Cloudflare Access; from there people go on to `/start`.
 export function proxy(request: NextRequest) {
   const decision = hostDecision(process.env.ADMIN_URL, request.headers.get('host'), request.nextUrl.pathname);
   switch (decision.kind) {
