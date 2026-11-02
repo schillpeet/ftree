@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.36.0](https://github.com/schillpeet/ftree/compare/v0.35.0...v0.36.0) (2026-11-02)
+
+
+### Features
+
+* **ui:** add a tron horizon to the landing ([#311](https://github.com/schillpeet/ftree/issues/311)) ([209ae22](https://github.com/schillpeet/ftree/commit/209ae22cdac98aeeb9b6d4364da9c613fc51bfaa))
+* **ui:** rework the landing journey ([#310](https://github.com/schillpeet/ftree/issues/310)) ([1a6b632](https://github.com/schillpeet/ftree/commit/1a6b632347c43102ed6d2e6676a30bdda0d425fd))
+* **ui:** ride back to the landing in tron ([#314](https://github.com/schillpeet/ftree/issues/314)) ([9a1025a](https://github.com/schillpeet/ftree/commit/9a1025a0a9d92d1e5b670972d2d13b3b39ac4ee1))
+* **ui:** ride into the tree in tron ([#313](https://github.com/schillpeet/ftree/issues/313)) ([629b3d0](https://github.com/schillpeet/ftree/commit/629b3d0f41d19c058817116775918d74fe13cfc2))
+
 ## [0.35.0](https://github.com/schillpeet/ftree/compare/v0.34.0...v0.35.0) (2026-11-01)
 
 
