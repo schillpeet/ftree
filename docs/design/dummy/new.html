@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="de" data-theme="3d">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ftree · Dummy · Neu</title>
+    <script>
+      try { document.documentElement.dataset.theme = localStorage.getItem('ftree-dummy-theme') || '3d'; } catch {}
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="dummy.css" />
+    <style>
+      /* No tree yet on the welcome screen. */
+      body:not(:has(.screen:not(#welcome):target)) .tree {
+        display: none;
+      }
+
+      /* Positions (percent of the stage); the own card moves down once parents hang above it. */
+      .node[data-id='lea'] { --x: 50%; --y: 50%; }
+      .node[data-id='mother'] { --x: 36%; --y: 22%; }
+      .node[data-id='father'] { --x: 64%; --y: 22%; }
+      body:has(#father:target, #added:target, #undone:target) .node[data-id='lea'] { --y: 72%; }
+
+      /* Mother from #father on, father on #added only; lines to match. */
+      .node[data-id='mother'], .node[data-id='father'], .tree-lines path { display: none; }
+      body:has(#father:target, #added:target, #undone:target) .node[data-id='mother'],
+      body:has(#added:target) .node[data-id='father'],
+      body:has(#father:target, #undone:target) .line-mother,
+      body:has(#added:target) .line-both { display: inline; }
+
+      /* The own card is the selected one from tour step 2 on. */
+      body:has(:is(#tour2, #tour3, #tree, #mother, #father, #added, #undone):target) .node[data-self] .scroll {
+        filter: drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 2px var(--line-on));
+      }
+      body:has(:is(#tour2, #tour3, #tree, #mother, #father, #added, #undone):target) .node[data-self] .simple-name {
+        border-color: var(--line-on);
+        box-shadow: 0 0 0 1px var(--line-on), 0 0 26px var(--glow);
+      }
+
+      /* "+" slots: only once selected, only for what is still missing; one copy per look. */
+      .node .relative-slots { display: none; }
+      body:has(:is(#tour2, #tour3, #tree, #mother, #father, #added, #undone):target) .node .relative-slots { display: block; }
+      [data-theme='3d'] .relative-slots-pill,
+      [data-theme='tron'] .relative-slots-scroll { display: none !important; }
+      .node .relative-slots-scroll { transform: none; }
+      .relative-slots-pill .relative-slots-parents { bottom: calc(100% + 28px); }
+      .relative-slots-pill .relative-slots-partner { left: calc(100% + 24px); }
+      .relative-slots-pill .relative-slots-child { top: calc(100% + 24px); }
+      body:has(#father:target, #undone:target) .slot-mother,
+      body:has(#added:target) .relative-slots-parents { display: none; }
+      body:has(#mother:target) .slot-mother,
+      body:has(#father:target) .slot-father { border-style: solid; background: var(--panel-strong); }
+
+      /* The welcome card previews the own card in the current look. */
+      [data-theme='3d'] .welcome-pill,
+      [data-theme='tron'] .welcome-scroll { display: none; }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <!-- The one tree: the own card, the parents join on #father and #added. -->
+    <div class="tree">
+      <svg class="tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path class="line-mother" d="M36 22 V47 H50 V72" />
+        <path class="line-both" d="M36 22 H64" />
+        <path class="line-both" d="M50 22 V72" />
+      </svg>
+      <div class="node" data-id="mother">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Sabine Linde</h3></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">SL</span><span class="simple-name-text"><span>Sabine</span></span></span>
+      </div>
+      <div class="node" data-id="father">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Peter Linde</h3></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">PL</span><span class="simple-name-text"><span>Peter</span></span></span>
+      </div>
+      <div class="node" data-id="lea" data-self>
+        <div class="scroll"><div class="scroll-rod"></div><span class="self-badge">DU</span><div class="scroll-sheet"><h3>Lea Linde</h3></div><div class="scroll-curl"></div></div>
+        <span class="simple-name" data-self><span class="self-badge">DU</span><span class="simple-name-avatar">LL</span><span class="simple-name-text"><span>Lea</span></span></span>
+        <div class="relative-slots relative-slots-scroll" role="group" aria-label="Verwandte von Lea Linde hinzufügen">
+          <div class="relative-slots-parents">
+            <button type="button" class="relative-slot slot-mother" aria-haspopup="dialog" data-go="#mother">+ Mutter</button>
+            <button type="button" class="relative-slot slot-father" aria-haspopup="dialog" data-go="#father">+ Vater</button>
+          </div>
+          <div class="relative-slots-partner"><button type="button" class="relative-slot" aria-haspopup="dialog" data-go="#tree">+ Partner:in</button></div>
+          <div class="relative-slots-child"><button type="button" class="relative-slot" aria-haspopup="dialog" data-go="#tree">+ Kind</button></div>
+          <div class="relative-slots-edit">
+            <button type="button" class="relative-slot relative-slot-edit" aria-label="Lea Linde bearbeiten" title="Lea Linde bearbeiten" data-go="returning.html#edit">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg>
+            </button>
+          </div>
+        </div>
+        <div class="relative-slots relative-slots-pill" role="group" aria-label="Verwandte von Lea Linde hinzufügen">
+          <div class="relative-slots-parents">
+            <button type="button" class="relative-slot slot-mother" aria-haspopup="dialog" data-go="#mother">+ Mutter</button>
+            <button type="button" class="relative-slot slot-father" aria-haspopup="dialog" data-go="#father">+ Vater</button>
+          </div>
+          <div class="relative-slots-partner"><button type="button" class="relative-slot" aria-haspopup="dialog" data-go="#tree">+ Partner:in</button></div>
+          <div class="relative-slots-child"><button type="button" class="relative-slot" aria-haspopup="dialog" data-go="#tree">+ Kind</button></div>
+          <div class="relative-slots-edit">
+            <button type="button" class="relative-slot relative-slot-edit" aria-label="Lea Linde bearbeiten" title="Lea Linde bearbeiten" data-go="returning.html#edit">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Header.tsx: wordmark, tree switcher (more than one tree), segments, burger (Dashboard.tsx). -->
+    <header class="app-header">
+      <div class="header-lead">
+        <a class="header-brand" href="visitor.html">
+          <svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg>
+          <span class="header-wordmark">ftree</span>
+        </a>
+      </div>
+      <div class="glass dashboard-family tree-switcher" data-show="tour1 tour2 tour3 tree mother father added undone">
+        <button type="button" class="tree-switcher-name" data-go="returning.html#family" title="Familienkarte von Linde öffnen">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>
+          <span class="dashboard-family-name">Linde</span>
+        </button>
+        <button type="button" class="tree-switcher-toggle" data-go="returning.html#switcher" aria-label="Baum wechseln"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+      </div>
+      <div class="header-actions">
+        <span class="header-signed-in"><span class="glass landing-status">Angemeldet als Lea Linde</span></span>
+        <div class="segment" role="group" aria-label="Darstellung"><button type="button" data-theme-set="3d">3D</button><button type="button" data-theme-set="tron">TRON</button></div>
+        <div class="segment" role="group" aria-label="Sprache"><button type="button" aria-pressed="true">DE</button><button type="button" aria-pressed="false" disabled title="Der Dummy ist nur auf Deutsch">EN</button></div>
+        <div class="dashboard-menu">
+          <button type="button" class="glass header-button header-button-icon" data-go="returning.html#menu" aria-label="Menü öffnen">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dock.tsx: without a tree Person and Einladen stay visible but disabled (t.dock.needsFamily). -->
+    <div class="dock-root">
+      <nav class="glass dock" aria-label="Hauptaktionen">
+        <button type="button" class="dock-primary" disabled title="Öffne zuerst einen Baum" data-show="welcome">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+          Person
+        </button>
+        <button type="button" class="dock-primary" data-go="#tree" data-show="tour1 tour2 tour3 tree mother father added undone">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+          Person
+        </button>
+        <button type="button" class="dock-item" data-go="returning.html#search">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="M13.5 13.5l3.5 3.5" /></svg>
+          Suchen
+        </button>
+        <button type="button" class="dock-item" disabled title="Öffne zuerst einen Baum" data-show="welcome">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" /><path d="M15.5 6v6M12.5 9h6" /></svg>
+          Einladen
+        </button>
+        <button type="button" class="dock-item" data-go="returning.html#share" data-show="tour1 tour2 tour3 tree mother father added undone">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" /><path d="M15.5 6v6M12.5 9h6" /></svg>
+          Einladen
+        </button>
+        <button type="button" class="dock-item" data-go="returning.html#view" aria-haspopup="menu">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" /><circle cx="10" cy="10" r="2.2" /></svg>
+          Ansicht
+        </button>
+      </nav>
+    </div>
+
+    <p class="app-version">v0.35.0 <span class="legal-links">· <a href="#welcome">Nutzungsbedingungen</a> · <a href="#welcome">Datenschutz</a></span></p>
+
+    <!-- WelcomeCard.tsx: first start without a tree; the card previews the own scroll (3D) or pill (TRON). -->
+    <section class="screen" id="welcome">
+      <div class="welcome-veil" aria-hidden="true"></div>
+      <form class="glass welcome-card" aria-label="Willkommen">
+        <span class="welcome-eyebrow">Willkommen bei ftree</span>
+        <h1>Lass uns deinen <em>Baum pflanzen.</em></h1>
+        <p class="welcome-lead">Er beginnt mit dir – stimmt das so?</p>
+        <div class="welcome-preview">
+          <div class="scroll welcome-scroll" aria-hidden="true"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Lea Linde</h3></div><div class="scroll-curl"></div></div>
+          <div class="welcome-pill" aria-hidden="true"><span class="welcome-pill-avatar">LL</span><span class="welcome-pill-name">Lea Linde</span></div>
+        </div>
+        <div class="welcome-fields">
+          <label class="welcome-field">Vorname <input value="Lea" maxlength="100" autocomplete="given-name" /></label>
+          <label class="welcome-field">Nachname <input value="Linde" maxlength="100" autocomplete="family-name" /></label>
+        </div>
+        <button type="button" class="welcome-primary" data-go="#tour1">Baum pflanzen</button>
+        <button type="button" class="welcome-link" disabled title="Nicht im Dummy">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 10l5-5 5 5M5 20h14" /></svg>
+          Stammbaum-Datei importieren (GEDCOM)
+        </button>
+      </form>
+    </section>
+
+    <!-- IntroTour.tsx step 1: below the own card. -->
+    <section class="screen" id="tour1">
+      <div class="glass tour-tip" role="dialog" aria-label="Kurze Einführung" style="left: 50%; top: 454px">
+        <span class="tour-step">EINFÜHRUNG 1/3</span>
+        <h2 class="tour-title">Das bist du.</h2>
+        <p class="tour-text">Beim Öffnen fliegt die Kamera immer zu deiner Karte. Ziehen dreht den Baum, Scrollen zoomt.</p>
+        <div class="tour-actions">
+          <button type="button" class="tour-skip" data-go="#tree">Überspringen</button>
+          <button type="button" class="tour-next" data-go="#tour2">Weiter</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- IntroTour.tsx step 2: beside the selected card, the "+" slots visible. -->
+    <section class="screen" id="tour2">
+      <div class="glass tour-tip" role="dialog" aria-label="Kurze Einführung" style="left: min(calc(50% + 260px), calc(100% - 181px)); top: 330px">
+        <span class="tour-step">EINFÜHRUNG 2/3</span>
+        <h2 class="tour-title">Tippe auf ein +</h2>
+        <p class="tour-text">Die gestrichelten Plätze zeigen, wer noch fehlt. Ein Vorname reicht – Enter, fertig.</p>
+        <div class="tour-actions">
+          <button type="button" class="tour-skip" data-go="#tree">Überspringen</button>
+          <button type="button" class="tour-next" data-go="#tour3">Weiter</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- IntroTour.tsx step 3: above the dock. -->
+    <section class="screen" id="tour3">
+      <div class="glass tour-tip" role="dialog" aria-label="Kurze Einführung" style="left: 50%; bottom: 122px">
+        <span class="tour-step">EINFÜHRUNG 3/3</span>
+        <h2 class="tour-title">Alles Wichtige unten</h2>
+        <p class="tour-text">Person hinzufügen, Suchen, Familie einladen, Ansicht. Einstellungen, Sprache und Darstellung findest du oben rechts.</p>
+        <div class="tour-actions">
+          <button type="button" class="tour-skip" data-go="#tree">Überspringen</button>
+          <button type="button" class="tour-next" data-go="#tree">Los geht’s</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- RelativeSlots.tsx: the own card selected, with its "+" slots. -->
+    <section class="screen" id="tree"></section>
+
+    <!-- QuickAdd.tsx for "+ Mutter"; the father follows (t.slots.thenFather). -->
+    <section class="screen" id="mother">
+      <form class="glass quick-add" aria-label="Mutter von Lea Linde" style="left: calc(50% + 130px); top: 250px">
+        <div class="quick-add-head">
+          <h2>Mutter von Lea Linde</h2>
+          <button type="button" class="quick-add-close" aria-label="Schließen" data-go="#tree">
+            <svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" /></svg>
+          </button>
+        </div>
+        <input class="quick-add-field" aria-label="Vorname" placeholder="Vorname" value="Sabine" maxlength="100" autocomplete="off" />
+        <input class="quick-add-field" aria-label="Nachname" placeholder="Nachname" value="Linde" maxlength="100" autocomplete="off" />
+        <button type="button" class="quick-add-save" data-go="#father">Hinzufügen ↵</button>
+        <span class="quick-add-hint">Danach geht es direkt mit dem Vater weiter.</span>
+      </form>
+    </section>
+
+    <!-- QuickAdd.tsx opens by itself for the father; the mother already hangs in the tree. -->
+    <section class="screen" id="father">
+      <form class="glass quick-add" aria-label="Vater von Lea Linde" style="left: calc(50% + 100px); top: 372px">
+        <div class="quick-add-head">
+          <h2>Vater von Lea Linde</h2>
+          <button type="button" class="quick-add-close" aria-label="Schließen" data-go="#tree">
+            <svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12" /></svg>
+          </button>
+        </div>
+        <input class="quick-add-field" aria-label="Vorname" placeholder="Vorname" value="Peter" maxlength="100" autocomplete="off" />
+        <input class="quick-add-field" aria-label="Nachname" placeholder="Nachname" value="Linde" maxlength="100" autocomplete="off" />
+        <button type="button" class="quick-add-save" data-go="#added">Hinzufügen ↵</button>
+        <span class="quick-add-hint">Esc schließt · Details später im Profil</span>
+      </form>
+    </section>
+
+    <!-- QuickAdd.tsx AddedToast: both parents are in, with the undo. -->
+    <section class="screen" id="added">
+      <div class="glass added-toast" role="status">
+        <span>Peter Linde wächst jetzt in deinem Baum</span>
+        <button type="button" data-go="#undone">Rückgängig</button>
+      </div>
+    </section>
+
+    <!-- After "Rückgängig": the father is gone, "+ Vater" is there for another try. -->
+    <section class="screen" id="undone"></section>
+
+    <a class="glass dummy-hub-link" href="index.html">← Alle Journeys</a>
+    <script src="dummy.js"></script>
+  </body>
+</html>

@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de" data-theme="3d">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ftree · Klick-Dummy</title>
+    <script>
+      try { document.documentElement.dataset.theme = localStorage.getItem('ftree-dummy-theme') || '3d'; } catch {}
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="dummy.css" />
+  </head>
+  <body>
+    <div class="backdrop landing-backdrop-dim" aria-hidden="true"></div>
+    <main class="hub">
+      <header>
+        <span class="header-brand">
+          <svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg>
+          <span class="header-wordmark">ftree</span>
+        </span>
+        <div class="segment" role="group" aria-label="Darstellung">
+          <button type="button" data-theme-set="3d">3D</button>
+          <button type="button" data-theme-set="tron">TRON</button>
+        </div>
+      </header>
+
+      <h1>Klick-Dummy</h1>
+      <p>
+        Die Wege, die normale Nutzer:innen durch ftree gehen, als statische Seiten zum Durchklicken – in 3D und TRON, so wie die
+        App auf <code>main</code> heute aussieht. Texte stammen wörtlich aus <code>ui/app/i18n.ts</code>.
+      </p>
+
+      <h2>Journeys</h2>
+      <ul class="hub-journeys">
+        <li>
+          <a class="glass" href="visitor.html">
+            <strong>Besucher</strong>
+            <span>Startseite → So funktioniert’s → Beispielfamilie → Anmelden</span>
+          </a>
+        </li>
+        <li>
+          <a class="glass" href="new.html">
+            <strong>Neu</strong>
+            <span>Willkommen → Baum pflanzen → Einführung 1/3–3/3 → „+ Mutter“ → „+ Vater“ → Rückgängig</span>
+          </a>
+        </li>
+        <li>
+          <a class="glass" href="invited.html">
+            <strong>Eingeladen</strong>
+            <span>Einladung (verknüpft / Nicht ich) → annehmen, später entscheiden oder ablehnen</span>
+          </a>
+        </li>
+        <li>
+          <a class="glass" href="returning.html">
+            <strong>Wiederkehrend</strong>
+            <span>Baum → Person, Bearbeiten · Suchen · Einladen · Ansicht · Familienkarte · Profil · Familien · Baum wechseln</span>
+          </a>
+        </li>
+      </ul>
+
+      <h2>Hier etwas ändern</h2>
+      <ul>
+        <li>Farben, Radien, Schriften: <code>../tokens.css</code> – wirkt sofort auf alle Seiten, in beiden Themes.</li>
+        <li>
+          Bausteine: <code>dummy.css</code>. Oben der Dummy-Kleber (Hintergrund, Screens, Baum), darunter die Regeln der App mit
+          ihren Klassennamen und der Quelldatei im Abschnittskopf – eine Änderung dort lässt sich 1:1 in die App übertragen.
+        </li>
+        <li>
+          Screens: jede Journey ist eine HTML-Datei, jeder Zustand ein <code>&lt;section class="screen" id="…"&gt;</code>, den ein
+          Link auf <code>#id</code> oder ein Knopf mit <code>data-go=&quot;#id&quot;</code> zeigt. Neue Zustände: Section kopieren, ID
+          vergeben, verlinken. Was über mehrere Screens bleibt (Header, Dock, Baum), steht außerhalb der Sections;
+          <code>data-show=&quot;id1 id2&quot;</code> blendet es nur auf diesen Screens ein (siehe <code>dummy.js</code>).
+        </li>
+        <li>Theme nur für TRON ändern: Regeln mit <code>[data-theme='tron']</code> davor schreiben.</li>
+        <li>Kein Build, kein Server: Datei per Doppelklick öffnen.</li>
+      </ul>
+
+      <h2>Bewusst weggelassen</h2>
+      <p>Fehlertexte, native Dialoge (z. B. Löschen bestätigen), Live-Anwesenheit samt Animationen, Evolution/DEV-Panel und Admin-Tool.</p>
+      <p>Ausgegraute Knöpfe mit dem Hinweis „Nicht im Dummy“ gibt es in der App, sie führen hier aber nirgendwohin; der Dummy ist nur auf Deutsch.</p>
+    </main>
+    <script src="dummy.js"></script>
+  </body>
+</html>

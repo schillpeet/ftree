@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="de" data-theme="3d">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ftree · Dummy · Eingeladen</title>
+    <script>
+      try { document.documentElement.dataset.theme = localStorage.getItem('ftree-dummy-theme') || '3d'; } catch {}
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="dummy.css" />
+    <style>
+      /* No people behind the welcome card (no tree open). */
+      body:has(#welcome:target) .tree {
+        display: none;
+      }
+
+      /* WelcomeCard's preview: a scroll in 3D, a pill in TRON. */
+      [data-theme='3d'] .welcome-pill,
+      [data-theme='tron'] .welcome-scroll {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <!-- Every node opens the person panel; dummy.js lights up the lineage and fills the panel. -->
+    <div class="tree">
+      <svg class="tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M42 14 H58" data-ends="heinrich margarete" />
+        <path d="M50 14 V32 H24 V50" data-ends="heinrich margarete peter" />
+        <path d="M50 32 H62 V50" data-ends="heinrich margarete ursula" />
+        <path d="M24 50 H40" data-ends="peter sabine" />
+        <path d="M62 50 H78" data-ends="ursula thomas" />
+        <path d="M32 50 V68 H24 V86" data-ends="peter sabine jonas" />
+        <path d="M32 68 H40 V86" data-ends="peter sabine lea" />
+      </svg>
+      <a class="node" href="returning.html#person" data-id="heinrich" data-line="heinrich margarete peter ursula jonas lea" data-name="Heinrich Linde" data-meta="1931 – 2009" data-born="" data-initials="HL" data-first="Heinrich" data-last="Linde" data-span="1931 – 2009 · 78 Jahre" data-birth="14.03.1931" data-death="02.11.2009" data-parents="" data-partners="Margarete Linde" data-children="Peter Linde, Ursula Hartmann" style="--x: 42%; --y: 14%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Heinrich Linde</h3><p>* 14.03.1931</p><p>† 02.11.2009</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">HL</span><span class="simple-name-text"><span>Heinrich</span><span class="simple-name-years">1931 – 2009</span></span></span>
+      </a>
+      <a class="node" href="returning.html#person" data-id="margarete" data-line="margarete heinrich peter ursula jonas lea" data-name="Margarete Linde" data-meta="1934 – 2018" data-born="geb. Vogt" data-initials="ML" data-first="Margarete" data-last="Linde" data-span="1934 – 2018 · 83 Jahre" data-birth="28.07.1934" data-death="19.01.2018" data-parents="" data-partners="Heinrich Linde" data-children="Peter Linde, Ursula Hartmann" style="--x: 58%; --y: 14%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Margarete Linde</h3><p>* 28.07.1934</p><p>† 19.01.2018</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">ML</span><span class="simple-name-text"><span>Margarete</span><span class="simple-name-years">1934 – 2018</span></span></span>
+      </a>
+      <a class="node" href="returning.html#person" data-id="peter" data-line="peter sabine heinrich margarete jonas lea" data-name="Peter Linde" data-meta="1958" data-born="" data-initials="PL" data-first="Peter" data-last="Linde" data-span="1958 · 68 Jahre" data-birth="09.05.1958" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Sabine Linde" data-children="Jonas Linde, Lea Linde" style="--x: 24%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Peter Linde</h3><p>* 09.05.1958</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">PL</span><span class="simple-name-text"><span>Peter</span><span class="simple-name-years">1958</span></span></span>
+      </a>
+      <a class="node" href="returning.html#person" data-id="sabine" data-line="sabine peter jonas lea" data-name="Sabine Linde" data-meta="1961" data-born="geb. Brandt" data-initials="SL" data-first="Sabine" data-last="Linde" data-span="1961 · 65 Jahre" data-birth="30.09.1961" data-death="" data-parents="" data-partners="Peter Linde" data-children="Jonas Linde, Lea Linde" style="--x: 40%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Sabine Linde</h3><p>* 30.09.1961</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">SL</span><span class="simple-name-text"><span>Sabine</span><span class="simple-name-years">1961</span></span></span>
+      </a>
+      <a class="node" href="returning.html#person" data-id="ursula" data-line="ursula thomas heinrich margarete" data-name="Ursula Hartmann" data-meta="1962" data-born="geb. Linde" data-initials="UH" data-first="Ursula" data-last="Hartmann" data-span="1962 · 63 Jahre" data-birth="04.12.1962" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Thomas Hartmann" data-children="" style="--x: 62%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Ursula Hartmann</h3><p>* 04.12.1962</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">UH</span><span class="simple-name-text"><span>Ursula</span><span class="simple-name-years">1962</span></span></span>
+      </a>
+      <a class="node" href="returning.html#person" data-id="thomas" data-line="thomas ursula" data-name="Thomas Hartmann" data-meta="1960" data-born="" data-initials="TH" data-first="Thomas" data-last="Hartmann" data-span="1960 · 66 Jahre" data-birth="17.02.1960" data-death="" data-parents="" data-partners="Ursula Hartmann" data-children="" style="--x: 78%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Thomas Hartmann</h3><p>* 17.02.1960</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">TH</span><span class="simple-name-text"><span>Thomas</span><span class="simple-name-years">1960</span></span></span>
+      </a>
+      <a class="node" href="returning.html#person" data-id="jonas" data-self data-line="jonas peter sabine heinrich margarete" data-name="Jonas Linde" data-meta="1988" data-born="" data-initials="JL" data-first="Jonas" data-last="Linde" data-span="1988 · 38 Jahre" data-birth="21.04.1988" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="" style="--x: 24%; --y: 86%">
+        <div class="scroll"><div class="scroll-rod"></div><span class="self-badge">DU</span><div class="scroll-sheet"><h3>Jonas Linde</h3><p>* 21.04.1988</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name" data-self><span class="self-badge">DU</span><span class="simple-name-avatar">JL</span><span class="simple-name-text"><span>Jonas</span><span class="simple-name-years">1988</span></span></span>
+      </a>
+      <a class="node" href="returning.html#person" data-id="lea" data-line="lea peter sabine heinrich margarete" data-name="Lea Linde" data-meta="1992" data-born="" data-initials="LL" data-first="Lea" data-last="Linde" data-span="1992 · 34 Jahre" data-birth="03.06.1992" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="" style="--x: 40%; --y: 86%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Lea Linde</h3><p>* 03.06.1992</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">LL</span><span class="simple-name-text"><span>Lea</span><span class="simple-name-years">1992</span></span></span>
+      </a>
+    </div>
+
+    <!-- Header.tsx: no tree on #welcome, so no family name there. -->
+    <header class="app-header">
+      <div class="header-lead">
+        <a class="header-brand" href="visitor.html">
+          <svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg>
+          <span class="header-wordmark">ftree</span>
+        </a>
+      </div>
+      <div class="glass dashboard-family tree-switcher">
+        <button type="button" class="tree-switcher-name" data-go="returning.html#family" title="Familienkarte von Linde öffnen">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>
+          <span class="dashboard-family-name" data-show="invite invite-unlinked decline later tour1 tour2 tour3 tasks tree">Linde</span>
+          <span class="dashboard-family-name" data-show="welcome">Keine Familie</span>
+        </button>
+      </div>
+      <div class="header-actions">
+        <span class="header-signed-in"><span class="glass landing-status">Angemeldet als Jonas Linde</span></span>
+        <div class="segment" role="group" aria-label="Darstellung"><button type="button" data-theme-set="3d">3D</button><button type="button" data-theme-set="tron">TRON</button></div>
+        <div class="segment" role="group" aria-label="Sprache"><button type="button" aria-pressed="true">DE</button><button type="button" aria-pressed="false" disabled title="Der Dummy ist nur auf Deutsch">EN</button></div>
+        <div class="dashboard-menu">
+          <button type="button" class="glass header-button header-button-icon" data-go="returning.html#menu" aria-label="Menü öffnen">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dock.tsx: locked while the invitation is open (needsAccept), disabled without a tree (needsFamily), else normal. -->
+    <div class="dock-root">
+      <nav class="glass dock" aria-label="Hauptaktionen" data-show="invite invite-unlinked decline later">
+        <button type="button" class="dock-primary" title="Nimm zuerst die Einladung an" disabled><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>Person</button>
+        <button type="button" class="dock-item" title="Nimm zuerst die Einladung an" disabled><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="M13.5 13.5l3.5 3.5" /></svg>Suchen</button>
+        <button type="button" class="dock-item" title="Nimm zuerst die Einladung an" disabled><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" /><path d="M15.5 6v6M12.5 9h6" /></svg>Einladen</button>
+        <button type="button" class="dock-item" aria-haspopup="menu" data-go="returning.html#view"><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" /><circle cx="10" cy="10" r="2.2" /></svg>Ansicht</button>
+      </nav>
+      <nav class="glass dock" aria-label="Hauptaktionen" data-show="welcome">
+        <button type="button" class="dock-primary" title="Öffne zuerst einen Baum" disabled><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>Person</button>
+        <button type="button" class="dock-item" title="Öffne zuerst einen Baum" disabled><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="M13.5 13.5l3.5 3.5" /></svg>Suchen</button>
+        <button type="button" class="dock-item" title="Öffne zuerst einen Baum" disabled><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" /><path d="M15.5 6v6M12.5 9h6" /></svg>Einladen</button>
+        <button type="button" class="dock-item" aria-haspopup="menu" data-go="returning.html#view"><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" /><circle cx="10" cy="10" r="2.2" /></svg>Ansicht</button>
+      </nav>
+      <nav class="glass dock" aria-label="Hauptaktionen" data-show="tour1 tour2 tour3 tasks tree">
+        <button type="button" class="dock-primary" data-go="returning.html#new"><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>Person</button>
+        <button type="button" class="dock-item" data-go="returning.html#search"><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="M13.5 13.5l3.5 3.5" /></svg>Suchen</button>
+        <button type="button" class="dock-item" data-go="returning.html#share"><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" /><path d="M15.5 6v6M12.5 9h6" /></svg>Einladen</button>
+        <button type="button" class="dock-item" aria-haspopup="menu" data-go="returning.html#view"><svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" /><circle cx="10" cy="10" r="2.2" /></svg>Ansicht</button>
+      </nav>
+    </div>
+
+    <p class="app-version">v0.35.0 <span class="legal-links">· <a href="#tree">Nutzungsbedingungen</a> · <a href="#tree">Datenschutz</a></span></p>
+
+    <!-- InvitationCard.tsx, linked variant: the owner already linked Jonas to a person. -->
+    <section class="screen" id="invite">
+      <div class="invitation-veil" aria-hidden="true"></div>
+      <main class="glass invitation-card" aria-label="Einladung">
+        <span class="welcome-eyebrow">Einladung</span>
+        <h1 class="invitation-title">
+          <span>Du wurdest in den Baum</span>
+          <em>Linde</em>
+          <span>eingeladen.</span>
+        </h1>
+        <div class="invitation-chips">
+          <span class="invitation-chip">8 Personen</span>
+          <span class="invitation-chip">3 Generationen</span>
+        </div>
+        <div class="invitation-self">
+          <span class="invitation-self-avatar" aria-hidden="true">JL</span>
+          <span class="invitation-self-text">
+            <strong>Du hängst schon im Baum</strong>
+            <span>als Jonas Linde · * 1988</span>
+          </span>
+          <button type="button" class="welcome-link" data-go="#invite-unlinked">Nicht ich</button>
+        </div>
+        <button type="button" class="welcome-primary" data-go="#tour1">Einladung annehmen</button>
+        <div class="invitation-actions">
+          <button type="button" class="welcome-link" data-go="#later">Später entscheiden</button>
+          <button type="button" class="welcome-link" data-go="#decline">Ablehnen</button>
+        </div>
+        <span class="invitation-note">Nur eingeladene Familienmitglieder sehen diesen Baum.</span>
+      </main>
+    </section>
+
+    <!-- InvitationCard.tsx, unlinked variant after "Nicht ich". -->
+    <section class="screen" id="invite-unlinked">
+      <div class="invitation-veil" aria-hidden="true"></div>
+      <main class="glass invitation-card" aria-label="Einladung">
+        <span class="welcome-eyebrow">Einladung</span>
+        <h1 class="invitation-title">
+          <span>Du wurdest in den Baum</span>
+          <em>Linde</em>
+          <span>eingeladen.</span>
+        </h1>
+        <div class="invitation-chips">
+          <span class="invitation-chip">8 Personen</span>
+          <span class="invitation-chip">3 Generationen</span>
+        </div>
+        <p class="welcome-note">Dein Konto ist in diesem Baum noch keiner Person zugeordnet. Du kannst dich selbst eintragen oder die Besitzer:in fragen.</p>
+        <button type="button" class="welcome-primary" data-go="#tour1">Einladung annehmen</button>
+        <div class="invitation-actions">
+          <button type="button" class="welcome-link" data-go="#later">Später entscheiden</button>
+          <button type="button" class="welcome-link" data-go="#decline">Ablehnen</button>
+        </div>
+        <span class="invitation-note">Nur eingeladene Familienmitglieder sehen diesen Baum.</span>
+      </main>
+    </section>
+
+    <!-- InvitationCard.tsx: the inline confirm after "Ablehnen". -->
+    <section class="screen" id="decline">
+      <div class="invitation-veil" aria-hidden="true"></div>
+      <main class="glass invitation-card" aria-label="Einladung">
+        <span class="welcome-eyebrow">Einladung</span>
+        <h1 class="invitation-title">
+          <span>Du wurdest in den Baum</span>
+          <em>Linde</em>
+          <span>eingeladen.</span>
+        </h1>
+        <div class="invitation-chips">
+          <span class="invitation-chip">8 Personen</span>
+          <span class="invitation-chip">3 Generationen</span>
+        </div>
+        <div class="invitation-self">
+          <span class="invitation-self-avatar" aria-hidden="true">JL</span>
+          <span class="invitation-self-text">
+            <strong>Du hängst schon im Baum</strong>
+            <span>als Jonas Linde · * 1988</span>
+          </span>
+          <button type="button" class="welcome-link" data-go="#invite-unlinked">Nicht ich</button>
+        </div>
+        <div class="invitation-confirm" role="group" aria-label="Ablehnen">
+          <p>Wirklich ablehnen? Der Baum verschwindet aus deiner Liste.</p>
+          <div class="invitation-actions">
+            <button type="button" class="welcome-primary invitation-danger" data-go="#welcome">Ja, ablehnen</button>
+            <button type="button" class="welcome-link" data-go="#invite">Abbrechen</button>
+          </div>
+        </div>
+        <span class="invitation-note">Nur eingeladene Familienmitglieder sehen diesen Baum.</span>
+      </main>
+    </section>
+
+    <!-- WelcomeCard.tsx: after declining there is no tree (dock disabled). -->
+    <section class="screen" id="welcome">
+      <div class="welcome-veil" aria-hidden="true"></div>
+      <form class="glass welcome-card" aria-label="Willkommen" action="new.html#tour1">
+        <span class="welcome-eyebrow">Willkommen bei ftree</span>
+        <h1>Lass uns deinen <em>Baum pflanzen.</em></h1>
+        <p class="welcome-lead">Er beginnt mit dir – stimmt das so?</p>
+        <div class="welcome-preview">
+          <div class="scroll welcome-scroll" aria-hidden="true"><div class="scroll-rod"></div><div class="scroll-sheet"><h3 class="scroll-unknown">Dein Name</h3></div><div class="scroll-curl"></div></div>
+          <div class="welcome-pill" aria-hidden="true"><span class="welcome-pill-avatar"></span><span class="welcome-pill-name">Dein Name</span></div>
+        </div>
+        <div class="welcome-fields">
+          <label class="welcome-field">Vorname <input autocomplete="given-name" /></label>
+          <label class="welcome-field">Nachname <input autocomplete="family-name" /></label>
+        </div>
+        <button type="button" class="welcome-primary" data-go="new.html#tour1">Baum pflanzen</button>
+        <button type="button" class="welcome-link" disabled title="Nicht im Dummy">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 10l5-5 5 5M5 20h14" /></svg>
+          Stammbaum-Datei importieren (GEDCOM)
+        </button>
+      </form>
+    </section>
+
+    <!-- InvitationPending: the invitation put aside, the tree visible behind the reminder. -->
+    <section class="screen" id="later">
+      <aside class="glass invitation-pending" role="status">
+        <span class="invitation-pending-text">
+          <strong>Einladung in Linde offen</strong>
+          <span>Du kannst dich umsehen oder zuerst deinen eigenen Baum pflanzen – die Einladung wartet.</span>
+        </span>
+        <button type="button" class="welcome-primary" data-go="#invite">Antworten</button>
+      </aside>
+    </section>
+
+    <!-- IntroTour.tsx step 1: below the own card. -->
+    <section class="screen" id="tour1">
+      <div class="glass tour-tip" role="dialog" aria-label="Kurze Einführung" style="left: 24vw; top: 578px">
+        <span class="tour-step">EINFÜHRUNG 1/3</span>
+        <h2 class="tour-title">Das bist du.</h2>
+        <p class="tour-text">Beim Öffnen fliegt die Kamera immer zu deiner Karte. Ziehen dreht den Baum, Scrollen zoomt.</p>
+        <div class="tour-actions">
+          <button type="button" class="tour-skip" data-go="#tasks">Überspringen</button>
+          <button type="button" class="tour-next" data-go="#tour2">Weiter</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- IntroTour.tsx step 2: beside the own card. -->
+    <section class="screen" id="tour2">
+      <div class="glass tour-tip" role="dialog" aria-label="Kurze Einführung" style="left: calc(24vw + 260px); top: 62vh">
+        <span class="tour-step">EINFÜHRUNG 2/3</span>
+        <h2 class="tour-title">Tippe auf ein +</h2>
+        <p class="tour-text">Die gestrichelten Plätze zeigen, wer noch fehlt. Ein Vorname reicht – Enter, fertig.</p>
+        <div class="tour-actions">
+          <button type="button" class="tour-skip" data-go="#tasks">Überspringen</button>
+          <button type="button" class="tour-next" data-go="#tour3">Weiter</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- IntroTour.tsx step 3: above the dock. -->
+    <section class="screen" id="tour3">
+      <div class="glass tour-tip" role="dialog" aria-label="Kurze Einführung" style="left: 50vw; bottom: 104px">
+        <span class="tour-step">EINFÜHRUNG 3/3</span>
+        <h2 class="tour-title">Alles Wichtige unten</h2>
+        <p class="tour-text">Person hinzufügen, Suchen, Familie einladen, Ansicht. Einstellungen, Sprache und Darstellung findest du oben rechts.</p>
+        <div class="tour-actions">
+          <button type="button" class="tour-skip" data-go="#tasks">Überspringen</button>
+          <button type="button" class="tour-next" data-go="#tasks">Los geht’s</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- InvitationTasks (Dashboard): the list after accepting. -->
+    <section class="screen" id="tasks">
+      <aside class="glass invitation-tasks" aria-label="Deine Aufgaben">
+        <button type="button" class="invitation-tasks-close" data-go="#tree" aria-label="Aufgabenliste schließen">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+        </button>
+        <span class="welcome-eyebrow">Dein Platz im Baum</span>
+        <p>Du kennst Dinge, die sonst niemand weiß. Such dir etwas aus:</p>
+        <button type="button" class="invitation-task" data-go="returning.html?select=jonas#edit">
+          <strong>Deine Daten prüfen</strong>
+          <span>Stimmen Name und Daten?</span>
+        </button>
+        <button type="button" class="invitation-task" data-go="returning.html?select=jonas#edit">
+          <strong>Foto hinzufügen</strong>
+          <span>Ein Gesicht macht den Baum lebendig.</span>
+        </button>
+        <button type="button" class="invitation-task" data-go="returning.html#new">
+          <strong>Deinen Zweig ergänzen</strong>
+          <span>Eltern, Partner:in, Kinder.</span>
+        </button>
+      </aside>
+    </section>
+
+    <!-- The accepted tree, dock unlocked. -->
+    <section class="screen" id="tree"></section>
+
+    <a class="glass dummy-hub-link" href="index.html">← Alle Journeys</a>
+    <script src="dummy.js"></script>
+  </body>
+</html>

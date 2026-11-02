@@ -1,0 +1,591 @@
+<!doctype html>
+<html lang="de" data-theme="3d">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ftree · Dummy · Wiederkehrend</title>
+    <script>
+      try { document.documentElement.dataset.theme = localStorage.getItem('ftree-dummy-theme') || '3d'; } catch {}
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="dummy.css" />
+    <style>
+      /* Share dialog and family card open in the middle (PanelShell's CENTRE offset). */
+      .share-panel,
+      .family-card {
+        right: auto;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      /* A tree that cannot be opened shows no people. */
+      body:has(#notfound:target) .tree {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <!-- Every node opens the person panel; dummy.js lights up the lineage and fills the panel. -->
+    <div class="tree">
+      <svg class="tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path d="M42 14 H58" data-ends="heinrich margarete" />
+        <path d="M50 14 V32 H24 V50" data-ends="heinrich margarete peter" />
+        <path d="M50 32 H62 V50" data-ends="heinrich margarete ursula" />
+        <path d="M24 50 H40" data-ends="peter sabine" />
+        <path d="M62 50 H78" data-ends="ursula thomas" />
+        <path d="M32 50 V68 H24 V86" data-ends="peter sabine jonas" />
+        <path d="M32 68 H40 V86" data-ends="peter sabine lea" />
+      </svg>
+      <a class="node" href="#person" data-id="heinrich" data-line="heinrich margarete peter ursula jonas lea" data-name="Heinrich Linde" data-meta="1931 – 2009" data-born="" data-initials="HL" data-first="Heinrich" data-last="Linde" data-span="1931 – 2009 · 78 Jahre" data-birth="14.03.1931" data-death="02.11.2009" data-parents="" data-partners="Margarete Linde" data-children="Peter Linde, Ursula Hartmann" style="--x: 42%; --y: 14%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Heinrich Linde</h3><p>* 14.03.1931</p><p>† 02.11.2009</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">HL</span><span class="simple-name-text"><span>Heinrich</span><span class="simple-name-years">1931 – 2009</span></span></span>
+      </a>
+      <a class="node" href="#person" data-id="margarete" data-line="margarete heinrich peter ursula jonas lea" data-name="Margarete Linde" data-meta="1934 – 2018" data-born="geb. Vogt" data-initials="ML" data-first="Margarete" data-last="Linde" data-span="1934 – 2018 · 83 Jahre" data-birth="28.07.1934" data-death="19.01.2018" data-parents="" data-partners="Heinrich Linde" data-children="Peter Linde, Ursula Hartmann" style="--x: 58%; --y: 14%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Margarete Linde</h3><p>* 28.07.1934</p><p>† 19.01.2018</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">ML</span><span class="simple-name-text"><span>Margarete</span><span class="simple-name-years">1934 – 2018</span></span></span>
+      </a>
+      <a class="node" href="#person" data-id="peter" data-line="peter sabine heinrich margarete jonas lea" data-name="Peter Linde" data-meta="1958" data-born="" data-initials="PL" data-first="Peter" data-last="Linde" data-span="1958 · 68 Jahre" data-birth="09.05.1958" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Sabine Linde" data-children="Jonas Linde, Lea Linde" style="--x: 24%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Peter Linde</h3><p>* 09.05.1958</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">PL</span><span class="simple-name-text"><span>Peter</span><span class="simple-name-years">1958</span></span></span>
+      </a>
+      <a class="node" href="#person" data-id="sabine" data-line="sabine peter jonas lea" data-name="Sabine Linde" data-meta="1961" data-born="geb. Brandt" data-initials="SL" data-first="Sabine" data-last="Linde" data-span="1961 · 65 Jahre" data-birth="30.09.1961" data-death="" data-parents="" data-partners="Peter Linde" data-children="Jonas Linde, Lea Linde" style="--x: 40%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Sabine Linde</h3><p>* 30.09.1961</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">SL</span><span class="simple-name-text"><span>Sabine</span><span class="simple-name-years">1961</span></span></span>
+      </a>
+      <a class="node" href="#person" data-id="ursula" data-line="ursula thomas heinrich margarete" data-name="Ursula Hartmann" data-meta="1962" data-born="geb. Linde" data-initials="UH" data-first="Ursula" data-last="Hartmann" data-span="1962 · 63 Jahre" data-birth="04.12.1962" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Thomas Hartmann" data-children="" style="--x: 62%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Ursula Hartmann</h3><p>* 04.12.1962</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">UH</span><span class="simple-name-text"><span>Ursula</span><span class="simple-name-years">1962</span></span></span>
+      </a>
+      <a class="node" href="#person" data-id="thomas" data-line="thomas ursula" data-name="Thomas Hartmann" data-meta="1960" data-born="" data-initials="TH" data-first="Thomas" data-last="Hartmann" data-span="1960 · 66 Jahre" data-birth="17.02.1960" data-death="" data-parents="" data-partners="Ursula Hartmann" data-children="" style="--x: 78%; --y: 50%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Thomas Hartmann</h3><p>* 17.02.1960</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">TH</span><span class="simple-name-text"><span>Thomas</span><span class="simple-name-years">1960</span></span></span>
+      </a>
+      <a class="node" href="#person" data-id="jonas" data-line="jonas peter sabine heinrich margarete" data-name="Jonas Linde" data-meta="1988" data-born="" data-initials="JL" data-first="Jonas" data-last="Linde" data-span="1988 · 38 Jahre" data-birth="21.04.1988" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="" style="--x: 24%; --y: 86%">
+        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Jonas Linde</h3><p>* 21.04.1988</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name"><span class="simple-name-avatar">JL</span><span class="simple-name-text"><span>Jonas</span><span class="simple-name-years">1988</span></span></span>
+      </a>
+      <a class="node" href="#person" data-id="lea" data-self data-line="lea peter sabine heinrich margarete" data-name="Lea Linde" data-meta="1992" data-born="" data-initials="LL" data-first="Lea" data-last="Linde" data-span="1992 · 34 Jahre" data-birth="03.06.1992" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="" style="--x: 40%; --y: 86%">
+        <div class="scroll"><div class="scroll-rod"></div><span class="self-badge">DU</span><div class="scroll-sheet"><h3>Lea Linde</h3><p>* 03.06.1992</p></div><div class="scroll-curl"></div></div>
+        <span class="simple-name" data-self><span class="self-badge">DU</span><span class="simple-name-avatar">LL</span><span class="simple-name-text"><span>Lea</span><span class="simple-name-years">1992</span></span></span>
+      </a>
+    </div>
+
+    <!-- Header.tsx: wordmark, tree switcher (more than one tree), segments, burger (Dashboard.tsx). -->
+    <header class="app-header">
+      <div class="header-lead">
+        <a class="header-brand" href="visitor.html">
+          <svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg>
+          <span class="header-wordmark">ftree</span>
+        </a>
+      </div>
+      <div class="glass dashboard-family tree-switcher">
+        <button type="button" class="tree-switcher-name" data-go="#family" title="Familienkarte von Linde öffnen">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>
+          <span class="dashboard-family-name" data-show="tree person edit new search share share-invited view family family-edit menu profile families switcher">Linde</span>
+          <span class="dashboard-family-name" data-show="notfound">Keine Familie</span>
+        </button>
+        <button type="button" class="tree-switcher-toggle" data-go="#switcher" aria-label="Baum wechseln" data-show="tree person edit new search share share-invited view family family-edit menu profile families notfound"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+        <button type="button" class="tree-switcher-toggle" data-go="#tree" aria-label="Baum wechseln" aria-expanded="true" data-show="switcher"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+        <!-- TreeSwitcher.tsx -->
+        <nav class="tree-switcher-list" aria-label="Deine Bäume" data-show="switcher">
+          <a class="tree-switcher-item" href="#tree" aria-current="page">Linde</a>
+          <a class="tree-switcher-item" href="#tree">Hartmann</a>
+          <a class="tree-switcher-item" href="#notfound">Brandt</a>
+        </nav>
+      </div>
+      <div class="header-actions">
+        <span class="header-signed-in"><span class="glass landing-status">Angemeldet als Lea Linde</span></span>
+        <div class="segment" role="group" aria-label="Darstellung"><button type="button" data-theme-set="3d">3D</button><button type="button" data-theme-set="tron">TRON</button></div>
+        <div class="segment" role="group" aria-label="Sprache"><button type="button" aria-pressed="true">DE</button><button type="button" aria-pressed="false" disabled title="Der Dummy ist nur auf Deutsch">EN</button></div>
+        <div class="dashboard-menu">
+          <button type="button" class="glass header-button header-button-icon" data-go="#menu" aria-label="Menü öffnen" data-show="tree person edit new search share share-invited view family family-edit switcher notfound">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <button type="button" class="glass header-button header-button-icon" data-go="#tree" aria-label="Menü schließen" aria-expanded="true" data-show="menu profile families">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <!-- Dashboard.tsx -->
+          <nav class="glass dashboard-nav" aria-label="Menü" data-show="menu profile families">
+            <button type="button" class="dashboard-nav-item" data-go="#profile">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+              <span>Profil</span>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+            </button>
+            <button type="button" class="dashboard-nav-item" data-go="#families">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>
+              <span>Familien</span>
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+            </button>
+            <button type="button" class="dashboard-nav-item" data-go="#tree" title="Lädt in der App ein PNG des Baums herunter">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" /><circle cx="12" cy="13" r="3" /></svg>
+              <span>Momentaufnahme</span>
+            </button>
+            <hr class="dashboard-nav-divider" />
+            <button type="button" class="dashboard-nav-item" data-go="visitor.html">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" /></svg>
+              <span>Abmelden</span>
+            </button>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dock.tsx -->
+    <div class="dock-root">
+      <div class="glass dock-popover" role="menu" aria-label="Kameraansicht" data-show="view">
+        <button type="button" role="menuitem" data-go="#tree">Front</button>
+        <button type="button" role="menuitem" data-go="#tree">Oben</button>
+        <button type="button" role="menuitem" data-go="#tree">Orbit</button>
+      </div>
+      <nav class="glass dock" aria-label="Hauptaktionen">
+        <button type="button" class="dock-primary" data-go="#new">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+          Person
+        </button>
+        <button type="button" class="dock-item" data-go="#search">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="M13.5 13.5l3.5 3.5" /></svg>
+          Suchen
+        </button>
+        <button type="button" class="dock-item" data-go="#share">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" /><path d="M15.5 6v6M12.5 9h6" /></svg>
+          Einladen
+        </button>
+        <button type="button" class="dock-item" data-go="#view" aria-haspopup="menu" data-show="tree person edit new search share share-invited family family-edit menu profile families switcher notfound">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" /><circle cx="10" cy="10" r="2.2" /></svg>
+          Ansicht
+        </button>
+        <button type="button" class="dock-item" data-go="#tree" aria-haspopup="menu" aria-expanded="true" data-show="view">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" /><circle cx="10" cy="10" r="2.2" /></svg>
+          Ansicht
+        </button>
+      </nav>
+    </div>
+
+    <p class="app-version">v0.35.0 <span class="legal-links">· <a href="#tree">Nutzungsbedingungen</a> · <a href="#tree">Datenschutz</a></span></p>
+
+    <!-- The tree with nobody selected. -->
+    <section class="screen" id="tree"></section>
+
+    <!-- PersonPanel.tsx: the selected person, filled from the clicked node. -->
+    <section class="screen" id="person" data-select="lea">
+      <aside class="glass person-panel" aria-label="Person">
+        <header class="person-header">
+          <span class="person-header-label">Person</span>
+          <span class="person-header-actions">
+            <button type="button" class="person-icon-button person-pin" data-go="#person" aria-label="Position fixieren" title="Position fixieren">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7" /></svg>
+            </button>
+            <button type="button" class="person-icon-button person-edit" data-go="#edit" aria-label="Bearbeiten" title="Bearbeiten">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg>
+            </button>
+            <button type="button" class="person-icon-button person-delete" data-go="#tree" data-deselect aria-label="Person löschen" title="Person löschen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
+            </button>
+            <span class="person-header-divider" aria-hidden="true"></span>
+            <button type="button" class="person-icon-button" data-go="#tree" data-deselect aria-label="Profil schließen" title="Profil schließen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </span>
+        </header>
+        <div class="person-body">
+          <section class="person-hero">
+            <span class="person-avatar person-avatar-large" data-fill="initials"></span>
+            <div class="person-hero-text">
+              <h2 class="person-name" data-fill="name"></h2>
+              <p class="person-muted" data-fill="born"></p>
+              <p class="person-muted" data-fill="span"></p>
+            </div>
+          </section>
+          <dl class="person-facts">
+            <dt>Geboren</dt>
+            <dd data-fill="birth"></dd>
+            <dt>Verstorben</dt>
+            <dd data-fill="death"></dd>
+          </dl>
+          <div class="person-family">
+            <section class="person-group" aria-label="Eltern">
+              <h3>Eltern</h3>
+              <div class="person-chips" data-chips="parents"></div>
+            </section>
+            <section class="person-group" aria-label="Partner">
+              <h3>Partner</h3>
+              <div class="person-chips" data-chips="partners"></div>
+            </section>
+            <section class="person-group" aria-label="Kinder">
+              <h3>Kinder</h3>
+              <div class="person-chips" data-chips="children"></div>
+            </section>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <!-- MembersControls.tsx + MemberFields.tsx: editing a person in the tree, the form on the left. -->
+    <section class="screen" id="edit" data-select="lea">
+      <aside class="glass person-panel person-panel-left" aria-label="Person bearbeiten">
+        <header class="person-header">
+          <span class="person-header-label">Person bearbeiten</span>
+          <span class="person-header-actions">
+            <button type="button" class="person-icon-button person-delete" data-go="#tree" data-deselect aria-label="Person löschen" title="Person löschen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
+            </button>
+            <span class="person-header-divider" aria-hidden="true"></span>
+            <button type="button" class="person-icon-button" data-go="#person" aria-label="Formular schließen" title="Formular schließen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </span>
+        </header>
+        <div class="person-body">
+          <form class="person-form" action="#person">
+            <div class="person-hero person-hero-edit">
+              <label class="person-photo-drop" title="Bild hierher ziehen oder klicken zum Auswählen">
+                <span class="person-avatar person-avatar-large" data-fill="initials"></span>
+                <span>Foto ändern</span>
+              </label>
+              <div class="person-name-fields">
+                <label class="person-field">Vorname <input data-fill="first" /></label>
+                <label class="person-field">Nachname <input data-fill="last" /></label>
+                <button type="button" class="person-link-button" data-go="#edit">+ Geburtsname hinzufügen</button>
+              </div>
+            </div>
+            <div class="person-tabs" role="tablist">
+              <button type="button" role="tab" aria-selected="true">Persönliche Daten</button>
+              <button type="button" role="tab" aria-selected="false" disabled title="Nicht im Dummy">Beziehungen</button>
+            </div>
+            <div class="person-tabpanel" role="tabpanel">
+              <div class="person-fields">
+                <label class="person-field">Geboren am <input data-fill="birth" /></label>
+                <label class="person-field">Geboren in <input /></label>
+                <label class="person-field">Verstorben am <input data-fill="death" /></label>
+                <label class="person-field">Verstorben in <input /></label>
+              </div>
+              <label class="person-field">Notiz <textarea></textarea></label>
+            </div>
+            <div class="person-footer">
+              <button type="button" data-go="#person">Verwerfen</button>
+              <button type="button" class="person-primary" data-go="#person">Person speichern</button>
+            </div>
+          </form>
+        </div>
+      </aside>
+    </section>
+
+    <!-- MembersControls.tsx: "Person" in the dock with nobody selected opens an empty form. -->
+    <section class="screen" id="new">
+      <aside class="glass person-panel person-panel-new" aria-label="Mitglied hinzufügen">
+        <header class="person-header">
+          <span class="person-header-label">Mitglied hinzufügen</span>
+          <span class="person-header-actions">
+            <span class="person-header-divider" aria-hidden="true"></span>
+            <button type="button" class="person-icon-button" data-go="#tree" aria-label="Formular schließen" title="Formular schließen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </span>
+        </header>
+        <div class="person-body">
+          <form class="person-form" action="#tree">
+            <div class="person-hero person-hero-edit">
+              <label class="person-photo-drop" title="Bild hierher ziehen oder klicken zum Auswählen">
+                <span class="person-avatar person-avatar-large">?</span>
+                <span>Foto</span>
+              </label>
+              <div class="person-name-fields">
+                <label class="person-field">Vorname <input /></label>
+                <label class="person-field">Nachname <input /></label>
+                <button type="button" class="person-link-button" data-go="#new">+ Geburtsname hinzufügen</button>
+              </div>
+            </div>
+            <div class="person-fields">
+              <label class="person-field">Geboren am <input type="date" /></label>
+              <label class="person-field">Geboren in <input /></label>
+            </div>
+            <div class="person-footer">
+              <button type="button" data-go="#tree">Verwerfen</button>
+              <button type="button" class="person-primary" data-go="#tree">Person speichern</button>
+            </div>
+          </form>
+        </div>
+      </aside>
+    </section>
+
+    <!-- MemberSearch.tsx: opens above the dock; a hit selects the person. -->
+    <section class="screen" id="search">
+      <div class="member-search" data-open="true">
+        <div class="glass member-search-field">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4.5 4.5" /></svg>
+          <input type="text" aria-label="Mitglieder suchen" placeholder="Mitglied suchen …" value="Lin" />
+        </div>
+        <ul class="glass member-search-list" role="listbox" aria-label="Mitglieder suchen">
+          <li role="option" aria-selected="true" data-go="#tree">Heinrich Linde</li>
+          <li role="option" aria-selected="false" data-go="#tree">Margarete Linde</li>
+          <li role="option" aria-selected="false" data-go="#tree">Peter Linde</li>
+          <li role="option" aria-selected="false" data-go="#tree">Ursula Hartmann</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ShareDialog.tsx: people with access and the invitation form. -->
+    <aside data-show="share share-invited" class="glass person-panel share-panel" aria-label="Linde teilen">
+      <header class="person-header">
+        <span class="person-header-label">Linde teilen</span>
+        <span class="person-header-actions">
+          <span class="person-header-divider" aria-hidden="true"></span>
+          <button type="button" class="person-icon-button" data-go="#tree" aria-label="Teilen schließen" title="Teilen schließen">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </span>
+      </header>
+      <div class="person-body">
+        <section class="person-group">
+          <h3>Personen mit Zugriff</h3>
+          <ul class="share-list">
+            <li class="share-row">
+              <div class="share-who">
+                <span class="share-name">Lea Linde<span class="share-badge">du</span></span>
+                <span class="share-email">lea@beispiel.de</span>
+              </div>
+              <span class="share-status" data-status="active">aktiv</span>
+              <select class="share-select" aria-label="Rolle von Lea Linde" disabled><option>Eigentümer</option></select>
+              <span></span>
+            </li>
+            <li class="share-row">
+              <div class="share-who">
+                <span class="share-name">Jonas Linde</span>
+                <span class="share-email">jonas@beispiel.de</span>
+              </div>
+              <span class="share-status" data-status="invited">eingeladen</span>
+              <select class="share-select" aria-label="Rolle von Jonas Linde"><option>Bearbeiter</option><option>Gast</option></select>
+              <button type="button" class="person-icon-button" data-go="#share" aria-label="Zugriff von Jonas Linde entfernen" title="Zugriff entfernen">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
+              </button>
+              <div class="share-row-tools">
+                <button type="button" class="person-link-button" data-go="#share-invited">Einladung anzeigen</button>
+                <button type="button" class="person-link-button" data-go="#share">Besitz übertragen</button>
+              </div>
+            </li>
+          </ul>
+        </section>
+        <form class="person-group share-invite" action="#share-invited">
+          <h3>Jemanden einladen</h3>
+          <div class="share-invite-fields">
+            <label class="person-field">E-Mail <input type="email" placeholder="name@beispiel.de" value="jonas@beispiel.de" /></label>
+            <label class="person-field">Rolle <select><option>Bearbeiter</option><option>Gast</option></select></label>
+          </div>
+          <button type="button" class="family-card-button family-card-primary" data-go="#share-invited">Einladen</button>
+        </form>
+        <!-- After "Einladen": the text to copy; the BFF writes it (bff/…/access/InvitationText.kt). -->
+        <section class="person-group share-invitation" data-show="share-invited">
+          <h3>Einladung für Jonas Linde</h3>
+          <p class="person-muted">Es wird keine E-Mail verschickt. Kopiere den Text und schick ihn selbst.</p>
+          <textarea class="share-text" readonly rows="7" aria-label="Einladung">Hallo!
+
+Lea Linde hat dich als Bearbeiter zum Stammbaum „Linde“ eingeladen.
+
+Öffne https://ftree.example/linde und melde dich mit deiner E-Mail-Adresse jonas@beispiel.de an. Ein Passwort brauchst du nicht: Du bekommst einen einmaligen Code per E-Mail, mit dem du dich anmeldest.</textarea>
+          <div class="share-copy">
+            <button type="button" class="family-card-button" data-go="#share-invited">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></svg>
+              Text kopieren
+            </button>
+          </div>
+        </section>
+      </div>
+    </aside>
+    <section class="screen" id="share"></section>
+    <!-- The same dialog after "Einladen" (the invitation section above has data-show="share-invited"). -->
+    <section class="screen" id="share-invited"></section>
+
+    <!-- Dock "Ansicht": the camera menu (data-show="view" above). -->
+    <section class="screen" id="view"></section>
+
+    <!-- FamilyCard.tsx: the family name in the header opens it. -->
+    <section class="screen" id="family">
+      <aside class="glass person-panel person-panel-bare family-card" aria-label="Familie">
+        <header class="person-header" data-bare="true">
+          <span class="person-header-actions">
+            <button type="button" class="person-icon-button person-pin" data-go="#family" aria-label="Position fixieren" title="Position fixieren">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7" /></svg>
+            </button>
+            <button type="button" class="person-icon-button person-edit" data-go="#family-edit" aria-label="Bearbeiten" title="Bearbeiten">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg>
+            </button>
+            <span class="person-header-divider" aria-hidden="true"></span>
+            <button type="button" class="person-icon-button" data-go="#tree" aria-label="Familienkarte schließen" title="Familienkarte schließen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </span>
+        </header>
+        <div class="person-body">
+          <div class="family-card-cover" aria-hidden="true"></div>
+          <div class="family-card-hero">
+            <span class="family-card-emblem" aria-hidden="true">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>
+            </span>
+            <h2 class="person-name">Linde</h2>
+            <p class="family-card-stats">
+              <span>8 Mitglieder</span>
+              <span>3 Generationen</span>
+            </p>
+          </div>
+          <button type="button" class="family-card-button share-button" data-go="#share">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="3" /><circle cx="6" cy="12" r="3" /><circle cx="18" cy="19" r="3" /><path d="M8.6 10.7l6.8-4M8.6 13.3l6.8 4" /></svg>
+            Teilen
+          </button>
+        </div>
+      </aside>
+    </section>
+
+    <!-- FamilyCard.tsx in edit mode. -->
+    <section class="screen" id="family-edit">
+      <aside class="glass person-panel person-panel-bare family-card" aria-label="Familie">
+        <header class="person-header" data-bare="true">
+          <span class="person-header-actions">
+            <span class="person-header-divider" aria-hidden="true"></span>
+            <button type="button" class="person-icon-button" data-go="#tree" aria-label="Familienkarte schließen" title="Familienkarte schließen">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
+          </span>
+        </header>
+        <div class="person-body">
+          <form class="family-card-edit" action="#family">
+            <label class="family-card-drop">
+              <span class="family-card-drop-hint">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 10l5-5 5 5M5 20h14" /></svg>
+                Foto ablegen
+              </span>
+            </label>
+            <label class="person-field">Familienname <input value="Linde" /></label>
+            <div class="family-card-tools">
+              <button type="button" class="family-card-button" data-go="#family-edit">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M15 8h.01M3 16l5-5c.9-.9 2.1-.9 3 0l5 5M14 14l1-1c.9-.9 2.1-.9 3 0l3 3" /></svg>
+                Familienfoto hinzufügen
+              </button>
+            </div>
+            <div class="family-card-actions">
+              <button type="button" class="family-card-button family-card-danger" data-go="#notfound">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" /></svg>
+                Familie löschen
+              </button>
+              <button type="button" class="family-card-button" data-go="#family">Abbrechen</button>
+              <button type="button" class="family-card-button family-card-primary" data-go="#family">Speichern</button>
+            </div>
+          </form>
+        </div>
+      </aside>
+    </section>
+
+    <!-- Dashboard.tsx: the burger menu (data-show="menu profile families" above). -->
+    <section class="screen" id="menu"></section>
+
+    <!-- ProfilePanel.tsx: next to the open menu. -->
+    <section class="screen" id="profile">
+      <section class="glass dashboard-board" aria-label="Profil">
+        <header class="dashboard-board-header">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>
+          <h2>Profil</h2>
+          <button type="button" data-go="#menu" aria-label="Profil schließen">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </header>
+        <div class="profile-panel-body">
+          <h3 class="dashboard-subhead">Name</h3>
+          <div class="profile-name">
+            <strong>Lea Linde</strong>
+            <button type="button" class="profile-icon-button" data-go="#profile" aria-label="Name bearbeiten" title="Name bearbeiten">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg>
+            </button>
+          </div>
+          <h3 class="dashboard-subhead">Privat</h3>
+          <dl class="profile-facts">
+            <dt>E-Mail</dt>
+            <dd>lea@beispiel.de</dd>
+            <dt>Rolle</dt>
+            <dd>Eigentümer</dd>
+            <dt>Bestätigung</dt>
+            <dd>verifiziert durch Cloudflare Access</dd>
+          </dl>
+          <h3 class="dashboard-subhead">Entwickler-Tools</h3>
+          <p class="profile-dev person-muted">Entwickler-Tools nicht aktiv</p>
+          <h3 class="dashboard-subhead">Meine Familien</h3>
+          <ul class="profile-list">
+            <li><span>Linde</span><span class="profile-tag">Eigentümer</span></li>
+            <li><span>Hartmann</span><span class="profile-tag">Bearbeiter</span></li>
+          </ul>
+          <h3 class="dashboard-subhead">Ausstehende Einladungen<span class="profile-count">1</span></h3>
+          <ul class="profile-list">
+            <li data-status="pending">
+              <span class="profile-invite"><span>Linde</span><small>als Bearbeiter · eingeladen am 28.10.2026</small></span>
+              <span class="profile-tag" data-status="pending">ausstehend</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </section>
+
+    <!-- FamiliesPanel.tsx: next to the open menu. -->
+    <section class="screen" id="families">
+      <section class="glass dashboard-board families-panel" aria-label="Familien">
+        <header class="dashboard-board-header">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>
+          <h2>Familien</h2>
+          <button type="button" data-go="#menu" aria-label="Familien schließen">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+        </header>
+        <div class="families-panel-body">
+          <div class="family-set-import">
+            <button type="button" data-go="new.html">
+              <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+              Neue Familie
+            </button>
+            <div class="family-set-import-row">
+              <button type="button" disabled title="Nicht im Dummy">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 10l5-5 5 5M5 20h14" /></svg>
+                GEDCOM importieren
+              </button>
+            </div>
+          </div>
+          <h3 class="dashboard-subhead">Alle Familien</h3>
+          <ul class="family-set-list">
+            <li class="family-set-item">
+              <button type="button" class="family-set-select" data-go="#tree" aria-pressed="true"><strong>Linde</strong><span>8 Personen · 3 Generationen</span></button>
+              <button type="button" class="icon-button" data-go="#families" aria-label="Linde ausblenden" aria-pressed="true">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg>
+              </button>
+              <button type="button" class="icon-button" data-go="#family" aria-label="Familienkarte von Linde öffnen" title="Familienkarte von Linde öffnen">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg>
+              </button>
+            </li>
+            <li class="family-set-item">
+              <button type="button" class="family-set-select" data-go="#tree" aria-pressed="false"><strong>Hartmann</strong><span>4 Personen · 2 Generationen</span></button>
+              <button type="button" class="icon-button" data-go="#families" aria-label="Hartmann anzeigen" aria-pressed="false">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 3l18 18M10.6 5.2A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17 17 0 0 1-3.1 3.9M6.2 6.2C3.5 8 2 12 2 12s3.5 7 10 7c1.4 0 2.7-.4 3.8-1" /><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" /></svg>
+              </button>
+              <button type="button" class="icon-button" data-go="#family" aria-label="Familienkarte von Hartmann öffnen" title="Familienkarte von Hartmann öffnen">
+                <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg>
+              </button>
+            </li>
+          </ul>
+        </div>
+      </section>
+    </section>
+
+    <!-- TreeSwitcher.tsx open (data-show="switcher" in the header). -->
+    <section class="screen" id="switcher"></section>
+
+    <!-- TreeNotFound.tsx: a tree URL the caller may not see. -->
+    <section class="screen" id="notfound">
+      <section class="glass tree-not-found" role="alert">
+        <h2>Baum nicht gefunden</h2>
+        <p>Diesen Baum gibt es nicht, oder du hast keinen Zugriff darauf.</p>
+        <a class="glass glass-button" href="#tree">Zurück zu deinem Baum</a>
+      </section>
+    </section>
+
+    <a class="glass dummy-hub-link" href="index.html">← Alle Journeys</a>
+    <script src="dummy.js"></script>
+  </body>
+</html>
