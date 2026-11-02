@@ -399,6 +399,7 @@ class FamilyService(
         }
         this.photoUpdatedAt = photoUpdatedAt
         photoFit = PhotoFit.fromValue(this@toSummary.photoFit)
+        accessCount = jdbc.queryForObject("SELECT count(*) FROM family_memberships WHERE family_id = ?", Int::class.java, this@toSummary.id)
     }
 
     private fun memberGenerations(members: List<MemberEntity>): Int {

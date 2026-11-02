@@ -78,6 +78,8 @@ class InvitationTest {
         assert(Regex(""""id":"${tree.id}"[^}]*"role":"editor"""").containsMatchIn(listed)) { listed }
         assert(Regex(""""id":"${tree.id}"[^}]*"permissions":\["tree.view"]""").containsMatchIn(listed)) { listed }
         assert(Regex(""""id":"${tree.id}"[^}]*"invitationPending":true""").containsMatchIn(listed)) { listed }
+        // The owner and the invited editor, who has not accepted yet.
+        assert(Regex(""""id":"${tree.id}"[^}]*"accessCount":2""").containsMatchIn(listed)) { listed }
         mockMvc.get("/families/${tree.id}/members") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = INVITED)) }
             .andExpect { status { isOk() } }
 

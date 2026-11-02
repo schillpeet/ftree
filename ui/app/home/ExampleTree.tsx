@@ -11,6 +11,7 @@ import BackLink from './BackLink';
 import BrandLink from './BrandLink';
 import { EXAMPLE_MEMBERS } from './exampleFamily';
 import SignInChip from './SignInChip';
+import { StartButton } from './Start';
 import { hasDevTools, useSignedIn } from './signedIn';
 import './landing.css';
 
@@ -48,7 +49,7 @@ export default function ExampleTree() {
           <span>{t.landing.exampleHint}</span>
         </div>
         <div className="landing-segments">
-          <SignInChip />
+          <SignInChip me={me} />
           <ThemeSegment />
           <LanguageSegment />
         </div>
@@ -60,11 +61,7 @@ export default function ExampleTree() {
           <span>{lifeSpan(selected)}</span>
         </div>
       )}
-      {/* A full page load: `/start` sits behind Cloudflare Access, which signs in on navigation. */}
-      {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-      <a className="landing-primary example-cta" href="/start">
-        {t.landing.ownTree}
-      </a>
+      <StartButton me={me} plant={t.landing.ownTree} className="example-cta" />
     </div>
   );
 }
