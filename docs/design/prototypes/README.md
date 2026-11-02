@@ -1,4 +1,6 @@
-# Prototypes (Horizont v2)
+# Prototypes (Horizont v2, historical)
+
+These files are kept for history; the living reference is the click dummy in [../dummy/](../dummy/), and the rules are in `../README.md` and `../components.md`.
 
 Sources of the interactive boards on the design canvas: https://claude.ai/artifact/NFx5oNnHNpLBUWvxiXJ6Az (page "Version 2 · Horizont").
 

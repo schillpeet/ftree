@@ -1,26 +1,32 @@
 # Components
 
-Every component uses only the tokens in [tokens.css](tokens.css); none of them knows the theme.
-Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README.md).
+Every component should use only the tokens in [tokens.css](tokens.css) and must not know the theme; the exceptions that exist today are listed under "Known deviations from the tokens".
+This file describes `main` as it is; UI copy is quoted from `ui/app/i18n.ts` (German).
+The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Glass surface
 
 - Background `--panel` (menus and popovers `--panel-strong`), `backdrop-filter: var(--blur-glass)`, 1px `--border`.
-- Used by header controls, dock, person panel, person pills, menus, welcome and invitation cards.
+- Used by header controls, dock, person panel, person pills, menus, boards, welcome and invitation cards, toasts.
 
 ## Header (all signed-in screens)
 
-- Left: f-monogram in `--accent` and the wordmark "ftree" in `--font-display`.
-- Centre: family switcher – people icon, family name in `--font-display`, divider, chevron; opens the families list.
+- Left: f-monogram in `--accent` and the wordmark "ftree" in `--font-display`, a link to `/home`.
 - Left, after the wordmark: "Evolution" with DEV badge (only with "Entwicklertools"), then the admin badge.
 - The admin badge is a status chip, not a button: check icon and "ADM" in the accent colour, title "Als Admin angemeldet"; it shows only in an admin session, with or without the Evolution button, and shrinks to the check mark on phones.
+- Centre: the family button – people icon and family name in `--font-display`; a click opens the family card.
+- With more than one tree a divider and chevron follow the name (`TreeSwitcher`); the chevron opens "Deine Bäume", a list of links with the current tree marked.
+- Below the family button: the presence bar (see "Live presence").
 - Right, in this order: the "Angemeldet als <Name>" chip (plain text; hidden below 960px), theme segment (3D | TRON), language segment (DE | EN), burger; the public pages have their sign-in chip first.
-- The Evolution panel opens on the left, under the button.
+- Without `tree.appearance` only TRON is offered and 3D is disabled with the title "Demnächst"; every signed-in user holds the permission today, so this only affects signed-out visitors.
+- Phones: the Evolution button shrinks to its icon below 480px; the family button moves to a second row below 700px.
 - Controls are `--size-control` high with `--radius-control`; segments use `--radius-pill`, the active option `--segment-on`.
 
 ## Burger menu (top right)
 
-- Profil, Familien, Momentaufnahme, Feedback, Admin-Tool (only with the permission), divider, Abmelden.
+- Profil, Familien (with `family.create`), Momentaufnahme, Feedback (only if an operator email is configured; a `mailto:` link), Admin-Tool (with `users.view`), divider, Abmelden.
+- Momentaufnahme downloads `ftree-<Name>-<yyyy-mm-dd>.png` and changes nothing on screen.
+- Abmelden goes to the Cloudflare Access logout.
 - Admin-Tool ends in an external-link icon instead of a chevron, since it leaves the page (and, in production, the host); entries that open a board keep the chevron.
 - No appearance row: the 3D | TRON segment is always in the header, on phones too, where its segments get tighter.
 - The divider is a thin `--border` line across the menu, not a bare `hr` (which a grid shrinks to a dot).
@@ -29,14 +35,23 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 
 ## Menu boards (Profil, Familien)
 
-- Both open as a fixed glass board right next to the burger menu (`.dashboard-board`: 76px from the top, 288px from the right; full width below 700px); no board positions itself.
-- Familien: next to "GEDCOM importieren" sits a round ⓘ button (`aria-expanded`) that toggles a short text: what GEDCOM is, what gets imported, what to watch out for. The text only states what the importer does (new family, counts toward the limit of own trees, .ged up to about 5 MB read as UTF-8, up to 100 people, no photos or card positions).
-- Profil: sections with small headings – Name (inline edit: pencil, input, save/cancel; blank falls back to the email; saving refreshes `/me` everywhere), Privat, Entwickler-Tools, Meine Familien (role per family), Ausstehende Einladungen (counter badge; pending first, then accepted; hidden when `GET /me/invitations` is unavailable).
+- Both open as a fixed glass board right next to the burger menu (`.dashboard-board`: 76px from the top, 288px from the right, `min(400px, 100vw - 312px)` wide); below 700px it spans the width, 112px from the top; no board positions itself.
+- Profil: sections with small headings – Name (inline edit: pencil, input "Dein Name", save/cancel; blank falls back to the email; saving refreshes `/me` everywhere), Privat (E-Mail, Rolle, Bestätigung "verifiziert durch Cloudflare Access" or "nicht verifiziert (Dev)"), Entwickler-Tools, Meine Familien (role per family), Ausstehende Einladungen (counter badge; pending first, then accepted, each "als <Rolle> · eingeladen am <Datum>"; hidden when `GET /me/invitations` is unavailable).
 - "Entwickler-Tools aktiv" is an accent badge with a soft pulsing glow, static under `prefers-reduced-motion`; without the permission a muted "nicht aktiv" line shows.
+- Familien: "Neue Familie" and "GEDCOM importieren", both disabled at five own trees ("Du besitzt bereits 5 Familien; lösche eine, bevor du eine neue anlegst.").
+- Next to "GEDCOM importieren" sits a round ⓘ button (`aria-expanded`) that toggles a short text: what GEDCOM is, what gets imported, what to watch out for. The text only states what the importer does (new family, counts toward the limit of own trees, .ged up to about 5 MB read as UTF-8, up to 100 people, no photos or card positions).
+- The list "Alle Familien" shows per family: name, "<n> Personen · <m> Generationen", an eye toggle to hide or show it, and a button that opens its family card; rows are reordered by dragging ("Zum Umsortieren ziehen").
+
+## Family card
+
+- Opens from the family name in the header or from the Familien board.
+- View: "Familie", optional family photo, "<n> Mitglieder", "<n> Generationen", "Teilen" (owners only), then one list per generation with a chip per person that opens them; empty: "Noch keine Mitglieder."
+- Edit and create ("Neue Familie"): "Familienname", family photo (add, change, remove), "Bilddarstellung" Füllend / Originalgröße, "Abbrechen" and "Speichern" ("Anlegen"), and "Familie löschen" for owners (native confirm).
 
 ## Evolution panel (developers only)
 
-- Opens below its header button; sections "Ansichts-Labor" (a select over every appearance: 3D, Stufenbaum, TRON), "Ansicht" (zoom, Front / Oben / Orbit) and "Vorschau" (crown scale, relation spacing), plus toggles for connection lines and light orbs.
+- Opens below its header button, on the left; sections "Ansichts-Labor" (a select over every appearance: 3D, Stufenbaum, TRON), "Ansicht" (zoom, camera), "Vorschau" (crown scale, relation spacing), "Uhrzeit", "Anheftpunkte", "Kartenstil" (Rolle im Baum, Rolle lesbar, Holzschild, Papyrus), toggles for connection lines, lineage, blood relatives, the relation legend, bundling, and light orbs.
+- Options a view cannot use are disabled with "In dieser Ansicht nicht verfügbar".
 - Hidden entirely without the "Entwicklertools" permission; opening it closes the burger menu and vice versa.
 - The button also shows on the public pages (`/home`, `/home/how`, `/home/example`) for signed-in holders, from the quiet `/me` probe; there the panel is the full one on the example, and only the "Ansichts-Labor" with a hint on the pages without a scene.
 
@@ -52,69 +67,124 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 
 - Centred, `--radius-dock`, 44px above the bottom edge.
 - Primary "Person" (`--primary`, `--size-dock-primary`, `--radius-dock-primary`), then Suchen, Einladen, Ansicht as icon-over-label buttons.
-- Sizing: the dock stays compact; items are at least 56px wide with 8px/10px padding, the primary button has 14px side padding, bar padding 5px and gap 2px. Every button stays at least 44px tall for touch.
-- "Person" highlights the "+" slots and explains "Tippe auf ein + am Baum".
+- "Person" shows only with the right to add people and "Einladen" only with the right to share (owners); guests see Suchen and Ansicht.
+- Sizing: the dock stays compact; items are at least 56px wide with 8px/10px padding, the primary button has 14px side padding, bar padding 5px and gap 2px; buttons reach about 44px through padding, icon and label.
+- "Person" without a selection opens the add form; with a selection a toast "Tippe auf ein + am Baum" shows above the dock for 4 seconds.
+- "Suchen" toggles the member search above the dock; "Einladen" opens the share dialog; "Ansicht" opens the popover "Kameraansicht" with Front, Oben, Orbit.
+- Without a tree, Person and Einladen are disabled ("Öffne zuerst einen Baum"); while an invitation is open, Person, Suchen and Einladen are disabled ("Nimm zuerst die Einladung an").
+
+## Member search
+
+- A glass field above the dock with a search icon and "Mitglied suchen …"; arrows and Enter pick, Esc closes.
+- Results read "Vorname Nachname (Jahr)"; none: "Keine Treffer"; a pick selects the person and flies there.
 
 ## Person card
 
 - The card shape follows the theme; size, position, and behaviour do not.
-- `3d`: papyrus scroll as today (`.scroll` in `ui/app/globals.css`: rod, torn sheet, curl), about 104px wide in the overview, with initials or photo, name, and years.
+- `3d`: papyrus scroll (`.scroll` in `ui/app/globals.css`: rod, torn sheet, curl), about 104px wide in the overview, with initials or photo, name, and years.
   - Signed-in person: small "DU" badge in `--accent` on the rod; selected scroll gets a soft `--glow` halo.
-- `tron`: glass pill, `--size-person-pill` high, `--radius-pill`, `--node` background, avatar on `--avatar`, name, one line of years or role.
-  - Signed-in person: border `--line-on` plus a ring and glow in `--glow`.
-- Both: dimmed (`opacity .62`, desaturated scroll or `--avatar-dim`) when a lineage is highlighted and the person is not part of it.
+- `tron`: glass pill (`.simple-name` in `ui/app/globals.css`, markup in `ui/app/SimpleTree.tsx`), `--size-person-pill` high and at most 132px wide, `--radius-pill`, `--node` background, 1px `--border`, glass blur, Inter 500 13px.
+  - Content: a 30px avatar with initials on `--avatar`, the first name, and the years at 10px (no role line).
+  - Lineage: border `--line-on` and a 14px glow; selected: an extra 1px ring and a 26px glow.
+  - Signed-in person: a 1.5px `--line-on` ring, a 14px glow and the "DU" badge.
+- Both: dimmed (`opacity .62`, desaturated scroll or `--avatar-dim`) when a lineage is highlighted and the person is not part of it; a presence dot shows when someone else views or edits the person.
 
 ## Relative slots ("+")
 
-- Dashed 1.5px `--slot-border`, `--radius-pill`, `--size-slot` high, label "+ Mutter", "+ Vater", "+ Partner:in", "+ Kind".
-- Shown around the selected person only for relations that are still missing.
-- Click opens the quick-add popover at the slot: Vorname (focused), Nachname (prefilled from the person for father and child), Jahr; Enter saves, Esc closes.
-- After saving a mother the popover moves on to the father; a toast confirms "<Name> wächst jetzt in deinem Baum".
+- Dashed 1.5px `--slot-border`, `--radius-pill`, `--size-slot` high, labels "+ Mutter", "+ Vater", "+ Elternteil" (parent of unknown gender), "+ Partner:in", "+ Kind".
+- Placed around the selected card: mother and father above, partner right, child below, and a round pencil left of the card that opens the edit form.
+- Shown only to editors and only for relations that are still missing.
+- A click opens the quick-add popover at the slot, titled "Mutter von <Name>" and so on: Vorname (focused) and Nachname (prefilled from the person for father and child); "Hinzufügen ↵"; hint "Esc schließt · Details später im Profil", for a mother "Danach geht es direkt mit dem Vater weiter."
+- After saving a mother the popover moves on to the father.
+- Each save shows a toast "<Name> wächst jetzt in deinem Baum" with "Rückgängig" for 6 seconds; undo deletes the person again.
 
 ## Connection lines
 
-- Thin (about 1.3px) lines in `--line-dim`; the selected person's ancestors, descendants, and partner switch to `--line-on` with a soft glow underneath.
+- Thin (about 1.3px) lines in `--line-dim`; the selected person's ancestors, descendants, and partners switch to `--line-on` with a soft glow underneath.
 - Partners: one horizontal line between the two cards at card height. Children: a line from the middle of that partner line straight down, across, and down to the top of the child's card (in `3d` to the scroll's rod).
-- `3d` rounds the two bends with an 8px radius; `tron` keeps sharp right angles.
+- `3d` rounds the two bends with an 8px radius (`ui/app/scrollLines.ts`); `tron` keeps sharp right angles, routed like a circuit diagram (`ui/app/experimental/routing.ts`).
 - Lines never run through a card and never start or end in empty space.
-- Replaces today's thick light tubes in the 3D scene, which overlap the crown and each other.
+- `tron` additionally has:
+  - three line styles: solid (parents and children, partners), dashed (separated or divorced), dotted (only non-biological parents);
+  - junction dots at branches, and small hops where a partner line crosses another line without joining it;
+  - a glyph above each partner line: ⚭ married (also widowed), ⚯ together, ⚮ divorced;
+  - blood relatives of the selected person in a second, amber colour;
+  - "▲ Eltern von <Name>" stubs where the parents are drawn elsewhere; a click opens them.
+
+## Relation legend (`tron` only)
+
+- A glass board bottom right, folded by default, titled "Beziehungen"; it can be pinned, unfolded and closed ("Legende schließen").
+- One row per line style and glyph, with the texts from `legend` in `ui/app/i18n.ts`.
 
 ## Person panel (right)
 
-- Eyebrow "AUSGEWÄHLT" in `--font-mono` and `--accent`, name in `--font-display`, years, then rows Eltern / Partner:in / Kinder.
+- Header: back arrow (after moving through relatives), pin ("Position fixieren"), pencil ("Bearbeiten", editors), and ×; the panel can be dragged.
+- Body: photo or initials square, name in `--font-display`, "<Jahr> · <n> Jahre" (or the life span), facts (Geboren, Verstorben with date and place), an optional note, then groups Eltern, Partner (with the relationship, for example "zusammen" or "verheiratet seit …", and "frühere Partner anzeigen"), Kinder, and the folded groups Geschwister and Halbgeschwister; each relative is a chip that opens them.
+- Without relatives: "Noch keine Verwandten zugewiesen."
+- A presence hint names who else views or edits the person.
 - The camera backs off far enough that the selected card and all its slots fit into about half of the free view, and shifts the card into the middle of the part the panel leaves free (`ui/app/cardFrame.ts`).
 - Editing a person from the tree opens the form on the left instead, and the card moves to the right until the form closes; below 700px the panel stays a full-width sheet.
 
-## Card slots
+## Person form
 
-- Dashed "+ Mutter / + Vater" above, "+ Partner:in" right and "+ Kind" below the selected card; a round pencil left of it opens the edit form.
+- Titles "Mitglied hinzufügen" and "Person bearbeiten"; tabs "Persönliche Daten" and "Beziehungen".
+- Data: Vorname, Nachname, Geburtsname (behind "Geburtsname hinzufügen"), Geboren am / in, Verstorben am / in, photo, Notiz.
+- Relations: Eltern, Partner, Kinder, Geschwister, Halbgeschwister, each with a name search and "Neue Person „…“ hinzufügen"; partners carry a status (zusammen, verheiratet, getrennt, geschieden, verwitwet) with dates, parents a kind (leiblich, adoptiert, Stief, Pflege).
+- The footer "Verwerfen" / "Person speichern" appears once something changed; deleting, removing a photo, and discarding use native confirms.
+
+## Conflict dialog
+
+- Modal when saving a person someone else changed meanwhile: "Jemand hat diese Person geändert", one explaining sentence, "Abbrechen", "Trotzdem überschreiben", "Neu laden" (focused).
+
+## Share dialog ("<Familie> teilen")
+
+- Glass dialog, draggable and pinnable; it does not close on an outside click.
+- "Personen mit Zugriff": one row per person with a "du" badge, status (eingeladen, aktiv), role select (Eigentümer, Bearbeiter, Gast), "Besitz übertragen", and a trash icon; removing and transferring ask once inline.
+- "Jemanden einladen": E-Mail, Rolle, "Einladen"; afterwards an invitation text with "Text kopieren" and the hint "Es wird keine E-Mail verschickt. Kopiere den Text und schick ihn selbst."
+
+## Live presence (`ui/app/live`)
+
+- Presence bar under the family name: one avatar with initials per person in the tree, faded when idle, a shield for admins, "+n" for overflow; the tooltip names the person and what they do.
+- A click on someone else's avatar follows them: the camera and panel move with them, and a chip "Du folgst <Name>" with × ends it.
+- Live toasts (up to three, 6 seconds): "<X> hat <Person> geändert", "… gelöscht", "<X> hat den Baum geändert".
 
 ## Intro tour
 
-- Three glass tooltips, skippable: "Das bist du." (camera, drag, zoom) → "Tippe auf ein +" → "Alles Wichtige unten" (dock, header).
-- Shown once per user after the first tree is created or an invitation is accepted.
+- Three glass tooltips, labelled "EINFÜHRUNG n/3" with "Überspringen" and "Weiter" ("Los geht's" on the last); Esc skips:
+  1. "Das bist du." – camera, drag, zoom; under the own card.
+  2. "Tippe auf ein +" – the dashed slots.
+  3. "Alles Wichtige unten" – "Person hinzufügen, Suchen, Familie einladen, Ansicht. Einstellungen, Sprache und Darstellung findest du oben rechts."; above the dock.
+- Shown once per browser after the first tree is planted or an invitation is accepted; not on an empty tree.
 
 ## Welcome card (signed in, no tree)
 
-- Glass card left over the blurred scene: eyebrow "Willkommen bei ftree", title "Lass uns deinen Baum pflanzen.", "Er beginnt mit dir – stimmt das so?".
-- Live preview of the user's own card; first and last name prefilled from the account, birth year optional.
-- Primary "Baum pflanzen"; links "Stammbaum-Datei importieren (GEDCOM)" and "Erst die Beispielfamilie ansehen".
+- Glass card left over a veil on the scene: eyebrow "Willkommen bei ftree", title "Lass uns deinen *Baum pflanzen.*", "Er beginnt mit dir – stimmt das so?".
+- Live preview of the user's own card (scroll in `3d`, pill in `tron`), "Dein Name" until something is typed; Vorname (required) and Nachname prefilled from the account.
+- Primary "Baum pflanzen" ("Wird gepflanzt …"); link "Stammbaum-Datei importieren (GEDCOM)" opens the Familien board.
+- At five own trees a note explains the limit; if the tree was created but the user could not be added, a small card offers "Mich eintragen".
 - On submit the scene sharpens and the tree moves to the centre; the user's card appears in the crown.
 
 ## Invitation card
 
-- Centred glass card: inviter avatars, "<Name> hat dich in den Baum der Familie <Name> eingeladen.", chips (people, generations, last activity).
-- Row "Du hängst schon im Baum als <Name> · <Jahr> · <Beziehung>" with a "Nicht ich" link instead of a separate "Is this you?" step.
-- The title runs over three lines, the tree's name alone in the middle: "Du wurdest in den Baum / <Name> / eingeladen."
-- Primary "Einladung annehmen" leads into the tree focused on the user, with a task list (check your data, photo, your branch, a memory).
-- Links "Später entscheiden" (the card gives way to a small reminder above the dock with "Antworten"; it is back on the next visit) and "Ablehnen" (asks once, then removes the tree from the user's list).
-- Until the invitation is accepted, Person, Suche and Einladen in the dock stay disabled ("Nimm zuerst die Einladung an"); the server allows only viewing.
+- Centred glass card over a veil: eyebrow "Einladung", the title over three lines with the tree's name alone in the middle ("Du wurdest in den Baum / <Name> / eingeladen."), chips "<n> Personen" and "<n> Generationen"; the inviter is not named.
+- Linked: avatar and "Du hängst schon im Baum" / "als <Name> · * <Jahr>" with a "Nicht ich" link; unlinked: "Dein Konto ist in diesem Baum noch keiner Person zugeordnet. Du kannst dich selbst eintragen oder die Besitzer:in fragen."
+- Primary "Einladung annehmen" leads into the tree focused on the user; after the tour a task card "Dein Platz im Baum" offers "Deine Daten prüfen", "Foto hinzufügen", "Deinen Zweig ergänzen".
+- "Später entscheiden": the card gives way to a reminder above the dock, "Einladung in <Name> offen" with "Antworten"; it is back on the next visit.
+- "Ablehnen" asks inline "Wirklich ablehnen? Der Baum verschwindet aus deiner Liste." ("Ja, ablehnen" / "Abbrechen"), then removes the tree from the user's list and goes to `/start`.
+- Footer: "Nur eingeladene Familienmitglieder sehen diesen Baum."
+- Until the invitation is accepted the dock is locked (see "Bottom dock"); the server allows only viewing.
 
-## Landing (signed out, `/`)
+## Empty and error states
 
-- Scene background, header with wordmark, glass navigation with the single entry "So funktioniert's" (the other destinations are the hero buttons and the legal line, so nothing appears twice), a glass status chip, theme and language segments.
+- Empty tree: "Dieser Baum ist noch leer" with "Erste Person hinzufügen" (editors), or a line that people appear once someone adds them.
+- Unknown or forbidden tree: "Baum nicht gefunden", "Diesen Baum gibt es nicht, oder du hast keinen Zugriff darauf.", "Zurück zu deinem Baum".
+- Auth notice: a closable glass banner with "Neu laden" when the role forbids something or the sign-in expired.
+
+## Landing (signed out, `/home`)
+
+- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a radial cyan glow and two cyan grids in CSS, `ui/app/home/landing.css`), header with wordmark, glass navigation with the single entry "So funktioniert's" (the other destinations are the hero buttons and the legal line, so nothing appears twice), a glass status chip, theme and language segments.
 - The status chip reads "Angemeldet als <Name>" when signed in (display name, else email) as plain text without link or hover, and "Anmelden" otherwise, which leads to `/start`; the tree header shows the same chip. It comes from a quiet `/me` probe, without the permissions provider.
-- Centre: title "Eure Familie. Ein Baum, der mitwächst." on one line on desktop (it may reach over the tree up to the middle of the trunk), below it the chip "Privat · nur für eure Familie · Open Source:" followed by the GitHub mark and "schillpeet" (a link to github.com/schillpeet), then one sentence, "Baum anlegen" and "Beispielfamilie ansehen".
+- Centre: title "Eure Familie. Ein Baum, der mitwächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie · Open Source:" (in `tron` in `--font-mono`) followed by the GitHub mark and "schillpeet" (a link to github.com/schillpeet), then one sentence, "Baum anlegen" ("Zu deinem Baum" when signed in) and "Beispielfamilie ansehen".
 - 3D and TRON share one hero position: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), everything else hangs below it.
 - The three steps are not on the landing page; "So funktioniert's" opens `/home/how`.
 
@@ -125,8 +195,23 @@ Reference: boards 4 (TRON) and 5 (3D) on the canvas linked in [README.md](README
 
 ## Example family (`/home/example`)
 
-- Header with wordmark, "← Zurück" (to `/home`), the title card, the status chip, theme and language segments; "Eigenen Baum anlegen" at the bottom.
+- Header with wordmark, "← Zurück" (to `/home`), the title card "Beispielfamilie / Nur ansehen · tippe auf eine Person, um ihre Linie zu sehen", the status chip, theme and language segments; "Eigenen Baum anlegen" at the bottom.
+- Twelve people over four generations in the real scene; a click highlights the lineage and shows a small card with name, birth name, and life span; there is no dock, panel, or slot.
 
-## Legal line
+## Legal line and pages
 
 - Bottom centre, 12px, `--muted`: version · Nutzungsbedingungen · Datenschutz; on every screen, below the dock where there is one.
+- `/terms` and `/privacy` are server-rendered and unthemed, with "← Zurück zu ftree" and a language toggle.
+
+## Known deviations from the tokens
+
+These literals predate the Horizont tokens or bypass them; they are debt for the next redesign round ([plan.md](plan.md)), not rules.
+
+- TRON scene: background `#05070a`, grid cells `#0b4f5c` and sections `#00e5ff` (`ui/app/Scene.tsx`, `GridFloor`) instead of `--bg` and `--accent`.
+- TRON blood-relative lines, glyphs and stubs: `#ffb347`, `#ffe9cc` (`ui/app/SimpleTree.tsx`, `ui/app/globals.css`), a second accent besides cyan.
+- Relation legend: `#e6fdff`, `#00e5ff`, `rgba(5,8,12,.85)` (`ui/app/globals.css`).
+- Landing: `rgba(72,229,255,…)` and `rgba(11,15,16,…)` repeat token values as literals (`ui/app/home/landing.css`).
+- Pre-Horizont palette in boards, person panel, forms and presence: `#fff`, `rgba(255,255,255,.04–.25)`, `rgba(127,214,255,…)`, `#18202b`, `#a6e3ff`, `#24384b` (`ui/app/globals.css`, `ui/app/share.css`, `ui/app/live/*.css`).
+- Legal pages: their own gradient `#24364a → #0a0f16` (`ui/app/legal.css`).
+- 3D scene, scrolls and Evolution panel: sky, meadow, bark and papyrus colours in `ui/app/Scene.tsx`, `Meadow.tsx`, `Tree.tsx`, `cardTextures.ts`, `HangingCard.tsx`; these belong to the scene, not to the UI.
+- Token-pure today: `ui/app/dock.css`, `header.css`, `slots.css`, `tour.css`, `welcome.css`.

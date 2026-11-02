@@ -1,14 +1,13 @@
 # Design
 
-This folder is the single source of truth for how ftree looks and feels.
-If code and this folder disagree, this folder wins until it is updated.
+This folder describes how ftree looks and feels, and it is where design changes are worked out together.
+It describes `main` as it is; if code on `main` and this folder disagree, the folder is out of date and gets fixed.
+Start with the click dummy: open [dummy/index.html](dummy/index.html) in a browser (no build, no server).
 
 ## Current direction: "Horizont" (v2, 2026-11-01)
 
-- Prototypes (interactive canvas, page "Version 2 · Horizont"): https://claude.ai/artifact/NFx5oNnHNpLBUWvxiXJ6Az
-- The canvas is private to the owner; share it from its Share menu before linking it to others.
-- Reference boards on that page: 1 Landing, 2 Welcome (signed in, no tree), 3 Invitation, 4 TRON view, 5 3D view.
-- Boards 4 and 5 are built from the same markup and differ only in tokens; they are the reference for "same elements, different theme".
+- The click dummy ([dummy/](dummy/)) shows the journeys of visitors, new, invited, and returning users in both themes.
+- The first prototypes lived on a private design canvas; their sources in [prototypes/](prototypes/) are kept for history only.
 
 ## Principles
 
@@ -17,6 +16,7 @@ If code and this folder disagree, this folder wins until it is updated.
 - The real Three.js scene is the background everywhere (landing included, as a pre-rendered still or short loop); no separate illustration style.
 - Glass surfaces over the scene: neutral dark glass with blur, never tinted purple.
 - Warm amber (`3d`) or cyan (`tron`) is the only accent; it marks the signed-in person, highlighted lineage lines, and the DEV badge.
+- Exception today: TRON draws the selected person's blood relatives in amber besides the cyan lineage (see "Known deviations from the tokens" in components.md).
 - Fast over guided: no multi-step stepper; one welcome card, then the tree with a skippable three-step intro.
 - The main action ("Person") is always visible in the bottom dock; adding relatives starts from a person via dashed "+" slots.
 
@@ -26,8 +26,9 @@ If code and this folder disagree, this folder wins until it is updated.
 - [tokens.css](tokens.css) – the same tokens as CSS custom properties, the shape `ui/` should adopt.
 - [components.md](components.md) – the building blocks and their rules.
 - [journeys.md](journeys.md) – new, invited, and returning users.
-- [plan.md](plan.md) – what has to change in `ui/`, split into pull requests.
-- [prototypes/](prototypes/) – sources of the canvas boards, for reference.
+- [plan.md](plan.md) – what has to change in `ui/`, split into pull requests, and what is planned but not built.
+- [dummy/](dummy/) – the click dummy: plain HTML on top of `tokens.css`, one page per journey.
+- [prototypes/](prototypes/) – sources of the old canvas boards, historical.
 
 ## Decisions
 
@@ -52,13 +53,17 @@ If code and this folder disagree, this folder wins until it is updated.
 - The Evolution button shows everywhere for holders of the developer tools, the public pages included, and Admin-Tool in the burger menu has an external-link icon (2026-11-01).
 - The invitation card shows on the first visit of a shared tree; sharing keeps granting access right away, there is no pending state (2026-11-01).
 - The signed-in person is a member linked to the user in the BFF, not guessed from the name (2026-11-01).
+- This folder describes `main`; design work happens in the click dummy in the repository instead of the private canvas, so others can join (2026-11-02).
 
 ## Open questions
 
 - Pre-rendered landing still vs. short video loop of the scene; the landing uses `ui/app/home/landing.jpg` (the prototype's scene still) for now.
 
-## Changing the design
+## Working with the design system
 
-1. Try it on the canvas (or a new page on it) first.
-2. Update `tokens.json`/`tokens.css` and the affected section in `components.md`.
-3. Add a line to "Decisions" with the date if it changes a rule above.
+1. Branch from `main` as AGENTS.md describes, then try the idea in the dummy (`dummy/*.html`, `dummy/dummy.css`) or in `tokens.css`; the dummy reads `tokens.css` directly, so a token change shows on every dummy page.
+2. Push the branch; the other person checks it out and opens `dummy/index.html` to review, and both talk it through on the branch or its PR.
+3. Record the outcome as a dated line under "Decisions" and keep `tokens.json` equal to `tokens.css`.
+4. Build it in `ui/`: copy `tokens.css` to `ui/app/tokens.css` (`node ui/app/tokens.check.mjs` checks they match), change the components, and update their section in `components.md`.
+5. Once the change is on `main`, the dummy shows the new state; it always mirrors `main` plus the ideas on open branches.
+- Larger changes get an entry in [plan.md](plan.md) first, split into pull requests.
