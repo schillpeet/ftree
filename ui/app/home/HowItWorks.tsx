@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { FamilySummary } from '../../lib/api/generated/members';
 import { LanguageSegment, ThemeSegment } from '../Header';
 import { useT } from '../i18n';
+import { rideFrom } from '../ride';
 import ThemeRoot from '../ThemeRoot';
 import BackLink from './BackLink';
 import BrandLink from './BrandLink';
@@ -25,6 +27,7 @@ const STEP_LINKS = ['/start', '/start?share=1', '/start'];
 export default function HowItWorks() {
   const t = useT();
   const me = useSignedIn();
+  const router = useRouter();
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);
   useEffect(() => {
     if (!me) return;
@@ -88,7 +91,11 @@ export default function HowItWorks() {
         </ol>
         <div className="landing-actions">
           <StartButton me={me} plant={t.landing.plant} />
-          <Link className="glass landing-secondary" href="/home/example">
+          <Link
+            className="glass landing-secondary"
+            href="/home/example"
+            onClick={(event) => rideFrom(event, () => router.push('/home/example'))}
+          >
             {t.landing.showExample}
           </Link>
         </div>

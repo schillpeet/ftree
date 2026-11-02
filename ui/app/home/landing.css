@@ -199,6 +199,109 @@
   }
 }
 
+/* The ride into the tree (`ride.ts`): the page derezzes into scanlines, a light trail shoots to the horizon, the floor
+   rushes past and the light tree comes close, then a cyan flash fades to black, where the tree's scene takes over. */
+@property --derez {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 5px;
+}
+
+.tron-horizon-trail {
+  position: absolute;
+  top: var(--horizon);
+  bottom: 0;
+  left: 50%;
+  display: none;
+  width: 18px;
+  background: linear-gradient(#e8fdff, var(--accent));
+  clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+  filter: drop-shadow(0 0 8px var(--accent));
+  transform: translateX(-50%) scaleY(0);
+  transform-origin: bottom;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme='tron'] .landing-riding {
+    pointer-events: none;
+  }
+
+  [data-theme='tron'] .landing-riding > header,
+  [data-theme='tron'] .landing-riding > main {
+    mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
+    animation: tron-derez 0.3s ease-in forwards;
+  }
+
+  [data-theme='tron'] .landing-riding .tron-horizon-trail {
+    display: block;
+    animation: tron-trail 0.4s ease-out 0.1s forwards;
+  }
+
+  [data-theme='tron'] .landing-riding .tron-horizon-floor::before {
+    animation: tron-rush 0.9s cubic-bezier(0.5, 0, 1, 1) forwards;
+  }
+
+  [data-theme='tron'] .landing-riding .tron-horizon-tree {
+    transform-origin: bottom;
+    animation: tron-approach 0.6s cubic-bezier(0.5, 0, 1, 1) 0.3s forwards;
+  }
+
+  [data-theme='tron'] .landing-riding::after {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    content: '';
+    animation: tron-flash 0.9s linear forwards;
+  }
+}
+
+@keyframes tron-derez {
+  to {
+    --derez: 0px;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes tron-trail {
+  to {
+    transform: translateX(-50%) scaleY(1);
+  }
+}
+
+@keyframes tron-rush {
+  to {
+    background-position:
+      0 calc(200 * var(--cell)),
+      0 calc(200 * var(--cell)),
+      0 calc(40 * var(--cell)),
+      0 calc(40 * var(--cell));
+  }
+}
+
+@keyframes tron-approach {
+  to {
+    transform: translateX(-50%) scale(4);
+  }
+}
+
+@keyframes tron-flash {
+  0%,
+  70% {
+    background: #dffcff;
+    opacity: 0;
+  }
+
+  85% {
+    background: #dffcff;
+    opacity: 1;
+  }
+
+  100% {
+    background: var(--bg);
+    opacity: 1;
+  }
+}
+
 .landing-header {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
