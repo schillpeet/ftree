@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import type { CSSProperties } from 'react';
+import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { LanguageSegment, ThemeSegment } from '../Header';
 import { useT } from '../i18n';
+import { takeRide } from '../ride';
 import ThemeRoot from '../ThemeRoot';
 import BrandLink from './BrandLink';
 // Imported rather than in `public/`, so it ships under `/_next/static` with the rest of the page.
@@ -21,8 +22,15 @@ import './landing.css';
 export default function Landing() {
   const t = useT();
   const me = useSignedIn();
+  const page = useRef<HTMLDivElement>(null);
+  // The end of the ride back from a tree (`ride.ts`): the flash gives way, and the page builds itself up in scanlines
+  // before the first paint.
+  useLayoutEffect(() => {
+    document.documentElement.classList.remove('riding-out');
+    if (takeRide(true)) page.current?.classList.add('landing-arriving');
+  }, []);
   return (
-    <div className="landing">
+    <div className="landing" ref={page}>
       <ThemeRoot />
       <div className="landing-backdrop" aria-hidden="true" style={{ '--landing-still': `url(${still.src})` } as CSSProperties} />
       <TronHorizon />

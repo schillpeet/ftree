@@ -37,3 +37,4 @@
 4. Signed in, the steps link into the own tree and tick off what is done (own card, tree shared, three people); step 2 opens the share dialog.
 5. "← Zurück" on the steps and example pages leads back to the landing page.
 6. In TRON the way into a tree ("Zu deinem Baum", "Beispielfamilie ansehen") is a ride: the page derezzes and the camera drives in over the grid, so the landing and the tree feel like one world.
+7. The way back is a ride too: the wordmark pulls the camera back out over the grid, and the landing builds itself up again.

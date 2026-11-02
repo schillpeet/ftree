@@ -44,6 +44,7 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - The TRON landing gets a horizon: night sky, glowing horizon line, mountain ridge, a perspective floor grid like the TRON tree view, and a light tree (a beam branching like a circuit into glowing nodes) in the middle (2026-11-02).
 - `/home/how` is for reading: in TRON it has no light tree, and its horizon sits below the buttons (2026-11-02).
 - In TRON, "Zu deinem Baum" and "Beispielfamilie ansehen" ride into the tree: the page derezzes into scanlines, a light trail shoots to the horizon and the floor rushes past, then the scene's camera drives in low over the grid and rises into the start view; the click dummy leaves the ride out, as it has no scene (2026-11-02).
+- In TRON, the wordmark in a tree or the example family rides back to the landing: the camera sinks onto the grid and pulls back along a light trail until the tree is a point on the horizon, a flash fades to black, and the landing builds itself up in scanlines while its trail retracts into the horizon (2026-11-02).
 - The landing hero is the same in 3D and TRON: the headline's bottom at 61.8 % of the viewport height, the "Privat · nur für eure Familie" chip below the headline (2026-11-01).
 - The 3D start view is lower and closer (tree ~60 % of the height, horizon ~57 % on desktop), and the horizon haze is warmer (2026-11-01).
 - Only invited (allowed) users can sign in; the welcome card is for signed-in users who are not assigned to any tree yet.
