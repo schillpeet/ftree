@@ -72,13 +72,22 @@
           vergeben, verlinken. Was über mehrere Screens bleibt (Header, Dock, Baum), steht außerhalb der Sections;
           <code>data-show=&quot;id1 id2&quot;</code> blendet es nur auf diesen Screens ein (siehe <code>dummy.js</code>).
         </li>
-        <li>Theme nur für TRON ändern: Regeln mit <code>[data-theme='tron']</code> davor schreiben.</li>
+        <li>
+          3D ist ein Bild der echten Three.js-Szene (<code>scene-3d*.jpg</code>: <code>/home/example</code> in der Dämmerung, je
+          Karte ein Bild mit hervorgehobener Linie); durchsichtige Hotspots liegen über den sichtbaren Karten. In „Neu“ ist es
+          <code>../prototypes/ftree-scene.jpg</code> mit seiner einen Karte, dort wachsen Mutter und Vater nur in TRON sichtbar.
+        </li>
+        <li>
+          TRON ist HTML: Pillen und Linien stehen in den Welt-Einheiten aus <code>ui/app/simpleLayout.ts</code> und
+          <code>ui/app/experimental/routing.ts</code> (<code>--x</code>/<code>--y</code>, eine Einheit = <code>--u</code>), das
+          Gitter ist <code>.tron-floor</code>. Theme nur für TRON ändern: Regeln mit <code>[data-theme='tron']</code> davor schreiben.
+        </li>
         <li>Kein Build, kein Server: Datei per Doppelklick öffnen.</li>
       </ul>
 
       <h2>Bewusst weggelassen</h2>
       <p>Fehlertexte, native Dialoge (z. B. Löschen bestätigen), Live-Anwesenheit samt Animationen, Evolution/DEV-Panel und Admin-Tool.</p>
-      <p>Ausgegraute Knöpfe mit dem Hinweis „Nicht im Dummy“ gibt es in der App, sie führen hier aber nirgendwohin; der Dummy ist nur auf Deutsch.</p>
+      <p>Ausgegraute Knöpfe mit dem Hinweis „Nicht im Dummy“ gibt es in der App, sie führen hier aber nirgendwohin; der Dummy ist nur auf Deutsch. Unten links zeigt „Zustand: angemeldet/abgemeldet“, welche Variante der Startseite zu sehen ist.</p>
     </main>
     <script src="dummy.js"></script>
   </body>

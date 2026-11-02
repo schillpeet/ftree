@@ -48,8 +48,9 @@
   <body>
     <div class="backdrop" aria-hidden="true"></div>
 
-    <!-- /home: Landing.tsx -->
+    <!-- /home: Landing.tsx, signed out (signed in: returning.html#home). -->
     <section class="screen" id="landing">
+      <span class="glass dummy-state">Zustand: abgemeldet</span>
       <div class="landing">
         <header class="landing-header">
           <div class="landing-brand-group">
@@ -68,7 +69,7 @@
           <h1>Eure Familie. Ein Baum, der mitwächst.</h1>
           <p class="landing-chip">
             Privat · nur für eure Familie · Open Source:
-            <a href="https://github.com/schillpeet" target="_blank" rel="noopener noreferrer" aria-label="schillpeet auf GitHub">schillpeet</a>
+            <a href="https://github.com/schillpeet" target="_blank" rel="noopener noreferrer" aria-label="schillpeet auf GitHub"><svg class="github-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" /></svg>schillpeet</a>
           </p>
           <p class="landing-lead">Leg dich selbst an, lade deine Familie ein und seht gemeinsam zu, wie aus Namen eine Geschichte wird.</p>
           <div class="landing-actions">
@@ -81,6 +82,7 @@
 
     <!-- /home/how: HowItWorks.tsx -->
     <section class="screen" id="how">
+      <span class="glass dummy-state">Zustand: abgemeldet</span>
       <div class="landing">
         <header class="landing-header">
           <div class="landing-brand-group">
@@ -136,49 +138,134 @@
             <div class="segment" role="group" aria-label="Sprache"><button type="button" aria-pressed="true">DE</button><button type="button" aria-pressed="false" disabled title="Der Dummy ist nur auf Deutsch">EN</button></div>
         </div>
       </header>
-    <div class="tree">
-      <svg class="tree-lines" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-        <path d="M42 14 H58" data-ends="heinrich margarete" />
-        <path d="M50 14 V32 H24 V50" data-ends="heinrich margarete peter" />
-        <path d="M50 32 H62 V50" data-ends="heinrich margarete ursula" />
-        <path d="M24 50 H40" data-ends="peter sabine" />
-        <path d="M62 50 H78" data-ends="ursula thomas" />
-        <path d="M32 50 V68 H24 V86" data-ends="peter sabine jonas" />
-        <path d="M32 68 H40 V86" data-ends="peter sabine lea" />
-      </svg>
-      <a class="node" href="#example" data-id="heinrich" data-line="heinrich margarete peter ursula jonas lea" data-name="Heinrich Linde" data-meta="1931 – 2009" data-born="" data-initials="HL" data-first="Heinrich" data-last="Linde" data-span="1931 – 2009 · 78 Jahre" data-birth="14.03.1931" data-death="02.11.2009" data-parents="" data-partners="Margarete Linde" data-children="Peter Linde, Ursula Hartmann" style="--x: 42%; --y: 14%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Heinrich Linde</h3><p>* 14.03.1931</p><p>† 02.11.2009</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">HL</span><span class="simple-name-text"><span>Heinrich</span><span class="simple-name-years">1931 – 2009</span></span></span>
-      </a>
-      <a class="node" href="#example" data-id="margarete" data-line="margarete heinrich peter ursula jonas lea" data-name="Margarete Linde" data-meta="1934 – 2018" data-born="geb. Vogt" data-initials="ML" data-first="Margarete" data-last="Linde" data-span="1934 – 2018 · 83 Jahre" data-birth="28.07.1934" data-death="19.01.2018" data-parents="" data-partners="Heinrich Linde" data-children="Peter Linde, Ursula Hartmann" style="--x: 58%; --y: 14%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Margarete Linde</h3><p>* 28.07.1934</p><p>† 19.01.2018</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">ML</span><span class="simple-name-text"><span>Margarete</span><span class="simple-name-years">1934 – 2018</span></span></span>
-      </a>
-      <a class="node" href="#example" data-id="peter" data-line="peter sabine heinrich margarete jonas lea" data-name="Peter Linde" data-meta="1958" data-born="" data-initials="PL" data-first="Peter" data-last="Linde" data-span="1958 · 68 Jahre" data-birth="09.05.1958" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Sabine Linde" data-children="Jonas Linde, Lea Linde" style="--x: 24%; --y: 50%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Peter Linde</h3><p>* 09.05.1958</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">PL</span><span class="simple-name-text"><span>Peter</span><span class="simple-name-years">1958</span></span></span>
-      </a>
-      <a class="node" href="#example" data-id="sabine" data-line="sabine peter jonas lea" data-name="Sabine Linde" data-meta="1961" data-born="geb. Brandt" data-initials="SL" data-first="Sabine" data-last="Linde" data-span="1961 · 65 Jahre" data-birth="30.09.1961" data-death="" data-parents="" data-partners="Peter Linde" data-children="Jonas Linde, Lea Linde" style="--x: 40%; --y: 50%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Sabine Linde</h3><p>* 30.09.1961</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">SL</span><span class="simple-name-text"><span>Sabine</span><span class="simple-name-years">1961</span></span></span>
-      </a>
-      <a class="node" href="#example" data-id="ursula" data-line="ursula thomas heinrich margarete" data-name="Ursula Hartmann" data-meta="1962" data-born="geb. Linde" data-initials="UH" data-first="Ursula" data-last="Hartmann" data-span="1962 · 63 Jahre" data-birth="04.12.1962" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Thomas Hartmann" data-children="" style="--x: 62%; --y: 50%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Ursula Hartmann</h3><p>* 04.12.1962</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">UH</span><span class="simple-name-text"><span>Ursula</span><span class="simple-name-years">1962</span></span></span>
-      </a>
-      <a class="node" href="#example" data-id="thomas" data-line="thomas ursula" data-name="Thomas Hartmann" data-meta="1960" data-born="" data-initials="TH" data-first="Thomas" data-last="Hartmann" data-span="1960 · 66 Jahre" data-birth="17.02.1960" data-death="" data-parents="" data-partners="Ursula Hartmann" data-children="" style="--x: 78%; --y: 50%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Thomas Hartmann</h3><p>* 17.02.1960</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">TH</span><span class="simple-name-text"><span>Thomas</span><span class="simple-name-years">1960</span></span></span>
-      </a>
-      <a class="node" href="#example" data-id="jonas" data-line="jonas peter sabine heinrich margarete" data-name="Jonas Linde" data-meta="1988" data-born="" data-initials="JL" data-first="Jonas" data-last="Linde" data-span="1988 · 38 Jahre" data-birth="21.04.1988" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="" style="--x: 24%; --y: 86%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Jonas Linde</h3><p>* 21.04.1988</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">JL</span><span class="simple-name-text"><span>Jonas</span><span class="simple-name-years">1988</span></span></span>
-      </a>
-      <a class="node" href="#example" data-id="lea" data-line="lea peter sabine heinrich margarete" data-name="Lea Linde" data-meta="1992" data-born="" data-initials="LL" data-first="Lea" data-last="Linde" data-span="1992 · 34 Jahre" data-birth="03.06.1992" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="" style="--x: 40%; --y: 86%">
-        <div class="scroll"><div class="scroll-rod"></div><div class="scroll-sheet"><h3>Lea Linde</h3><p>* 03.06.1992</p></div><div class="scroll-curl"></div></div>
-        <span class="simple-name"><span class="simple-name-avatar">LL</span><span class="simple-name-text"><span>Lea</span><span class="simple-name-years">1992</span></span></span>
-      </a>
+    <div class="tron-floor" aria-hidden="true"></div>
+    <!-- 3D: the real scene (shots of /home/example at dusk); a click on a card shows its shot with the lineage lit. -->
+    <div class="scene3d">
+      <img src="scene-3d.jpg" alt="" data-for="" />
+      <img src="scene-3d-lea.jpg" alt="" data-for="lea" hidden />
+      <img src="scene-3d-clara.jpg" alt="" data-for="clara" hidden />
+      <img src="scene-3d-ida.jpg" alt="" data-for="ida" hidden />
+      <img src="scene-3d-emil.jpg" alt="" data-for="emil" hidden />
+      <img src="scene-3d-ursula.jpg" alt="" data-for="ursula" hidden />
+      <img src="scene-3d-heinrich.jpg" alt="" data-for="heinrich" hidden />
+      <a class="node hotspot" href="#example" aria-label="Profil von Lea Linde öffnen" style="left: 27.9%; top: 51.3%; width: 2.2%; height: 8%" data-id="lea" data-line="lea sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s8 s9 s12 s13 s16 s17 s19 s21 s23 s25 d0 d2 d4 d5 g0 g2" data-name="Lea Linde" data-first="Lea" data-last="Linde" data-initials="LL" data-born="" data-meta="1992" data-span="1992 · 34 Jahre" data-birth="03.06.1992" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children=""></a>
+      <a class="node hotspot" href="#example" aria-label="Profil von Clara Hartmann öffnen" style="left: 44%; top: 47%; width: 3.6%; height: 8.8%" data-id="clara" data-line="clara thomas ursula margarete heinrich" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Clara Hartmann" data-first="Clara" data-last="Hartmann" data-initials="CH" data-born="" data-meta="1994" data-span="1994 · 32 Jahre" data-birth="15.10.1994" data-death="" data-parents="Ursula Hartmann, Thomas Hartmann" data-partners="" data-children=""></a>
+      <a class="node hotspot" href="#example" aria-label="Profil von Ida Linde öffnen" style="left: 43%; top: 55.8%; width: 2.3%; height: 3.4%" data-id="ida" data-line="ida mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s29 s31 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Ida Linde" data-first="Ida" data-last="Linde" data-initials="IL" data-born="" data-meta="2022" data-span="2022 · 4 Jahre" data-birth="08.07.2022" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children=""></a>
+      <a class="node hotspot" href="#example" aria-label="Profil von Emil Linde öffnen" style="left: 48.7%; top: 46%; width: 4.9%; height: 9.4%" data-id="emil" data-line="emil mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s28 s30 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Emil Linde" data-first="Emil" data-last="Linde" data-initials="EL" data-born="" data-meta="2019" data-span="2019 · 7 Jahre" data-birth="26.02.2019" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children=""></a>
+      <a class="node hotspot" href="#example" aria-label="Profil von Ursula Hartmann öffnen" style="left: 63.2%; top: 39.4%; width: 2.5%; height: 5.2%" data-id="ursula" data-line="ursula margarete heinrich thomas clara" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Ursula Hartmann" data-first="Ursula" data-last="Hartmann" data-initials="UH" data-born="geb. Linde" data-meta="1962" data-span="1962 · 63 Jahre" data-birth="04.12.1962" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Thomas Hartmann" data-children="Clara Hartmann"></a>
+      <a class="node hotspot" href="#example" aria-label="Profil von Heinrich Linde öffnen" style="left: 63%; top: 26.2%; width: 3.4%; height: 6.2%" data-id="heinrich" data-line="heinrich margarete peter ursula clara jonas lea emil ida" data-lit="s0 s1 s3 s5 s6 s8 s9 s11 s13 s14 s16 s17 s18 s19 s20 s21 s22 s23 s24 s25 s26 s27 s28 s29 s30 s31 d0 d1 d2 d3 d4 d5 d6 g0" data-name="Heinrich Linde" data-first="Heinrich" data-last="Linde" data-initials="HL" data-born="" data-meta="1931 – 2009" data-span="1931 – 2009 · 78 Jahre" data-birth="14.03.1931" data-death="02.11.2009" data-parents="" data-partners="Margarete Linde" data-children="Peter Linde, Ursula Hartmann"></a>
     </div>
+    <!-- TRON: SimpleTree.tsx, laid out and routed by simpleLayout.ts and experimental/routing.ts. -->
+    <div class="tree">
+      <div class="tree-origin">
+        <svg class="tree-lines" viewBox="-30 -30 60 32" aria-hidden="true">
+          <path d="M0 -19.05 L0 -18.6" data-k="s0" />
+          <path d="M9.5 -19.05 L9.5 -18.6" data-k="s1" />
+          <path d="M-9.5 -12.25 L-9.5 -11.8" data-k="s2" />
+          <path d="M0 -12.25 L0 -11.8" data-k="s3" />
+          <path d="M-19 -5.45 L-19 -5" data-k="s4" />
+          <path d="M-9.5 -5.45 L-9.5 -5" data-k="s5" />
+          <path d="M9.5 -12.25 L9.5 -11.8" data-k="s6" />
+          <path d="M19 -12.25 L19 -11.8" data-k="s7" />
+          <path d="M0 -18.6 L4.75 -18.6" data-k="s8" />
+          <path d="M4.75 -18.6 L9.5 -18.6" data-k="s9" />
+          <path d="M-19 -5 L-14.25 -5" data-k="s10" />
+          <path d="M-14.25 -5 L-9.5 -5" data-k="s11" />
+          <path d="M-9.5 -11.8 L-4.75 -11.8" data-k="s12" />
+          <path d="M-4.75 -11.8 L0 -11.8" data-k="s13" />
+          <path d="M9.5 -11.8 L14.25 -11.8" data-k="s14" />
+          <path d="M14.25 -11.8 L19 -11.8" data-k="s15" />
+          <path d="M4.75 -18.6 L4.75 -15.7" data-k="s16" />
+          <path d="M0 -15.7 L4.75 -15.7" data-k="s17" />
+          <path d="M4.75 -15.7 L9.5 -15.7" data-k="s18" />
+          <path d="M0 -15.7 L0 -14.95" data-k="s19" />
+          <path d="M9.5 -15.7 L9.5 -14.95" data-k="s20" />
+          <path d="M-4.75 -11.8 L-4.75 -8.9" data-k="s21" />
+          <path d="M-9.5 -8.9 L-4.75 -8.9" data-k="s22" />
+          <path d="M-4.75 -8.9 L0 -8.9" data-k="s23" />
+          <path d="M-9.5 -8.9 L-9.5 -8.15" data-k="s24" />
+          <path d="M0 -8.9 L0 -8.15" data-k="s25" />
+          <path d="M14.25 -11.8 L14.25 -8.15" data-k="s26" />
+          <path d="M-14.25 -5 L-14.25 -2.1" data-k="s27" />
+          <path d="M-19 -2.1 L-14.25 -2.1" data-k="s28" />
+          <path d="M-14.25 -2.1 L-9.5 -2.1" data-k="s29" />
+          <path d="M-19 -2.1 L-19 -1.35" data-k="s30" />
+          <path d="M-9.5 -2.1 L-9.5 -1.35" data-k="s31" />
+          <circle cx="4.75" cy="-18.6" r="0.12" data-k="d0" />
+          <circle cx="-14.25" cy="-5" r="0.12" data-k="d1" />
+          <circle cx="-4.75" cy="-11.8" r="0.12" data-k="d2" />
+          <circle cx="14.25" cy="-11.8" r="0.12" data-k="d3" />
+          <circle cx="4.75" cy="-15.7" r="0.12" data-k="d4" />
+          <circle cx="-4.75" cy="-8.9" r="0.12" data-k="d5" />
+          <circle cx="-14.25" cy="-2.1" r="0.12" data-k="d6" />
+        </svg>
+        <span class="simple-glyph" data-k="g0" style="--x: 4.75; --y: 19.1" aria-hidden="true">⚭</span>
+        <span class="simple-glyph" data-k="g1" style="--x: -14.25; --y: 5.5" aria-hidden="true">⚭</span>
+        <span class="simple-glyph" data-k="g2" style="--x: -4.75; --y: 12.3" aria-hidden="true">⚭</span>
+        <span class="simple-glyph" data-k="g3" style="--x: 14.25; --y: 12.3" aria-hidden="true">⚭</span>
+        <a class="node" href="#example" style="--x: 0; --y: 20.4" data-id="heinrich" data-line="heinrich margarete peter ursula clara jonas lea emil ida" data-lit="s0 s1 s3 s5 s6 s8 s9 s11 s13 s14 s16 s17 s18 s19 s20 s21 s22 s23 s24 s25 s26 s27 s28 s29 s30 s31 d0 d1 d2 d3 d4 d5 d6 g0" data-name="Heinrich Linde" data-first="Heinrich" data-last="Linde" data-initials="HL" data-born="" data-meta="1931 – 2009" data-span="1931 – 2009 · 78 Jahre" data-birth="14.03.1931" data-death="02.11.2009" data-parents="" data-partners="Margarete Linde" data-children="Peter Linde, Ursula Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">HL</span><span class="simple-name-text"><span>Heinrich</span><span class="simple-name-years">1931 – 2009</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: 9.5; --y: 20.4" data-id="margarete" data-line="margarete heinrich peter ursula clara jonas lea emil ida" data-lit="s0 s1 s3 s5 s6 s8 s9 s11 s13 s14 s16 s17 s18 s19 s20 s21 s22 s23 s24 s25 s26 s27 s28 s29 s30 s31 d0 d1 d2 d3 d4 d5 d6 g0" data-name="Margarete Linde" data-first="Margarete" data-last="Linde" data-initials="ML" data-born="geb. Vogt" data-meta="1934 – 2018" data-span="1934 – 2018 · 83 Jahre" data-birth="28.07.1934" data-death="19.01.2018" data-parents="" data-partners="Heinrich Linde" data-children="Peter Linde, Ursula Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">ML</span><span class="simple-name-text"><span>Margarete</span><span class="simple-name-years">1934 – 2018</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: -9.5; --y: 13.6" data-id="sabine" data-line="sabine peter jonas lea emil ida" data-lit="s2 s3 s5 s11 s12 s13 s21 s22 s23 s24 s25 s27 s28 s29 s30 s31 d1 d2 d5 d6 g2" data-name="Sabine Linde" data-first="Sabine" data-last="Linde" data-initials="SL" data-born="geb. Brandt" data-meta="1961" data-span="1961 · 65 Jahre" data-birth="30.09.1961" data-death="" data-parents="" data-partners="Peter Linde" data-children="Jonas Linde, Lea Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">SL</span><span class="simple-name-text"><span>Sabine</span><span class="simple-name-years">1961</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: 0; --y: 13.6" data-id="peter" data-line="peter margarete heinrich sabine jonas lea emil ida" data-lit="s0 s1 s2 s3 s5 s8 s9 s11 s12 s13 s16 s17 s19 s21 s22 s23 s24 s25 s27 s28 s29 s30 s31 d0 d1 d2 d4 d5 d6 g0 g2" data-name="Peter Linde" data-first="Peter" data-last="Linde" data-initials="PL" data-born="" data-meta="1958" data-span="1958 · 68 Jahre" data-birth="09.05.1958" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Sabine Linde" data-children="Jonas Linde, Lea Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">PL</span><span class="simple-name-text"><span>Peter</span><span class="simple-name-years">1958</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: -19; --y: 6.8" data-id="mira" data-line="mira jonas emil ida" data-lit="s4 s5 s10 s11 s27 s28 s29 s30 s31 d1 d6 g1" data-name="Mira Linde" data-first="Mira" data-last="Linde" data-initials="ML" data-born="geb. Okafor" data-meta="1990" data-span="1990 · 36 Jahre" data-birth="11.08.1990" data-death="" data-parents="" data-partners="Jonas Linde" data-children="Emil Linde, Ida Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">ML</span><span class="simple-name-text"><span>Mira</span><span class="simple-name-years">1990</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: -9.5; --y: 6.8" data-id="jonas" data-line="jonas sabine peter margarete heinrich mira emil ida" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s28 s29 s30 s31 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Jonas Linde" data-first="Jonas" data-last="Linde" data-initials="JL" data-born="" data-meta="1988" data-span="1988 · 38 Jahre" data-birth="21.04.1988" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="Mira Linde" data-children="Emil Linde, Ida Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">JL</span><span class="simple-name-text"><span>Jonas</span><span class="simple-name-years">1988</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: -19; --y: 0" data-id="emil" data-line="emil mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s28 s30 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Emil Linde" data-first="Emil" data-last="Linde" data-initials="EL" data-born="" data-meta="2019" data-span="2019 · 7 Jahre" data-birth="26.02.2019" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children="">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">EL</span><span class="simple-name-text"><span>Emil</span><span class="simple-name-years">2019</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: -9.5; --y: 0" data-id="ida" data-line="ida mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s29 s31 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Ida Linde" data-first="Ida" data-last="Linde" data-initials="IL" data-born="" data-meta="2022" data-span="2022 · 4 Jahre" data-birth="08.07.2022" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children="">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">IL</span><span class="simple-name-text"><span>Ida</span><span class="simple-name-years">2022</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: 0; --y: 6.8" data-id="lea" data-line="lea sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s8 s9 s12 s13 s16 s17 s19 s21 s23 s25 d0 d2 d4 d5 g0 g2" data-name="Lea Linde" data-first="Lea" data-last="Linde" data-initials="LL" data-born="" data-meta="1992" data-span="1992 · 34 Jahre" data-birth="03.06.1992" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">LL</span><span class="simple-name-text"><span>Lea</span><span class="simple-name-years">1992</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: 9.5; --y: 13.6" data-id="ursula" data-line="ursula margarete heinrich thomas clara" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Ursula Hartmann" data-first="Ursula" data-last="Hartmann" data-initials="UH" data-born="geb. Linde" data-meta="1962" data-span="1962 · 63 Jahre" data-birth="04.12.1962" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Thomas Hartmann" data-children="Clara Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">UH</span><span class="simple-name-text"><span>Ursula</span><span class="simple-name-years">1962</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: 19; --y: 13.6" data-id="thomas" data-line="thomas ursula clara" data-lit="s6 s7 s14 s15 s26 d3 g3" data-name="Thomas Hartmann" data-first="Thomas" data-last="Hartmann" data-initials="TH" data-born="" data-meta="1960" data-span="1960 · 66 Jahre" data-birth="17.02.1960" data-death="" data-parents="" data-partners="Ursula Hartmann" data-children="Clara Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">TH</span><span class="simple-name-text"><span>Thomas</span><span class="simple-name-years">1960</span></span></span>
+        </a>
+        <a class="node" href="#example" style="--x: 14.25; --y: 6.8" data-id="clara" data-line="clara thomas ursula margarete heinrich" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Clara Hartmann" data-first="Clara" data-last="Hartmann" data-initials="CH" data-born="" data-meta="1994" data-span="1994 · 32 Jahre" data-birth="15.10.1994" data-death="" data-parents="Ursula Hartmann, Thomas Hartmann" data-partners="" data-children="">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">CH</span><span class="simple-name-text"><span>Clara</span><span class="simple-name-years">1994</span></span></span>
+        </a>
+      </div>
+    </div>
+      <!-- RelationLegend.tsx: TRON only, folded to its header by default. -->
+      <aside class="glass relation-legend" aria-label="Beziehungen" data-folded="true">
+        <header class="person-header">
+          <span class="person-header-label">Beziehungen</span>
+          <span class="person-header-actions">
+            <button type="button" class="person-icon-button person-pin" aria-pressed="false" aria-label="Position fixieren" title="Position fixieren"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7" /></svg></button>
+            <button type="button" class="person-icon-button relation-legend-fold" aria-expanded="false" aria-label="Legende ausklappen" title="Legende ausklappen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h14M7 7l5 5 5-5" /></svg></button>
+            <button type="button" class="person-icon-button" data-close aria-label="Legende schließen" title="Legende schließen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+          </span>
+        </header>
+        <ul hidden>
+          <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" /></svg>Eltern und Kinder, Partner</li>
+          <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round" /></svg>Getrennt oder geschieden</li>
+          <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" stroke-dasharray="0.5 4" stroke-linecap="round" /></svg>Nur nicht leibliche Eltern (Adoptiv-, Stief-, Pflegeeltern)</li>
+          <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" /><line x1="20" y1="7" x2="20" y2="14" style="stroke: var(--line-dim)" stroke-width="2" /><circle cx="20" cy="7" r="3" style="fill: var(--line-dim)" /></svg>Abzweigung</li>
+          <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><path d="M2 10 H15 A5 5 0 0 1 25 10 H38 M20 2 V14" fill="none" style="stroke: var(--line-dim)" stroke-width="2" /></svg>Kreuzung ohne Verbindung</li>
+          <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-on)" stroke-width="2" /></svg>Linie der ausgewählten Person: Vorfahren, Nachkommen, Partner:innen</li>
+          <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: #ffb347" stroke-width="2" /></svg>Blutsverwandte der ausgewählten Person</li>
+          <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚭</span>Verheiratet (auch verwitwet)</li>
+          <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚯</span>Zusammen, nicht verheiratet</li>
+          <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚮</span>Geschieden</li>
+          <li><span class="relation-legend-stub" aria-hidden="true">▲</span>Eltern von … stehen an anderer Stelle; ein Klick öffnet sie</li>
+          <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">†</span>Verstorben</li>
+        </ul>
+      </aside>
       <div class="glass example-person" role="status">
         <strong data-fill="name"></strong>
         <span data-fill="born"></span>

@@ -28,22 +28,24 @@ function chip(name) {
   return `<span class="person-chip"><span class="person-chip-main"><span class="person-avatar">${initials}</span><span class="person-chip-text"><span class="person-chip-name">${name}</span></span></span></span>`;
 }
 
-// A node's data-line names the people of its lineage (itself, ancestors, descendants, partners) by data-id; a line in
-// the SVG lights up when every id in its data-ends is part of it. Elements with data-fill="name" (or "meta") show the
-// selected person's data-name (data-meta, …); data-chips="parents" lists the names in data-parents as person chips and
-// hides its .person-group when there are none. A second click on the selected person, or a click on an element with
+// A node's data-line names the people of its lineage by data-id (dimmed: everyone else); its data-lit names the
+// lines, dots and symbols (data-k) that light up, as SimpleTree marks them. In 3D the scene shows the picture of the
+// selected card (img data-for), if there is one. Elements with data-fill="name" (or "meta", …) show the selected
+// person's data-name (data-meta, …); data-chips="parents" lists the names in data-parents as person chips and hides its
+// .person-group when there are none. A second click on the selected person, or a click on an element with
 // data-deselect (a panel's close button), clears the selection.
 function select(node, clear = node.classList.contains('is-selected')) {
-  const tree = node.closest('.tree');
+  const id = clear ? '' : node.dataset.id;
   const line = clear ? [] : node.dataset.line.split(' ');
-  tree.querySelectorAll('.node').forEach((other) => {
-    other.classList.toggle('is-selected', !clear && other === node);
+  const lit = clear ? [] : node.dataset.lit.split(' ');
+  document.querySelectorAll('.node').forEach((other) => {
+    other.classList.toggle('is-selected', other.dataset.id === id && id !== '');
     other.classList.toggle('is-lineage', line.includes(other.dataset.id));
     other.classList.toggle('is-dimmed', !clear && !line.includes(other.dataset.id));
   });
-  tree.querySelectorAll('.tree-lines path').forEach((path) => {
-    path.classList.toggle('is-lineage', !clear && path.dataset.ends.split(' ').every((id) => line.includes(id)));
-  });
+  document.querySelectorAll('[data-k]').forEach((element) => element.classList.toggle('is-focus', lit.includes(element.dataset.k)));
+  const shot = document.querySelector(`.scene3d img[data-for="${id}"]`) ? id : '';
+  document.querySelectorAll('.scene3d img[data-for]').forEach((img) => (img.hidden = img.dataset.for !== shot));
   document.querySelectorAll('[data-fill]').forEach((field) => {
     const value = clear ? '' : node.dataset[field.dataset.fill] ?? '';
     if (field.matches('input, textarea')) field.value = value;
@@ -66,6 +68,19 @@ document.addEventListener('click', (event) => {
     } catch {}
     syncTheme();
   }
+  // The relation legend: fold to its header, pin, close.
+  const legend = event.target.closest('.relation-legend');
+  if (legend && event.target.closest('.relation-legend-fold')) {
+    const folded = legend.dataset.folded !== 'true';
+    legend.dataset.folded = String(folded);
+    legend.querySelector('ul').hidden = folded;
+    legend.querySelector('.relation-legend-fold').setAttribute('aria-expanded', String(!folded));
+  }
+  if (legend && event.target.closest('.person-pin')) {
+    const pin = event.target.closest('.person-pin');
+    pin.setAttribute('aria-pressed', String(pin.getAttribute('aria-pressed') !== 'true'));
+  }
+  if (legend && event.target.closest('[data-close]')) legend.hidden = true;
   const go = event.target.closest('[data-go]');
   if (go && !go.disabled) location.href = go.dataset.go;
   const node = event.target.closest('.node[data-line]');

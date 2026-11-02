@@ -56,74 +56,105 @@ body:not(:has(.screen:target)) .screen:first-of-type {
   display: block;
 }
 
-/* The tree: people placed in percent of the stage, lines in an SVG below them (viewBox 0 0 100 100). */
-.tree {
+/* 3D: the real scene as a picture (shots of the app's Three.js scene), scaled like `object-fit: cover`; transparent
+   hotspots lie over the cards that show, so they stay on their card at any window size. A page sets the picture's
+   aspect ratio with --scene-ratio when it is not 1600 x 1000. */
+.scene3d {
   position: fixed;
-  inset: 120px 0 150px;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: max(100vw, 100vh * var(--scene-ratio, 1.6));
+  aspect-ratio: var(--scene-ratio, 1.6);
+  transform: translate(-50%, -50%);
 }
 
-.tree-lines {
+.scene3d img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.node.hotspot {
+  position: absolute;
+  border-radius: 6px;
+  transform: none;
+}
+
+.node.hotspot:hover,
+.node.hotspot:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+[data-theme='tron'] .scene3d,
+[data-theme='3d'] .tree,
+[data-theme='3d'] .relation-legend {
+  display: none;
+}
+
+/* TRON: the tree in the layout's world units, as SimpleTree draws it. At a window height of 768 px one unit is about
+   16 px (NAME_SCALE in SimpleTree.tsx), the lowest row at 69 % of the height; a page can move it with --tree-floor. */
+.tree {
+  --u: calc(100vh * 15.95 / 768);
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+}
+
+.tree-origin {
+  position: absolute;
+  top: var(--tree-floor, 69vh);
+  left: 50%;
+}
+
+.tree-lines {
+  position: absolute;
+  top: calc(-30 * var(--u));
+  left: calc(-30 * var(--u));
+  width: calc(60 * var(--u));
+  height: calc(32 * var(--u));
   overflow: visible;
 }
 
 .tree-lines path {
   fill: none;
   stroke: var(--line-dim);
-  stroke-width: 1.5;
+  stroke-width: 1.3;
   vector-effect: non-scaling-stroke;
 }
 
-.tree-lines path.is-lineage {
-  stroke: var(--line-on);
-  filter: drop-shadow(0 0 4px var(--glow));
+.tree-lines circle {
+  fill: var(--line-dim);
 }
 
-/* A person: both looks in one node, the papyrus scroll for 3D and the name pill for TRON; the theme hides the other. */
-.node {
+/* The selected person's lineage: lit lines over a soft glow (LINE_WIDTH and GLOW_WIDTH in SimpleTree.tsx). */
+.tree-lines path.is-focus {
+  stroke: var(--line-on);
+  filter: drop-shadow(0 0 2px var(--glow));
+}
+
+.tree-lines circle.is-focus {
+  fill: var(--line-on);
+}
+
+.tree .simple-glyph,
+.tree .node {
   position: absolute;
-  left: var(--x);
-  top: var(--y);
+  left: calc(var(--x) * var(--u));
+  top: calc(var(--y) * var(--u) * -1);
   transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.node {
   color: inherit;
   text-decoration: none;
 }
 
-.node .scroll {
-  width: 120px;
-  transform: none;
-}
-
-.node .scroll-sheet {
-  padding: 10px 10px 12px;
-}
-
-.node .scroll h3 {
-  font-size: 14px;
-}
-
-.node .scroll p {
-  font-size: 11px;
-}
-
-[data-theme='3d'] .node .simple-name,
-[data-theme='tron'] .node .scroll {
-  display: none;
-}
-
-/* Selection and lineage sit on the node and reach both looks. */
-.node.is-selected .scroll {
-  filter: drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 2px var(--line-on));
-}
-
-.node.is-dimmed .scroll {
-  opacity: 0.62;
-  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) saturate(0.6);
-}
-
+/* Selection and lineage sit on the node (dummy.js) and reach the pill like SimpleTree's state classes. */
 .node.is-lineage .simple-name {
   border-color: var(--line-on);
   box-shadow: 0 0 14px var(--glow);
@@ -142,10 +173,71 @@ body:not(:has(.screen:target)) .screen:first-of-type {
   background: var(--avatar-dim);
 }
 
-/* The "+" slots around a node: in the app they are positioned by RelativeSlots around the card or the pill. */
+/* The "+" slots around a person: in the app RelativeSlots positions them around the card or the pill. */
 .node .relative-slots {
   position: absolute;
   inset: 0;
+}
+
+/* A landing screen inside a tree page covers the scene. */
+.screen > .backdrop {
+  z-index: 1;
+}
+
+.screen > .landing {
+  z-index: 2;
+}
+
+/* A signed-in landing page inside a tree page hides the tree's header, dock, and scene. */
+body:has(.landing-screen:target) :is(.app-header, .dock-root, .app-version, .relation-legend, .tree, .scene3d, .tron-floor) {
+  display: none;
+}
+
+/* Which state a screen shows when the app has more than one (signed in or out); not part of the app. */
+.dummy-state {
+  position: fixed;
+  z-index: 20;
+  bottom: 48px;
+  left: 12px;
+  padding: 6px 12px;
+  border-radius: var(--radius-pill);
+  color: var(--accent);
+  font: 500 12px/1 var(--font-mono);
+}
+
+/* TRON floor: the cyan grid of Scene.tsx (GridFloor: cells of one unit, sections of ten, fading toward the horizon). */
+.tron-floor {
+  position: fixed;
+  z-index: -1;
+  inset: 0;
+  overflow: hidden;
+  background: #05070a;
+  perspective: 60vh;
+  perspective-origin: 50% 62%;
+}
+
+.tron-floor::before {
+  position: absolute;
+  top: 62%;
+  left: -150vw;
+  width: 400vw;
+  height: 300vh;
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.85) 0 1.5px, transparent 1.5px calc(10 * var(--grid))),
+    repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.85) 0 1.5px, transparent 1.5px calc(10 * var(--grid))),
+    repeating-linear-gradient(90deg, #0b4f5c 0 1px, transparent 1px var(--grid)),
+    repeating-linear-gradient(0deg, #0b4f5c 0 1px, transparent 1px var(--grid));
+  background-position: center top;
+  content: '';
+  -webkit-mask-image: linear-gradient(transparent, #000 6%);
+  mask-image: linear-gradient(transparent, #000 6%);
+  transform: rotateX(78deg);
+  transform-origin: 50% 0;
+  --grid: 3vh;
+}
+
+[data-theme='3d'] .tron-floor {
+  display: none;
 }
 
 /* Facts and lines the selected person has no value for stay out, as in the app. */
@@ -663,6 +755,236 @@ a.dashboard-nav-item {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+/* ---- From ui/app/globals.css (families board: import row, GEDCOM info) ---- */
+
+.family-set-import {
+  display: grid;
+  gap: 8px;
+}
+
+.family-set-import > button,
+.random-family-control > button,
+.members-error button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  margin-top: 0;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  font: 500 14px/1.2 var(--font-ui);
+}
+
+.family-set-import-row {
+  display: flex;
+  gap: 8px;
+}
+
+.family-set-import-row > button:first-child {
+  flex: 1;
+}
+
+.family-set-import > .family-set-import-row > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  cursor: pointer;
+  font: 500 14px/1.2 var(--font-ui);
+}
+
+.family-set-import-row > .gedcom-info-button {
+  flex: none;
+  width: 40px;
+  padding: 0;
+}
+
+.family-set-import-row > button:hover:not(:disabled),
+.family-set-import-row > .gedcom-info-button[aria-expanded='true'] {
+  background: var(--hover);
+}
+
+.family-set-import-row > button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.gedcom-info {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font: 13px/1.45 var(--font-ui);
+}
+
+.gedcom-info p {
+  margin: 0;
+}
+
+.family-set-import > button:hover,
+.random-family-control > button:hover,
+.random-family-control > button[aria-expanded='true'],
+.members-error button:hover {
+  background: var(--hover);
+}
+
+
+/* ---- From ui/app/globals.css (TRON glyphs, stubs, relation legend) ---- */
+.simple-glyph {
+  display: block;
+  color: var(--muted);
+  font: 14px/1 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
+  pointer-events: none;
+}
+
+.simple-glyph.is-focus {
+  color: var(--line-on);
+  text-shadow: 0 0 6px var(--glow);
+}
+
+.simple-glyph.is-blood {
+  color: #ffb347;
+  text-shadow: 0 0 6px #ffb347;
+}
+
+/* A parent link the lines leave out: a label above the child that opens the parent. */
+.simple-stub {
+  padding: 1px 6px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font: 11px/1.2 var(--font-ui);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Opaque, so the label stays readable where it sits over a line. */
+.simple-stub:hover {
+  background: linear-gradient(var(--hover), var(--hover)), var(--panel-strong);
+}
+
+.simple-stub:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* A stub on the selected person's lineage: the highlight continues at the parents it opens. */
+.simple-stub.is-focus {
+  border-color: var(--line-on);
+  box-shadow: 0 0 8px var(--glow);
+}
+
+.simple-stub.is-blood {
+  border-color: #ffb347;
+  color: #ffe9cc;
+  box-shadow: 0 0 8px rgba(255, 179, 71, 0.6);
+}
+
+/* The key to the experimental view's lines and symbols, below the tool boards: wide and low, so the
+   tree stays in view, with the lines in the left column and the symbols in the right. */
+.relation-legend {
+  position: fixed;
+  z-index: 4;
+  right: 16px;
+  bottom: 16px;
+  box-sizing: border-box;
+  width: min(640px, calc(100vw - 32px));
+  font: 12px/1.3 var(--font-ui);
+}
+
+.relation-legend .person-header {
+  gap: 16px;
+  padding: 4px 6px 4px 14px;
+}
+
+/* Folded, only the header remains, anchored at the same bottom right corner. */
+.relation-legend[data-folded='true'] {
+  width: auto;
+}
+
+.relation-legend[data-folded='true'] .person-header {
+  border-bottom: 0;
+}
+
+/* Quiet like the pin; the shared open-state background would make an unfolded legend look pressed. */
+.relation-legend .relation-legend-fold {
+  color: var(--muted);
+}
+
+.relation-legend .relation-legend-fold:not(:hover) {
+  background: transparent;
+}
+
+.relation-legend .relation-legend-fold:hover {
+  color: #fff;
+}
+
+.relation-legend-fold[aria-expanded='false'] .icon {
+  transform: rotate(180deg);
+}
+
+.relation-legend ul[hidden] {
+  display: none;
+}
+
+.relation-legend ul {
+  display: grid;
+  grid-template-rows: repeat(6, auto);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-flow: column;
+  gap: 6px 20px;
+  margin: 0;
+  padding: 10px 14px 12px;
+  list-style: none;
+}
+
+.relation-legend li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.relation-legend-sample {
+  flex: none;
+  width: 40px;
+  height: 14px;
+}
+
+.relation-legend-glyph {
+  color: #e6fdff;
+  font: 14px/14px 'Apple Symbols', 'Segoe UI Symbol', sans-serif;
+  text-align: center;
+  text-shadow: 0 0 6px #00e5ff;
+}
+
+.relation-legend-stub {
+  flex: none;
+  box-sizing: border-box;
+  width: 40px;
+  border: 1px solid rgba(0, 229, 255, 0.5);
+  border-radius: 4px;
+  background: rgba(5, 8, 12, 0.85);
+  color: #e6fdff;
+  font-size: 10px;
+  text-align: center;
+}
+
 
 /* ---- From ui/app/globals.css (3D papyrus scroll) ---- */
 .scroll {
