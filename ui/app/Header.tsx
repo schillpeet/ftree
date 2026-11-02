@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { PUBLIC_APPEARANCE, themeOf, type Appearance, type Theme } from './access';
@@ -52,9 +53,10 @@ export function ThemeSegment({ className }: { className?: string }) {
 }
 
 // Switches the TRON animations on and off (`motion.ts`), left of the theme segment and only in TRON. Switched on while
-// the system reduces motion, a hint says why nothing moves.
+// the system reduces motion, a hint says why nothing moves and links to the FAQ entry on allowing motion.
 function MotionToggle() {
   const t = useT();
+  const [language] = useLanguage();
   const [motion, setMotion] = useMotion();
   const reduced = useReducedMotion();
   const [hint, setHint] = useState(false);
@@ -71,7 +73,9 @@ function MotionToggle() {
       </div>
       {hint && (
         <div className="glass auth-notice motion-notice" role="status">
-          <p>{t.motion.reducedHint}</p>
+          <p>
+            {t.motion.reducedHint} <Link href={`/home/faq?lang=${language}#animations`}>{t.motion.howTo}</Link>
+          </p>
           <button type="button" className="auth-notice-close" aria-label={t.motion.close} onClick={() => setHint(false)}>
             <CloseIcon />
           </button>
