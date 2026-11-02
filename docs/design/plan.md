@@ -31,11 +31,28 @@ Journeys: N new user, I invited user, R returning user, V signed-out visitor ([j
 - `/` opens the last tree and the camera settles on the own card with the "DU" badge.
 - Three-step intro tour, shown once per user and remembered per browser.
 
-## 5. [~] `feat(ui): add public landing page with example family` (V)
+## 5. [x] `feat(ui): add public landing page with example family` (V)
 
 - Landing page at `/home`, public through a Cloudflare Access bypass (ftree-infra); `/` redirects there and the header logo links there – [implementation plan](../superpowers/plans/2026-11-01-landing-page.md).
 - Read-only example family bundled with the UI, no BFF call.
 - Lower and closer camera, warmer horizon light, and a new still for the landing.
+
+## Planned, not built
+
+These stood in the design before but are not in `ui/`; they stay ideas until a PR picks them up.
+
+- Invitation card: the inviter's avatars and name, a "last activity" chip, the relation in the "Du hängst schon im Baum" row.
+- Invitation task list: a fourth task, "a memory".
+- Welcome card: an optional birth year and the link "Erst die Beispielfamilie ansehen".
+- Quick-add popover: a "Jahr" field.
+- Person panel: the eyebrow "AUSGEWÄHLT" in `--font-mono` and `--accent`.
+
+## Next round: TRON redesign
+
+- Worked out together in the click dummy ([dummy/](dummy/)) first, following "Working with the design system" in [README.md](README.md).
+- Pay off the token debt listed under "Known deviations from the tokens" in [components.md](components.md): grid, line, glyph and legend colours on tokens, the pre-Horizont palette in boards and panels replaced.
+- Decide whether TRON keeps a second highlight colour for blood relatives.
+- Split into pull requests here once the dummy shows the target.
 
 ## Order
 
