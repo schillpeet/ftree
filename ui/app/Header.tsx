@@ -1,11 +1,12 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { PUBLIC_APPEARANCE, themeOf, type Appearance, type Theme } from './access';
 import { useAppearance } from './appearance';
 import { useLanguage, useT, type Language } from './i18n';
-import { CheckIcon, EvolutionIcon, UsersIcon } from './icons';
+import { CheckIcon, CloseIcon, EvolutionIcon, UsersIcon } from './icons';
+import { useMotion, useReducedMotion } from './motion';
 import { useCan, useMe, useMeLoaded } from './Permissions';
 import TreeSwitcher from './TreeSwitcher';
 import BrandLink from './home/BrandLink';
@@ -17,8 +18,9 @@ const THEMES: { theme: Theme; appearance: Appearance }[] = [
   { theme: 'tron', appearance: PUBLIC_APPEARANCE },
 ];
 
-// 3D | TRON. Without `tree.appearance` only the public appearance is offered, the other is announced; choosing 3D from
-// TRON leaves the tiered tree (see Evolution), choosing 3D while it is shown changes nothing.
+// 3D | TRON, in TRON with the animation toggle before it. Without `tree.appearance` only the public appearance is
+// offered, the other is announced; choosing 3D from TRON leaves the tiered tree (see Evolution), choosing 3D while it is
+// shown changes nothing.
 export function ThemeSegment({ className }: { className?: string }) {
   const t = useT();
   const [appearance, setAppearance] = useAppearance();
@@ -26,23 +28,56 @@ export function ThemeSegment({ className }: { className?: string }) {
   const locked = useMeLoaded() && !mayChoose;
   const current = themeOf(appearance);
   return (
-    <div className={`segment ${className ?? ''}`} role="group" aria-label={t.appearance.title}>
-      {THEMES.map((option) => {
-        const soon = locked && option.appearance !== PUBLIC_APPEARANCE;
-        return (
-          <button
-            key={option.theme}
-            type="button"
-            aria-pressed={current === option.theme}
-            disabled={soon}
-            title={soon ? t.appearance.comingSoon : undefined}
-            onClick={() => current !== option.theme && setAppearance(option.appearance)}
-          >
-            {t.appearance[option.appearance === 'organic' ? 'organic' : 'experimental']}
+    <>
+      {current === 'tron' && <MotionToggle />}
+      <div className={`segment ${className ?? ''}`} role="group" aria-label={t.appearance.title}>
+        {THEMES.map((option) => {
+          const soon = locked && option.appearance !== PUBLIC_APPEARANCE;
+          return (
+            <button
+              key={option.theme}
+              type="button"
+              aria-pressed={current === option.theme}
+              disabled={soon}
+              title={soon ? t.appearance.comingSoon : undefined}
+              onClick={() => current !== option.theme && setAppearance(option.appearance)}
+            >
+              {t.appearance[option.appearance === 'organic' ? 'organic' : 'experimental']}
+            </button>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+// Switches the TRON animations on and off (`motion.ts`), left of the theme segment and only in TRON. Switched on while
+// the system reduces motion, a hint says why nothing moves.
+function MotionToggle() {
+  const t = useT();
+  const [motion, setMotion] = useMotion();
+  const reduced = useReducedMotion();
+  const [hint, setHint] = useState(false);
+  const toggle = () => {
+    setMotion(!motion);
+    setHint(!motion && reduced);
+  };
+  return (
+    <>
+      <div className="segment">
+        <button type="button" aria-pressed={motion} title={motion && reduced ? t.motion.reduced : t.motion.title} onClick={toggle}>
+          {t.motion.label}
+        </button>
+      </div>
+      {hint && (
+        <div className="glass auth-notice motion-notice" role="status">
+          <p>{t.motion.reducedHint}</p>
+          <button type="button" className="auth-notice-close" aria-label={t.motion.close} onClick={() => setHint(false)}>
+            <CloseIcon />
           </button>
-        );
-      })}
-    </div>
+        </div>
+      )}
+    </>
   );
 }
 

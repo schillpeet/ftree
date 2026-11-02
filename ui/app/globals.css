@@ -1463,6 +1463,11 @@ a.dashboard-nav-item {
   place-items: center;
 }
 
+/* The animation toggle's hint (`Header.tsx`) is longer than an auth notice; on a phone it still takes the full width. */
+.motion-notice {
+  width: min(560px, calc(100vw - 32px));
+}
+
 /* Features the experimental view does not support yet stay visible but greyed out. */
 .organic-only {
   display: grid;
@@ -2999,7 +3004,7 @@ button.dashboard-family:hover {
 /* The ride from a tree back to the landing (`ride.ts`): while the camera pulls back, a cyan flash builds up and fades to
    black, which the landing takes over. */
 @media (prefers-reduced-motion: no-preference) {
-  [data-theme='tron'].riding-out::after {
+  [data-motion='on'][data-theme='tron'].riding-out::after {
     position: fixed;
     z-index: 100;
     inset: 0;
