@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.37.0](https://github.com/schillpeet/ftree/compare/v0.36.1...v0.37.0) (2026-11-02)
+
+
+### Features
+
+* **ui:** add a faq page with help on tron animations ([#320](https://github.com/schillpeet/ftree/issues/320)) ([ca12da0](https://github.com/schillpeet/ftree/commit/ca12da091bc43a79cbaf4acd258e88e064f0d645))
+* **ui:** add a tron animation toggle ([#319](https://github.com/schillpeet/ftree/issues/319)) ([9e6f83e](https://github.com/schillpeet/ftree/commit/9e6f83eee0a99482c249c5125b1dcaa43ff908bb))
+
+
+### Bug Fixes
+
+* **repo:** override minimatch to the patched version ([#317](https://github.com/schillpeet/ftree/issues/317)) ([5111f47](https://github.com/schillpeet/ftree/commit/5111f4794277364642644aa5e8163470b8a89abb))
+
 ## [0.36.1](https://github.com/schillpeet/ftree/compare/v0.36.0...v0.36.1) (2026-11-02)
 
 
