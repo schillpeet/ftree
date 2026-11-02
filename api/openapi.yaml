@@ -2555,6 +2555,7 @@ components:
         - permissions
         - selfMemberId
         - invitationPending
+        - accessCount
       properties:
         id:
           type: string
@@ -2613,6 +2614,13 @@ components:
             until then `permissions` holds only `tree.view`, whatever the `role`.
           type: boolean
           default: false
+          readOnly: true
+        accessCount:
+          description: >-
+            How many people have access to this family, invited ones who have not accepted yet included;
+            more than one means the tree is shared.
+          type: integer
+          minimum: 0
           readOnly: true
     SetSelfMemberRequest:
       type: object

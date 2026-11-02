@@ -470,6 +470,11 @@ export interface FamilySummary {
   readonly selfMemberId: string | null;
   /** True while the caller has not accepted the invitation into this family yet (`POST /families/{familyId}/invitation`); until then `permissions` holds only `tree.view`, whatever the `role`. */
   readonly invitationPending: boolean;
+  /**
+     * How many people have access to this family, invited ones who have not accepted yet included; more than one means the tree is shared.
+     * @minimum 0
+     */
+  readonly accessCount: number;
 }
 
 export interface SetSelfMemberRequest {
