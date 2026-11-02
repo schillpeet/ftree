@@ -3,7 +3,7 @@ import { hostOf } from './access.ts';
 // What `proxy.ts` does with a request: let it through, send it to the admin page, hide it, or send `/` to the landing page.
 export type HostDecision = { kind: 'next' } | { kind: 'toAdmin'; url: string } | { kind: 'notFound' } | { kind: 'toHome' };
 
-// The public landing page and its example family; the administration's host has no use for them.
+// The landing page and its example family; the administration's host has no use for them.
 export function isLandingPath(pathname: string) {
   return pathname === '/' || pathname === '/home' || pathname.startsWith('/home/');
 }

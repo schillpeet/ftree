@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'ftree · Beispielfamilie',
 };
 
-// The read-only example tree, public like the landing page (under `/home`, which Cloudflare Access lets through).
+// The read-only example tree, under `/home` and behind Cloudflare Access like the landing page.
 export default function ExamplePage() {
   return <ExampleTree />;
 }

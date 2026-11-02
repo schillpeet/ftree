@@ -22,8 +22,8 @@ The "ADM" chip and the Evolution button sit left of the header on the public pag
 The Evolution button also shows on `/home`, `/home/how`, and `/home/example` for signed-in holders of `dev.tools` (read from the page's `/me` probe), where the panel has the "Ansichts-Labor" only, except on the example, whose scene shows the full panel.
 The Evolution button and panel need `dev.tools`; the panel's "Zeit" section holds the former "Zeit" button's time-of-day preview, and its "Ansichts-Labor" section has a "Darstellung" select over the stored appearances `organic` ("3D"), `organicExperimental` ("Stufenbaum"), and `experimental` ("TRON"), which replaces the former "Stufenbaum" checkbox.
 The version, "Nutzungsbedingungen", "Datenschutz", and "GitHub" (with the GitHub mark, a link to the repository) sit in one small line at the bottom centre of every page.
-`/` redirects to the public landing page at `/home` (outside the `(tree)` group, so it needs no `/me`), and the ftree logo in every header links there; the tree's entry, formerly `/`, is `/start`, which opens the last tree (or the welcome card), and the landing page's "Anmelden" / "Baum anlegen" lead there (they read "Zu deinem Baum" once a quiet `/api/me` probe succeeds).
-The landing page has no navigation; its hero buttons are "Baum anlegen" ("Zu deinem Baum" when signed in) and "So funktioniert's", which opens `/home/how` (public like `/home`) with the three steps explained.
+`/` redirects to the landing page at `/home` (outside the `(tree)` group, so it needs no `/me`), and the ftree logo in every header links there; the tree's entry, formerly `/`, is `/start`, which opens the last tree (or the welcome card), and the landing page's "Anmelden" / "Baum anlegen" lead there (they read "Zu deinem Baum" once a quiet `/api/me` probe succeeds).
+The landing page has no navigation; its hero buttons are "Baum anlegen" ("Zu deinem Baum" when signed in) and "So funktioniert's", which opens `/home/how` with the three steps explained.
 The public headers show "Anmelden" (to `/start`) only to signed-out visitors, and nothing while the quiet `/api/me` probe runs.
 Under the main button of `/home` and `/home/how`, a small line names who is signed in ("Angemeldet als <Name>") or says "Zugang derzeit nur mit Einladung".
 `/home/how` and `/home/example` have a "← Zurück" control next to the logo that leads to `/home`.
@@ -36,7 +36,8 @@ Signed in, the three steps on `/home/how` link into the own tree (step 2 with `/
 `/home/how` leads on to the example family; its main button and that of `/home/example` read "Zu deinem Baum" when signed in.
 The scene's canvas shows the theme's background until its first frame, so the example and the trees no longer flash white while loading.
 `/home/example` shows a read-only example family (`ui/app/home/exampleFamily.ts`, bundled with the UI, no BFF call) in the real scene; a click lights up a person's lineage and names them in a small card.
-`home` and `start` are reserved slugs; Cloudflare Access must let `/home` and `/_next/static` through for the landing page to work signed out.
+`home` and `start` are reserved slugs.
+`/home` and its subpages stay behind Cloudflare Access like every other page, so only signed-in people see the landing page; only `/terms`, `/privacy`, and `/_next/static` are reachable without a login.
 The UI reads its colours, radii, sizes, and fonts from design tokens (`ui/app/tokens.css`, a copy of `docs/design/tokens.css` that `tokens.check.mjs` keeps equal) and switches between the 3D and TRON themes through `data-theme` on `<html>`, set from the appearance by `ThemeRoot`; the stored appearances `organic` and `organicExperimental` are 3D, `experimental` is TRON.
 The 3D | TRON segment switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
 The burger menu's "Momentaufnahme" ("Snapshot") entry downloads the current view as `ftree-<family>-<yyyy-mm-dd>.png`, showing only the scene and the family name, without any controls.

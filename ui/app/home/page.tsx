@@ -5,8 +5,8 @@ export const metadata: Metadata = {
   title: 'ftree · Eure Familie. Ein Baum, der mitwächst.',
 };
 
-// The public landing page: outside the `(tree)` group, so it loads no `/me` and needs no sign-in (Cloudflare Access lets
-// `/home` through). `/` redirects here (`proxy.ts`).
+// The landing page: outside the `(tree)` group, so it loads no `/me`; Cloudflare Access still asks for the sign-in.
+// `/` redirects here (`proxy.ts`).
 export default function HomePage() {
   return <Landing />;
 }
