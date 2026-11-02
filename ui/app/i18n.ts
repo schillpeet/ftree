@@ -20,6 +20,13 @@ const en = {
   menu: { open: 'Open menu', close: 'Close menu', label: 'Menu', profile: 'Profile', families: 'Families', snapshot: 'Snapshot', adminSession: 'Signed in as admin', feedback: 'Feedback', noFamily: 'No family', admin: 'Admin tool' },
   search: { open: 'Search members', label: 'Search members', placeholder: 'Search a member …', noResults: 'No matches' },
   appearance: { title: 'Appearance', organic: '3D', experimental: 'TRON', comingSoon: 'Coming soon' },
+  motion: {
+    label: 'Animation',
+    title: 'Play the TRON animations',
+    reduced: 'Your system reduces motion, so nothing moves.',
+    reducedHint: 'Animations are on, but your system has “Reduce motion” turned on, so nothing moves. Turn it off in the accessibility settings (macOS: System Settings → Accessibility → Display).',
+    close: 'Close hint',
+  },
   account: {
     title: 'Profile',
     close: 'Close profile',
@@ -819,6 +826,13 @@ const de: typeof en = {
   menu: { open: 'Menü öffnen', close: 'Menü schließen', label: 'Menü', profile: 'Profil', families: 'Familien', snapshot: 'Momentaufnahme', adminSession: 'Als Admin angemeldet', feedback: 'Feedback', noFamily: 'Keine Familie', admin: 'Admin-Tool' },
   search: { open: 'Mitglieder suchen', label: 'Mitglieder suchen', placeholder: 'Mitglied suchen …', noResults: 'Keine Treffer' },
   appearance: { title: 'Darstellung', organic: '3D', experimental: 'TRON', comingSoon: 'Demnächst' },
+  motion: {
+    label: 'Animation',
+    title: 'TRON-Animationen abspielen',
+    reduced: 'Dein System reduziert Bewegung, deshalb bewegt sich nichts.',
+    reducedHint: 'Animationen sind an, aber dein System hat „Bewegung reduzieren“ aktiviert, deshalb bewegt sich nichts. Schalte es in den Bedienungshilfen aus (macOS: Systemeinstellungen → Bedienungshilfen → Anzeige).',
+    close: 'Hinweis schließen',
+  },
   account: {
     title: 'Profil',
     close: 'Profil schließen',

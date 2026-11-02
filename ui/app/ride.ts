@@ -11,7 +11,7 @@ const BACK_MS = 1400;
 // A ride that went through a sign-in page first is over by the time the tree loads.
 const FRESH_MS = 15_000;
 
-// A plain click in TRON that may move; any other click is left to the link.
+// A plain click in TRON with its animations on (`motion.ts`) that may move; any other click is left to the link.
 function mayRide(event: MouseEvent<HTMLElement>) {
   return (
     event.button === 0 &&
@@ -20,6 +20,7 @@ function mayRide(event: MouseEvent<HTMLElement>) {
     !event.shiftKey &&
     !event.altKey &&
     document.documentElement.dataset.theme === 'tron' &&
+    document.documentElement.dataset.motion === 'on' &&
     matchMedia('(prefers-reduced-motion: no-preference)').matches
   );
 }
