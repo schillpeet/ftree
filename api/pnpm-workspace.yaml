@@ -1,2 +1,5 @@
 ignoredBuiltDependencies:
   - "@scarf/scarf"
+# Dependabot cannot lift transitive minimatch: no parent allows the patched 11.x (GHSA minimatch globparts DoS).
+overrides:
+  minimatch: ^11.0.4
