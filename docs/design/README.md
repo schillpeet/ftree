@@ -41,6 +41,8 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - `/home/how` and `/home/example` have a "← Zurück" control to `/home` (2026-11-01).
 - Signed in, the steps on `/home/how` are links into the own tree and tick off what is done (2026-11-02).
 - The GitHub link sits in the legal line at the bottom, not in the hero (2026-11-02).
+- The TRON landing gets a horizon: night sky, glowing horizon line, mountain ridge, a perspective floor grid like the TRON tree view, and a light tree (a beam branching like a circuit into glowing nodes) in the middle (2026-11-02).
+- `/home/how` is for reading: in TRON it has no light tree, and its horizon sits below the buttons (2026-11-02).
 - The landing hero is the same in 3D and TRON: the headline's bottom at 61.8 % of the viewport height, the "Privat · nur für eure Familie" chip below the headline (2026-11-01).
 - The 3D start view is lower and closer (tree ~60 % of the height, horizon ~57 % on desktop), and the horizon haze is warmer (2026-11-01).
 - Only invited (allowed) users can sign in; the welcome card is for signed-in users who are not assigned to any tree yet.

@@ -398,6 +398,46 @@
       <div class="backdrop" aria-hidden="true"></div>
       <span class="glass dummy-state">Zustand: angemeldet</span>
       <div class="landing">
+        <!-- TronHorizon.tsx -->
+        <div class="tron-horizon" aria-hidden="true">
+          <div class="tron-horizon-floor"></div>
+          <svg class="tron-horizon-ridge" viewBox="0 0 680 47" preserveAspectRatio="none">
+            <path d="M0 47V40L60 22l45 12 65-30 55 26 40-10 35 20h80l40-22 50 14 60-32 60 28 50-14 40 16v17z" vector-effect="non-scaling-stroke" />
+          </svg>
+          <div class="tron-horizon-line"></div>
+          <div class="tron-horizon-reflection"></div>
+          <svg class="tron-horizon-tree" viewBox="0 0 240 220">
+            <defs>
+              <filter id="tron-tree-glow" x="-50%" y="-50%" width="200%" height="200%">
+                <feGaussianBlur stdDeviation="3" result="blur" />
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+            <g filter="url(#tron-tree-glow)">
+              <path class="tron-trunk" pathLength="1" d="M120 220V91" />
+              <path class="tron-branch" pathLength="1" d="M120 131h32l20-20V93" />
+              <path class="tron-branch" pathLength="1" d="M120 157H90l-18-18v-18" />
+              <path class="tron-branch" pathLength="1" d="M120 91H50V65" />
+              <path class="tron-branch" pathLength="1" d="M120 91h70V65" />
+              <path class="tron-twig" pathLength="1" d="M50 65H16V39" />
+              <path class="tron-twig" pathLength="1" d="M50 65h30V35" />
+              <path class="tron-twig" pathLength="1" d="M190 65h-30V35" />
+              <path class="tron-twig" pathLength="1" d="M190 65h36V39" />
+              <path class="tron-twig" pathLength="1" d="M120 91V21" />
+              <circle cx="16" cy="39" r="4.5" />
+              <circle cx="80" cy="35" r="4.5" />
+              <circle cx="160" cy="35" r="4.5" />
+              <circle cx="226" cy="39" r="4.5" />
+              <circle cx="120" cy="21" r="5.5" />
+              <circle cx="172" cy="93" r="4" />
+              <circle cx="72" cy="121" r="4" />
+            </g>
+          </svg>
+        </div>
         <header class="landing-header">
           <div class="landing-brand-group">
             <a class="header-brand" href="#home"><svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg><span class="header-wordmark">ftree</span></a>
