@@ -28,6 +28,8 @@ The public headers show "Anmelden" (to `/start`) only to signed-out visitors, an
 Under the main button of `/home` and `/home/how`, a small line names who is signed in ("Angemeldet als <Name>") or says "Zugang derzeit nur mit Einladung".
 `/home/how` and `/home/example` have a "← Zurück" control next to the logo that leads to `/home`.
 In the 3D theme the landing hero is smaller and sits low so that the tree in the backdrop stays visible.
+In TRON, `/home` and `/home/how` show a horizon instead of the flat grid (`ui/app/home/TronHorizon.tsx`): night sky, glowing horizon line, mountain ridge, a perspective floor grid that runs slowly toward the viewer, and a light tree that draws itself from the horizon into glowing nodes; with `prefers-reduced-motion` nothing moves.
+`/home/how` leaves the light tree out and lowers the horizon to 82 % of the height, so the step cards stand in calm sky.
 Signed in, the three steps on `/home/how` link into the own tree (step 2 with `/start?share=1`, which opens the share dialog once the tree is there) and show a tick when done: a tree with the own card, a tree with `FamilySummary.accessCount` above one, a tree with at least three people (`ui/app/home/steps.ts`).
 `/home/how` leads on to the example family; its main button and that of `/home/example` read "Zu deinem Baum" when signed in.
 The scene's canvas shows the theme's background until its first frame, so the example and the trees no longer flash white while loading.

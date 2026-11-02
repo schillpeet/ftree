@@ -10,6 +10,7 @@ import BrandLink from './BrandLink';
 import still from './landing.jpg';
 import HomeEvolution from './HomeEvolution';
 import SignInChip from './SignInChip';
+import TronHorizon from './TronHorizon';
 import { useSignedIn } from './signedIn';
 import { StartButton, StartNote } from './Start';
 import './landing.css';
@@ -24,6 +25,7 @@ export default function Landing() {
     <div className="landing">
       <ThemeRoot />
       <div className="landing-backdrop" aria-hidden="true" style={{ '--landing-still': `url(${still.src})` } as CSSProperties} />
+      <TronHorizon />
       <header className="landing-header">
         <div className="landing-brand-group">
           <BrandLink />

@@ -11,6 +11,7 @@ import BrandLink from './BrandLink';
 import still from './landing.jpg';
 import HomeEvolution from './HomeEvolution';
 import SignInChip from './SignInChip';
+import TronHorizon from './TronHorizon';
 import { useSignedIn } from './signedIn';
 import { StartButton, StartNote } from './Start';
 import { doneSteps } from './steps';
@@ -41,9 +42,10 @@ export default function HowItWorks() {
   const done = families ? doneSteps(families) : null;
   const next = done?.indexOf(false) ?? -1;
   return (
-    <div className="landing">
+    <div className="landing landing-how-page">
       <ThemeRoot />
       <div className="landing-backdrop landing-backdrop-dim" aria-hidden="true" style={{ '--landing-still': `url(${still.src})` } as CSSProperties} />
+      <TronHorizon dim tree={false} />
       <header className="landing-header">
         <div className="landing-brand-group">
           <BrandLink />

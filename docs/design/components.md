@@ -182,7 +182,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Landing (signed out, `/home`)
 
-- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a radial cyan glow and two cyan grids in CSS, `ui/app/home/landing.css`), header with wordmark on the left and, on the right, "Anmelden" (signed out only), theme and language segments; there is no navigation.
+- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a night sky turning deep blue toward a glowing horizon at 50 % of the height, a faint mountain ridge, a perspective floor grid that fades toward the viewer and slowly runs toward them, and a beam of light rising from the horizon that branches like a circuit into glowing nodes, drawn once on load and then pulsing; `ui/app/home/TronHorizon.tsx` and `ui/app/home/landing.css`, still without motion under `prefers-reduced-motion`), header with wordmark on the left and, on the right, "Anmelden" (signed out only), theme and language segments; there is no navigation.
 - Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither "Anmelden" nor a name shows. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Zugang derzeit nur mit Einladung". The tree header keeps its "Angemeldet als <Name>" chip.
 - Centre: title "Eure Familie. Ein Baum, der mitwächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie" (in `tron` in `--font-mono`), then one sentence, "Baum anlegen" ("Zu deinem Baum" when signed in) and "So funktioniert's"; the GitHub link sits in the legal line.
 - 3D and TRON share one hero position: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), everything else hangs below it.
@@ -190,7 +190,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## How it works (`/home/how`)
 
-- Landing look (dimmed still or TRON grid, same header), a "← Zurück" control next to the wordmark leading to `/home`.
+- Landing look (dimmed still, or in TRON the horizon without the light tree and lowered to 82 % of the height, so the cards stand in calm sky; same header), a "← Zurück" control next to the wordmark leading to `/home`.
 - Title, one intro sentence, three glass step cards (number, title, short line, two sentences of explanation), then "Baum anlegen" ("Zu deinem Baum" when signed in) and "Beispielfamilie ansehen", and the signed-in or invitation line.
 - Signed in, each card is a link into the own tree (step 2 opens the share dialog); a done step shows "✓" instead of its number, and the first open one is outlined in `--accent`. Signed out, only step 1 is a link, to sign-in.
 
