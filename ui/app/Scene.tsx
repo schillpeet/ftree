@@ -27,7 +27,7 @@ import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, 
 import { onStorage, useLanguage, useT } from './i18n';
 import { useCan } from './Permissions';
 import type { CameraView } from './Dock';
-import { takeRide } from './ride';
+import { onRideBack, takeRide } from './ride';
 import Tree, { buildTree } from './Tree';
 
 // Sky colors (hemisphere sky, ground, haze) at night, with the sun low, and with the sun high.
@@ -89,10 +89,15 @@ const ZOOM_STEP = 0.1;
 // The TRON ride from the landing starts this far in front of the tree and takes about this long to arrive.
 const RIDE_DISTANCE = 140;
 const RIDE_SMOOTH_TIME = 0.6;
+// The ride back to the landing pulls the camera this far out, until the tree is a point on the horizon.
+const RIDE_BACK_DISTANCE = 600;
+const RIDE_BACK_SMOOTH_TIME = 0.5;
 // Unplaced cards wait in rows on this arc in front of the tree, facing the start camera.
 const WAITING_RADIUS = 30;
 const WAITING_PER_ROW = 12;
 const VIEW_FRONT = Math.atan2(CAMERA_START[2], CAMERA_START[0]);
+// Where the ride back to the landing heads, on the ground in front of the tree.
+const RIDE_BACK_END: Point = [Math.cos(VIEW_FRONT) * RIDE_BACK_DISTANCE, TREE_BASE + 0.05, Math.sin(VIEW_FRONT) * RIDE_BACK_DISTANCE];
 // South lies straight ahead from the start view, so the sun's whole daily arc crosses in front.
 const SOUTH = VIEW_FRONT + Math.PI;
 const MINUTES_PER_DAY = 24 * 60;
@@ -777,6 +782,19 @@ export default function Scene({
     void controls.setLookAt(x, TREE_BASE + 1.5, z, 0, TREE_BASE + 1.5, 0, false);
     void controls.setLookAt(...start, true).then(() => Object.assign(controls, { smoothTime, maxPolarAngle }));
   }, []);
+  // The ride back to the landing (`ride.ts`), in TRON only: down onto the grid and backwards out, along a light trail
+  // that keeps the tree in sight; the page changes before the camera stops, so the limits stay lifted.
+  const [ridingBack, setRidingBack] = useState(false);
+  useEffect(() => {
+    if (!experimental || !controls) return;
+    onRideBack(() => {
+      setOrbit(false);
+      setRidingBack(true);
+      Object.assign(controls, { smoothTime: RIDE_BACK_SMOOTH_TIME, maxPolarAngle: Math.PI / 2, maxDistance: Infinity });
+      void controls.setLookAt(RIDE_BACK_END[0], TREE_BASE + 1.5, RIDE_BACK_END[2], 0, TREE_BASE + 4, 0, true);
+    });
+    return () => onRideBack(null);
+  }, [experimental, controls]);
 
   const selected = members.find((m) => m.id === highlight);
   const slots = (card: 'scroll' | 'pill'): SlotMount | undefined =>
@@ -811,6 +829,7 @@ export default function Scene({
         {experimental ? (
           <>
             <GridFloor />
+            {ridingBack && <Line points={[[0, TREE_BASE + 0.05, 0], RIDE_BACK_END]} color="#bff8ff" lineWidth={3} {...ON_TOP} />}
             <SimpleTree members={members} base={TREE_BASE} facing={VIEW_FRONT} showLines={showLines} focusId={focusId} selectedId={highlight} bloodId={bloodId} selfId={selfId} onOpen={onOpen} slots={slots('pill')} />
           </>
         ) : (

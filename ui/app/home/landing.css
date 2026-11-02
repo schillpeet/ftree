@@ -255,6 +255,43 @@
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  [data-theme='tron'] .landing-arriving > header,
+  [data-theme='tron'] .landing-arriving > main {
+    --derez: 6px;
+    mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
+    animation: tron-rez 0.5s ease-out 0.2s both;
+  }
+
+  [data-theme='tron'] .landing-arriving .tron-horizon-trail {
+    display: block;
+    animation: tron-trail 0.6s ease-in reverse both;
+  }
+
+  [data-theme='tron'] .landing-arriving::after {
+    position: fixed;
+    z-index: 10;
+    inset: 0;
+    background: var(--bg);
+    content: '';
+    pointer-events: none;
+    animation: tron-unveil 0.4s ease-out forwards;
+  }
+}
+
+@keyframes tron-rez {
+  from {
+    --derez: 0px;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes tron-unveil {
+  to {
+    opacity: 0;
+  }
+}
+
 @keyframes tron-derez {
   to {
     --derez: 0px;
