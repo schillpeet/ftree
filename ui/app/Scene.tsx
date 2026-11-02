@@ -27,6 +27,7 @@ import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, 
 import { onStorage, useLanguage, useT } from './i18n';
 import { useCan } from './Permissions';
 import type { CameraView } from './Dock';
+import { takeRide } from './ride';
 import Tree, { buildTree } from './Tree';
 
 // Sky colors (hemisphere sky, ground, haze) at night, with the sun low, and with the sun high.
@@ -85,6 +86,9 @@ const MAX_DISTANCE = 150;
 // camera-controls divides trackpad deltas by 10, so the default speed needs a lot of pinching.
 const DOLLY_SPEED = 5;
 const ZOOM_STEP = 0.1;
+// The TRON ride from the landing starts this far in front of the tree and takes about this long to arrive.
+const RIDE_DISTANCE = 140;
+const RIDE_SMOOTH_TIME = 0.6;
 // Unplaced cards wait in rows on this arc in front of the tree, facing the start camera.
 const WAITING_RADIUS = 30;
 const WAITING_PER_ROW = 12;
@@ -758,7 +762,20 @@ export default function Scene({
   const initControls = useCallback((controls: CameraControls | null) => {
     controlsRef.current = controls;
     setControls(controls);
-    void controls?.setLookAt(...startCamera(window.innerWidth / window.innerHeight), false);
+    if (!controls) return;
+    const start = startCamera(window.innerWidth / window.innerHeight);
+    if (!takeRide()) {
+      void controls.setLookAt(...start, false);
+      return;
+    }
+    // The end of the TRON ride from the landing (`ride.ts`): in low over the grid from far out, braking and rising into
+    // the start view. The ride may go lower and slower than the controls otherwise allow.
+    const { smoothTime, maxPolarAngle } = controls;
+    controls.smoothTime = RIDE_SMOOTH_TIME;
+    controls.maxPolarAngle = Math.PI / 2;
+    const [x, z] = [Math.cos(VIEW_FRONT) * RIDE_DISTANCE, Math.sin(VIEW_FRONT) * RIDE_DISTANCE];
+    void controls.setLookAt(x, TREE_BASE + 1.5, z, 0, TREE_BASE + 1.5, 0, false);
+    void controls.setLookAt(...start, true).then(() => Object.assign(controls, { smoothTime, maxPolarAngle }));
   }, []);
 
   const selected = members.find((m) => m.id === highlight);
