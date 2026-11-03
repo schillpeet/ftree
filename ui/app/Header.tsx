@@ -19,7 +19,7 @@ const THEMES: { theme: Theme; appearance: Appearance }[] = [
   { theme: 'tron', appearance: PUBLIC_APPEARANCE },
 ];
 
-// 3D | TRON, in TRON with the animation toggle before it. Without `tree.appearance` only the public appearance is
+// 3D | GRID, in GRID (`tron`) with the animation toggle before it. Without `tree.appearance` only the public appearance is
 // offered, the other is announced; choosing 3D from TRON leaves the tiered tree (see Evolution), choosing 3D while it is
 // shown changes nothing.
 export function ThemeSegment({ className }: { className?: string }) {

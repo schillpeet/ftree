@@ -17,7 +17,8 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Centre: the family button – people icon and family name in `--font-display`; a click opens the family card.
 - With more than one tree a divider and chevron follow the name (`TreeSwitcher`); the chevron opens "Deine Bäume", a list of links with the current tree marked.
 - Below the family button: the presence bar (see "Live presence").
-- Right, in this order: the "Angemeldet als <Name>" chip (plain text; hidden below 960px), theme segment (3D | TRON), language segment (DE | EN), burger; the public pages have their sign-in chip first.
+- Right, in this order: the "Angemeldet als <Name>" chip (plain text; hidden below 960px), in TRON the "Animation" toggle, theme segment (3D | GRID), language segment (DE | EN), burger; the public pages have no sign-in chip.
+- The wordmark's tooltip reads "Zur Startseite"; the burger menu's first entry, "Startseite" with a house icon, leads there too, in TRON as the ride back.
 - Without `tree.appearance` only TRON is offered and 3D is disabled with the title "Demnächst"; every signed-in user holds the permission today, so this only affects signed-out visitors.
 - Phones: the Evolution button shrinks to its icon below 480px; the family button moves to a second row below 700px.
 - Controls are `--size-control` high with `--radius-control`; segments use `--radius-pill`, the active option `--segment-on`.
@@ -28,7 +29,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Momentaufnahme downloads `ftree-<Name>-<yyyy-mm-dd>.png` and changes nothing on screen.
 - Abmelden goes to the Cloudflare Access logout.
 - Admin-Tool ends in an external-link icon instead of a chevron, since it leaves the page (and, in production, the host); entries that open a board keep the chevron.
-- No appearance row: the 3D | TRON segment is always in the header, on phones too, where its segments get tighter.
+- No appearance row: the 3D | GRID segment is always in the header, on phones too, where its segments get tighter.
 - The divider is a thin `--border` line across the menu, not a bare `hr` (which a grid shrinks to a dot).
 - No primary actions here; adding people lives in the dock.
 - GEDCOM import lives only in the Familien board; it has no menu entry of its own.
@@ -182,21 +183,22 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Landing (signed out, `/home`)
 
-- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a night sky turning deep blue toward a glowing horizon at 50 % of the height, a faint mountain ridge, a perspective floor grid that fades toward the viewer and slowly runs toward them, and a beam of light rising from the horizon that branches like a circuit into glowing nodes, drawn once on load and then pulsing; `ui/app/home/TronHorizon.tsx` and `ui/app/home/landing.css`, still without motion under `prefers-reduced-motion`), header with wordmark on the left and, on the right, "Anmelden" (signed out only), theme and language segments; there is no navigation.
-- Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither "Anmelden" nor a name shows. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Zugang derzeit nur mit Einladung". The tree header keeps its "Angemeldet als <Name>" chip.
-- Centre: title "Eure Familie. Ein Baum, der mitwächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie" (in `tron` in `--font-mono`), then one sentence, "Baum anlegen" ("Zu deinem Baum" when signed in) and "So funktioniert's"; the GitHub link sits in the legal line.
+- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a night sky turning deep blue toward a glowing horizon at 50 % of the height, a faint mountain ridge, a perspective floor grid that fades toward the viewer and slowly runs toward them, and a beam of light rising from the horizon that branches like a circuit into glowing nodes, drawn once on load and then pulsing; `ui/app/home/TronHorizon.tsx` and `ui/app/home/landing.css`, still without motion under `prefers-reduced-motion`), header with wordmark on the left and, on the right, the "Animation" toggle (TRON only), theme and language segments; there is no navigation.
+- Signed out, a thin glass strip at the very top reads "Geschlossene Testphase · Zugang nur mit Einladung" in `--font-mono` and `--accent` (`/home` and `/home/how`).
+- Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither the test-phase strip nor a name shows. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt." The tree header keeps its "Angemeldet als <Name>" chip.
+- Centre: title "Deine Familie. Ein Baum, der mit euch wächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie" (in `tron` in `--font-mono`), then one sentence, "Anmelden" ("Weiter zum Baum" when signed in) and "So funktioniert's"; in TRON with animations on, the headline flickers once softly in scanlines every 8 s; the GitHub link sits in the legal line.
 - 3D and TRON share one hero position: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), everything else hangs below it.
 - The three steps and the example family are not on the landing page; "So funktioniert's" opens `/home/how`.
 
 ## How it works (`/home/how`)
 
 - Landing look (dimmed still, or in TRON the horizon without the light tree and lowered to 82 % of the height, so the cards stand in calm sky; same header), a "← Zurück" control next to the wordmark leading to `/home`.
-- Title, one intro sentence, three glass step cards (number, title, short line, two sentences of explanation), then "Baum anlegen" ("Zu deinem Baum" when signed in) and "Beispielfamilie ansehen", and the signed-in or invitation line.
+- Title, one intro sentence, three glass step cards (number, title, short line, two sentences of explanation), then "Anmelden" ("Weiter zum Baum" when signed in) and "Beispielfamilie ansehen", and the signed-in or invitation line.
 - Signed in, each card is a link into the own tree (step 2 opens the share dialog); a done step shows "✓" instead of its number, and the first open one is outlined in `--accent`. Signed out, only step 1 is a link, to sign-in.
 
 ## Example family (`/home/example`)
 
-- Header with wordmark, "← Zurück" (to `/home`), the title card "Beispielfamilie / Nur ansehen · tippe auf eine Person, um ihre Linie zu sehen", "Anmelden" (signed out), theme and language segments; "Eigenen Baum anlegen" ("Zu deinem Baum" when signed in) at the bottom.
+- Header with wordmark, "← Zurück" (to `/home`), the title card "Beispielfamilie / Nur ansehen · tippe auf eine Person, um ihre Linie zu sehen", theme and language segments; "Anmelden" ("Weiter zum Baum" when signed in) at the bottom.
 - Twelve people over four generations in the real scene; a click highlights the lineage and shows a small card with name, birth name, and life span; there is no dock, panel, or slot.
 
 ## Legal line and pages

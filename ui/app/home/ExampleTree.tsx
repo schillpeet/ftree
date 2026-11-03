@@ -10,7 +10,6 @@ import ThemeRoot from '../ThemeRoot';
 import BackLink from './BackLink';
 import BrandLink from './BrandLink';
 import { EXAMPLE_MEMBERS } from './exampleFamily';
-import SignInChip from './SignInChip';
 import { StartButton } from './Start';
 import { hasDevTools, useSignedIn } from './signedIn';
 import './landing.css';
@@ -49,7 +48,6 @@ export default function ExampleTree() {
           <span>{t.landing.exampleHint}</span>
         </div>
         <div className="landing-segments">
-          <SignInChip me={me} />
           <ThemeSegment />
           <LanguageSegment />
         </div>
@@ -61,7 +59,7 @@ export default function ExampleTree() {
           <span>{lifeSpan(selected)}</span>
         </div>
       )}
-      <StartButton me={me} plant={t.landing.ownTree} className="example-cta" />
+      <StartButton me={me} className="example-cta" />
     </div>
   );
 }

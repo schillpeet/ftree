@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="de" data-theme="tron">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ftree · Dummy · GRID-Startseite</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="dummy.css" />
+    <style>
+      /* The GRID landing with what the dummy pages can't show: TRON is called GRID, the signed-out landing leads to "Anmelden" under a test-phase line, the
+         ride is slower with a visible light runner, the headline flickers now and then, and the scanline mask sits on the
+         hero's children instead of <main>, so the headline (out of main's box) stays after the ride back (ui/app/home/landing.css). */
+
+      @property --derez {
+        syntax: '<length>';
+        inherits: false;
+        initial-value: 6px;
+      }
+
+      /* Signed-in and signed-out variants, switched by the preview bar. */
+      body:not([data-signed-in]) .when-in,
+      body[data-signed-in] .when-out {
+        display: none;
+      }
+
+      /* Every now and then the headline flickers in scanlines, once and softly (never more than one dip per cycle). */
+      @media (prefers-reduced-motion: no-preference) {
+        html:not([data-motion='off']) .grid-landing .landing-hero h1 {
+          mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
+          animation: grid-flicker 8s ease-in-out 3s infinite;
+        }
+      }
+
+      @keyframes grid-flicker {
+        0%,
+        92%,
+        100% {
+          --derez: 6px;
+          transform: none;
+        }
+
+        94% {
+          --derez: 2.5px;
+          transform: translateX(2px) skewX(-4deg);
+        }
+
+        96% {
+          --derez: 4.5px;
+          transform: translateX(-1px);
+        }
+      }
+
+      /* The light runner: a glowing head that pulls the trail behind it from the viewer to the horizon. */
+      .grid-runner {
+        position: absolute;
+        bottom: 0;
+        left: 50%;
+        display: none;
+        width: 14px;
+        height: 22px;
+        background: #f2feff;
+        clip-path: polygon(50% 0, 100% 60%, 50% 100%, 0 60%);
+        filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 18px var(--accent));
+        transform: translateX(-50%);
+      }
+
+      .grid-flare {
+        position: absolute;
+        top: calc(var(--horizon) - 1px);
+        left: 50%;
+        display: none;
+        width: 60vw;
+        height: 3px;
+        background: radial-gradient(closest-side, #f2feff, var(--accent) 40%, transparent);
+        transform: translateX(-50%) scaleX(0);
+      }
+
+      /* The ride: 2.4 s. The text derezzes, then the runner shoots to the horizon (slowing with the distance) and
+         flares along it, then the floor rushes past and the tree comes close, and only then the flash. */
+      .ride-new .landing-hero > *,
+      .ride-new .landing-header,
+      .ride-new .landing-hero h1 {
+        mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
+        animation: tron-derez 0.5s ease-in forwards;
+      }
+
+      .ride-new .tron-horizon-trail {
+        display: block;
+        animation: tron-trail 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) 0.3s forwards;
+      }
+
+      .ride-new .grid-runner {
+        display: block;
+        animation: grid-run 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) 0.3s both;
+      }
+
+      .ride-new .grid-flare {
+        display: block;
+        animation: grid-flare 0.5s ease-out 1.45s both;
+      }
+
+      .ride-new .tron-horizon-floor::before {
+        animation: tron-rush 1.5s cubic-bezier(0.6, 0, 1, 1) 0.9s forwards;
+      }
+
+      .ride-new .tron-horizon-tree {
+        transform-origin: bottom;
+        animation: tron-approach 0.9s cubic-bezier(0.5, 0, 1, 1) 1.4s forwards;
+      }
+
+      .ride-new::after {
+        position: fixed;
+        z-index: 10;
+        inset: 0;
+        content: '';
+        animation: tron-flash 0.5s linear 1.9s both;
+      }
+
+      /* Arrival after the ride back, slower, with the fix: the headline builds itself up with the rest. */
+      .arrive-new .landing-hero > *,
+      .arrive-new .landing-header,
+      .arrive-new .landing-hero h1 {
+        mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
+        animation: tron-rez 0.9s ease-out 0.4s both;
+      }
+
+      .arrive-new .tron-horizon-trail {
+        display: block;
+        animation: tron-trail 1s ease-in reverse both;
+      }
+
+      .arrive-new::after {
+        position: fixed;
+        z-index: 10;
+        inset: 0;
+        background: var(--bg);
+        content: '';
+        pointer-events: none;
+        animation: tron-unveil 0.6s ease-out forwards;
+      }
+
+      /* The ride's keyframes, as in ui/app/home/landing.css. */
+      @keyframes tron-derez {
+        to {
+          --derez: 0px;
+          transform: translateY(8px);
+        }
+      }
+
+      @keyframes tron-rez {
+        from {
+          --derez: 0px;
+          transform: translateY(8px);
+        }
+      }
+
+      @keyframes tron-unveil {
+        to {
+          opacity: 0;
+        }
+      }
+
+      @keyframes tron-trail {
+        to {
+          transform: translateX(-50%) scaleY(1);
+        }
+      }
+
+      @keyframes tron-rush {
+        to {
+          background-position:
+            0 calc(200 * var(--cell)),
+            0 calc(200 * var(--cell)),
+            0 calc(40 * var(--cell)),
+            0 calc(40 * var(--cell));
+        }
+      }
+
+      @keyframes tron-approach {
+        to {
+          transform: translateX(-50%) scale(4);
+        }
+      }
+
+      @keyframes tron-flash {
+        0%,
+        70% {
+          background: #dffcff;
+          opacity: 0;
+        }
+
+        85% {
+          background: #dffcff;
+          opacity: 1;
+        }
+
+        100% {
+          background: var(--bg);
+          opacity: 1;
+        }
+      }
+
+      @keyframes grid-run {
+        from {
+          bottom: 0;
+          transform: translateX(-50%) scale(1.6);
+        }
+
+        to {
+          bottom: calc(100dvh - var(--horizon));
+          transform: translateX(-50%) scale(0.3);
+        }
+      }
+
+      @keyframes grid-flare {
+        50% {
+          opacity: 1;
+          transform: translateX(-50%) scaleX(1);
+        }
+
+        to {
+          opacity: 0;
+          transform: translateX(-50%) scaleX(1.2);
+        }
+      }
+
+      .grid-trail {
+        position: absolute;
+        top: var(--horizon);
+        bottom: 0;
+        left: 50%;
+        display: none;
+        width: 18px;
+        background: linear-gradient(#e8fdff, var(--accent));
+        clip-path: polygon(44% 0, 56% 0, 100% 100%, 0 100%);
+        filter: drop-shadow(0 0 8px var(--accent));
+        transform: translateX(-50%) scaleY(0);
+        transform-origin: bottom;
+      }
+
+      /* The preview's own controls, not part of the app. */
+      .grid-preview {
+        position: fixed;
+        z-index: 20;
+        top: 92px;
+        left: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        max-width: calc(100vw - 36px);
+        padding: 6px;
+        border-radius: var(--radius-panel);
+      }
+
+      .grid-preview button {
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        background: transparent;
+        color: var(--text);
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .grid-preview button:hover {
+        background: var(--hover);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <div class="landing grid-landing" id="landing">
+      <p class="landing-phase when-out">Geschlossene Testphase · Zugang nur mit Einladung</p>
+      <div class="tron-horizon" aria-hidden="true">
+        <div class="tron-horizon-floor"></div>
+        <svg class="tron-horizon-ridge" viewBox="0 0 680 47" preserveAspectRatio="none">
+          <path d="M0 47V40L60 22l45 12 65-30 55 26 40-10 35 20h80l40-22 50 14 60-32 60 28 50-14 40 16v17z" vector-effect="non-scaling-stroke" />
+        </svg>
+        <div class="tron-horizon-line"></div>
+        <div class="tron-horizon-trail grid-trail"></div>
+        <div class="grid-runner"></div>
+        <div class="grid-flare"></div>
+        <div class="tron-horizon-reflection"></div>
+        <svg class="tron-horizon-tree" viewBox="0 0 240 220">
+          <defs>
+            <filter id="tron-tree-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <g filter="url(#tron-tree-glow)">
+            <path class="tron-trunk" pathLength="1" d="M120 220V91" />
+            <path class="tron-branch" pathLength="1" d="M120 131h32l20-20V93" />
+            <path class="tron-branch" pathLength="1" d="M120 157H90l-18-18v-18" />
+            <path class="tron-branch" pathLength="1" d="M120 91H50V65" />
+            <path class="tron-branch" pathLength="1" d="M120 91h70V65" />
+            <path class="tron-twig" pathLength="1" d="M50 65H16V39" />
+            <path class="tron-twig" pathLength="1" d="M50 65h30V35" />
+            <path class="tron-twig" pathLength="1" d="M190 65h-30V35" />
+            <path class="tron-twig" pathLength="1" d="M190 65h36V39" />
+            <path class="tron-twig" pathLength="1" d="M120 91V21" />
+            <circle cx="16" cy="39" r="4.5" />
+            <circle cx="80" cy="35" r="4.5" />
+            <circle cx="160" cy="35" r="4.5" />
+            <circle cx="226" cy="39" r="4.5" />
+            <circle cx="120" cy="21" r="5.5" />
+            <circle cx="172" cy="93" r="4" />
+            <circle cx="72" cy="121" r="4" />
+          </g>
+        </svg>
+      </div>
+      <header class="landing-header">
+        <div class="landing-brand-group">
+          <a class="header-brand" href="#landing"><svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg><span class="header-wordmark">ftree</span></a>
+        </div>
+        <span></span>
+        <div class="landing-segments">
+          <div class="segment"><button type="button" aria-pressed="true" title="Animationen ein- oder ausschalten" data-motion-toggle>Animation</button></div>
+          <div class="segment" role="group" aria-label="Darstellung"><button type="button" data-theme-set="3d">3D</button><button type="button" data-theme-set="tron">GRID</button></div>
+          <div class="segment" role="group" aria-label="Sprache"><button type="button" aria-pressed="true">DE</button><button type="button" aria-pressed="false" disabled title="Der Dummy ist nur auf Deutsch">EN</button></div>
+        </div>
+      </header>
+      <main class="landing-hero">
+        <h1>Deine Familie. Ein Baum, der mit euch wächst.</h1>
+        <p class="landing-chip">Privat · nur für eure Familie</p>
+        <p class="landing-lead">Leg dich an, lade deine Familie ein – und seht gemeinsam zu, wie aus Namen eine Geschichte wird.</p>
+        <div class="landing-actions">
+          <a class="landing-primary when-out" href="visitor.html#login">Anmelden</a>
+          <a class="landing-primary when-in" href="#landing" data-ride>Weiter zum Baum</a>
+          <a class="glass landing-secondary" href="visitor.html#how">So funktioniert’s</a>
+        </div>
+        <p class="landing-note when-out">Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt.</p>
+        <p class="landing-note when-in">Angemeldet als Lea</p>
+      </main>
+    </div>
+
+    <div class="glass grid-preview" aria-label="Vorschau-Steuerung">
+      <button type="button" data-play="ride-new">Fahrt (2,4 s)</button>
+      <button type="button" data-play="arrive-new">Ankunft</button>
+      <button type="button" data-toggle-state>Zustand: abgemeldet</button>
+    </div>
+
+    <script src="dummy.js"></script>
+    <script>
+      // Replays a ride on the landing (the camera part in the tree can't be shown here) and resets it afterwards.
+      const landing = document.getElementById('landing');
+      const play = (name) => {
+        landing.classList.remove('ride-new', 'arrive-new');
+        void landing.offsetWidth;
+        landing.classList.add(name);
+        setTimeout(() => landing.classList.remove(name), name === 'arrive-new' ? 2000 : 3200);
+      };
+      document.querySelectorAll('[data-play]').forEach((button) => button.addEventListener('click', () => play(button.dataset.play)));
+      document.querySelector('[data-ride]').addEventListener('click', (event) => {
+        event.preventDefault();
+        play('ride-new');
+      });
+      // The header's "Animation" toggle, on by default; off stops the flicker like the app's data-motion="off".
+      document.querySelector('[data-motion-toggle]').addEventListener('click', (event) => {
+        const on = event.currentTarget.getAttribute('aria-pressed') !== 'true';
+        event.currentTarget.setAttribute('aria-pressed', String(on));
+        document.documentElement.dataset.motion = on ? 'on' : 'off';
+      });
+      document.querySelector('[data-toggle-state]').addEventListener('click', (event) => {
+        const signedIn = document.body.toggleAttribute('data-signed-in');
+        event.currentTarget.textContent = `Zustand: ${signedIn ? 'angemeldet' : 'abgemeldet'}`;
+      });
+    </script>
+  </body>
+</html>

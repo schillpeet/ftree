@@ -53,6 +53,16 @@ These stood in the design before but are not in `ui/`; they stay ideas until a P
 - Pay off the token debt listed under "Known deviations from the tokens" in [components.md](components.md): grid, line, glyph and legend colours on tokens, the pre-Horizont palette in boards and panels replaced.
 - Decide whether TRON keeps a second highlight colour for blood relatives.
 - Split into pull requests here once the dummy shows the target.
+- [~] One PR, `feat(ui): rework the grid journey` (2026-11-03), preview in [dummy/grid.html](dummy/grid.html):
+  - The headline stays after the ride back: the scanline mask sat on `<main>`, whose box ends below the headline, and `.landing-arriving` kept it.
+  - TRON is called GRID in the UI ("TRON" is a Disney trademark); `data-theme='tron'` and the `tron-*` names stay.
+  - Animations are on by default.
+  - The ride into the tree takes 2.4 s with a light runner, the ride back 2 s; the tree's header and dock wait until the camera has arrived.
+  - The GRID scene gets the landing's sky, horizon glow and section spacing, so both are one space.
+  - The landing headline flickers softly every 8 s.
+  - Signed out, the main button is "Anmelden" under a test-phase line, the header has no second "Anmelden"; new copy ("Deine Familie. Ein Baum, der mit euch wächst.", "Weiter zum Baum").
+  - The burger menu has "Startseite", and the wordmark's tooltip says "Zur Startseite".
+- Planned, only when the landing goes public: Access bypass (ftree-infra), privacy policy for visitors without an account (§1 names only the invited test group, §2 only users), and a check whether a public page needs an Impressum.
 
 ## Order
 

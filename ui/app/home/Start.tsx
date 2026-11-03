@@ -4,10 +4,11 @@ import { useT } from '../i18n';
 import { rideFrom } from '../ride';
 import { chipName, type ChipMe } from './chipName';
 
-// The main button of the public pages: "Your tree" for signed-in people, else `plant` ("Plant a tree"). A plain link:
+// The main button of the public pages: "Go to the tree" for signed-in people, else "Sign in", since only invited people
+// get in and there is no registration. A plain link:
 // `/start` sits behind Cloudflare Access, which needs a full page load to sign in. Signed in, TRON rides into the tree;
 // signed out, the way leads to signing in, so there is no ride.
-export function StartButton({ me, plant, className = '' }: { me: ChipMe | null | undefined; plant: string; className?: string }) {
+export function StartButton({ me, className = '' }: { me: ChipMe | null | undefined; className?: string }) {
   const t = useT();
   const signedIn = chipName(me) !== null;
   return (
@@ -18,9 +19,15 @@ export function StartButton({ me, plant, className = '' }: { me: ChipMe | null |
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- a full page load, as above
       onClick={signedIn ? (event) => rideFrom(event, () => location.assign('/start')) : undefined}
     >
-      {signedIn ? t.landing.toTree : plant}
+      {signedIn ? t.landing.toTree : t.landing.signIn}
     </a>
   );
+}
+
+// The test-phase strip at the top of the public pages, for signed-out visitors only (`.landing-phase` in `landing.css`).
+export function PhaseStrip({ me }: { me: ChipMe | null | undefined }) {
+  const t = useT();
+  return me === null ? <p className="landing-phase">{t.landing.phase}</p> : null;
 }
 
 // The small line under the main button: who is signed in, or that signing in needs an invitation; nothing while the

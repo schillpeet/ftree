@@ -2,11 +2,13 @@
 
 import { toPng } from 'html-to-image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { useT } from './i18n';
-import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, ExternalLinkIcon, LogoutIcon, MailIcon, SettingsIcon, UserIcon, UsersIcon } from './icons';
+import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, ExternalLinkIcon, HomeIcon, LogoutIcon, MailIcon, SettingsIcon, UserIcon, UsersIcon } from './icons';
 import { Can } from './Permissions';
+import { rideBack } from './ride';
 import ProfilePanel from './ProfilePanel';
 
 export type DashboardPanel = 'profile' | 'families';
@@ -35,6 +37,7 @@ export default function Dashboard({
   onPanel: (panel: DashboardPanel) => void;
 }) {
   const t = useT();
+  const router = useRouter();
   const menuRef = useRef<HTMLDivElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
 
@@ -103,6 +106,18 @@ export default function Dashboard({
       </button>
       {isOpen && (
         <nav className="glass dashboard-nav" id="dashboard-nav" aria-label={t.menu.label}>
+          {/* The way back to the landing page besides the wordmark, which few people know is a link; in GRID it rides back too. */}
+          <Link
+            className="dashboard-nav-item"
+            href="/home"
+            onClick={(event) => {
+              onToggle();
+              rideBack(event, () => router.push('/home'));
+            }}
+          >
+            <HomeIcon />
+            <span>{t.menu.home}</span>
+          </Link>
           {boardItem('profile', t.menu.profile, <UserIcon />)}
           <Can permission="family.create">{boardItem('families', t.menu.families, <UsersIcon />)}</Can>
           <button type="button" className="dashboard-nav-item" onClick={() => void takeSnapshot()}>

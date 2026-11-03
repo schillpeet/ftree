@@ -21,13 +21,13 @@
         </span>
         <div class="segment" role="group" aria-label="Darstellung">
           <button type="button" data-theme-set="3d">3D</button>
-          <button type="button" data-theme-set="tron">TRON</button>
+          <button type="button" data-theme-set="tron">GRID</button>
         </div>
       </header>
 
       <h1>Klick-Dummy</h1>
       <p>
-        Die Wege, die normale Nutzer:innen durch ftree gehen, als statische Seiten zum Durchklicken – in 3D und TRON, so wie die
+        Die Wege, die normale Nutzer:innen durch ftree gehen, als statische Seiten zum Durchklicken – in 3D und GRID, so wie die
         App auf <code>main</code> heute aussieht. Texte stammen wörtlich aus <code>ui/app/i18n.ts</code>.
       </p>
 
@@ -59,6 +59,16 @@
         </li>
       </ul>
 
+      <h2>GRID</h2>
+      <ul class="hub-journeys">
+        <li>
+          <a class="glass" href="grid.html">
+            <strong>GRID-Startseite</strong>
+            <span>Startseite mit der Fahrt (Lichtspur, 2,4 s) und der Ankunft zum Abspielen · Flimmern alle 8 s · Testphasen-Zeile</span>
+          </a>
+        </li>
+      </ul>
+
       <h2>Hier etwas ändern</h2>
       <ul>
         <li>Farben, Radien, Schriften: <code>../tokens.css</code> – wirkt sofort auf alle Seiten, in beiden Themes.</li>
@@ -75,12 +85,12 @@
         <li>
           3D ist ein Bild der echten Three.js-Szene (<code>scene-3d*.jpg</code>: <code>/home/example</code> in der Dämmerung, je
           Karte ein Bild mit hervorgehobener Linie); durchsichtige Hotspots liegen über den sichtbaren Karten. In „Neu“ ist es
-          <code>../prototypes/ftree-scene.jpg</code> mit seiner einen Karte, dort wachsen Mutter und Vater nur in TRON sichtbar.
+          <code>../prototypes/ftree-scene.jpg</code> mit seiner einen Karte, dort wachsen Mutter und Vater nur in GRID sichtbar.
         </li>
         <li>
-          TRON ist HTML: Pillen und Linien stehen in den Welt-Einheiten aus <code>ui/app/simpleLayout.ts</code> und
+          GRID ist HTML: Pillen und Linien stehen in den Welt-Einheiten aus <code>ui/app/simpleLayout.ts</code> und
           <code>ui/app/experimental/routing.ts</code> (<code>--x</code>/<code>--y</code>, eine Einheit = <code>--u</code>), das
-          Gitter ist <code>.tron-floor</code>. Theme nur für TRON ändern: Regeln mit <code>[data-theme='tron']</code> davor schreiben.
+          Gitter ist <code>.tron-floor</code>. Theme nur für GRID ändern: Regeln mit <code>[data-theme='tron']</code> davor schreiben.
         </li>
         <li>Kein Build, kein Server: Datei per Doppelklick öffnen.</li>
       </ul>

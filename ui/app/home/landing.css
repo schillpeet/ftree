@@ -64,15 +64,17 @@
 }
 
 .tron-horizon-floor::before {
-  --cell: 1.6vh;
+  /* Bright section every 10 cells, as in the tree's grid (`sectionSize={10}`); the cell is half as wide as it was, so
+     the sections stay as far apart as before. */
+  --cell: 0.8vh;
   position: absolute;
   top: 0;
   left: -150%;
   width: 400%;
   height: 420%;
   background:
-    repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(5 * var(--cell))),
-    repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(5 * var(--cell))),
+    repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(10 * var(--cell))),
+    repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(10 * var(--cell))),
     repeating-linear-gradient(90deg, #0b4f5c 0 1px, transparent 1px var(--cell)),
     repeating-linear-gradient(0deg, #0b4f5c 0 1px, transparent 1px var(--cell));
   content: '';
@@ -171,13 +173,14 @@
   }
 }
 
+/* All four layers move one section (10 cells), so the floor slides as one plane and loops seamlessly. */
 @keyframes tron-floor-run {
   to {
     background-position:
-      0 calc(5 * var(--cell)),
-      0 calc(5 * var(--cell)),
-      0 var(--cell),
-      0 var(--cell);
+      0 calc(10 * var(--cell)),
+      0 calc(10 * var(--cell)),
+      0 calc(10 * var(--cell)),
+      0 calc(10 * var(--cell));
   }
 }
 
@@ -199,12 +202,14 @@
   }
 }
 
-/* The ride into the tree (`ride.ts`): the page derezzes into scanlines, a light trail shoots to the horizon, the floor
-   rushes past and the light tree comes close, then a cyan flash fades to black, where the tree's scene takes over. */
+/* The ride into the tree (`ride.ts`), 2.4 s: the page derezzes into scanlines, a light runner shoots to the horizon and
+   pulls its trail, a flare runs along the horizon, then the floor rushes past and the light tree comes close, and a cyan
+   flash fades to black, where the tree's scene takes over. The scanline mask sits on the header and on what is in
+   `main`, not on `main`: the landing's headline stands outside main's box and would be clipped away with it. */
 @property --derez {
   syntax: '<length>';
   inherits: false;
-  initial-value: 5px;
+  initial-value: 6px;
 }
 
 .tron-horizon-trail {
@@ -221,29 +226,87 @@
   transform-origin: bottom;
 }
 
+/* The runner is only a glowing head (a rhombus) that pulls the trail from the viewer to the horizon. */
+.tron-horizon-runner {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  display: none;
+  width: 14px;
+  height: 22px;
+  background: #f2feff;
+  clip-path: polygon(50% 0, 100% 60%, 50% 100%, 0 60%);
+  filter: drop-shadow(0 0 6px var(--accent)) drop-shadow(0 0 18px var(--accent));
+  transform: translateX(-50%);
+}
+
+.tron-horizon-flare {
+  position: absolute;
+  top: calc(var(--horizon) - 1px);
+  left: 50%;
+  display: none;
+  width: 60vw;
+  height: 3px;
+  background: radial-gradient(closest-side, #f2feff, var(--accent) 40%, transparent);
+  transform: translateX(-50%) scaleX(0);
+}
+
+/* The test-phase strip for signed-out visitors (`PhaseStrip`): glass across the very top, with room made for it. */
+.landing-phase {
+  position: fixed;
+  z-index: 5;
+  top: 0;
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  backdrop-filter: var(--blur-glass);
+  color: var(--accent);
+  font: 12px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.landing:has(> .landing-phase) {
+  padding-top: 48px;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   [data-motion='on'][data-theme='tron'] .landing-riding {
     pointer-events: none;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-riding > header,
-  [data-motion='on'][data-theme='tron'] .landing-riding > main {
+  [data-motion='on'][data-theme='tron'] .landing-riding > .landing-phase,
+  [data-motion='on'][data-theme='tron'] .landing-riding > main > * {
     mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
-    animation: tron-derez 0.3s ease-in forwards;
+    animation: tron-derez 0.5s ease-in forwards;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-riding .tron-horizon-trail {
     display: block;
-    animation: tron-trail 0.4s ease-out 0.1s forwards;
+    animation: tron-trail 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) 0.3s forwards;
+  }
+
+  [data-motion='on'][data-theme='tron'] .landing-riding .tron-horizon-runner {
+    display: block;
+    animation: tron-run 1.2s cubic-bezier(0.2, 0.7, 0.3, 1) 0.3s both;
+  }
+
+  [data-motion='on'][data-theme='tron'] .landing-riding .tron-horizon-flare {
+    display: block;
+    animation: tron-flare 0.5s ease-out 1.45s both;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-riding .tron-horizon-floor::before {
-    animation: tron-rush 0.9s cubic-bezier(0.5, 0, 1, 1) forwards;
+    animation: tron-rush 1.5s cubic-bezier(0.6, 0, 1, 1) 0.9s forwards;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-riding .tron-horizon-tree {
     transform-origin: bottom;
-    animation: tron-approach 0.6s cubic-bezier(0.5, 0, 1, 1) 0.3s forwards;
+    animation: tron-approach 0.9s cubic-bezier(0.5, 0, 1, 1) 1.4s forwards;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-riding::after {
@@ -251,21 +314,22 @@
     z-index: 10;
     inset: 0;
     content: '';
-    animation: tron-flash 0.9s linear forwards;
+    animation: tron-flash 0.5s linear 1.9s both;
   }
 }
 
+/* The way back: the page builds itself up again, slower than it came apart (`landing-arriving` goes when it is done). */
 @media (prefers-reduced-motion: no-preference) {
   [data-motion='on'][data-theme='tron'] .landing-arriving > header,
-  [data-motion='on'][data-theme='tron'] .landing-arriving > main {
-    --derez: 6px;
+  [data-motion='on'][data-theme='tron'] .landing-arriving > .landing-phase,
+  [data-motion='on'][data-theme='tron'] .landing-arriving > main > * {
     mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
-    animation: tron-rez 0.5s ease-out 0.2s both;
+    animation: tron-rez 0.9s ease-out 0.4s both;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-arriving .tron-horizon-trail {
     display: block;
-    animation: tron-trail 0.6s ease-in reverse both;
+    animation: tron-trail 1s ease-in reverse both;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-arriving::after {
@@ -275,7 +339,7 @@
     background: var(--bg);
     content: '';
     pointer-events: none;
-    animation: tron-unveil 0.4s ease-out forwards;
+    animation: tron-unveil 0.6s ease-out forwards;
   }
 }
 
@@ -305,13 +369,38 @@
   }
 }
 
+@keyframes tron-run {
+  from {
+    bottom: 0;
+    transform: translateX(-50%) scale(1.6);
+  }
+
+  to {
+    bottom: calc(100dvh - var(--horizon));
+    transform: translateX(-50%) scale(0.3);
+  }
+}
+
+@keyframes tron-flare {
+  50% {
+    opacity: 1;
+    transform: translateX(-50%) scaleX(1);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-50%) scaleX(1.2);
+  }
+}
+
+/* Multiples of 10 cells, so the floor ends on a section line; twice the cells of before for the half-size cell. */
 @keyframes tron-rush {
   to {
     background-position:
-      0 calc(200 * var(--cell)),
-      0 calc(200 * var(--cell)),
-      0 calc(40 * var(--cell)),
-      0 calc(40 * var(--cell));
+      0 calc(400 * var(--cell)),
+      0 calc(400 * var(--cell)),
+      0 calc(80 * var(--cell)),
+      0 calc(80 * var(--cell));
   }
 }
 
@@ -408,6 +497,34 @@ a.landing-status:focus-visible,
 
 [data-theme='tron'] .landing-hero h1 {
   text-shadow: 0 0 22px var(--glow);
+}
+
+/* Now and then the headline flickers in scanlines, once and softly. `:where` keeps this weaker than the ride's rules,
+   which take the headline over while the page rides. */
+@media (prefers-reduced-motion: no-preference) {
+  :where([data-motion='on'][data-theme='tron']) .landing-hero h1 {
+    mask-image: repeating-linear-gradient(#000 0 var(--derez), transparent var(--derez) 6px);
+    animation: grid-flicker 8s ease-in-out 3s infinite;
+  }
+}
+
+@keyframes grid-flicker {
+  0%,
+  92%,
+  100% {
+    --derez: 6px;
+    transform: none;
+  }
+
+  94% {
+    --derez: 2.5px;
+    transform: translateX(2px) skewX(-4deg);
+  }
+
+  96% {
+    --derez: 4.5px;
+    transform: translateX(-1px);
+  }
 }
 
 .landing-chip {

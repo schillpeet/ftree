@@ -10,8 +10,11 @@ export default function TronHorizon({ dim = false, tree = true }: { dim?: boolea
         <path d="M0 47V40L60 22l45 12 65-30 55 26 40-10 35 20h80l40-22 50 14 60-32 60 28 50-14 40 16v17z" vectorEffect="non-scaling-stroke" />
       </svg>
       <div className="tron-horizon-line" />
-      {/* The light trail of the ride into the tree (`ride.ts`), hidden until then. */}
+      {/* The light trail of the ride into the tree (`ride.ts`) with the runner that pulls it and the flare where it
+          arrives, all hidden until then. */}
       <div className="tron-horizon-trail" />
+      <div className="tron-horizon-runner" />
+      <div className="tron-horizon-flare" />
       {tree && <div className="tron-horizon-reflection" />}
       {tree && (
         <svg className="tron-horizon-tree" viewBox="0 0 240 220">

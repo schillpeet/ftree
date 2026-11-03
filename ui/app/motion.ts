@@ -1,12 +1,12 @@
 import { useSyncExternalStore } from 'react';
 import { onStorage } from './i18n';
 
-// Whether the TRON animations play; off unless switched on, remembered per browser. They still need the system to allow
+// Whether the TRON animations play; on unless switched off, remembered per browser. They still need the system to allow
 // motion (`useReducedMotion`), so switching them on never overrides "reduce motion".
 const MOTION_KEY = 'ftree.motion';
 
 export function useMotion() {
-  const on = useSyncExternalStore(onStorage, () => localStorage.getItem(MOTION_KEY) === 'on', () => false);
+  const on = useSyncExternalStore(onStorage, () => localStorage.getItem(MOTION_KEY) !== 'off', () => false);
   const setMotion = (next: boolean) => {
     localStorage.setItem(MOTION_KEY, next ? 'on' : 'off');
     // `storage` only fires in other tabs; tell this one too.

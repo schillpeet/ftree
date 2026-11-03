@@ -9,6 +9,12 @@ function Icon({ children }: { children: ReactNode }) {
   );
 }
 
+export const HomeIcon = () => (
+  <Icon>
+    <path d="M4 11l8-7 8 7M6 9.5V20h12V9.5M10 20v-6h4v6" />
+  </Icon>
+);
+
 export const BurgerIcon = () => (
   <Icon>
     <path d="M4 7h16M4 12h16M4 17h16" />
