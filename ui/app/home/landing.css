@@ -173,14 +173,11 @@
   }
 }
 
-/* All four layers move one section (10 cells), so the floor slides as one plane and loops seamlessly. */
+/* The plane moves one section (10 cells) toward the viewer and loops seamlessly; moving the transform instead of the
+   background keeps the grid's raster, which Chrome otherwise redraws blurred and drops most vertical lines. */
 @keyframes tron-floor-run {
-  to {
-    background-position:
-      0 calc(10 * var(--cell)),
-      0 calc(10 * var(--cell)),
-      0 calc(10 * var(--cell)),
-      0 calc(10 * var(--cell));
+  from {
+    transform: rotateX(76deg) translateY(calc(-10 * var(--cell)));
   }
 }
 
@@ -301,7 +298,9 @@
   }
 
   [data-motion='on'][data-theme='tron'] .landing-riding .tron-horizon-floor::before {
-    animation: tron-rush 1.5s cubic-bezier(0.6, 0, 1, 1) 0.9s forwards;
+    animation:
+      tron-floor-run 4s linear infinite,
+      tron-rush 1.5s cubic-bezier(0.6, 0, 1, 1) 0.9s forwards;
   }
 
   [data-motion='on'][data-theme='tron'] .landing-riding .tron-horizon-tree {
@@ -448,7 +447,6 @@
   gap: 12px;
 }
 
-.landing-status,
 .landing-back {
   display: inline-flex;
   align-items: center;
@@ -461,8 +459,6 @@
   white-space: nowrap;
 }
 
-a.landing-status:hover,
-a.landing-status:focus-visible,
 .landing-back:hover,
 .landing-back:focus-visible {
   background: var(--hover);

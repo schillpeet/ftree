@@ -16,7 +16,8 @@ Below the zoom slider, "Front" flies the camera back to the start view in front 
 "Orbit" circles the camera slowly around the tree until it is switched off, another view is chosen, or the user moves the camera.
 The UI is available in English and German; without a remembered choice it follows the browser language (German for `de`, English otherwise), the DE | EN segment in the header switches between them, and the choice is remembered per browser in `localStorage`.
 The page sets `<html lang>` to the shown language and `translate="no"`, so browsers do not machine-translate the texts the app already provides.
-The header of every signed-in screen shows the f-monogram and "ftree" on the left, followed by the "Evolution" button with a DEV badge (`dev.tools`) and, in an admin session, an "ADM" status chip ("Als Admin angemeldet"), the family name (with a switcher for several trees) in the centre, and on the right a 3D | GRID segment, a DE | EN segment, the burger menu; the language segment replaces the former language button, and the theme segment stays in the header on phones too, with tighter segments.
+The header of every signed-in screen shows the f-monogram and "ftree" on the left, followed by the "Evolution" button with a DEV badge (`dev.tools`) and, in an admin session, an "ADM" status chip ("Als Admin angemeldet"), `<user>:<family>` like a shell prompt in the centre, and on the right a 3D | GRID segment, a DE | EN segment, the burger menu; the language segment replaces the former language button, and the theme segment stays in the header on phones too, with tighter segments.
+The centred `<user>:<family>` names the signed-in user (display name, else email) and the open tree, opens the family card, and in TRON is set in mono with the user in cyan; it replaces the former "Angemeldet als <Name>" chip and the tree switcher.
 The burger menu's entries are "Startseite" (to `/home`, in TRON as the ride back), "Profil", "Familien" (`family.create`), "Momentaufnahme", "GEDCOM importieren" (`family.create`, opens the families board), "Feedback", "Admin-Tool" (`users.view`, with an external-link icon), and "Abmelden"; "Mitglied hinzufügen", the appearance board, and the appearance row are gone from it.
 The "ADM" chip and the Evolution button sit left of the header on the public pages too, and the Evolution panel opens on the left.
 The Evolution button also shows on `/home`, `/home/how`, and `/home/example` for signed-in holders of `dev.tools` (read from the page's `/me` probe), where the panel has the "Ansichts-Labor" only, except on the example, whose scene shows the full panel.
@@ -48,6 +49,7 @@ TRON is called "GRID" in the UI (segment, FAQ, Evolution panel), as "TRON" is a 
 In TRON with animations on, the landing headline flickers once softly in scanlines every 8 s.
 After a ride into a tree, its header, dock, legal line, and legend stay hidden until the camera has come in (`riding-in`, with an inline `#ride-pending` style from the root layout before hydration), then build themselves up in scanlines; welcome and invitation cards stay visible.
 The TRON tree view shares the landing's space: a sky dome around the camera with the landing's colours, mountain ridge, and glowing horizon line, and a grid that fades out near the horizon; the landing's floor grid has a bright line every ten cells like the scene's.
+The landing's floor grid moves by its transform rather than its background, so Chrome keeps every vertical line sharp while it runs.
 Browser Back to a landing page restored from the back-forward cache drops a ride's derezzed state (`useRideReset` in `ui/app/ride.ts`).
 Switching the animation toggle on while the system reduces motion shows a dismissible hint that links to the FAQ entry on allowing motion (`/home/faq#animations`), and the toggle's tooltip says why nothing moves.
 `/home/faq` is a server-rendered questions-and-answers page in German and English (`?lang=en`), laid out like the legal pages, with texts in `ui/app/faqTexts.ts` and every entry reachable by its anchor.
@@ -188,7 +190,7 @@ The own card carries a "DU" badge, the camera flies to it when a tree opens, and
 A slug that names no visible family, is malformed, or is reserved shows "Baum nicht gefunden" with a link back to the first tree; unknown and forbidden trees look the same.
 The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `terms`, and `privacy` are reserved for routes of their own and never open a tree.
 A new family gets a random slug of 10 lowercase letters and digits (`FamilySlugs.kt`), so the URL does not reveal the tree's name and never hits a reserved slug; V26 replaced the name-based slugs of older families the same way.
-Whoever sees more than one family gets a chevron beside the family name at the top centre that lists every visible tree by name, marks the open one, and links to each tree's URL; with one family the name looks as before.
+Trees are switched on the families board in the burger menu; the header has no switcher.
 The scene lives in the `(tree)` route group's layout, so switching trees keeps the canvas and only swaps the family.
 
 ### Members and relatives
@@ -221,6 +223,7 @@ Members have an optional birth name (for example a maiden name that was given up
 GEDCOM export writes a differing birth name as a second NAME with TYPE birth; import also reads TYPE maiden, a NAME of TYPE married as the current name, and `_MARNM`.
 First and last name may be left empty for a person whose name is unknown (the BFF trims names and stores unknown ones as empty strings); such a person is shown as "Unbekannt" (small and italic on their card) and with "?" as initials.
 With `member.edit`, clicking a card also flies the camera to it, and dashed "+" slots around it ("+ Mutter" and "+ Vater", "+ Elternteil" with one known parent, "+ Partner:in", "+ Kind") open a quick-add popover with first and last name; after a mother it moves on to the father, and a toast with "Rückgängig" deletes the person just added.
+In TRON the slots of a pill keep clear of its neighbours: the parent slots sit half a row above it, and the pencil, "+ Partner:in", and "+ Kind" share one row half a row below it.
 Clicking a relative in the panel shows that person and moves the camera to their scroll; a back arrow in the panel header walks back through the people visited this way.
 The pencil in the panel header turns the same panel into the edit form in place.
 The edit form keeps the avatar (click or drop an image to change the photo) beside the name fields on top and splits the rest into two tabs, so nothing needs scrolling: "Persönliche Daten" ("Geboren am/in" and "Verstorben am/in" in two columns, the note) and "Beziehungen", saved together with the person, so relatives can also be assigned while creating someone.
@@ -266,6 +269,9 @@ Light lines drawn over the foliage connect families between the cards' current p
 Partners without shared children are joined by a gold line.
 The lines are thin and drawn in the `--line-dim` token; the selected person's lineage (ancestors, descendants, and partners) is drawn in `--line-on` with a glow, and the other cards are dimmed while it is shown.
 In TRON people are glass pills with initials, short first name, and years, and the lines keep right angles.
+In TRON the pills have a cyan edge, the initials in a ring, and the first name in mono capitals; the selected one gets a white edge, a lit face, and filled initials.
+In TRON every line is a light trail on a dark shadow, so it stays readable over the blue horizon; the lit lineage adds a glow, a white core, and, while animations play, a pulse running from the ancestors down, and junctions are solder pads.
+In TRON all UI text is set in JetBrains Mono, while headlines keep Instrument Serif.
 
 ### Concurrent edits
 
@@ -548,7 +554,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 ## Code Map
 
 - `ui/app/layout.tsx` holds the version badge with the legal links; `ui/app/(tree)/layout.tsx` and `ui/app/admin/layout.tsx` wrap their pages in `PermissionsProvider`; `ui/app/(tree)/layout.tsx` renders the scene for `/` and `/<slug>` (`ui/app/(tree)/page.tsx`, `ui/app/(tree)/[slug]/page.tsx`); `ui/app/slugRoute.ts` resolves slugs and where `/` leads, with `ui/app/slugRoute.check.mjs` as its self-check.
-- `ui/app/TreeSwitcher.tsx` lists the visible trees at the family name and `ui/app/TreeNotFound.tsx` answers unknown slugs, both styled in `ui/app/treeRoute.css`.
+- `ui/app/TreeNotFound.tsx` answers unknown slugs, styled in `ui/app/treeRoute.css`.
 - `ui/app/healthz/route.ts` answers the chart's UI probes.
 - `ui/app/FamilyTree.tsx` holds the loaded members, the camera focus, and the profile request (a clicked scroll) shared by the scene and the members overlay.
 - `ui/app/FamilyTree.tsx` also renders the dashboard and the families board.

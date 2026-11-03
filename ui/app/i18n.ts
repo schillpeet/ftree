@@ -374,8 +374,6 @@ const en = {
     submit: 'Save and show family',
   },
   treeRoute: {
-    switch: 'Switch tree',
-    trees: 'Your trees',
     notFound: 'Tree not found',
     notFoundHint: 'This tree does not exist, or you have no access to it.',
     backHome: 'Back to your tree',
@@ -1179,8 +1177,6 @@ const de: typeof en = {
     submit: 'Familie speichern und anzeigen',
   },
   treeRoute: {
-    switch: 'Baum wechseln',
-    trees: 'Deine Bäume',
     notFound: 'Baum nicht gefunden',
     notFoundHint: 'Diesen Baum gibt es nicht, oder du hast keinen Zugriff darauf.',
     backHome: 'Zurück zu deinem Baum',

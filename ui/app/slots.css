@@ -58,13 +58,10 @@
   transform: translateX(-50%);
 }
 
-/* Around a label: parents half a row up, partner to the right, child half a row down. */
+/* Around a label: parents half a row up, pencil, partner, and child half a row down; rows are 104 px apart, so the 36 px
+   slots fit between the pills (ROW_GAP in simpleLayout.ts). */
 .relative-slots-pill .relative-slots-parents {
   bottom: 40px;
-}
-
-.relative-slots-pill .relative-slots-partner {
-  left: 64px;
 }
 
 .relative-slots-pill .relative-slots-child {

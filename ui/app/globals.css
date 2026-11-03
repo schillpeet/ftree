@@ -1499,8 +1499,9 @@ a.dashboard-nav-item {
   font-size: 11px;
 }
 
-/* A person in the TRON view: a glass pill with the avatar, the first name, and one line of years. Its
-   width is capped to the room the layout leaves per person (NAME_W = 8.5 units in experimental/routing.ts). */
+/* A person in the TRON view: a dark pill with a glowing cyan edge, the initials in a ring, the first name in capitals,
+   and one line of years, all in the GRID's mono font. Its width is capped to the room the layout leaves per person
+   (NAME_W = 8.5 units in experimental/routing.ts). */
 .simple-name {
   position: relative;
   display: flex;
@@ -1510,12 +1511,13 @@ a.dashboard-nav-item {
   max-width: 132px;
   height: var(--size-person-pill);
   padding: 0 12px 0 5px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--accent);
   border-radius: var(--radius-pill);
   background: var(--node);
   backdrop-filter: var(--blur-glass);
   color: var(--text);
-  font: 500 13px/1.2 var(--font-ui);
+  font: 500 12px/1.2 var(--font-ui);
+  letter-spacing: 0.04em;
   white-space: nowrap;
   text-align: left;
   cursor: pointer;
@@ -1527,11 +1529,13 @@ a.dashboard-nav-item {
   width: var(--size-avatar);
   height: var(--size-avatar);
   place-items: center;
+  box-sizing: border-box;
+  border: 1px solid var(--avatar);
   border-radius: 50%;
-  background: var(--avatar);
-  color: var(--accent-ink);
+  background: var(--hover);
+  color: var(--text);
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .simple-name-text {
@@ -1545,27 +1549,42 @@ a.dashboard-nav-item {
   text-overflow: ellipsis;
 }
 
+.simple-name-text > span:first-child {
+  text-transform: uppercase;
+}
+
 .simple-name-years {
   font-size: 10px;
+  letter-spacing: 0;
   opacity: 0.7;
 }
 
 .simple-name.is-lineage {
-  border-color: var(--line-on);
   box-shadow: 0 0 14px var(--glow);
 }
 
+/* The selected person: a white edge, a lit face, and filled initials. */
 .simple-name.is-selected {
-  border-color: var(--line-on);
-  box-shadow: 0 0 0 1px var(--line-on), 0 0 26px var(--glow);
+  border-color: var(--line-core);
+  background: color-mix(in srgb, var(--accent) 20%, var(--node));
+  box-shadow:
+    0 0 4px var(--line-core),
+    0 0 26px var(--glow);
+}
+
+.simple-name.is-selected .simple-name-avatar {
+  background: var(--avatar);
+  color: var(--accent-ink);
 }
 
 .simple-name.is-dimmed {
-  opacity: 0.62;
+  border-color: var(--avatar-dim);
+  opacity: 0.78;
 }
 
 .simple-name.is-dimmed .simple-name-avatar {
-  background: var(--avatar-dim);
+  border-color: var(--avatar-dim);
+  background: transparent;
 }
 
 .simple-glyph {

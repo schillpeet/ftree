@@ -19,9 +19,10 @@ export type SlotMount = { memberId: string; render: (position: Point, distanceFa
 
 // The dashed "+" slots around the selected person, only for relations still missing (`slots.ts`). A slot opens the
 // quick-add popover; after a mother it moves on to the father. `card` is the shape they surround: the hanging card in
-// 3D (its top edge at `position`, facing the camera) or the TRON label (centred on `position`). drei's Html renders in
-// another React root without context, so everything comes in as props; only callers allowed to edit mount it. The pencil
-// on the left opens the person's edit form, like the pencil in the person panel.
+// 3D (its top edge at `position`, facing the camera) or the TRON label (centred on `position`), where pencil, partner, and
+// child share the row below it. drei's Html renders in another React root without context, so everything comes in as
+// props; only callers allowed to edit mount it. The pencil on the left opens the person's edit form, like the pencil in
+// the person panel.
 export default function RelativeSlots({
   member,
   familyId,
@@ -58,6 +59,19 @@ export default function RelativeSlots({
       {t.slots.kind[kind]}
     </button>
   );
+  const edit = onEdit && (
+    <button
+      type="button"
+      className="relative-slot relative-slot-edit"
+      aria-label={t.slots.edit(nameOf(member, t.members.unknown))}
+      title={t.slots.edit(nameOf(member, t.members.unknown))}
+      data-keeps-panel
+      onPointerDown={(event) => event.stopPropagation()}
+      onClick={() => onEdit(member.id)}
+    >
+      <PencilIcon />
+    </button>
+  );
   const parents = kinds.filter((kind) => kind === 'mother' || kind === 'father' || kind === 'parent');
   // A `transform` Html shows a CSS pixel as distanceFactor / 400 world units.
   const box =
@@ -77,22 +91,19 @@ export default function RelativeSlots({
         aria-label={t.slots.label(nameOf(member, t.members.unknown))}
       >
         {parents.length > 0 && <div className="relative-slots-parents">{parents.map(slot)}</div>}
-        {kinds.includes('partner') && <div className="relative-slots-partner">{slot('partner')}</div>}
-        {kinds.includes('child') && <div className="relative-slots-child">{slot('child')}</div>}
-        {onEdit && (
-          <div className="relative-slots-edit">
-            <button
-              type="button"
-              className="relative-slot relative-slot-edit"
-              aria-label={t.slots.edit(nameOf(member, t.members.unknown))}
-              title={t.slots.edit(nameOf(member, t.members.unknown))}
-              data-keeps-panel
-              onPointerDown={(event) => event.stopPropagation()}
-              onClick={() => onEdit(member.id)}
-            >
-              <PencilIcon />
-            </button>
+        {card === 'pill' ? (
+          // Beside a pill sits the next pill, a few pixels away; below it is the room up to the next row, so all three go there.
+          <div className="relative-slots-child">
+            {edit}
+            {kinds.includes('partner') && slot('partner')}
+            {kinds.includes('child') && slot('child')}
           </div>
+        ) : (
+          <>
+            {kinds.includes('partner') && <div className="relative-slots-partner">{slot('partner')}</div>}
+            {kinds.includes('child') && <div className="relative-slots-child">{slot('child')}</div>}
+            {edit && <div className="relative-slots-edit">{edit}</div>}
+          </>
         )}
       </div>
       {/* Inside the Html, whose React DOM root can portal it into the body. */}
