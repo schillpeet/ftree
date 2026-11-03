@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.38.0](https://github.com/schillpeet/ftree/compare/v0.37.0...v0.38.0) (2026-11-03)
+
+
+### Features
+
+* **ui:** rework the grid journey ([#321](https://github.com/schillpeet/ftree/issues/321)) ([20274ab](https://github.com/schillpeet/ftree/commit/20274ab53b0b2d010109892ba6a977ea5cc9ce9e))
+* **ui:** sharpen the grid tree ([#323](https://github.com/schillpeet/ftree/issues/323)) ([3cdba7e](https://github.com/schillpeet/ftree/commit/3cdba7eb43872ff9619963b6583d762bf9cace83))
+
 ## [0.37.0](https://github.com/schillpeet/ftree/compare/v0.36.1...v0.37.0) (2026-11-02)
 
 
