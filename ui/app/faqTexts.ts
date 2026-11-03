@@ -12,9 +12,9 @@ const en = {
   entries: [
     {
       id: 'animations',
-      question: 'Why does nothing move in TRON?',
+      question: 'Why does nothing move in GRID?',
       body: [
-        'The TRON animations (the running grid, the light tree, the ride into your tree) are off until you switch them on with "Animation", left of 3D | TRON at the top.',
+        'The GRID animations (the running grid, the light tree, the ride into your tree) are on unless you switch them off with "Animation", left of 3D | GRID at the top.',
         'If they are on and still nothing moves, your system asks apps to reduce motion, and ftree follows that. To see the animations, allow motion in your system settings and reload the page:',
         [
           'macOS: System Settings → Accessibility → Display → turn off "Reduce motion".',
@@ -38,9 +38,9 @@ const de: typeof en = {
   entries: [
     {
       id: 'animations',
-      question: 'Warum bewegt sich in TRON nichts?',
+      question: 'Warum bewegt sich in GRID nichts?',
       body: [
-        'Die TRON-Animationen (das laufende Gitter, der Lichtbaum, die Fahrt in deinen Baum) sind aus, bis du sie oben mit „Animation“ (links neben 3D | TRON) einschaltest.',
+        'Die GRID-Animationen (das laufende Gitter, der Lichtbaum, die Fahrt in deinen Baum) sind an, solange du sie oben mit „Animation“ (links neben 3D | GRID) nicht ausschaltest.',
         'Sind sie an und es bewegt sich trotzdem nichts, bittet dein System Apps, Bewegung zu reduzieren, und ftree hält sich daran. Damit du die Animationen siehst, erlaube Bewegung in deinen Systemeinstellungen und lade die Seite neu:',
         [
           'macOS: Systemeinstellungen → Bedienungshilfen → Anzeige → „Bewegung reduzieren“ ausschalten.',

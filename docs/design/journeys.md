@@ -23,7 +23,7 @@
 
 ## Returning user
 
-1. `/start` (from "Zu deinem Baum" or "Anmelden") opens their last tree, else the tree "default", else the first; the camera flies to their own card.
+1. `/start` (from "Weiter zum Baum" or "Anmelden") opens their last tree, else the tree "default", else the first; the camera flies to their own card.
 2. Dock for the main actions, header for family, theme, language, menu.
 3. Selecting a person highlights their lineage and shows the person panel; "+" slots show what is missing.
 4. Other trees are one click away in the family switcher; an unknown or forbidden address shows "Baum nicht gefunden".
@@ -32,9 +32,9 @@
 ## Signed-out visitor
 
 1. `/` redirects to the landing page `/home`.
-2. The hero offers "Baum anlegen" (sign-in) and "So funktioniert's"; below it a note says that access needs an invitation, and "Anmelden" sits top right.
+2. A line at the top says the test phase is closed; the hero offers "Anmelden" and "So funktioniert's", and below them a note says that access needs an invitation from someone in the family.
 3. `/home/how` explains the three steps and leads on to "Beispielfamilie ansehen", a read-only example tree, or to signing in.
 4. Signed in, the steps link into the own tree and tick off what is done (own card, tree shared, three people); step 2 opens the share dialog.
 5. "← Zurück" on the steps and example pages leads back to the landing page.
-6. In TRON the way into a tree ("Zu deinem Baum", "Beispielfamilie ansehen") is a ride: the page derezzes and the camera drives in over the grid, so the landing and the tree feel like one world.
-7. The way back is a ride too: the wordmark pulls the camera back out over the grid, and the landing builds itself up again.
+6. In GRID the way into a tree ("Weiter zum Baum", "Beispielfamilie ansehen") is a ride: the page derezzes, a light runner shoots to the horizon, and the camera drives in over the same grid and horizon before header and dock build up, so the landing and the tree feel like one world.
+7. The way back is a ride too: the wordmark or "Startseite" in the burger menu pulls the camera back out over the grid, and the landing builds itself up again.

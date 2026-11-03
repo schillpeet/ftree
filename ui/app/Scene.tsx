@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/drei';
-import { AdditiveBlending, CircleGeometry, Color, Plane, Raycaster, SphereGeometry, Vector2, Vector3, type Points } from 'three';
+import { AdditiveBlending, BackSide, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance, type Appearance } from './appearance';
 import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
@@ -88,10 +88,16 @@ const DOLLY_SPEED = 5;
 const ZOOM_STEP = 0.1;
 // The TRON ride from the landing starts this far in front of the tree and takes about this long to arrive.
 const RIDE_DISTANCE = 140;
-const RIDE_SMOOTH_TIME = 0.6;
+const RIDE_SMOOTH_TIME = 0.9;
+// The chrome (`.riding-in` in `globals.css`) is hidden until the camera is this close to the start view; the ride's long
+// tail of braking would otherwise keep it away for seconds. After `RIDE_MAX_MS` it comes back whatever happens.
+const RIDE_ARRIVED = 3;
+const RIDE_MAX_MS = 4500;
+// How long the chrome builds itself up in scanlines (`tron-rez-in` in `globals.css`, plus a little slack).
+const REZ_IN_MS = 700;
 // The ride back to the landing pulls the camera this far out, until the tree is a point on the horizon.
 const RIDE_BACK_DISTANCE = 600;
-const RIDE_BACK_SMOOTH_TIME = 0.5;
+const RIDE_BACK_SMOOTH_TIME = 0.8;
 // Unplaced cards wait in rows on this arc in front of the tree, facing the start camera.
 const WAITING_RADIUS = 30;
 const WAITING_PER_ROW = 12;
@@ -111,23 +117,119 @@ const facesOutward = (style: CardStyle) => style === 'scroll' || style === 'sign
 
 export type Focus = { id: string } | null;
 
-// The experimental view: a plain dark floor with a glowing grid, ready for a simpler family tree.
+// Token debt: the GRID view's colours are literals; the landing (`landing.css`) paints the same world in CSS.
+const GRID_BACKGROUND = '#05070a';
+const GRID_CELL = '#0b4f5c';
+const GRID_SECTION = '#00e5ff';
+// The sky from the zenith down to the horizon, the glowing line on the horizon with its two glows, and the ridge.
+const GRID_SKY = ['#01030a', '#020a18', '#04203a', '#0b3b66'];
+const GRID_HORIZON_LINE = '#7ff3ff';
+const GRID_HORIZON_GLOW = '#00e5ff';
+const GRID_HORIZON_HAZE = '#0a84ff';
+const GRID_GROUND_HAZE = '#031526';
+const GRID_RIDGE_FILL = '#020a18';
+const GRID_RIDGE_EDGE = '#1a7fa8';
+// The grid fades out over this distance, almost at the horizon, instead of ending in the dark close by.
+const GRID_FADE_DISTANCE = 800;
+const SKY_RADIUS = 5000;
+
+// A colour as written, not converted to linear: the sky shader mixes and outputs sRGB values like the landing's CSS does.
+const raw = (hex: string) => new Color().setStyle(hex, LinearSRGBColorSpace);
+
+// The sky is a dome around the camera, so the horizon stays at eye level like an infinite floor's does. Its gradient
+// (the landing's: horizon at the screen's middle, the zenith at the top of a level view), ridge, and glowing horizon line
+// are painted in screen-space widths, so the line is as thin and the glow as wide at any height as in the CSS.
+const SKY_VERTEX = `
+varying vec3 vDirection;
+void main() {
+  vDirection = position;
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}`;
+const SKY_FRAGMENT = `
+uniform vec3 sky0; uniform vec3 sky1; uniform vec3 sky2; uniform vec3 sky3;
+uniform vec3 ground; uniform vec3 groundHaze; uniform vec3 ridgeFill; uniform vec3 ridgeEdge;
+uniform vec3 lineColor; uniform vec3 glowColor; uniform vec3 hazeColor;
+varying vec3 vDirection;
+
+float ridge(vec3 d) {
+  float a = atan(d.z, d.x);
+  float h = 0.022 + 0.014 * sin(3.0 * a + 1.0) + 0.010 * sin(7.0 * a + 4.0) + 0.006 * sin(17.0 * a + 2.0) + 0.003 * sin(41.0 * a);
+  return max(h, 0.004);
+}
+
+void main() {
+  vec3 d = normalize(vDirection);
+  float y = d.y;
+  // 0 at the horizon, 1 where the top of the screen is in a level view (25 degrees).
+  float e = clamp(y / 0.42, 0.0, 1.0);
+  vec3 col = mix(sky3, sky2, clamp(e / 0.1, 0.0, 1.0));
+  col = mix(col, sky1, clamp((e - 0.1) / 0.35, 0.0, 1.0));
+  col = mix(col, sky0, clamp((e - 0.45) / 0.55, 0.0, 1.0));
+  if (y < 0.0) col = mix(groundHaze, ground, clamp(-y / 0.06, 0.0, 1.0));
+
+  float r = ridge(d);
+  float edge = abs(y - r) / max(fwidth(y - r), 1e-6);
+  if (y > 0.0 && y < r) col = mix(col, ridgeFill, 0.75);
+  col = mix(col, ridgeEdge, 0.75 * (1.0 - smoothstep(0.5, 1.5, edge)) * step(0.0, y));
+
+  float px = abs(y) / max(fwidth(y), 1e-6);
+  col += glowColor * 0.55 * exp(-px / 8.0) + hazeColor * 0.45 * exp(-px / 40.0);
+  col = mix(min(col, vec3(1.0)), lineColor, 1.0 - smoothstep(0.7, 1.6, px));
+  gl_FragColor = vec4(col, 1.0);
+}`;
+
+function GridSky() {
+  const dome = useRef<Mesh>(null);
+  const material = useMemo(
+    () =>
+      new ShaderMaterial({
+        uniforms: {
+          sky0: { value: raw(GRID_SKY[0]) },
+          sky1: { value: raw(GRID_SKY[1]) },
+          sky2: { value: raw(GRID_SKY[2]) },
+          sky3: { value: raw(GRID_SKY[3]) },
+          ground: { value: raw(GRID_BACKGROUND) },
+          groundHaze: { value: raw(GRID_GROUND_HAZE) },
+          ridgeFill: { value: raw(GRID_RIDGE_FILL) },
+          ridgeEdge: { value: raw(GRID_RIDGE_EDGE) },
+          lineColor: { value: raw(GRID_HORIZON_LINE) },
+          glowColor: { value: raw(GRID_HORIZON_GLOW) },
+          hazeColor: { value: raw(GRID_HORIZON_HAZE) },
+        },
+        vertexShader: SKY_VERTEX,
+        fragmentShader: SKY_FRAGMENT,
+        side: BackSide,
+        depthWrite: false,
+      }),
+    [],
+  );
+  useEffect(() => () => material.dispose(), [material]);
+  useFrame(({ camera }) => dome.current?.position.copy(camera.position));
+  return (
+    <mesh ref={dome} material={material} renderOrder={-1} frustumCulled={false}>
+      <sphereGeometry args={[SKY_RADIUS, 48, 24]} />
+    </mesh>
+  );
+}
+
+// The experimental view (GRID): a dark floor with a glowing grid that runs out into the landing's horizon.
 function GridFloor() {
   return (
     <>
-      <color attach="background" args={['#05070a']} />
+      <color attach="background" args={[GRID_BACKGROUND]} />
+      <GridSky />
       <ambientLight intensity={0.4} />
       <Grid
         position={[0, TREE_BASE, 0]}
         infiniteGrid
         cellSize={1}
         cellThickness={0.6}
-        cellColor="#0b4f5c"
+        cellColor={GRID_CELL}
         sectionSize={10}
         sectionThickness={1.2}
-        sectionColor="#00e5ff"
-        fadeDistance={160}
-        fadeStrength={1.5}
+        sectionColor={GRID_SECTION}
+        fadeDistance={GRID_FADE_DISTANCE}
+        fadeStrength={1}
       />
     </>
   );
@@ -774,13 +876,36 @@ export default function Scene({
       return;
     }
     // The end of the TRON ride from the landing (`ride.ts`): in low over the grid from far out, braking and rising into
-    // the start view. The ride may go lower and slower than the controls otherwise allow.
+    // the start view. The ride may go lower and slower than the controls otherwise allow. The chrome stays away
+    // (`.riding-in`) until the camera is close, then builds itself up (`.riding-arrived`).
+    const root = document.documentElement.classList;
+    const end = new Vector3(start[0], start[1], start[2]);
+    const here = new Vector3();
+    let arrived = false;
+    function arrive() {
+      if (arrived) return;
+      arrived = true;
+      clearTimeout(fallback);
+      controls!.removeEventListener('update', nearEnough);
+      root.replace('riding-in', 'riding-arrived');
+      document.getElementById('ride-pending')?.remove();
+      setTimeout(() => root.remove('riding-arrived'), REZ_IN_MS);
+    }
+    function nearEnough() {
+      if (controls!.getPosition(here).distanceTo(end) < RIDE_ARRIVED) arrive();
+    }
+    const fallback = setTimeout(arrive, RIDE_MAX_MS);
+    root.add('riding-in');
+    controls.addEventListener('update', nearEnough);
     const { smoothTime, maxPolarAngle } = controls;
     controls.smoothTime = RIDE_SMOOTH_TIME;
     controls.maxPolarAngle = Math.PI / 2;
     const [x, z] = [Math.cos(VIEW_FRONT) * RIDE_DISTANCE, Math.sin(VIEW_FRONT) * RIDE_DISTANCE];
     void controls.setLookAt(x, TREE_BASE + 1.5, z, 0, TREE_BASE + 1.5, 0, false);
-    void controls.setLookAt(...start, true).then(() => Object.assign(controls, { smoothTime, maxPolarAngle }));
+    void controls.setLookAt(...start, true).then(() => {
+      Object.assign(controls, { smoothTime, maxPolarAngle });
+      arrive();
+    });
   }, []);
   // The ride back to the landing (`ride.ts`), in TRON only: down onto the grid and backwards out, along a light trail
   // that keeps the tree in sight; the page changes before the camera stops, so the limits stay lifted.

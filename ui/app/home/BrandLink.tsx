@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useT } from '../i18n';
 import { rideBack } from '../ride';
 
 // The f-monogram of the prototype, in the accent colour.
@@ -17,8 +18,9 @@ const Monogram = () => (
 // The wordmark of every header, leading to the landing page; from a tree in TRON as a ride back.
 export default function BrandLink() {
   const router = useRouter();
+  const t = useT();
   return (
-    <Link className="header-brand" href="/home" onClick={(event) => rideBack(event, () => router.push('/home'))}>
+    <Link className="header-brand" href="/home" title={t.menu.toHome} onClick={(event) => rideBack(event, () => router.push('/home'))}>
       <Monogram />
       <span className="header-wordmark">ftree</span>
     </Link>

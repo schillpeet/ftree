@@ -1,4 +1,4 @@
-// The dummy's only script: the 3D | TRON switch (remembered like the app's choice), buttons that lead to another screen
+// The dummy's only script: the 3D | GRID switch (remembered like the app's choice), buttons that lead to another screen
 // (data-go="#id" or "page.html#id", so the app's <button> markup and CSS stay as they are), elements shown only on some
 // screens, and the lineage highlight when a person in a .tree is clicked. Each page sets the stored theme in its <head> before
 // painting.
@@ -68,6 +68,9 @@ document.addEventListener('click', (event) => {
     } catch {}
     syncTheme();
   }
+  // The "Animation" toggle (motion.ts): on by default; the dummy only flips its state.
+  const motion = event.target.closest('.motion-toggle button');
+  if (motion) motion.setAttribute('aria-pressed', String(motion.getAttribute('aria-pressed') !== 'true'));
   // The relation legend: fold to its header, pin, close.
   const legend = event.target.closest('.relation-legend');
   if (legend && event.target.closest('.relation-legend-fold')) {

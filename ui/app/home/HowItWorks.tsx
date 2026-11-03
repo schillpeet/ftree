@@ -6,16 +6,15 @@ import { useEffect, useState, type CSSProperties } from 'react';
 import type { FamilySummary } from '../../lib/api/generated/members';
 import { LanguageSegment, ThemeSegment } from '../Header';
 import { useT } from '../i18n';
-import { rideFrom } from '../ride';
+import { rideFrom, useRideReset } from '../ride';
 import ThemeRoot from '../ThemeRoot';
 import BackLink from './BackLink';
 import BrandLink from './BrandLink';
 import still from './landing.jpg';
 import HomeEvolution from './HomeEvolution';
-import SignInChip from './SignInChip';
 import TronHorizon from './TronHorizon';
 import { useSignedIn } from './signedIn';
-import { StartButton, StartNote } from './Start';
+import { PhaseStrip, StartButton, StartNote } from './Start';
 import { doneSteps } from './steps';
 import './landing.css';
 
@@ -28,6 +27,7 @@ export default function HowItWorks() {
   const t = useT();
   const me = useSignedIn();
   const router = useRouter();
+  useRideReset();
   const [families, setFamilies] = useState<FamilySummary[] | null>(null);
   useEffect(() => {
     if (!me) return;
@@ -47,6 +47,7 @@ export default function HowItWorks() {
   return (
     <div className="landing landing-how-page">
       <ThemeRoot />
+      <PhaseStrip me={me} />
       <div className="landing-backdrop landing-backdrop-dim" aria-hidden="true" style={{ '--landing-still': `url(${still.src})` } as CSSProperties} />
       <TronHorizon dim tree={false} />
       <header className="landing-header">
@@ -57,7 +58,6 @@ export default function HowItWorks() {
         </div>
         <span />
         <div className="landing-segments">
-          <SignInChip me={me} />
           <ThemeSegment />
           <LanguageSegment />
         </div>
@@ -90,7 +90,7 @@ export default function HowItWorks() {
           })}
         </ol>
         <div className="landing-actions">
-          <StartButton me={me} plant={t.landing.plant} />
+          <StartButton me={me} />
           <Link
             className="glass landing-secondary"
             href="/home/example"

@@ -3015,7 +3015,7 @@ button.dashboard-family:hover {
     inset: 0;
     content: '';
     pointer-events: none;
-    animation: tron-flash-out 1.4s linear forwards;
+    animation: tron-flash-out 2s linear forwards;
   }
 }
 
@@ -3034,5 +3034,33 @@ button.dashboard-family:hover {
   100% {
     background: var(--bg);
     opacity: 1;
+  }
+}
+
+/* The ride into the tree (`ride.ts`, `Scene.tsx`): the page's chrome stays away until the camera has come in, then builds
+   itself up in scanlines like the landing's. The welcome and invitation cards stay, they are the first thing to see. */
+@property --rez-in {
+  syntax: '<length>';
+  inherits: false;
+  initial-value: 6px;
+}
+
+/* Not gated on the theme: `.riding-in` is only set by a ride, which needed TRON and motion; until the scene sets it, the
+   `#ride-pending` style of the root layout hides the same chrome. */
+.riding-in :is(.app-header, .dock-root, .app-version, .relation-legend, .presence-bar, .presence-hint, .admin-view-banner) {
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+  [data-motion='on'][data-theme='tron'].riding-arrived :is(.app-header, .dock-root, .app-version, .relation-legend, .presence-bar, .presence-hint, .admin-view-banner) {
+    mask-image: repeating-linear-gradient(#000 0 var(--rez-in), transparent var(--rez-in) 6px);
+    animation: tron-rez-in 0.6s ease-out both;
+  }
+}
+
+@keyframes tron-rez-in {
+  from {
+    --rez-in: 0px;
   }
 }

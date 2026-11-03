@@ -2750,6 +2750,11 @@ button.dashboard-family:hover {
   font-family: var(--font-ui);
 }
 
+/* The "Animation" toggle (Header.tsx, MotionToggle) only shows in GRID. */
+:root:not([data-theme='tron']) .motion-toggle {
+  display: none;
+}
+
 .segment button {
   padding: 7px 13px;
   border: 0;
@@ -4094,15 +4099,15 @@ body:has(.dashboard-nav, .person-panel) .empty-tree {
 }
 
 .tron-horizon-floor::before {
-  --cell: 1.6vh;
+  --cell: 0.8vh;
   position: absolute;
   top: 0;
   left: -150%;
   width: 400%;
   height: 420%;
   background:
-    repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(5 * var(--cell))),
-    repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(5 * var(--cell))),
+    repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(10 * var(--cell))),
+    repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px calc(10 * var(--cell))),
     repeating-linear-gradient(90deg, #0b4f5c 0 1px, transparent 1px var(--cell)),
     repeating-linear-gradient(0deg, #0b4f5c 0 1px, transparent 1px var(--cell));
   content: '';
@@ -4204,10 +4209,10 @@ body:has(.dashboard-nav, .person-panel) .empty-tree {
 @keyframes tron-floor-run {
   to {
     background-position:
-      0 calc(5 * var(--cell)),
-      0 calc(5 * var(--cell)),
-      0 var(--cell),
-      0 var(--cell);
+      0 calc(10 * var(--cell)),
+      0 calc(10 * var(--cell)),
+      0 calc(10 * var(--cell)),
+      0 calc(10 * var(--cell));
   }
 }
 
@@ -4227,6 +4232,28 @@ body:has(.dashboard-nav, .person-panel) .empty-tree {
   50% {
     opacity: 0.55;
   }
+}
+
+/* The test-phase strip at the very top, signed out only (Start.tsx, PhaseStrip). */
+.landing-phase {
+  position: fixed;
+  z-index: 5;
+  top: 0;
+  right: 0;
+  left: 0;
+  margin: 0;
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+  backdrop-filter: var(--blur-glass);
+  color: var(--accent);
+  font: 12px/1.4 var(--font-mono);
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+.landing:has(> .landing-phase) {
+  padding-top: 48px;
 }
 
 .landing-header {
