@@ -26,7 +26,7 @@
 1. `/start` (from "Weiter zum Baum" or "Anmelden") opens their last tree, else the tree "default", else the first; the camera flies to their own card.
 2. Dock for the main actions, header for family, theme, language, menu.
 3. Selecting a person highlights their lineage and shows the person panel; "+" slots show what is missing.
-4. Other trees are one click away in the family switcher; an unknown or forbidden address shows "Baum nicht gefunden".
+4. Other trees are one click away on the Familien board in the burger menu; an unknown or forbidden address shows "Baum nicht gefunden".
 - Goal: no hunting through menus; any relative is two clicks and a name away.
 
 ## Signed-out visitor

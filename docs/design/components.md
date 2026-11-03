@@ -14,10 +14,10 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Left: f-monogram in `--accent` and the wordmark "ftree" in `--font-display`, a link to `/home`.
 - Left, after the wordmark: "Evolution" with DEV badge (only with "Entwicklertools"), then the admin badge.
 - The admin badge is a status chip, not a button: check icon and "ADM" in the accent colour, title "Als Admin angemeldet"; it shows only in an admin session, with or without the Evolution button, and shrinks to the check mark on phones.
-- Centre: the family button – people icon and family name in `--font-display`; a click opens the family card.
-- With more than one tree a divider and chevron follow the name (`TreeSwitcher`); the chevron opens "Deine Bäume", a list of links with the current tree marked.
+- Centre: the prompt button `<user>:<family>` – the user in `--muted`, the family name in `--font-display`; a click opens the family card. In GRID all in `--font-mono`, the user in `--accent` with glow.
+- No tree switcher in the header: trees are switched on the Familien board in the burger menu.
 - Below the family button: the presence bar (see "Live presence").
-- Right, in this order: the "Angemeldet als <Name>" chip (plain text; hidden below 960px), in TRON the "Animation" toggle, theme segment (3D | GRID), language segment (DE | EN), burger; the public pages have no sign-in chip.
+- Right, in this order: in TRON the "Animation" toggle, theme segment (3D | GRID), language segment (DE | EN), burger; the public pages have no sign-in chip.
 - The wordmark's tooltip reads "Zur Startseite"; the burger menu's first entry, "Startseite" with a house icon, leads there too, in TRON as the ride back.
 - Without `tree.appearance` only TRON is offered and 3D is disabled with the title "Demnächst"; every signed-in user holds the permission today, so this only affects signed-out visitors.
 - Phones: the Evolution button shrinks to its icon below 480px; the family button moves to a second row below 700px.
@@ -84,9 +84,9 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - The card shape follows the theme; size, position, and behaviour do not.
 - `3d`: papyrus scroll (`.scroll` in `ui/app/globals.css`: rod, torn sheet, curl), about 104px wide in the overview, with initials or photo, name, and years.
   - Signed-in person: small "DU" badge in `--accent` on the rod; selected scroll gets a soft `--glow` halo.
-- `tron`: glass pill (`.simple-name` in `ui/app/globals.css`, markup in `ui/app/SimpleTree.tsx`), `--size-person-pill` high and at most 132px wide, `--radius-pill`, `--node` background, 1px `--border`, glass blur, Inter 500 13px.
-  - Content: a 30px avatar with initials on `--avatar`, the first name, and the years at 10px (no role line).
-  - Lineage: border `--line-on` and a 14px glow; selected: an extra 1px ring and a 26px glow.
+- `tron`: round pill in the chip look (`.simple-name` in `ui/app/globals.css`, markup in `ui/app/SimpleTree.tsx`), `--size-person-pill` high and at most 132px wide, `--radius-pill`, `--node` background, 1px `--accent` edge, glass blur, `--font-ui` (mono in GRID) 500 12px with 0.04em tracking.
+  - Content: a 30px ring in `--avatar` with the initials on `--hover`, the first name in capitals, and the years at 10px (no role line).
+  - Lineage: a 14px glow; selected: a `--line-core` (white) edge, a face mixed with 20 % `--accent`, filled initials, and a 26px glow; dimmed: edge and ring in `--avatar-dim`, 78 % opacity.
   - Signed-in person: a 1.5px `--line-on` ring, a 14px glow and the "DU" badge.
 - Both: dimmed (`opacity .62`, desaturated scroll or `--avatar-dim`) when a lineage is highlighted and the person is not part of it; a presence dot shows when someone else views or edits the person.
 
@@ -94,6 +94,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 - Dashed 1.5px `--slot-border`, `--radius-pill`, `--size-slot` high, labels "+ Mutter", "+ Vater", "+ Elternteil" (parent of unknown gender), "+ Partner:in", "+ Kind".
 - Placed around the selected card: mother and father above, partner right, child below, and a round pencil left of the card that opens the edit form.
+- In GRID the pills stand too close side by side for that, so mother and father sit above and pencil, partner, and child share one row below the pill, all between the rows.
 - Shown only to editors and only for relations that are still missing.
 - A click opens the quick-add popover at the slot, titled "Mutter von <Name>" and so on: Vorname (focused) and Nachname (prefilled from the person for father and child); "Hinzufügen ↵"; hint "Esc schließt · Details später im Profil", for a mother "Danach geht es direkt mit dem Vater weiter."
 - After saving a mother the popover moves on to the father.
@@ -101,7 +102,8 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Connection lines
 
-- Thin (about 1.3px) lines in `--line-dim`; the selected person's ancestors, descendants, and partners switch to `--line-on` with a soft glow underneath.
+- `3d`: thin (about 1.3px) lines in `--line-dim`; the selected person's ancestors, descendants, and partners switch to `--line-on` with a soft glow underneath.
+- `tron`: light trails (2026-11-03): every line 2px in `--line-dim` (a whiter cyan than the floor grid) on a 7px `--line-shadow`; the lineage 2.4px in `--line-on` over an 8px `--glow` with a 1.2px `--line-core` and, while animations play, a light pulse running from the ancestors down; junctions are solder pads, a dark dot in a ring of the line's colour.
 - Partners: one horizontal line between the two cards at card height. Children: a line from the middle of that partner line straight down, across, and down to the top of the child's card (in `3d` to the scroll's rod).
 - `3d` rounds the two bends with an 8px radius (`ui/app/scrollLines.ts`); `tron` keeps sharp right angles, routed like a circuit diagram (`ui/app/experimental/routing.ts`).
 - Lines never run through a card and never start or end in empty space.
@@ -185,7 +187,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 - Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a night sky turning deep blue toward a glowing horizon at 50 % of the height, a faint mountain ridge, a perspective floor grid that fades toward the viewer and slowly runs toward them, and a beam of light rising from the horizon that branches like a circuit into glowing nodes, drawn once on load and then pulsing; `ui/app/home/TronHorizon.tsx` and `ui/app/home/landing.css`, still without motion under `prefers-reduced-motion`), header with wordmark on the left and, on the right, the "Animation" toggle (TRON only), theme and language segments; there is no navigation.
 - Signed out, a thin glass strip at the very top reads "Geschlossene Testphase · Zugang nur mit Einladung" in `--font-mono` and `--accent` (`/home` and `/home/how`).
-- Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither the test-phase strip nor a name shows. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt." The tree header keeps its "Angemeldet als <Name>" chip.
+- Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither the test-phase strip nor a name shows. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt."
 - Centre: title "Deine Familie. Ein Baum, der mit euch wächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie" (in `tron` in `--font-mono`), then one sentence, "Anmelden" ("Weiter zum Baum" when signed in) and "So funktioniert's"; in TRON with animations on, the headline flickers once softly in scanlines every 8 s; the GitHub link sits in the legal line.
 - 3D and TRON share one hero position: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), everything else hangs below it.
 - The three steps and the example family are not on the landing page; "So funktioniert's" opens `/home/how`.

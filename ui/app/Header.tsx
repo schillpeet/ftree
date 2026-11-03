@@ -6,12 +6,11 @@ import type { FamilySummary } from '../lib/api/generated/members';
 import { PUBLIC_APPEARANCE, themeOf, type Appearance, type Theme } from './access';
 import { useAppearance } from './appearance';
 import { useLanguage, useT, type Language } from './i18n';
-import { CheckIcon, CloseIcon, EvolutionIcon, UsersIcon } from './icons';
+import { CheckIcon, CloseIcon, EvolutionIcon } from './icons';
 import { useMotion, useReducedMotion } from './motion';
 import { useCan, useMe, useMeLoaded } from './Permissions';
-import TreeSwitcher from './TreeSwitcher';
 import BrandLink from './home/BrandLink';
-import { SignedInChip } from './home/SignInChip';
+import { chipName } from './home/chipName';
 import './header.css';
 
 const THEMES: { theme: Theme; appearance: Appearance }[] = [
@@ -126,9 +125,9 @@ export function EvolutionButton({ open, onClick }: { open: boolean; onClick: () 
 }
 
 // The top of every signed-in screen: the wordmark with the developers' Evolution button and the admin badge beside it, the
-// centred family name (with several trees a switcher sits beside it, and it opens the family card), and on the right the
-// theme and language segments and the burger menu (`menu`, rendered by `Dashboard`); the Evolution panel itself is drawn by
-// `Scene`, under its button.
+// centred `user:family` like a shell prompt (it opens the family card; trees are switched on the families board), and on
+// the right the theme and language segments and the burger menu (`menu`, rendered by `Dashboard`); the Evolution panel
+// itself is drawn by `Scene`, under its button.
 export default function Header({
   families,
   activeFamilyId,
@@ -150,8 +149,7 @@ export default function Header({
   const me = useMe();
   const admin = !!me?.admin;
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
-  // Whoever sees more than one tree switches between them at the family name.
-  const switchable = !!families && families.length > 1;
+  const user = chipName(me);
 
   return (
     <header className="app-header">
@@ -160,23 +158,21 @@ export default function Header({
         {evolution && <EvolutionButton open={evolutionOpen} onClick={onEvolution} />}
         {admin && <AdminBadge />}
       </div>
-      {switchable ? (
-        <TreeSwitcher families={families ?? []} activeFamily={activeFamily ?? null} onFamilyClick={onFamilyClick} />
-      ) : (
-        <button
-          type="button"
-          className="glass dashboard-family"
-          title={activeFamily ? t.familyCard.open(activeFamily.name) : t.menu.families}
-          onClick={onFamilyClick}
-        >
-          <UsersIcon />
-          <span className="dashboard-family-name">{activeFamily?.name ?? t.menu.noFamily}</span>
-        </button>
-      )}
+      <button
+        type="button"
+        className="glass dashboard-family header-prompt"
+        title={activeFamily ? t.familyCard.open(activeFamily.name) : t.menu.families}
+        onClick={onFamilyClick}
+      >
+        {user && (
+          <>
+            <span className="header-prompt-user">{user}</span>
+            <span className="header-prompt-sep">:</span>
+          </>
+        )}
+        <span className="dashboard-family-name">{activeFamily?.name ?? t.menu.noFamily}</span>
+      </button>
       <div className="header-actions">
-        <span className="header-signed-in">
-          <SignedInChip me={me} />
-        </span>
         <ThemeSegment className="header-theme" />
         <LanguageSegment />
         {menu}

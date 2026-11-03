@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="de" data-theme="tron">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ftree · Dummy · GRID: Linien und Personen</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+    <link rel="stylesheet" href="../tokens.css" />
+    <style>
+      /* Design proposals for the GRID tree view: the same family in five looks. Standalone (only tokens.css), so it does not depend on dummy.css.
+         Geometry is the app's: 146 px between people in a row, 104 px between rows, nothing wider than 132 px. */
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+      }
+
+      main {
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 28px 20px 80px;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: var(--accent);
+      }
+
+      .brand svg {
+        width: 26px;
+        height: 26px;
+      }
+
+      .brand span {
+        font: 400 26px/1 var(--font-display);
+      }
+
+      .brand a {
+        margin-left: auto;
+        color: var(--text);
+        font-size: 13px;
+        opacity: 0.7;
+      }
+
+      h1 {
+        margin: 28px 0 8px;
+        font: 400 40px/1.1 var(--font-display);
+      }
+
+      .lead {
+        max-width: 70ch;
+        margin: 0 0 36px;
+        color: rgba(232, 252, 255, 0.75);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+
+      .variant {
+        margin: 0 0 44px;
+      }
+
+      .variant h2 {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        gap: 10px;
+        margin: 0 0 6px;
+        font: 500 20px/1.2 var(--font-ui);
+      }
+
+      .variant h2 small {
+        color: var(--accent);
+        font: 500 12px/1 var(--font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .reco {
+        padding: 3px 8px;
+        border: 1px solid #fff;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.12);
+        color: #fff;
+        font: 500 11px/1 var(--font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .variant p {
+        max-width: 78ch;
+        margin: 0 0 14px;
+        color: rgba(232, 252, 255, 0.78);
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .variant.is-reco .stage {
+        border-color: #fff;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.4), 0 0 28px rgba(127, 243, 255, 0.35);
+      }
+
+      .scroll {
+        overflow-x: auto;
+      }
+
+      /* The scene: night sky turning deep blue toward the horizon, bright horizon line, dark floor with the cyan grid (as in dummy.css). */
+      .stage {
+        --hz: 336px;
+        position: relative;
+        width: 896px;
+        height: 420px;
+        overflow: hidden;
+        border: 1px solid rgba(72, 229, 255, 0.25);
+        border-radius: 10px;
+        background: linear-gradient(180deg, #01030a 0, #020a18 140px, #04203a 250px, #06305a calc(var(--hz) - 40px), #0b3b66 var(--hz), #02050a var(--hz));
+      }
+
+      .stage .floor {
+        position: absolute;
+        top: var(--hz);
+        right: 0;
+        bottom: 0;
+        left: 0;
+        overflow: hidden;
+        perspective: 90px;
+        perspective-origin: 50% 0;
+        -webkit-mask-image: linear-gradient(#000 12%, rgba(0, 0, 0, 0.35));
+        mask-image: linear-gradient(#000 12%, rgba(0, 0, 0, 0.35));
+      }
+
+      .stage .floor::before {
+        position: absolute;
+        top: 0;
+        left: -150%;
+        width: 400%;
+        height: 420%;
+        background:
+          repeating-linear-gradient(90deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px 80px),
+          repeating-linear-gradient(0deg, rgba(0, 229, 255, 0.7) 0 1.5px, transparent 1.5px 80px),
+          repeating-linear-gradient(90deg, #0b4f5c 0 1px, transparent 1px 8px),
+          repeating-linear-gradient(0deg, #0b4f5c 0 1px, transparent 1px 8px);
+        content: '';
+        transform: rotateX(76deg);
+        transform-origin: 50% 0;
+      }
+
+      .stage .horizon {
+        position: absolute;
+        top: var(--hz);
+        right: 0;
+        left: 0;
+        height: 1.5px;
+        background: #7ff3ff;
+        box-shadow: 0 0 12px 2px var(--accent), 0 0 60px 12px rgba(10, 132, 255, 0.45);
+      }
+
+      .stage svg {
+        position: absolute;
+        inset: 0;
+        overflow: visible;
+        fill: none;
+        stroke-linecap: square;
+        stroke-linejoin: miter;
+      }
+
+      /* Edge layers, drawn in this order: shadow, glow (lit only), base, core (lit only), pulse (lit only). All looks are set by the custom properties of the variant. */
+      .sh {
+        stroke: var(--sh-c, transparent);
+        stroke-width: var(--sh-w, 0);
+      }
+
+      .gl {
+        stroke: var(--gl-c, transparent);
+        stroke-width: var(--gl-w, 0);
+        filter: blur(var(--gl-b, 2px));
+      }
+
+      .ln.dim {
+        stroke: var(--dim-c);
+        stroke-width: var(--dim-w);
+      }
+
+      .ln.lit {
+        stroke: var(--lit-c);
+        stroke-width: var(--lit-w);
+      }
+
+      .ln.t.dim {
+        stroke-width: var(--dim-wt, var(--dim-w));
+      }
+
+      .ln.t.lit {
+        stroke-width: var(--lit-wt, var(--lit-w));
+      }
+
+      .core {
+        stroke: var(--core-c, transparent);
+        stroke-width: var(--core-w, 0);
+      }
+
+      .pulse {
+        display: none;
+        stroke: #fff;
+        stroke-dasharray: 7 93;
+        stroke-width: 3px;
+        filter: drop-shadow(0 0 4px #9ff6ff);
+      }
+
+      @media (prefers-reduced-motion: no-preference) {
+        .v-pulse .pulse {
+          display: inline;
+          animation: pulse-run 3.2s linear infinite;
+        }
+      }
+
+      @keyframes pulse-run {
+        from {
+          stroke-dashoffset: 7;
+        }
+
+        to {
+          stroke-dashoffset: -93;
+        }
+      }
+
+      .jn {
+        rx: var(--jn-rx, 50%);
+        fill: var(--jn-c, #9ff6ff);
+        transform: scale(var(--jn-s, 0.5));
+        transform-box: fill-box;
+        transform-origin: center;
+      }
+
+      .jn.dim {
+        fill: var(--jn-dim, var(--dim-c));
+      }
+
+      .jn.lit {
+        filter: drop-shadow(0 0 3px var(--jn-glow, transparent));
+      }
+
+      .pad {
+        display: var(--pad, none);
+      }
+
+      .inf {
+        fill: var(--inf-c, #9ff6ff);
+        font: 500 14px/1 var(--font-ui);
+        text-anchor: middle;
+        stroke: none;
+      }
+
+      .inf.dim {
+        fill: var(--dim-c);
+      }
+
+      /* People. Each node is positioned by the script from the variant's box; states: .sel (selected), .lin (lineage), .dim (dimmed). */
+      .n {
+        position: absolute;
+        box-sizing: border-box;
+        width: 132px;
+      }
+
+      /* 0 · today */
+      .v-today {
+        --dim-c: rgba(72, 229, 255, 0.22);
+        --dim-w: 1.3px;
+        --lit-c: #48e5ff;
+        --lit-w: 1.3px;
+        --gl-c: rgba(72, 229, 255, 0.55);
+        --gl-w: 5px;
+        --gl-b: 1.5px;
+        --jn-c: #48e5ff;
+        --jn-s: 0.4;
+        --inf-c: #48e5ff;
+      }
+
+      /* Pill (also the base of 1 and 4). */
+      .pill {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        height: 42px;
+        padding: 0 8px 0 6px;
+        border: 1px solid rgba(72, 229, 255, 0.35);
+        border-radius: 999px;
+        background: rgba(2, 7, 12, 0.92);
+      }
+
+      .pill .av {
+        display: grid;
+        flex: none;
+        width: 30px;
+        height: 30px;
+        place-items: center;
+        border-radius: 50%;
+        background: #48e5ff;
+        color: #02050a;
+        font: 600 13px/1 var(--font-ui);
+      }
+
+      .pill .tx {
+        min-width: 0;
+        line-height: 1.15;
+      }
+
+      .pill b {
+        display: block;
+        font: 500 13px/1.15 var(--font-ui);
+      }
+
+      .pill s {
+        display: block;
+        color: rgba(232, 252, 255, 0.6);
+        font: 400 10px/1.2 var(--font-ui);
+        text-decoration: none;
+      }
+
+      .pill.lin,
+      .pill.sel {
+        border-color: #48e5ff;
+        box-shadow: 0 0 12px rgba(72, 229, 255, 0.55);
+      }
+
+      .pill.sel {
+        box-shadow: 0 0 26px rgba(72, 229, 255, 0.55);
+      }
+
+      .pill.dim {
+        opacity: 0.62;
+      }
+
+      /* 4 · the chosen look, as in the app (`.simple-name` in ui/app/globals.css): the round pill with the chip's cyan
+         edge, initials in a ring, the name in mono capitals; selected with a white edge, a lit face, and filled initials. */
+      .v-pulse .pill {
+        border-color: #48e5ff;
+        font-family: var(--font-mono);
+        letter-spacing: 0.04em;
+      }
+
+      .v-pulse .pill .av {
+        box-sizing: border-box;
+        border: 1px solid #48e5ff;
+        background: rgba(72, 229, 255, 0.14);
+        color: #e8fcff;
+        font: 500 11px/1 var(--font-mono);
+      }
+
+      .v-pulse .pill b {
+        font: 500 12px/1.15 var(--font-mono);
+        text-transform: uppercase;
+      }
+
+      .v-pulse .pill s {
+        font-family: var(--font-mono);
+        letter-spacing: 0;
+      }
+
+      .v-pulse .pill.lin {
+        box-shadow: 0 0 14px rgba(72, 229, 255, 0.55);
+      }
+
+      .v-pulse .pill.sel {
+        border-color: #fff;
+        background: color-mix(in srgb, #48e5ff 20%, rgba(2, 7, 12, 0.92));
+        box-shadow:
+          0 0 4px #fff,
+          0 0 26px rgba(72, 229, 255, 0.55);
+      }
+
+      .v-pulse .pill.sel .av {
+        background: #48e5ff;
+        color: #02050a;
+      }
+
+      .v-pulse .pill.dim {
+        border-color: #2b5560;
+        opacity: 0.78;
+      }
+
+      .v-pulse .pill.dim .av {
+        border-color: #2b5560;
+        background: transparent;
+      }
+
+      /* 1 · Lichtspur: same pills, lines become light trails with a dark shadow. */
+      .v-trail,
+      .v-pulse {
+        --sh-c: rgba(1, 4, 10, 0.9);
+        --sh-w: 6px;
+        --dim-c: rgba(159, 246, 255, 0.6);
+        --dim-w: 2px;
+        --dim-wt: 2px;
+        --lit-c: #bffaff;
+        --lit-w: 2.4px;
+        --gl-c: #19c8ee;
+        --gl-w: 8px;
+        --gl-b: 3px;
+        --core-c: #fff;
+        --core-w: 1.2px;
+        --jn-rx: 0;
+        --jn-c: #fff;
+        --jn-dim: #9ff6ff;
+        --jn-s: 0.75;
+        --jn-glow: #48e5ff;
+        --inf-c: #fff;
+      }
+
+      .v-trail .pill.sel {
+        border-color: #fff;
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.5), 0 0 26px rgba(72, 229, 255, 0.8);
+      }
+
+      /* 2 · Identity Disc */
+      .v-disc {
+        --sh-c: rgba(1, 4, 10, 0.9);
+        --sh-w: 6px;
+        --dim-c: rgba(159, 246, 255, 0.55);
+        --dim-w: 2px;
+        --lit-c: #9ff6ff;
+        --lit-w: 2px;
+        --gl-c: #19c8ee;
+        --gl-w: 7px;
+        --gl-b: 3px;
+        --core-c: #fff;
+        --core-w: 1px;
+        --jn-c: #fff;
+        --jn-dim: #9ff6ff;
+        --jn-s: 0.55;
+        --jn-glow: #48e5ff;
+        --inf-c: #fff;
+      }
+
+      .disc {
+        height: 56px;
+        text-align: center;
+      }
+
+      .disc .ring {
+        position: relative;
+        display: grid;
+        width: 38px;
+        height: 38px;
+        margin: 0 auto;
+        place-items: center;
+        border-radius: 50%;
+        background: radial-gradient(circle, #02070c 0 58%, rgba(72, 229, 255, 0.12) 60%);
+        color: #e8fcff;
+        font: 500 14px/1 var(--font-mono);
+      }
+
+      /* The rim: a ring cut into segments, like TRON's identity disc. */
+      .disc .ring::before {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: repeating-conic-gradient(from 8deg, #48e5ff 0 38deg, transparent 38deg 45deg);
+        content: '';
+        -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+        mask: radial-gradient(farthest-side, transparent calc(100% - 4px), #000 calc(100% - 3.5px));
+      }
+
+      .disc .ring::after {
+        position: absolute;
+        inset: 7px;
+        border: 1px solid rgba(72, 229, 255, 0.6);
+        border-radius: 50%;
+        content: '';
+      }
+
+      .disc b {
+        display: block;
+        margin-top: 4px;
+        font: 500 11px/1.1 var(--font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .disc s {
+        display: block;
+        color: rgba(232, 252, 255, 0.65);
+        font: 400 9.5px/1.3 var(--font-mono);
+        letter-spacing: 0.06em;
+        text-decoration: none;
+      }
+
+      .disc.lin .ring {
+        filter: drop-shadow(0 0 5px rgba(72, 229, 255, 0.9));
+      }
+
+      .disc.sel .ring {
+        background: #48e5ff;
+        color: #02050a;
+        filter: drop-shadow(0 0 4px #fff) drop-shadow(0 0 14px #48e5ff);
+      }
+
+      .disc.sel .ring::before {
+        background: repeating-conic-gradient(from 8deg, #fff 0 38deg, transparent 38deg 45deg);
+        inset: -1px;
+      }
+
+      .disc.sel .ring::after {
+        border-color: rgba(2, 5, 10, 0.5);
+      }
+
+      .disc.sel b {
+        color: #fff;
+        text-shadow: 0 0 8px #48e5ff;
+      }
+
+      .disc.dim {
+        opacity: 0.72;
+      }
+
+      .disc.dim .ring::before {
+        background: repeating-conic-gradient(from 8deg, #6fb4c4 0 38deg, transparent 38deg 45deg);
+      }
+
+      /* 3 and 4 · Terminal-Chip */
+      .v-chip {
+        --sh-c: rgba(1, 4, 10, 0.92);
+        --sh-w: 7px;
+        --dim-c: rgba(159, 246, 255, 0.6);
+        --dim-w: 2px;
+        --dim-wt: 3px;
+        --lit-c: #9ff6ff;
+        --lit-w: 2.4px;
+        --lit-wt: 3.4px;
+        --gl-c: #19c8ee;
+        --gl-w: 8px;
+        --gl-b: 3px;
+        --core-c: #fff;
+        --core-w: 1.2px;
+        --jn-c: #02050a;
+        --jn-dim: #02050a;
+        --jn-rx: 50%;
+        --jn-s: 0.8;
+        --pad: inline;
+        --inf-c: #fff;
+      }
+
+      .v-chip .jn,
+      .v-pulse .jn {
+        stroke: #9ff6ff;
+        stroke-width: 2px;
+      }
+
+      .v-chip .jn.dim,
+      .v-pulse .jn.dim {
+        stroke: rgba(159, 246, 255, 0.75);
+      }
+
+      .v-pulse {
+        --jn-c: #02050a;
+        --jn-dim: #02050a;
+        --jn-rx: 50%;
+        --jn-s: 0.8;
+        --pad: inline;
+        --dim-wt: 3px;
+        --lit-wt: 3.4px;
+        --sh-w: 7px;
+      }
+
+      .chipw {
+        height: 44px;
+        filter: drop-shadow(0 0 0 transparent);
+      }
+
+      .chip {
+        --notch: 9px;
+        --edge: #48e5ff;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-sizing: border-box;
+        height: 44px;
+        padding: 3px 8px 0 9px;
+        background: var(--edge);
+        clip-path: polygon(var(--notch) 0, 100% 0, 100% calc(100% - var(--notch)), calc(100% - var(--notch)) 100%, 0 100%, 0 var(--notch));
+      }
+
+      /* The dark face, one pixel in from the edge, with the same notches. */
+      .chip::before {
+        position: absolute;
+        inset: 1px;
+        background: #02070c;
+        clip-path: polygon(calc(var(--notch) - 1px) 0, 100% 0, 100% calc(100% - var(--notch) + 1px), calc(100% - var(--notch)) 100%, 0 100%, 0 calc(var(--notch) - 1px));
+        content: '';
+      }
+
+      /* The thin strip along the top. */
+      .chip::after {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        left: calc(var(--notch) - 1px);
+        height: 3px;
+        background: var(--edge);
+        content: '';
+      }
+
+      .chip > * {
+        position: relative;
+        z-index: 1;
+      }
+
+      .chip .mk {
+        display: grid;
+        flex: none;
+        width: 26px;
+        height: 26px;
+        place-items: center;
+        border: 1px solid var(--edge);
+        background: rgba(72, 229, 255, 0.14);
+        color: #e8fcff;
+        font: 500 13px/1 var(--font-mono);
+      }
+
+      .chip b {
+        display: block;
+        font: 500 12px/1.2 var(--font-mono);
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+
+      .chip s {
+        display: block;
+        color: rgba(232, 252, 255, 0.65);
+        font: 400 10px/1.2 var(--font-mono);
+        text-decoration: none;
+      }
+
+      .chipw.lin {
+        filter: drop-shadow(0 0 5px rgba(72, 229, 255, 0.85));
+      }
+
+      .chipw.sel {
+        filter: drop-shadow(0 0 3px #fff) drop-shadow(0 0 14px #48e5ff);
+      }
+
+      .chipw.sel .chip {
+        --edge: #fff;
+      }
+
+      .chipw.sel .chip::before {
+        background: #0a3947;
+      }
+
+      .chipw.sel .chip .mk {
+        background: #48e5ff;
+        color: #02050a;
+      }
+
+      .chipw.dim {
+        opacity: 0.78;
+      }
+
+      .chipw.dim .chip {
+        --edge: #5f9fb0;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 22px;
+        margin: 0 0 36px;
+        padding: 0;
+        color: rgba(232, 252, 255, 0.7);
+        font: 400 12px/1.4 var(--font-mono);
+        list-style: none;
+      }
+
+      .effort {
+        margin: 12px 0 0;
+        padding: 10px 14px;
+        border-left: 2px solid var(--accent);
+        background: rgba(72, 229, 255, 0.06);
+        font-size: 13px;
+      }
+
+      .effort strong {
+        margin-right: 6px;
+        color: var(--accent);
+        font: 500 11px/1 var(--font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">
+        <svg viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg>
+        <span>ftree</span>
+        <a href="index.html">← Klick-Dummy</a>
+      </div>
+
+      <h1>GRID: Linien und Personen</h1>
+      <p class="lead">
+        In einer offenen Familie sind die Verbindungen schwer zu lesen: Die Linien sind dünn, haben denselben Cyan-Ton wie der Hintergrund und verschwinden im blauen Band über dem Horizont.
+        Außerdem wirken die ovalen Glas-Pillen nicht nach TRON. Hier dieselbe kleine Familie in fünf Varianten, mit den echten Abständen der App (146 px zwischen Personen, 104 px zwischen den Reihen, höchstens 132 px breit).
+        Max ist ausgewählt, seine Linie (Eltern, Partnerin, Kinder) leuchtet, alle anderen sind abgedunkelt. Die untere Reihe liegt bewusst im blauen Band.
+      </p>
+      <ul class="legend">
+        <li>Max: ausgewählt</li>
+        <li>Anna, Theo, Olga, Jakob, Ida: Linie</li>
+        <li>Sophie, Rudolf, Emma, Paula: abgedunkelt</li>
+        <li>∞ = Paar</li>
+      </ul>
+
+      <section class="variant" data-v="today">
+        <h2>0 · Heute <small>Vergleich</small></h2>
+        <p>So sieht es jetzt aus: 1,3 px dünne Linien in <code>--line-dim</code> (22 % Cyan) bzw. <code>--line-on</code>, Pillen aus Glas mit Cyan-Kreis. Auf dem blauen Band sind die abgedunkelten Linien kaum zu sehen.</p>
+      </section>
+
+      <section class="variant" data-v="trail">
+        <h2>1 · Lichtspur <small>Linien</small></h2>
+        <p>
+          Die Pillen bleiben, die Linien werden zu Lichtspuren: mindestens 2 px, ein helleres Weißcyan statt des Hintergrund-Cyans und darunter ein dunkler 6-px-Schatten, der sie vom blauen Band löst.
+          Die Linie der Auswahl bekommt einen weißen, heißen Kern in Cyan-Glühen; Knotenpunkte sind kleine leuchtende Quadrate.
+        </p>
+        <div class="effort"><strong>Aufwand in der App</strong>Klein. Nur <code>SimpleTree.tsx</code> (je Linie ein zusätzlicher Schatten- und Kernstrich, Knoten als <code>&lt;rect&gt;</code>) und zwei neue Tokens (<code>--line-shadow</code>, <code>--line-core</code>); <code>globals.css</code> bleibt unberührt.</div>
+      </section>
+
+      <section class="variant" data-v="disc">
+        <h2>2 · Identity Disc <small>Personen</small></h2>
+        <p>
+          Eine Person ist ein leuchtender, in Segmente geteilter Ring wie TRONs Identity Disc, mit dem Anfangsbuchstaben in Mono. Name und Jahre stehen in Großbuchstaben darunter, die Linien stecken am Rand des Rings an.
+          Die Auswahl ist ein gefüllter weißer Ring. Passt in 132 × 56 px, die Partnerlinie wird mit 108 px sogar länger als heute.
+        </p>
+        <div class="effort"><strong>Aufwand in der App</strong>Mittel. Neues Markup und neue Regeln für <code>.simple-name</code> in <code>globals.css</code>, in <code>SimpleTree.tsx</code> die Anschlusspunkte (Ringradius statt Pillenkante, Schriftgröße der Beschriftung) und Linien wie in Variante 1.</div>
+      </section>
+
+      <section class="variant" data-v="chip">
+        <h2>3 · Terminal-Chip <small>Personen + Linien</small></h2>
+        <p>
+          Ein eckiger Chip mit abgeschrägten Ecken und dünnem Streifen oben, Name in Mono, Anfangsbuchstabe als quadratisches Zeichen. Die Linien sind Leiterbahnen mit Lötpunkten an den Knoten.
+          Die Linien zu den Kindern sind dicker (3 px) als die Partnerlinien (2 px), so sieht man sofort, was „Eltern → Kind“ ist.
+        </p>
+        <div class="effort"><strong>Aufwand in der App</strong>Mittel. <code>.simple-name</code> in <code>globals.css</code> mit <code>clip-path</code> (der Glow läuft über <code>filter: drop-shadow</code>, weil <code>box-shadow</code> abgeschnitten wird); in <code>SimpleTree.tsx</code> zwei Strichstärken und Lötpunkte statt der kleinen Knotenpunkte.</div>
+      </section>
+
+      <section class="variant is-reco" data-v="pulse">
+        <h2>4 · Pille + Lichtspur + Impuls <span class="reco">Gewählt</span></h2>
+        <p>
+          Die runde Pille bleibt, bekommt aber den Look des Chips aus Variante 3: eine leuchtend cyanfarbene Kante, die Initialen im Ring, den Namen in Mono-Großbuchstaben.
+          Die Linien sind die Lichtspuren aus Variante 1 (Schatten, weißer Kern, Glühen), die Knoten Lötpunkte. Auf der leuchtenden Linie läuft ein heller Impuls von den Ahnen zu den Kindern, nur wenn die Animation an ist und das System Bewegung erlaubt.
+        </p>
+        <div class="effort"><strong>In der App umgesetzt</strong><code>.simple-name</code> in <code>globals.css</code>, die Linien in <code>SimpleTree.tsx</code> mit den Tokens <code>--line-dim</code>, <code>--line-shadow</code> und <code>--line-core</code>. Die Abstufung von Stammlinie zu Partnerlinie aus Variante 3 ist nicht übernommen.</div>
+      </section>
+    </main>
+
+    <script>
+      /* One layout, five looks. Positions are label pixels: 146 apart in a row, 104 apart between rows. */
+      const COL = 146, ROW = 104, X0 = 83, Y0 = 70;
+      const P = {
+        anna: ['Anna', 1948, 0, 0, 'lin'], theo: ['Theo', 1945, 1, 0, 'lin'],
+        sophie: ['Sophie', 1975, 0, 1, 'dim'], max: ['Max', 1972, 1, 1, 'sel'], olga: ['Olga', 1974, 2, 1, 'lin'],
+        rudolf: ['Rudolf', 1950, 4, 1, 'dim'], emma: ['Emma', 1952, 5, 1, 'dim'],
+        jakob: ['Jakob', 2001, 1, 2, 'lin'], ida: ['Ida', 2004, 2, 2, 'lin'], paula: ['Paula', 1978, 4.5, 2, 'dim'],
+      };
+      /* [partner a, partner b, [children]] */
+      const COUPLES = [['anna', 'theo', ['sophie', 'max']], ['max', 'olga', ['jakob', 'ida']], ['rudolf', 'emma', ['paula']]];
+      /* hw: half width where a partner line plugs in; up/down: node edge above/below the centre line; bus: depth of the sibling bus; box: node height */
+      const SHAPES = {
+        pill: { hw: 66, up: 21, bus: 52, box: 42 },
+        disc: { hw: 19, up: 19, bus: 60, box: 56 },
+        chip: { hw: 66, up: 22, bus: 52, box: 44 },
+      };
+      const VARIANTS = {
+        today: ['v-today', 'pill', 0], trail: ['v-trail', 'pill', 0], disc: ['v-disc', 'disc', 0], chip: ['v-chip', 'chip', 0], pulse: ['v-pulse', 'pill', 1],
+      };
+      const x = (c) => X0 + c * COL, y = (r) => Y0 + r * ROW;
+      const lit = (n) => P[n][4] !== 'dim';
+      const line = (d, cls, extra = '') => `<path class="${cls}" d="${d}" ${extra}/>`;
+
+      function edges(s) {
+        const out = []; // {d, lit, t (trunk: parent to child), g: sort order}
+        const dots = [];
+        for (const [a, b, kids] of COUPLES) {
+          const [, , ca, r] = P[a], cb = P[b][2], mid = (ca + cb) / 2, yy = y(r), by = yy + s.bus;
+          const left = ca < cb ? a : b, right = ca < cb ? b : a;
+          const open = lit(a) && lit(b);
+          out.push({ d: `M${x(P[left][2]) + s.hw} ${yy}H${x(P[right][2]) - s.hw}`, lit: open, t: 0 });
+          const anyLit = kids.some(lit);
+          // trunk from the couple's line down to the sibling bus
+          out.push({ d: `M${x(mid)} ${yy}V${by}`, lit: anyLit, t: 1 });
+          dots.push({ x: x(mid), y: yy, lit: anyLit }, { x: x(mid), y: by, lit: anyLit });
+          for (const k of kids) {
+            const kx = x(P[k][2]), ky = y(P[k][3]) - s.up;
+            if (kx !== x(mid)) out.push({ d: `M${x(mid)} ${by}H${kx}V${ky}`, lit: lit(k), t: 1 });
+            else out.push({ d: `M${kx} ${by}V${ky}`, lit: lit(k), t: 1 });
+            dots.push({ x: kx, y: ky, lit: lit(k), pad: 1 });
+          }
+        }
+        return { out, dots };
+      }
+
+      function node(shape, k) {
+        const [name, year, c, r, st] = P[k], s = SHAPES[shape];
+        const cls = { pill: 'pill', disc: 'disc', chip: 'chip' }[shape] + ' ' + st;
+        const gl = name[0];
+        let inner;
+        if (shape === 'pill') inner = `<div class="n ${cls}" style="left:${x(c) - 66}px;top:${y(r) - s.up}px"><i class="av">${gl}</i><span class="tx"><b>${name}</b><s>${year}</s></span></div>`;
+        else if (shape === 'disc') inner = `<div class="n ${cls}" style="left:${x(c) - 66}px;top:${y(r) - s.up}px"><div class="ring">${gl}</div><b>${name}</b><s>${year}</s></div>`;
+        else inner = `<div class="n chipw ${st}" style="left:${x(c) - 66}px;top:${y(r) - s.up}px"><div class="chip"><i class="mk">${gl}</i><span><b>${name}</b><s>${year}</s></span></div></div>`;
+        return inner;
+      }
+
+      for (const sec of document.querySelectorAll('.variant')) {
+        const [cls, shape, pulse] = VARIANTS[sec.dataset.v], s = SHAPES[shape];
+        const { out, dots } = edges(s);
+        const sorted = [...out.filter((e) => !e.lit), ...out.filter((e) => e.lit)];
+        const klass = (e) => (e.lit ? 'lit' : 'dim') + (e.t ? ' t' : ' p');
+        let svg = sorted.map((e) => line(e.d, 'sh ' + klass(e))).join('');
+        svg += sorted.filter((e) => e.lit).map((e) => line(e.d, 'gl lit')).join('');
+        svg += sorted.map((e) => line(e.d, 'ln ' + klass(e))).join('');
+        svg += sorted.filter((e) => e.lit).map((e) => line(e.d, 'core lit')).join('');
+        if (pulse) svg += sorted.filter((e) => e.lit).map((e, i) => line(e.d, 'pulse', `pathLength="100" style="animation-delay:${-(i * 0.37).toFixed(2)}s"`)).join('');
+        svg += dots.map((d) => `<g transform="translate(${d.x} ${d.y})" class="${d.pad ? 'pad' : ''}"><rect class="jn ${d.lit ? 'lit' : 'dim'}" x="-5" y="-5" width="10" height="10"/></g>`).join('');
+        // the ∞ above each couple's line
+        svg += COUPLES.map(([a, b]) => `<text class="inf ${lit(a) && lit(b) ? 'lit' : 'dim'}" x="${x((P[a][2] + P[b][2]) / 2)}" y="${y(P[a][3]) - 7}">∞</text>`).join('');
+        const nodes = Object.keys(P).map((k) => node(shape, k)).join('');
+        sec.insertAdjacentHTML('beforeend', `<div class="scroll"><div class="stage ${cls}"><div class="floor"></div><div class="horizon"></div><svg width="896" height="420" viewBox="0 0 896 420" aria-hidden="true">${svg}</svg>${nodes}</div></div>`);
+        // keep the effort note below the stage
+        const note = sec.querySelector('.effort');
+        if (note) sec.append(note);
+      }
+    </script>
+  </body>
+</html>

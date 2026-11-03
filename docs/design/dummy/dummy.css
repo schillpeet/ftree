@@ -4207,12 +4207,8 @@ body:has(.dashboard-nav, .person-panel) .empty-tree {
 }
 
 @keyframes tron-floor-run {
-  to {
-    background-position:
-      0 calc(10 * var(--cell)),
-      0 calc(10 * var(--cell)),
-      0 calc(10 * var(--cell)),
-      0 calc(10 * var(--cell));
+  from {
+    transform: rotateX(76deg) translateY(calc(-10 * var(--cell)));
   }
 }
 

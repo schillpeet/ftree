@@ -1,14 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef, type ComponentRef } from 'react';
 import { Html, Line } from '@react-three/drei';
-import { useThree } from '@react-three/fiber';
+import { useFrame, useThree } from '@react-three/fiber';
 import type { Member } from '../lib/api/generated/members';
 import { bloodLinks, lineageLinks, linkKey } from './experimental/highlight';
 import { buildModel } from './experimental/model';
 import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
 import PresenceDot from './live/PresenceDot';
+import { useMotion, useReducedMotion } from './motion';
 import { initialsOf, isNameless, nameOf, shortFirstName } from './names';
 import { lifeSpan } from './PersonPanel';
 import type { Point } from './pins';
@@ -28,17 +29,26 @@ const NAME_SCALE_HEIGHT = 768;
 export const BLOOD_COLOR = '#ffb347';
 // How a line stands out: on the selected person's lineage, for blood relatives, or not at all.
 type Mark = 'focus' | 'blood' | undefined;
-// Screen pixels: the thin lines, and the soft glow under the lit lineage.
-const LINE_WIDTH = 1.3;
-const GLOW_WIDTH = 5;
-const DOT_RADIUS = 0.12;
+// Screen pixels, drawn bottom to top: a dark shadow under every line so it stands out on the blue horizon, the glow under
+// the lit lineage, the line, and the lineage's white core.
+const SHADOW_WIDTH = 7;
+const GLOW_WIDTH = 8;
+const LINE_WIDTH = 2;
+const FOCUS_WIDTH = 2.4;
+const CORE_WIDTH = 1.2;
+// A junction is a solder pad: a dark dot in a ring of the line's colour.
+const PAD_RADIUS = 0.22;
+// The light pulse running down the lit lineage while the animations play: a short dash per gap, in units per second.
+const PULSE = { width: 5, dashSize: 1.2, gapSize: 9, speed: 3 };
 // A partnership symbol floats this far above its line.
 const GLYPH_LIFT = 0.5;
-// The lines keep their token colour exactly: no tone mapping.
+// The lines keep their token colour exactly: no tone mapping. They lie in one plane with their shadow, which hides the floor
+// grid behind them by depth, so everything above the shadow skips the depth test and stacks by `renderOrder` alone.
+const FLAT = { toneMapped: false, depthTest: false } as const;
 const STYLES = {
-  solid: { toneMapped: false },
-  dashed: { toneMapped: false, dashed: true, dashSize: 0.6, gapSize: 0.5 },
-  dotted: { toneMapped: false, dashed: true, dashSize: 0.12, gapSize: 0.25 },
+  solid: FLAT,
+  dashed: { ...FLAT, dashed: true, dashSize: 0.6, gapSize: 0.5 },
+  dotted: { ...FLAT, dashed: true, dashSize: 0.12, gapSize: 0.25 },
 } as const;
 
 // Half width and height of the hop where a partnership line bridges a crossing vertical.
@@ -46,6 +56,28 @@ const HOP_W = 0.3;
 const HOP_H = 0.25;
 
 const flat = ([x, y]: XY): Point => [x, y, 0];
+
+// Every line piece runs from its parent's side to its child's, so a dash moving forward runs from the ancestors down.
+function Pulse({ points, color }: { points: Point[]; color: string }) {
+  const line = useRef<ComponentRef<typeof Line>>(null);
+  useFrame((_, delta) => {
+    if (line.current) line.current.material.dashOffset -= delta * PULSE.speed;
+  });
+  return (
+    <Line
+      ref={line}
+      points={points}
+      segments
+      color={color}
+      lineWidth={PULSE.width}
+      {...FLAT}
+      dashed
+      dashSize={PULSE.dashSize}
+      gapSize={PULSE.gapSize}
+      renderOrder={4}
+    />
+  );
+}
 
 // Draws each bridge as a hop: the horizontal line through it leaves a gap around the crossing and
 // arcs over it in a few straight pieces.
@@ -126,6 +158,11 @@ export default function SimpleTree({
   }, [members, focusId]);
   const paint = { none: useTokenPaint('--line-dim'), focus: useTokenPaint('--line-on'), blood: { color: BLOOD_COLOR, opacity: 1 } };
   const glow = useTokenPaint('--glow');
+  const shadow = useTokenPaint('--line-shadow');
+  const core = useTokenPaint('--line-core');
+  const [motion] = useMotion();
+  const reduced = useReducedMotion();
+  const pulse = motion && !reduced;
   const markOf = (links: Segment['links']) =>
     (['focus', 'blood'] as const).find((mark) => links.some(([x, y]) => marked[mark].has(linkKey(x, y))));
   const markClass = (links: Segment['links']) => {
@@ -143,6 +180,18 @@ export default function SimpleTree({
   const byId = new Map(members.map((m) => [m.id, m]));
   return (
     <group position={[0, base + LIFT, 0]} rotation-y={Math.PI / 2 - facing}>
+      {showLines && (
+        <Line
+          points={routes.segments.flatMap((s) => [flat(s.a), flat(s.b)])}
+          segments
+          color={shadow.color}
+          opacity={shadow.opacity}
+          transparent
+          lineWidth={SHADOW_WIDTH}
+          renderOrder={0}
+          toneMapped={false}
+        />
+      )}
       {showLines &&
         (['solid', 'dashed', 'dotted'] as const).flatMap((style) =>
           ([undefined, 'blood', 'focus'] as const).map((mark) => {
@@ -152,9 +201,40 @@ export default function SimpleTree({
               points.length > 0 && (
                 <group key={`${style}-${mark}`}>
                   {mark === 'focus' && (
-                    <Line points={points} segments color={glow.color} opacity={glow.opacity} transparent lineWidth={GLOW_WIDTH} {...STYLES[style]} />
+                    <Line
+                      points={points}
+                      segments
+                      color={glow.color}
+                      opacity={glow.opacity}
+                      transparent
+                      lineWidth={GLOW_WIDTH}
+                      renderOrder={1}
+                      {...STYLES[style]}
+                    />
                   )}
-                  <Line points={points} segments color={color} opacity={opacity} transparent lineWidth={LINE_WIDTH} {...STYLES[style]} />
+                  <Line
+                    points={points}
+                    segments
+                    color={color}
+                    opacity={opacity}
+                    transparent
+                    lineWidth={mark === 'focus' ? FOCUS_WIDTH : LINE_WIDTH}
+                    renderOrder={2}
+                    {...STYLES[style]}
+                  />
+                  {mark === 'focus' && (
+                    <Line
+                      points={points}
+                      segments
+                      color={core.color}
+                      opacity={core.opacity}
+                      transparent
+                      lineWidth={CORE_WIDTH}
+                      renderOrder={3}
+                      {...STYLES[style]}
+                    />
+                  )}
+                  {mark === 'focus' && pulse && <Pulse points={points} color={core.color} />}
                 </group>
               )
             );
@@ -164,10 +244,16 @@ export default function SimpleTree({
         routes.junctions.map((at) => {
           const { color, opacity } = paint[dotMark(at) ?? 'none'];
           return (
-            <mesh key={at.join()} position={flat(at)}>
-              <circleGeometry args={[DOT_RADIUS, 12]} />
-              <meshBasicMaterial color={color} opacity={opacity} transparent toneMapped={false} />
-            </mesh>
+            <group key={at.join()} position={flat(at)}>
+              <mesh renderOrder={5}>
+                <circleGeometry args={[PAD_RADIUS, 16]} />
+                <meshBasicMaterial color={shadow.color} {...FLAT} />
+              </mesh>
+              <mesh renderOrder={6}>
+                <ringGeometry args={[PAD_RADIUS * 0.5, PAD_RADIUS, 16]} />
+                <meshBasicMaterial color={color} opacity={opacity} transparent {...FLAT} />
+              </mesh>
+            </group>
           );
         })}
       {showLines &&

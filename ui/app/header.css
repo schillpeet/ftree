@@ -76,6 +76,40 @@
   justify-self: center;
 }
 
+/* The centred `user:family`, read like a shell prompt: who is signed in, and in which tree. */
+.header-prompt {
+  gap: 0;
+}
+
+.header-prompt-user {
+  overflow: hidden;
+  max-width: 180px;
+  color: var(--muted);
+  font: 500 15px/1.2 var(--font-ui);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-prompt-sep {
+  margin: 0 8px 0 2px;
+  color: var(--muted);
+  font: 500 15px/1.2 var(--font-ui);
+}
+
+/* GRID: a terminal line, the family in the mono UI font like the rest and the user glowing in cyan. */
+[data-theme='tron'] .header-prompt .dashboard-family-name {
+  font: 500 15px/1.2 var(--font-ui);
+}
+
+[data-theme='tron'] .header-prompt-user {
+  color: var(--accent);
+  text-shadow: 0 0 8px var(--glow);
+}
+
+[data-theme='tron'] .header-prompt-sep {
+  margin: 0 2px 0 0;
+}
+
 /* Square and text buttons in the header's glass. */
 .header-button {
   display: inline-flex;
@@ -144,14 +178,6 @@
 }
 
 /* Two rows: wordmark and controls above, the family name across below. */
-/* The "Signed in as" chip has no room on smaller screens, where the animation, theme and language segments already fill
-   the row. */
-@media (max-width: 1120px) {
-  .header-signed-in {
-    display: none;
-  }
-}
-
 @media (max-width: 700px) {
   .app-header {
     top: 10px;

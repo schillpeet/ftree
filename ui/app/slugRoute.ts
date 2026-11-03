@@ -35,13 +35,6 @@ export function homePath(families: readonly Family[], lastSlug?: string | null):
   return family ? pathOf(family) : null;
 }
 
-// The switcher's entries: every visible family, by name, the open one marked.
-export function switcherEntries(families: readonly Family[], activeId: string | null) {
-  return [...families]
-    .sort((a, b) => a.name.localeCompare(b.name))
-    .map((family) => ({ id: family.id, name: family.name, href: pathOf(family), active: family.id === activeId }));
-}
-
 // What a blank start shows instead of an empty board: 'noTree' at `/start` while no tree is visible at all, 'noPeople' for an
 // open tree without members, null otherwise (still loading, a failed load, or a tree with people).
 export function emptyTreeOf(
