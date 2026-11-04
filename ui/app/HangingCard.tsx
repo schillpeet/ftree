@@ -10,7 +10,8 @@ import { formatDate, photoSrc } from './MembersControls';
 import { useT } from './i18n';
 import { useOthersAt } from './live/people';
 import PresenceDot from './live/PresenceDot';
-import { isNameless } from './names';
+import { isNameless, lifeSpan } from './names';
+import { useCardDensity, type CardDensity } from './cardDensity';
 import type { Point } from './pins';
 import { seededRandom } from './random';
 import { CLICK_TOLERANCE } from './Scroll';
@@ -39,12 +40,18 @@ const PX = 160;
 const SCROLL = { width: 2.9, height: 3.5, rope: 0.45 };
 const SIGN = { width: 3.4, height: 2, depth: 0.12, rope: 0.7 };
 
-const textOf = (m: Member, label: string): CardText => ({
+// What a card shows (`cardDensity.ts`): slim, the name and years; fuller, the birth name and dates instead of years.
+// The note stays in the profile.
+const textOf = (m: Member, label: string, density: CardDensity, nee: (name: string) => string): CardText => ({
   name: isNameless(m) ? `? ${label}` : label,
   unknown: isNameless(m),
-  birth: formatDate(m.birthDate),
-  death: formatDate(m.deathDate),
-  note: m.note,
+  ...(density === 'm'
+    ? {
+        birthName: m.birthName && m.birthName !== m.lastName ? nee(m.birthName) : null,
+        birth: formatDate(m.birthDate),
+        death: formatDate(m.deathDate),
+      }
+    : { years: lifeSpan(m) || null, birth: null, death: null }),
 });
 
 function canvasTexture(width: number, height: number, paint: (canvas: HTMLCanvasElement) => void) {
@@ -69,7 +76,8 @@ const plainTextures = () =>
 // The member's face of the card, redrawn once their photo has loaded. A photo that fails to load
 // (or is served without CORS headers) is left out.
 function useCardTexture(member: Member, label: string, familyId: string | null, width: number, height: number, draw: typeof drawScroll) {
-  const text = textOf(member, label);
+  const [density] = useCardDensity();
+  const text = textOf(member, label, density, useT().members.nee);
   const seed = seedOf(member.id);
   const key = JSON.stringify(text);
   const texture = useMemo(

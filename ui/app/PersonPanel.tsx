@@ -6,22 +6,14 @@ import { birthNameOf, formatDate, initialsOf } from './MembersControls';
 import { ChevronIcon, ChevronLeftIcon, CloseIcon, PencilIcon, PinIcon, TrashIcon } from './icons';
 import { onStorage, useT } from './i18n';
 import PresenceHint from './live/PresenceHint';
-import { isNameless } from './names';
+import { isNameless, lifeSpan } from './names';
 import { useDisplayName } from './placeholders';
 import { sortPartners } from './partnerships';
 import { clampOffset, parsePin, type Offset } from './panelPosition';
 import { relativesOf } from './relatives';
 import { CLICK_TOLERANCE } from './Scroll';
 
-const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
-
-// "1935 – 2006", "1935" or "† 2006"; empty without any year.
-export function lifeSpan(member: Member) {
-  const born = yearOf(member.birthDate);
-  const died = yearOf(member.deathDate);
-  if (born && died) return `${born} – ${died}`;
-  return born || (died && `† ${died}`) || '';
-}
+export { lifeSpan };
 
 // Whole years between birth and death (or today); a person without a death date counts as living up to 110.
 function ageOf(member: Member) {

@@ -38,3 +38,13 @@ export function splitName(query: string): Named {
   if (words.length < 2) return { firstName: words[0] ?? '', lastName: '' };
   return { firstName: words.slice(0, -1).join(' '), lastName: words.at(-1)! };
 }
+
+const yearOf = (value?: string | null) => value?.slice(0, 4) ?? '';
+
+// "1935 – 2006", "1935" or "† 2006"; empty without any year.
+export function lifeSpan(member: { birthDate?: string | null; deathDate?: string | null }) {
+  const born = yearOf(member.birthDate);
+  const died = yearOf(member.deathDate);
+  if (born && died) return `${born} – ${died}`;
+  return born || (died && `† ${died}`) || '';
+}

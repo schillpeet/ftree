@@ -6,7 +6,8 @@ import type { Member } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import PresenceDot from './live/PresenceDot';
 import { formatDate, photoSrc } from './MembersControls';
-import { isNameless } from './names';
+import { isNameless, lifeSpan } from './names';
+import { useCardDensity } from './cardDensity';
 
 // Pointer travel (px) up to which a press on a scroll still counts as a click, not a drag.
 export const CLICK_TOLERANCE = 5;
@@ -39,6 +40,8 @@ export default function Scroll({
   isSelf?: boolean;
 }) {
   const t = useT();
+  // Slim: name and years; fuller: birth name and dates (`cardDensity.ts`). The note stays in the profile.
+  const [density] = useCardDensity();
   const birth = formatDate(member.birthDate);
   const death = formatDate(member.deathDate);
   const photo = photoSrc(member, familyId);
@@ -81,9 +84,15 @@ export default function Scroll({
             <img className="scroll-photo" src={photo} alt="" draggable={false} />
           )}
           <h3 className={isNameless(member) ? 'scroll-unknown' : undefined}>{isNameless(member) ? `? ${label}` : label}</h3>
-          {birth && <p>* {birth}</p>}
-          {death && <p>† {death}</p>}
-          {member.note && <p className="scroll-note">{member.note}</p>}
+          {density === 'm' ? (
+            <>
+              {member.birthName && member.birthName !== member.lastName && <p className="scroll-nee">{t.members.nee(member.birthName)}</p>}
+              {birth && <p>* {birth}</p>}
+              {death && <p>† {death}</p>}
+            </>
+          ) : (
+            lifeSpan(member) && <p>{lifeSpan(member)}</p>
+          )}
         </div>
         <div className="scroll-curl" />
         <PresenceDot memberId={member.id} />

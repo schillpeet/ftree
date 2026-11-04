@@ -133,7 +133,7 @@ const en = {
       {
         heading: '7. Cookies and local storage',
         body: [
-          'Only technically necessary storage is used: Cloudflare Access sets the cookie CF_Authorization to keep you signed in. Your browser’s local storage keeps your settings (language, appearance, card style, lines, and panel positions); they never leave your browser. There is no tracking, no analytics, and no advertising.',
+          'Only technically necessary storage is used: Cloudflare Access sets the cookie CF_Authorization to keep you signed in. Your browser’s local storage keeps your settings (language, appearance, card style, card density, lines, and panel positions); they never leave your browser. There is no tracking, no analytics, and no advertising.',
         ],
       },
       {
@@ -275,7 +275,7 @@ const de: typeof en = {
       {
         heading: '7. Cookies und lokaler Speicher',
         body: [
-          'Es wird nur technisch Notwendiges gespeichert: Cloudflare Access setzt das Cookie CF_Authorization, damit du angemeldet bleibst. Der lokale Speicher deines Browsers merkt sich deine Einstellungen (Sprache, Darstellung, Kartenstil, Linien und Position von Panels); sie verlassen deinen Browser nicht. Es gibt kein Tracking, keine Analyse und keine Werbung.',
+          'Es wird nur technisch Notwendiges gespeichert: Cloudflare Access setzt das Cookie CF_Authorization, damit du angemeldet bleibst. Der lokale Speicher deines Browsers merkt sich deine Einstellungen (Sprache, Darstellung, Kartenstil, Kartendichte, Linien und Position von Panels); sie verlassen deinen Browser nicht. Es gibt kein Tracking, keine Analyse und keine Werbung.',
         ],
       },
       {

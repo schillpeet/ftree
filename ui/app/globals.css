@@ -642,16 +642,8 @@ textarea {
   font-size: 13px;
 }
 
-.scroll-note {
-  display: -webkit-box;
-  margin-top: 8px !important;
-  padding-top: 8px;
-  overflow: hidden;
-  border-top: 1px solid rgba(90, 50, 20, 0.3);
+.scroll-nee {
   font-style: italic;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
 }
 
 .scroll-curl {
@@ -1578,6 +1570,28 @@ a.dashboard-nav-item {
   font-style: italic;
   font-size: 11px;
   letter-spacing: 0;
+}
+
+/* Fuller pills keep the pill's size, so the tree's spacing holds: three tight lines instead of two, and a smaller ring
+   and no tracking leave the full name room. */
+.simple-name.is-full {
+  gap: 5px;
+  padding-right: 8px;
+  letter-spacing: 0;
+}
+
+.simple-name.is-full .simple-name-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.simple-name.is-full .simple-name-text {
+  line-height: 1.1;
+}
+
+.simple-name.is-full .simple-name-text > span:first-child {
+  font-size: 10.5px;
 }
 
 .simple-name.is-lineage {

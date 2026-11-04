@@ -25,6 +25,12 @@ const en = {
   },
   search: { open: 'Search members', label: 'Search members', placeholder: 'Search a member …', noResults: 'No matches' },
   appearance: { title: 'Appearance', organic: '3D', experimental: 'GRID', comingSoon: 'Coming soon' },
+  density: {
+    label: 'Card density',
+    title: 'How much the cards show',
+    s: 'Slim: name and years',
+    m: 'More: full name, birth name, and dates',
+  },
   motion: {
     label: 'Animation',
     title: 'Play the GRID animations',
@@ -843,6 +849,12 @@ const de: typeof en = {
   },
   search: { open: 'Mitglieder suchen', label: 'Mitglieder suchen', placeholder: 'Mitglied suchen …', noResults: 'Keine Treffer' },
   appearance: { title: 'Darstellung', organic: '3D', experimental: 'GRID', comingSoon: 'Demnächst' },
+  density: {
+    label: 'Kartendichte',
+    title: 'Wie viel die Karten zeigen',
+    s: 'Schlank: Name und Jahre',
+    m: 'Mehr: voller Name, Geburtsname und Daten',
+  },
   motion: {
     label: 'Animation',
     title: 'GRID-Animationen abspielen',

@@ -4,8 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 're
 import { createPortal } from 'react-dom';
 import { createFamilyMember, deleteFamilyMember, updateFamilyMemberRelatives, type Member, type Relatives } from '../lib/api/generated/members';
 import { useT } from './i18n';
-import { displayName, initialsOf, nameOf } from './names';
-import { lifeSpan } from './PersonPanel';
+import { displayName, initialsOf, lifeSpan, nameOf } from './names';
 import { searchMembers } from './nameSearch';
 import { problemCode } from './problems';
 import { candidatesFor, linkExisting, linkOf, nextSlot, prefilledLastName, withParents, type SlotKind } from './slots';

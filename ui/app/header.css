@@ -232,4 +232,9 @@
   .header-evolution .header-dev {
     display: none;
   }
+
+  /* No room left on a phone: the cards stay as last chosen (slim by default). */
+  .header-density {
+    display: none;
+  }
 }

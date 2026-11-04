@@ -202,7 +202,10 @@ Every member appears in the scene as a card whose look the "Kartenstil" select p
 These three are lit by the sun, cast shadows, are hidden by leaves in front of them, and cannot take keyboard focus (the family card is the keyboard path); a photo that cannot be loaded with CORS headers is left out.
 "Papyrus (klassisch)" is the earlier camera-facing HTML scroll, drawn over the scene and focusable.
 At night the scroll and board cards glow softly (their emissive faces brighten) so their names stay readable, lit by the little orbs above them.
-Each card shows photo (from `photoUrl`), name, birth and death dates, and, except on the wooden board, the note.
+Each card shows photo (from `photoUrl`), name, and what the card density asks for; the note is shown in the profile only.
+An "S | M" segment left of 3D | GRID in the tree header and the example family sets the card density, remembered per browser in `localStorage` (`ftree.cardDensity`, `ui/app/cardDensity.ts`): S (the default) shows name and years, M also the full name, "geb. …" for a differing birth name, and the dates of birth and death.
+Below 480 px the segment is hidden for lack of room, and the cards keep the density last chosen.
+In the experimental view an M pill keeps the pill's size: full name, birth name, and the date of birth while the person lives, the years otherwise, and both dates in its tooltip.
 Each member can be assigned any number of parents, children, and partners (current or former; always mutual) in the member form.
 Siblings and half-siblings are not stored separately but derived from shared parents: the relatives section lists them against the selected parents (a half-sibling shares only some of them, chosen in an "über …" select) and saves them by giving each sibling the shared parents and removing them from unchecked ones; half-siblings need at least two parents ("Erst Eltern zuweisen" otherwise).
 A sibling picked for a person without parents lends them their own parents, and when neither has any, saving first creates a placeholder parent they share (`NEW_PLACEHOLDER` in `ui/app/RelativesFields.tsx`).
