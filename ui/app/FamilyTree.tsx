@@ -19,7 +19,7 @@ import type { FamilyCardMode } from './FamilyCard';
 import Header from './Header';
 import MemberSearch from './MemberSearch';
 import MembersControls from './MembersControls';
-import { AddedToast } from './QuickAdd';
+import { AddedToast, type AddedExtra } from './QuickAdd';
 import ShareDialog from './ShareDialog';
 import Scene, { type Focus } from './Scene';
 import { useT } from './i18n';
@@ -99,7 +99,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [shownId, setShownId] = useState<string | null>(null);
   const [isEditingShown, setIsEditingShown] = useState(false);
   // The person last added through a "+" slot, whose toast offers to undo it; a new key per person restarts the toast.
-  const [added, setAdded] = useState<{ member: Member; familyId: string; linked?: boolean; key: number } | null>(null);
+  const [added, setAdded] = useState<({ member: Member; familyId: string; key: number } & AddedExtra) | null>(null);
   const hideAdded = useCallback(() => setAdded(null), []);
   const onShownChange = useCallback((id: string | null, editing: boolean) => {
     setShownId(id);
@@ -378,7 +378,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         // The members follow through the live events, like any other save.
         onAdded={
           canPlace && activeFamilyId
-            ? (member, linked) => setAdded((current) => ({ member, familyId: activeFamilyId, linked, key: (current?.key ?? 0) + 1 }))
+            ? (member, extra) => setAdded((current) => ({ member, familyId: activeFamilyId, ...extra, key: (current?.key ?? 0) + 1 }))
             : undefined
         }
         onEdit={canPlace ? (id) => setEditRequest({ id }) : undefined}

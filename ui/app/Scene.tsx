@@ -16,6 +16,7 @@ import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, 
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import RelativeSlots, { type SlotMount } from './RelativeSlots';
+import type { AddedExtra } from './QuickAdd';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import { scrollLines } from './scrollLines';
 import { lineageOf } from './relatives';
@@ -749,7 +750,7 @@ export default function Scene({
   onOpen: (id: string) => void;
   onPlace?: (id: string, placement: Placement) => void;
   // A person was added through a "+" slot around `highlight`; missing without the permission to add people, which hides the slots.
-  onAdded?: (member: Member, linked?: boolean) => void;
+  onAdded?: (member: Member, extra: AddedExtra) => void;
   // The edit pencil beside `highlight`'s card; missing without the permission to edit.
   onEdit?: (id: string) => void;
   // Where the person panel is open: right for a profile, left while editing, null when closed.

@@ -26,7 +26,7 @@ import { dateProblem } from './partnerships';
 import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
 import { problemCode } from './problems';
-import RelativesFields, { type Relation } from './RelativesFields';
+import RelativesFields, { NEW_PLACEHOLDER, withNewPlaceholder, type Relation } from './RelativesFields';
 import { EMPTY_FORM, MemberHero, MemberLifeFields, NewMemberPanel, toForm, toJpeg, toRequest, usePhotoPreview, type MemberForm } from './MemberFields';
 import type { Focus } from './Scene';
 import FamilyCard, { type FamilyCardMode } from './FamilyCard';
@@ -354,13 +354,34 @@ export default function MembersControls({
       const relate = related && (editing ? related.changed : Object.values(related.value).some((ids) => ids?.length));
       let relativesError: string | null = null;
       if (relate) {
+        // A sibling picked without parents on either side shares a placeholder parent, created first.
+        let placeholderId: string | null = null;
         try {
-          const response = await updateFamilyMemberRelatives(familyId, saved.id, { ...related.value, version: saved.version });
+          let value = related.value;
+          if (value.parentIds.includes(NEW_PLACEHOLDER)) {
+            const created = await createFamilyMember(familyId, {
+              firstName: '',
+              lastName: '',
+              birthName: null,
+              birthDate: null,
+              birthPlace: null,
+              deathDate: null,
+              deathPlace: null,
+              note: null,
+              photoUrl: null,
+            });
+            if (created.status !== 201) throw new Error('Unexpected create response');
+            placeholderId = created.data.id;
+            value = withNewPlaceholder(value, placeholderId);
+          }
+          const response = await updateFamilyMemberRelatives(familyId, saved.id, { ...value, version: saved.version });
           if (response.status === 400) relativesError = t.relatives.ownAncestor;
           else if (response.status !== 204) throw new Error('Unexpected relatives response');
         } catch {
           relativesError = t.relatives.saveFailed;
         }
+        // A placeholder nobody hangs from is taken out again.
+        if (relativesError && placeholderId) await deleteFamilyMember(familyId, placeholderId).catch(() => undefined);
       }
       const member = saved;
       setMembers((current) =>

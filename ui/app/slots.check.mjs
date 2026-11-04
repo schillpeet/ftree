@@ -3,20 +3,21 @@
 import assert from 'node:assert/strict';
 import { candidatesFor, linkExisting, linkOf, missingSlots, nextSlot, prefilledLastName } from './slots.ts';
 
-assert.deepEqual(missingSlots({ id: 'a', parentIds: [] }), ['mother', 'father', 'partner', 'child']);
-assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p'] }), ['parent', 'partner', 'child']);
-assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p', 'q'] }), ['partner', 'child']);
-assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p', 'q', 'r'] }), ['partner', 'child']);
+assert.deepEqual(missingSlots({ id: 'a', parentIds: [] }), ['mother', 'father', 'sibling', 'partner', 'child']);
+assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p'] }), ['parent', 'sibling', 'partner', 'child']);
+assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p', 'q'] }), ['sibling', 'partner', 'child']);
+assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p', 'q', 'r'] }), ['sibling', 'partner', 'child']);
 
 assert.equal(prefilledLastName('father', { lastName: 'Huber' }), 'Huber');
 assert.equal(prefilledLastName('child', { lastName: 'Huber' }), 'Huber');
+assert.equal(prefilledLastName('sibling', { lastName: 'Huber' }), 'Huber');
 assert.equal(prefilledLastName('mother', { lastName: 'Huber' }), '');
 assert.equal(prefilledLastName('parent', { lastName: 'Huber' }), '');
 assert.equal(prefilledLastName('partner', { lastName: 'Huber' }), '');
 
 // Only a mother leads on, to the father; everything else closes the quick-add.
 assert.equal(nextSlot('mother'), 'father');
-for (const kind of ['father', 'parent', 'partner', 'child']) assert.equal(nextSlot(kind), null);
+for (const kind of ['father', 'parent', 'partner', 'child', 'sibling']) assert.equal(nextSlot(kind), null);
 
 // The new person is linked to the selected one only, with their fresh version.
 assert.deepEqual(linkOf('mother', 'a', 0), { version: 0, parentIds: [], childIds: ['a'], partnerIds: [] });
@@ -44,6 +45,14 @@ assert.deepEqual(
   linkExisting('father', family[1], 'x', family),
   { version: 3, parentIds: ['g'], childIds: ['a', 'x'], partnerIds: [] },
   'existing relatives are kept',
+);
+
+assert.deepEqual(linkOf('sibling', 'a', 0, ['p', 'q']), { version: 0, parentIds: ['p', 'q'], childIds: [], partnerIds: [] });
+assert.deepEqual(idsOf(candidatesFor('sibling', family[4], family)), ['x'], 'no ancestor and no full sibling');
+assert.deepEqual(
+  linkExisting('sibling', family[5], 'k', family, ['a', 'p']),
+  { version: 5, parentIds: ['a', 'p'], childIds: [], partnerIds: [] },
+  'a sibling gets the shared parents',
 );
 
 console.log('slots checks passed');

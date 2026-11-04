@@ -2,13 +2,13 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { createFamilyMember, deleteFamilyMember, updateFamilyMemberRelatives, type Member } from '../lib/api/generated/members';
+import { createFamilyMember, deleteFamilyMember, updateFamilyMemberRelatives, type Member, type Relatives } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { displayName, initialsOf, nameOf } from './names';
 import { lifeSpan } from './PersonPanel';
 import { searchMembers } from './nameSearch';
 import { problemCode } from './problems';
-import { candidatesFor, linkExisting, linkOf, nextSlot, prefilledLastName, type SlotKind } from './slots';
+import { candidatesFor, linkExisting, linkOf, nextSlot, prefilledLastName, withParents, type SlotKind } from './slots';
 import './slots.css';
 
 // How long the "is now growing" toast stays.
@@ -18,6 +18,11 @@ const GAP = 12;
 const EDGE = 16;
 // Existing people offered while typing, so nobody is added twice.
 const SUGGESTIONS = 5;
+
+export type AddedExtra = { linked?: boolean; alsoAdded?: Member[] };
+
+// A step of saving that failed, with the message to show.
+class Failure extends Error {}
 
 // Where the popover opens: beside the slot that opened it, kept inside the window.
 function placeBeside(anchor: DOMRect, width: number, height: number) {
@@ -51,8 +56,8 @@ export default function QuickAdd({
   familyId: string;
   // The slot's box on screen when it was clicked.
   anchor: DOMRect;
-  // `linked`: an existing person was linked, nobody was created.
-  onSaved: (added: Member, next: SlotKind | null, linked?: boolean) => void;
+  // `linked`: an existing person was linked rather than created; `alsoAdded`: placeholder parents made on the way.
+  onSaved: (added: Member, next: SlotKind | null, extra: AddedExtra) => void;
   onClose: () => void;
 }) {
   const t = useT();
@@ -77,81 +82,96 @@ export default function QuickAdd({
     return () => window.removeEventListener('resize', place);
   }, [anchor, error]);
 
-  async function link(existing: Member) {
+  async function createPerson(first: string, last: string) {
+    const created = await createFamilyMember(familyId, {
+      firstName: first,
+      lastName: last,
+      birthName: null,
+      birthDate: null,
+      birthPlace: null,
+      deathDate: null,
+      deathPlace: null,
+      note: null,
+      photoUrl: null,
+    });
+    if (created.status === 201) return created.data;
+    throw new Failure(
+      created.status === 403
+        ? t.slots.forbidden
+        : problemCode(created.data) === 'MEMBER_LIMIT_REACHED'
+          ? t.memberLimit
+          : t.members.createFailed,
+    );
+  }
+
+  async function relink(person: Member, relatives: Relatives) {
+    const linked = await updateFamilyMemberRelatives(familyId, person.id, relatives);
+    if (linked.status === 204) return;
+    const who = displayName(person, members, t.placeholder.role);
+    throw new Failure(linked.status === 403 ? t.slots.forbidden : linked.status === 409 ? t.slots.changed(who) : t.slots.linkFailed);
+  }
+
+  // Siblings share parents: a person without any gets a placeholder parent first, which is returned to be undone with
+  // the rest. `created` collects everyone made on the way, so a failure can take them out again.
+  async function sharedParents(created: Member[]): Promise<string[]> {
+    if (member.parentIds.length > 0) return member.parentIds;
+    const placeholder = await createPerson('', '');
+    created.push(placeholder);
+    await relink(member, withParents(member, [placeholder.id], members));
+    return [placeholder.id];
+  }
+
+  // Runs `steps`; when one fails, everyone created so far is deleted again, so nobody is left half-linked.
+  async function run(steps: (created: Member[]) => Promise<void>) {
     if (isSaving) return;
     setIsSaving(true);
     setError(null);
+    const created: Member[] = [];
     try {
-      const linked = await updateFamilyMemberRelatives(familyId, existing.id, linkExisting(kind, existing, member.id, members));
-      if (linked.status === 204) {
-        onSaved(existing, nextSlot(kind), true);
-        return;
-      }
-      const existingName = displayName(existing, members, t.placeholder.role);
-      setError(
-        linked.status === 403 ? t.slots.forbidden : linked.status === 409 ? t.slots.changed(existingName) : t.slots.linkFailed,
+      await steps(created);
+    } catch (failure) {
+      const message = failure instanceof Failure ? failure.message : t.members.unreachable;
+      const results = await Promise.all(
+        created.map((person) =>
+          deleteFamilyMember(familyId, person.id).then(
+            (response) => response.status === 204 || response.status === 404,
+            () => false,
+          ),
+        ),
       );
-    } catch {
-      setError(t.members.unreachable);
+      const left = created.find((_, i) => !results[i]);
+      setError(left ? t.slots.rollbackFailed(displayName(left, members, t.placeholder.role)) : message);
     } finally {
       setIsSaving(false);
     }
   }
 
+  // An existing person from the suggestions: linked to `member`, nobody new unless a placeholder parent is needed.
+  function link(existing: Member) {
+    return run(async (created) => {
+      if (kind === 'sibling' && member.parentIds.length === 0 && existing.parentIds.length > 0) {
+        // The person joins the sibling's parents.
+        await relink(member, withParents(member, existing.parentIds, members));
+      } else {
+        const parentIds = kind === 'sibling' ? await sharedParents(created) : [];
+        await relink(existing, linkExisting(kind, existing, member.id, members, parentIds));
+      }
+      onSaved(existing, nextSlot(kind), { linked: true, alsoAdded: created });
+    });
+  }
+
   // `nameless` adds a placeholder: someone not known or not entered yet.
-  async function save(event: FormEvent<HTMLFormElement> | null, nameless = false) {
+  function save(event: FormEvent<HTMLFormElement> | null, nameless = false) {
     event?.preventDefault();
     if (!nameless && chosen) return void link(chosen);
-    if (isSaving || (!nameless && !firstName.trim() && !lastName.trim())) return;
-    setIsSaving(true);
-    setError(null);
-    try {
-      const created = await createFamilyMember(familyId, {
-        firstName: nameless ? '' : firstName.trim(),
-        lastName: nameless ? '' : lastName.trim(),
-        birthName: null,
-        birthDate: null,
-        birthPlace: null,
-        deathDate: null,
-        deathPlace: null,
-        note: null,
-        photoUrl: null,
-      });
-      if (created.status !== 201) {
-        setError(
-          created.status === 403
-            ? t.slots.forbidden
-            : problemCode(created.data) === 'MEMBER_LIMIT_REACHED'
-              ? t.memberLimit
-              : t.members.createFailed,
-        );
-        return;
-      }
-      const added = created.data;
-      let linkError: string | null = null;
-      try {
-        const linked = await updateFamilyMemberRelatives(familyId, added.id, linkOf(kind, member.id, added.version));
-        if (linked.status !== 204) {
-          linkError = linked.status === 403 ? t.slots.forbidden : linked.status === 409 ? t.slots.changed(name) : t.slots.linkFailed;
-        }
-      } catch {
-        linkError = t.members.unreachable;
-      }
-      if (linkError) {
-        // Never leave the new person unlinked: take them out again.
-        const removed = await deleteFamilyMember(familyId, added.id).then(
-          (response) => response.status === 204 || response.status === 404,
-          () => false,
-        );
-        setError(removed ? linkError : t.slots.rollbackFailed(nameOf(added, t.members.unknown)));
-        return;
-      }
-      onSaved(added, nextSlot(kind));
-    } catch {
-      setError(t.members.unreachable);
-    } finally {
-      setIsSaving(false);
-    }
+    if (!nameless && !firstName.trim() && !lastName.trim()) return;
+    return void run(async (created) => {
+      const parentIds = kind === 'sibling' ? await sharedParents(created) : [];
+      const added = await createPerson(nameless ? '' : firstName.trim(), nameless ? '' : lastName.trim());
+      created.push(added);
+      await relink(added, linkOf(kind, member.id, added.version, parentIds));
+      onSaved(added, nextSlot(kind), { alsoAdded: created.filter((person) => person.id !== added.id) });
+    });
   }
 
   return createPortal(
@@ -248,7 +268,13 @@ export default function QuickAdd({
       <button type="button" className="quick-add-unknown" title={t.slots.notKnownHint} onClick={() => void save(null, true)} disabled={isSaving}>
         {t.slots.notKnown}
       </button>
-      <span className="quick-add-hint">{nextSlot(kind) === 'father' ? t.slots.thenFather : t.slots.hint}</span>
+      <span className="quick-add-hint">
+        {nextSlot(kind) === 'father'
+          ? t.slots.thenFather
+          : kind === 'sibling' && member.parentIds.length === 0
+            ? t.slots.siblingHint
+            : t.slots.hint}
+      </span>
     </form>,
     document.body,
   );
@@ -256,7 +282,8 @@ export default function QuickAdd({
 
 // Confirms a person added through a slot, with an undo that deletes exactly that person again.
 // A person linked from the suggestions gets a plain confirmation instead: nobody was created, so there is nothing to undo.
-export function AddedToast({ added, onDone }: { added: { member: Member; familyId: string; linked?: boolean }; onDone: () => void }) {
+// The undo also deletes placeholder parents made on the way.
+export function AddedToast({ added, onDone }: { added: { member: Member; familyId: string } & AddedExtra; onDone: () => void }) {
   const t = useT();
   const [isUndoing, setIsUndoing] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -270,8 +297,10 @@ export function AddedToast({ added, onDone }: { added: { member: Member; familyI
   async function undo() {
     setIsUndoing(true);
     try {
-      const response = await deleteFamilyMember(added.familyId, added.member.id);
-      if (response.status !== 204 && response.status !== 404) throw new Error('Unexpected delete response');
+      for (const person of [added.member, ...(added.alsoAdded ?? [])]) {
+        const response = await deleteFamilyMember(added.familyId, person.id);
+        if (response.status !== 204 && response.status !== 404) throw new Error('Unexpected delete response');
+      }
       onDone();
     } catch {
       setFailed(true);

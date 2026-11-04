@@ -7,7 +7,7 @@ import { useT } from './i18n';
 import { PencilIcon } from './icons';
 import { nameOf } from './names';
 import { CARD, type Point } from './pins';
-import QuickAdd from './QuickAdd';
+import QuickAdd, { type AddedExtra } from './QuickAdd';
 import { missingSlots, type SlotKind } from './slots';
 import './slots.css';
 
@@ -40,7 +40,7 @@ export default function RelativeSlots({
   position: Point;
   card: 'scroll' | 'pill';
   distanceFactor: number;
-  onAdded: (added: Member, linked?: boolean) => void;
+  onAdded: (added: Member, extra: AddedExtra) => void;
   onEdit?: (id: string) => void;
 }) {
   const t = useT();
@@ -98,6 +98,7 @@ export default function RelativeSlots({
           // Beside a pill sits the next pill, a few pixels away; below it is the room up to the next row, so all three go there.
           <div className="relative-slots-child">
             {edit}
+            {kinds.includes('sibling') && slot('sibling')}
             {kinds.includes('partner') && slot('partner')}
             {kinds.includes('child') && slot('child')}
           </div>
@@ -105,7 +106,13 @@ export default function RelativeSlots({
           <>
             {kinds.includes('partner') && <div className="relative-slots-partner">{slot('partner')}</div>}
             {kinds.includes('child') && <div className="relative-slots-child">{slot('child')}</div>}
-            {edit && <div className="relative-slots-edit">{edit}</div>}
+            {(edit || kinds.includes('sibling')) && (
+              // The sibling stands beside the person, on the side opposite the partner; the pencil stays nearest.
+              <div className="relative-slots-edit">
+                {kinds.includes('sibling') && slot('sibling')}
+                {edit}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -119,8 +126,8 @@ export default function RelativeSlots({
           familyId={familyId}
           anchor={open.anchor}
           onClose={() => setOpen(null)}
-          onSaved={(added, next, linked) => {
-            onAdded(added, linked);
+          onSaved={(added, next, extra) => {
+            onAdded(added, extra);
             setOpen(next ? { ...open, kind: next, key: open.key + 1 } : null);
           }}
         />

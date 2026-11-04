@@ -3120,3 +3120,9 @@ button.dashboard-family:hover {
     --rez-in: 0px;
   }
 }
+
+/* A placeholder parent that saving creates: dashed and quiet like placeholders in the trees. */
+.person-chip-placeholder {
+  border-style: dashed;
+  color: var(--muted);
+}
