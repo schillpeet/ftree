@@ -2,12 +2,30 @@
 
 import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
-import { createFamilyMember, deleteFamilyMember, updateFamilyMemberRelatives, type Member, type Relatives } from '../lib/api/generated/members';
+import {
+  createFamilyMember,
+  deleteFamilyMember,
+  updateFamilyMemberRelatives,
+  type Member,
+  type ParentLink,
+  type Relatives,
+} from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { displayName, initialsOf, lifeSpan, nameOf } from './names';
 import { searchMembers } from './nameSearch';
 import { problemCode } from './problems';
-import { candidatesFor, coParentCandidates, linkExisting, linkOf, nextSlot, prefilledLastName, withParents, type SlotKind } from './slots';
+import {
+  asksParentKind,
+  coParentCandidates,
+  linkExisting,
+  linkOf,
+  nextSlot,
+  prefilledLastName,
+  slotOffer,
+  withParentOfKind,
+  withParents,
+  type SlotKind,
+} from './slots';
 import './slots.css';
 
 // How long the "is now growing" toast stays.
@@ -15,8 +33,9 @@ const TOAST_MS = 6_000;
 // Air between the slot and the popover, and between the popover and the window edge.
 const GAP = 12;
 const EDGE = 16;
-// Existing people offered while typing, so nobody is added twice.
-const SUGGESTIONS = 5;
+// Existing people offered right away and while typing, so nobody is added twice.
+const SUGGESTIONS = 6;
+const PARENT_KINDS: ParentLink['kind'][] = ['biological', 'adoptive', 'step', 'foster'];
 
 export type AddedExtra = { linked?: boolean; alsoAdded?: Member[] };
 
@@ -33,10 +52,13 @@ function placeBeside(anchor: DOMRect, width: number, height: number) {
   };
 }
 
-// The quick-add popover of a "+" slot: first and last name, Enter saves, Escape closes. Saving creates the person and
-// then links them to `member`; when the link fails, the new person is deleted again, so nobody is left half-linked.
-// While typing, it suggests people already in the tree who fit the slot (`candidatesFor`); choosing one links them
-// instead of creating anyone.
+// The quick-add popover of a "+" slot searches the tree first (`slotOffer`): it opens with who already has that place,
+// shown so nobody is entered twice, and who the tree points to; typing searches everyone who fits the slot. Choosing
+// someone links them instead of creating anyone; for a partner's child or a parent's partner it first asks what kind of
+// parent (`asksParentKind`).
+// "+ Neue Person anlegen" at the end of the list turns it into first and last name, prefilled from the search; saving
+// creates the person and then links them to `member`; when the link fails, the new person is deleted again, so nobody is
+// left half-linked. Escape closes.
 // Rendered into the body, so it keeps its size and stays above the scene's labels.
 export default function QuickAdd({
   kind,
@@ -60,17 +82,33 @@ export default function QuickAdd({
   onClose: () => void;
 }) {
   const t = useT();
+  const offer = slotOffer(kind, member, members);
+  const canSearch = offer.linked.length + offer.suggested.length + offer.others.length > 0;
+  // Searching the tree, or entering a new person; with nobody in the tree to show there is nothing to search.
+  const [isNew, setIsNew] = useState(!canSearch);
+  const [search, setSearch] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState(() => prefilledLastName(kind, member));
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  // The field to type into after switching between searching and entering a new person.
+  const fieldRef = useRef<HTMLInputElement>(null);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
   const name = displayName(member, members, t.placeholder.role);
-  const query = `${firstName} ${lastName}`.trim();
-  const suggestions = firstName.trim() ? searchMembers(candidatesFor(kind, member, members), query, SUGGESTIONS) : [];
+  const query = search.trim();
+  // Already in that place: shown, not offered. Ties in a search keep the suggested ones first.
+  const already = isNew ? [] : query ? searchMembers(offer.linked, query, SUGGESTIONS) : offer.linked;
+  const suggestions = isNew
+    ? []
+    : query
+      ? searchMembers([...offer.suggested, ...offer.others], query, SUGGESTIONS)
+      : offer.suggested.slice(0, SUGGESTIONS);
+  // The highlighted entry: a suggestion, `suggestions.length` for "+ Neue Person anlegen", or -1 for none.
   const [active, setActive] = useState(-1);
   const chosen = suggestions[active] as Member | undefined;
+  // A partner's child or a parent's partner waits here for the kind of parent before being linked.
+  const [kindFor, setKindFor] = useState<Member | null>(null);
   // After a partner: is the partner also a parent of the person's children? Asked child by child, and only for children
   // with fewer than two parents; `done` is what the popover reports once the questions are through.
   const [asking, setAsking] = useState<{ partner: Member; children: Member[]; done: () => void } | null>(null);
@@ -82,7 +120,9 @@ export default function QuickAdd({
     place();
     window.addEventListener('resize', place);
     return () => window.removeEventListener('resize', place);
-  }, [anchor, error]);
+  }, [anchor, error, isNew, suggestions.length]);
+
+  useEffect(() => fieldRef.current?.focus(), [isNew]);
 
   async function createPerson(first: string, last: string) {
     const created = await createFamilyMember(familyId, {
@@ -168,7 +208,12 @@ export default function QuickAdd({
   }
 
   // An existing person from the suggestions: linked to `member`, nobody new unless a placeholder parent is needed.
+  // A partner's child or a parent's partner first asks what kind of parent (`kindFor`).
   function link(existing: Member) {
+    if (asksParentKind(kind, member, existing)) {
+      setError(null);
+      return setKindFor(existing);
+    }
     return run(async (created) => {
       if (kind === 'sibling' && member.parentIds.length === 0 && existing.parentIds.length > 0) {
         // The person joins the sibling's parents.
@@ -181,10 +226,38 @@ export default function QuickAdd({
     });
   }
 
+  // `kindFor` becomes the child (for "+ Kind") or the parent (for a parent slot) of `member`, as a parent of `parentKind`.
+  function linkAsParent(existing: Member, parentKind: ParentLink['kind']) {
+    return run(async () => {
+      if (kind === 'child') await relink(existing, withParentOfKind(existing, member.id, parentKind, members));
+      else await relink(member, withParentOfKind(member, existing.id, parentKind, members));
+      onSaved(existing, nextSlot(kind), { linked: true });
+    });
+  }
+
+  // From the search to the name fields: the last word typed becomes the surname, unless only one was typed, which then
+  // is the first name beside the prefilled surname.
+  function enterNew() {
+    const words = query.split(/\s+/).filter(Boolean);
+    if (words.length > 1) {
+      setFirstName(words.slice(0, -1).join(' '));
+      setLastName(words[words.length - 1]);
+    } else {
+      setFirstName(words[0] ?? '');
+    }
+    setError(null);
+    setIsNew(true);
+  }
+
   // `nameless` adds a placeholder: someone not known or not entered yet.
   function save(event: FormEvent<HTMLFormElement> | null, nameless = false) {
     event?.preventDefault();
-    if (!nameless && chosen) return void link(chosen);
+    if (!nameless && !isNew) {
+      if (chosen) return void link(chosen);
+      // Enter without a highlighted person goes on to a new one, once something is typed.
+      if (active === suggestions.length || query) enterNew();
+      return;
+    }
     if (!nameless && !firstName.trim() && !lastName.trim()) return;
     return void run(async (created) => {
       const parentIds = kind === 'sibling' ? await sharedParents(created) : [];
@@ -193,6 +266,56 @@ export default function QuickAdd({
       await relink(added, linkOf(kind, member.id, added.version, parentIds));
       finish(added, () => onSaved(added, nextSlot(kind), { alsoAdded: created.filter((person) => person.id !== added.id) }));
     });
+  }
+
+  if (kindFor) {
+    const [parent, child] = kind === 'child' ? [member, kindFor] : [kindFor, member];
+    return createPortal(
+      <form
+        ref={formRef}
+        className="glass quick-add"
+        data-keeps-panel
+        style={position ?? { left: anchor.right + GAP, top: anchor.top }}
+        aria-label={t.slots.kindTitle}
+        onSubmit={(event) => event.preventDefault()}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return;
+          event.stopPropagation();
+          // Escape goes back to the search; nothing is linked yet.
+          if (!isSaving) setKindFor(null);
+        }}
+      >
+        <div className="quick-add-head">
+          <h2>{t.slots.kindTitle}</h2>
+        </div>
+        <p className="quick-add-question">
+          {t.slots.kindQuestion(displayName(parent, members, t.placeholder.role), displayName(child, members, t.placeholder.role))}
+        </p>
+        {error && (
+          <p className="quick-add-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="quick-add-kinds">
+          {PARENT_KINDS.map((parentKind, i) => (
+            <button
+              key={parentKind}
+              type="button"
+              className="quick-add-kind"
+              disabled={isSaving}
+              autoFocus={i === 0}
+              onClick={() => void linkAsParent(kindFor, parentKind)}
+            >
+              {t.relatives.parentKinds[parentKind]}
+            </button>
+          ))}
+        </div>
+        <button type="button" className="quick-add-unknown" disabled={isSaving} onClick={() => setKindFor(null)}>
+          {t.slots.backToSearch}
+        </button>
+      </form>,
+      document.body,
+    );
   }
 
   if (asking) {
@@ -251,11 +374,12 @@ export default function QuickAdd({
       aria-label={t.slots.title[kind](name)}
       onSubmit={(event) => void save(event)}
       onKeyDown={(event) => {
-        if (suggestions.length > 0 && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+        if (!isNew && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
           event.preventDefault();
           const step = event.key === 'ArrowDown' ? 1 : -1;
-          // -1 is "none": Enter then adds a new person.
-          setActive((current) => ((current + 1 + step + suggestions.length + 1) % (suggestions.length + 1)) - 1);
+          // The suggestions, "+ Neue Person anlegen", and -1 for none, in a ring.
+          const count = suggestions.length + 2;
+          setActive((current) => ((current + 1 + step + count) % count) - 1);
           return;
         }
         if (event.key !== 'Escape') return;
@@ -272,69 +396,138 @@ export default function QuickAdd({
           </svg>
         </button>
       </div>
-      <input
-        className="quick-add-field"
-        aria-label={t.members.firstName}
-        placeholder={t.members.firstName}
-        value={firstName}
-        onChange={(event) => {
-          setFirstName(event.target.value);
-          setActive(-1);
-        }}
-        maxLength={100}
-        autoComplete="off"
-        autoFocus
-        role="combobox"
-        aria-expanded={suggestions.length > 0}
-        aria-controls="quick-add-suggestions"
-        aria-activedescendant={chosen ? `quick-add-${chosen.id}` : undefined}
-      />
-      {suggestions.length > 0 && (
-        <ul className="quick-add-suggestions" id="quick-add-suggestions" role="listbox" aria-label={t.slots.existing}>
-          {suggestions.map((m, i) => (
-            <li key={m.id} id={`quick-add-${m.id}`} role="option" aria-selected={i === active}>
+      {isNew ? (
+        <>
+          <input
+            className="quick-add-field"
+            aria-label={t.members.firstName}
+            placeholder={t.members.firstName}
+            ref={fieldRef}
+            value={firstName}
+            onChange={(event) => setFirstName(event.target.value)}
+            maxLength={100}
+            autoComplete="off"
+            autoFocus
+          />
+          <input
+            className="quick-add-field"
+            aria-label={t.members.lastName}
+            placeholder={t.members.lastName}
+            value={lastName}
+            onChange={(event) => setLastName(event.target.value)}
+            maxLength={100}
+            autoComplete="off"
+          />
+        </>
+      ) : (
+        <>
+          <input
+            className="quick-add-field quick-add-search"
+            type="search"
+            aria-label={t.slots.search}
+            placeholder={t.slots.search}
+            ref={fieldRef}
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setActive(-1);
+            }}
+            maxLength={200}
+            autoComplete="off"
+            autoFocus
+            role="combobox"
+            aria-expanded
+            aria-controls="quick-add-suggestions"
+            aria-activedescendant={active >= 0 ? `quick-add-option-${active}` : undefined}
+          />
+          <ul className="quick-add-suggestions" id="quick-add-suggestions" role="listbox" aria-label={t.slots.existing}>
+            {already.length > 0 && (
+              <>
+                <li className="quick-add-suggestions-label" role="presentation">
+                  {t.slots.already}
+                </li>
+                {already.map((m) => (
+                  <li key={m.id} className="quick-add-already" role="presentation">
+                    <span className="quick-add-suggestion-avatar" aria-hidden="true">
+                      {initialsOf(m)}
+                    </span>
+                    <span className="quick-add-suggestion-name">{displayName(m, members, t.placeholder.role)}</span>
+                    <span className="quick-add-suggestion-years">{lifeSpan(m)}</span>
+                    <span className="quick-add-already-mark" aria-hidden="true">
+                      ✓
+                    </span>
+                  </li>
+                ))}
+              </>
+            )}
+            {suggestions.length > 0 ? (
+              <li className="quick-add-suggestions-label" role="presentation">
+                {query ? t.slots.existing : t.slots.suggested}
+              </li>
+            ) : (
+              <li className="quick-add-suggestions-empty" role="presentation">
+                {query || offer.others.length === 0 ? t.slots.noMatch : t.slots.typeToSearch}
+              </li>
+            )}
+            {suggestions.map((m, i) => (
+              <li key={m.id} id={`quick-add-option-${i}`} role="option" aria-selected={i === active}>
+                <button
+                  type="button"
+                  className={i === active ? 'is-active' : undefined}
+                  tabIndex={-1}
+                  disabled={isSaving}
+                  onMouseEnter={() => setActive(i)}
+                  onClick={() => void link(m)}
+                >
+                  <span className="quick-add-suggestion-avatar" aria-hidden="true">
+                    {initialsOf(m)}
+                  </span>
+                  <span className="quick-add-suggestion-name">{displayName(m, members, t.placeholder.role)}</span>
+                  <span className="quick-add-suggestion-years">{lifeSpan(m)}</span>
+                  {i === active && <span className="quick-add-suggestion-link">{t.slots.link}</span>}
+                </button>
+              </li>
+            ))}
+            <li
+              id={`quick-add-option-${suggestions.length}`}
+              className="quick-add-new"
+              role="option"
+              aria-selected={active === suggestions.length}
+            >
               <button
                 type="button"
-                className={i === active ? 'is-active' : undefined}
+                className={active === suggestions.length ? 'is-active' : undefined}
                 tabIndex={-1}
                 disabled={isSaving}
-                onMouseEnter={() => setActive(i)}
-                onClick={() => void link(m)}
+                onMouseEnter={() => setActive(suggestions.length)}
+                onClick={enterNew}
               >
-                <span className="quick-add-suggestion-avatar" aria-hidden="true">
-                  {initialsOf(m)}
-                </span>
-                <span className="quick-add-suggestion-name">{displayName(m, members, t.placeholder.role)}</span>
-                <span className="quick-add-suggestion-years">{lifeSpan(m)}</span>
-                {i === active && <span className="quick-add-suggestion-link">{t.slots.link}</span>}
+                {query ? t.slots.newNamed(query) : t.slots.newPerson}
               </button>
             </li>
-          ))}
-        </ul>
+          </ul>
+        </>
       )}
-      <input
-        className="quick-add-field"
-        aria-label={t.members.lastName}
-        placeholder={t.members.lastName}
-        value={lastName}
-        onChange={(event) => {
-          setLastName(event.target.value);
-          setActive(-1);
-        }}
-        maxLength={100}
-        autoComplete="off"
-      />
       {error && (
         <p className="quick-add-error" role="alert">
           {error}
         </p>
       )}
-      <button type="submit" className="quick-add-save" disabled={isSaving || (!firstName.trim() && !lastName.trim())}>
-        {isSaving ? t.saving : suggestions.length > 0 ? t.slots.addNew : t.slots.add}
-      </button>
-      <button type="button" className="quick-add-unknown" title={t.slots.notKnownHint} onClick={() => void save(null, true)} disabled={isSaving}>
-        {t.slots.notKnown}
-      </button>
+      {isNew && (
+        <button type="submit" className="quick-add-save" disabled={isSaving || (!firstName.trim() && !lastName.trim())}>
+          {isSaving ? t.saving : t.slots.add}
+        </button>
+      )}
+      <div className="quick-add-more">
+        {isNew && canSearch && (
+          <button type="button" className="quick-add-unknown" onClick={() => setIsNew(false)} disabled={isSaving}>
+            {t.slots.backToSearch}
+          </button>
+        )}
+        <button type="button" className="quick-add-unknown" title={t.slots.notKnownHint} onClick={() => void save(null, true)} disabled={isSaving}>
+          {t.slots.notKnown}
+        </button>
+      </div>
       <span className="quick-add-hint">
         {nextSlot(kind) === 'father'
           ? t.slots.thenFather

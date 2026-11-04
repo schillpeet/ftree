@@ -1,7 +1,7 @@
 // Run with `node app/slots.check.mjs`: the "+" slots around the selected person offer only the relations still
 // missing, and the quick-add prefills the person's surname for a father and a child.
 import assert from 'node:assert/strict';
-import { candidatesFor, coParentCandidates, linkExisting, linkOf, missingSlots, nextSlot, prefilledLastName } from './slots.ts';
+import { candidatesFor, coParentCandidates, linkExisting, linkOf, missingSlots, nextSlot, prefilledLastName, slotOffer, asksParentKind, withParentOfKind } from './slots.ts';
 
 assert.deepEqual(missingSlots({ id: 'a', parentIds: [] }), ['mother', 'father', 'sibling', 'partner', 'child']);
 assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p'] }), ['parent', 'sibling', 'partner', 'child']);
@@ -63,5 +63,52 @@ const kids = [
   { id: 'c4', parentIds: ['z'], partnerIds: [] },
 ];
 assert.deepEqual(idsOf(coParentCandidates({ id: 'a', parentIds: [], partnerIds: [] }, { id: 'n', parentIds: [], partnerIds: [] }, kids)), ['c1']);
+
+// Before anything is typed, a slot shows who already has that place and offers who the tree points to.
+const person = (id, extra = {}) => ({ id, firstName: id, lastName: '', parentIds: [], partnerIds: [], parentLinks: [], version: 0, ...extra });
+const me = person('me', { parentIds: ['dad', 'mom'], partnerIds: ['wife'] });
+const tree = [
+  person('dad', { partnerIds: ['step'] }),
+  person('mom'),
+  person('step', { partnerIds: ['dad'] }),
+  me,
+  person('wife', { partnerIds: ['me'] }),
+  person('sis', { parentIds: ['dad', 'mom'] }),
+  person('half', { parentIds: ['dad', 'other'] }),
+  person('other'),
+  person('kid', { parentIds: ['me', 'wife'] }),
+  person('stepkid', { parentIds: ['wife'], parentLinks: [{ parentId: 'wife', kind: 'biological' }], version: 4 }),
+  person('love', { parentIds: ['me', 'coparent'] }),
+  person('coparent'),
+  person('loner'),
+  { ...person('ph'), firstName: '' },
+];
+const offer = (kind) => {
+  const { linked, suggested, others } = slotOffer(kind, me, tree);
+  for (const m of suggested) assert.ok(!others.includes(m), `${m.id} is offered once`);
+  return { linked: idsOf(linked), suggested: idsOf(suggested) };
+};
+assert.deepEqual(offer('parent'), { linked: ['dad', 'mom'], suggested: ['other', 'step'] }, "the half-sibling's other parent and a step-parent");
+assert.deepEqual(offer('partner'), { linked: ['wife'], suggested: ['coparent', 'loner'] }, 'a co-parent, then the unconnected with a name');
+assert.deepEqual(offer('child'), { linked: ['kid', 'love'], suggested: ['stepkid', 'loner'] }, "the partner's child, then the unconnected");
+assert.deepEqual(offer('sibling'), { linked: ['sis'], suggested: ['half'] }, 'full siblings shown, half-siblings offered');
+
+// Becoming the parent of a partner's child, or the child of a parent's partner, asks what kind of parent.
+const byId = (id) => tree.find((m) => m.id === id);
+assert.equal(asksParentKind('child', me, byId('stepkid')), true);
+assert.equal(asksParentKind('child', me, byId('loner')), false);
+assert.equal(asksParentKind('parent', me, byId('step')), true);
+assert.equal(asksParentKind('parent', me, byId('other')), false);
+assert.equal(asksParentKind('partner', me, byId('coparent')), false);
+assert.deepEqual(withParentOfKind(byId('stepkid'), 'me', 'step', tree), {
+  version: 4,
+  parentIds: ['wife', 'me'],
+  childIds: [],
+  partnerIds: [],
+  parentLinks: [
+    { parentId: 'wife', kind: 'biological' },
+    { parentId: 'me', kind: 'step' },
+  ],
+});
 
 console.log('slots checks passed');

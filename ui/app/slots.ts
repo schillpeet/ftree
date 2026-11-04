@@ -1,6 +1,6 @@
 // The "+" slots around the selected person and how a person added through one is linked. Pure, so
 // `slots.check.mjs` can test it.
-import type { Member, Relatives } from '../lib/api/generated/members';
+import type { Member, ParentLink, Relatives } from '../lib/api/generated/members';
 import { ancestorsOf } from './relatives.ts';
 
 // Parents carry no sex in the data: with one parent known the other slot is just "parent".
@@ -77,6 +77,85 @@ export function candidatesFor<T extends Linked>(kind: SlotKind, member: Linked, 
         );
     }
   });
+}
+
+type Offered = Linked & Pick<Member, 'firstName' | 'lastName'>;
+
+const byName = (a: Offered, b: Offered) => `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+
+// Somebody with a name and no link at all: no parents, no partners, no children.
+function unconnected(m: Offered, members: Linked[]) {
+  return (
+    Boolean(m.firstName || m.lastName) &&
+    m.parentIds.length === 0 &&
+    m.partnerIds.length === 0 &&
+    !members.some((c) => c.parentIds.includes(m.id))
+  );
+}
+
+// Everyone sharing a parent with `member`, full and half siblings alike.
+function siblingsOf<T extends Linked>(member: Linked, members: T[]): T[] {
+  return members.filter((m) => m.id !== member.id && m.parentIds.some((id) => member.parentIds.includes(id)));
+}
+
+// What a slot shows before anything is typed, so nobody is entered twice:
+// - `linked`: who already has that place (the parents, partners, or children, or the full siblings), shown but not offered;
+// - `suggested`: who the tree points to, offered first: for a sibling the half-siblings, for a parent the other parents
+//   of the half-siblings and the partners of the parents (step-parents), for a partner co-parents without a partnership
+//   and then everyone not connected yet, for a child the partners' children and then everyone not connected yet;
+// - `others`: everyone else who fits the slot (`candidatesFor`), found by typing.
+export function slotOffer<T extends Offered>(kind: SlotKind, member: Offered, members: T[]) {
+  const candidates = candidatesFor(kind, member, members);
+  const siblings = siblingsOf(member, members);
+  const full = (m: Linked) => member.parentIds.every((id) => m.parentIds.includes(id));
+  let linked: T[];
+  let hinted: (m: T) => boolean;
+  switch (kind) {
+    case 'mother':
+    case 'father':
+    case 'parent': {
+      linked = members.filter((m) => member.parentIds.includes(m.id));
+      const fromSiblings = siblings.filter((h) => !full(h)).flatMap((h) => h.parentIds);
+      hinted = (m) => fromSiblings.includes(m.id) || member.parentIds.some((id) => m.partnerIds.includes(id));
+      break;
+    }
+    case 'partner':
+      linked = members.filter((m) => member.partnerIds.includes(m.id));
+      hinted = (m) => members.some((c) => c.parentIds.includes(member.id) && c.parentIds.includes(m.id));
+      break;
+    case 'child':
+      linked = members.filter((m) => m.parentIds.includes(member.id));
+      hinted = (m) => m.parentIds.some((id) => member.partnerIds.includes(id));
+      break;
+    case 'sibling':
+      linked = siblings.filter(full);
+      hinted = (m) => siblings.includes(m);
+      break;
+  }
+  const loose = kind === 'partner' || kind === 'child' ? (m: T) => unconnected(m, members) : () => false;
+  const suggested = [...candidates.filter(hinted).sort(byName), ...candidates.filter((m) => !hinted(m) && loose(m)).sort(byName)];
+  return { linked: linked.sort(byName), suggested, others: candidates.filter((m) => !suggested.includes(m)) };
+}
+
+// Whether linking `existing` through the slot makes someone a parent of a partner's child, so the quick-add asks what
+// kind of parent: a partner's child for a child, a parent's partner for a parent.
+export function asksParentKind(kind: SlotKind, member: Linked, existing: Linked) {
+  if (kind === 'child') return existing.parentIds.some((id) => member.partnerIds.includes(id));
+  if (kind === 'mother' || kind === 'father' || kind === 'parent') return member.parentIds.some((id) => existing.partnerIds.includes(id));
+  return false;
+}
+
+// The relatives of `child` with `parentId` added as a parent of `kind`; the kinds of the other parents stay.
+export function withParentOfKind(
+  child: Linked & Pick<Member, 'version' | 'parentLinks'>,
+  parentId: string,
+  kind: ParentLink['kind'],
+  members: Linked[],
+): Relatives {
+  return {
+    ...withParents(child, [...child.parentIds.filter((id) => id !== parentId), parentId], members),
+    parentLinks: [...child.parentLinks.filter((link) => link.parentId !== parentId), { parentId, kind }],
+  };
 }
 
 // The relatives of an existing person chosen in a slot: what they have plus the link to `member`. Siblings, kinds, and
