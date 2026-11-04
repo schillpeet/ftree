@@ -6,7 +6,8 @@ import type { Member } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import PresenceDot from './live/PresenceDot';
 import { formatDate, photoSrc } from './MembersControls';
-import { isNameless, nameOf } from './names';
+import { isNameless, lifeSpan } from './names';
+import { useCardDensity } from './cardDensity';
 
 // Pointer travel (px) up to which a press on a scroll still counts as a click, not a drag.
 export const CLICK_TOLERANCE = 5;
@@ -17,6 +18,7 @@ export const CLICK_TOLERANCE = 5;
 // is highlighted, the scrolls outside it fade and lose colour.
 export default function Scroll({
   member,
+  label,
   familyId,
   position,
   onOpen,
@@ -26,6 +28,8 @@ export default function Scroll({
   isSelf = false,
 }: {
   member: Member;
+  // The member's name, or a placeholder's role (`displayName`).
+  label: string;
   familyId: string | null;
   position: [number, number, number];
   onOpen: () => void;
@@ -36,6 +40,8 @@ export default function Scroll({
   isSelf?: boolean;
 }) {
   const t = useT();
+  // Slim: name and years; fuller: birth name and dates (`cardDensity.ts`). The note stays in the profile.
+  const [density] = useCardDensity();
   const birth = formatDate(member.birthDate);
   const death = formatDate(member.deathDate);
   const photo = photoSrc(member, familyId);
@@ -46,7 +52,7 @@ export default function Scroll({
       <div
         role="button"
         tabIndex={0}
-        aria-label={t.profile.open(nameOf(member, t.members.unknown))}
+        aria-label={t.profile.open(label)}
         className={['scroll', onDrag && 'scroll-draggable', selected && 'is-selected', dimmed && 'is-dimmed'].filter(Boolean).join(' ')}
         data-self={isSelf || undefined}
         onPointerDown={(event) => {
@@ -77,10 +83,16 @@ export default function Scroll({
             // eslint-disable-next-line @next/next/no-img-element
             <img className="scroll-photo" src={photo} alt="" draggable={false} />
           )}
-          <h3 className={isNameless(member) ? 'scroll-unknown' : undefined}>{nameOf(member, t.members.unknown)}</h3>
-          {birth && <p>* {birth}</p>}
-          {death && <p>† {death}</p>}
-          {member.note && <p className="scroll-note">{member.note}</p>}
+          <h3 className={isNameless(member) ? 'scroll-unknown' : undefined}>{isNameless(member) ? `? ${label}` : label}</h3>
+          {density === 'm' ? (
+            <>
+              {member.birthName && member.birthName !== member.lastName && <p className="scroll-nee">{t.members.nee(member.birthName)}</p>}
+              {birth && <p>* {birth}</p>}
+              {death && <p>† {death}</p>}
+            </>
+          ) : (
+            lifeSpan(member) && <p>{lifeSpan(member)}</p>
+          )}
         </div>
         <div className="scroll-curl" />
         <PresenceDot memberId={member.id} />

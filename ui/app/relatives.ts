@@ -77,3 +77,10 @@ export function lineageOf<T extends Person>(member: T, members: T[]) {
   }
   return found;
 }
+
+// Who stays in the light while a person is selected: the person and everyone their profile lists (parents, partners,
+// children, siblings, and half-siblings). Everyone else fades, so the selection is plain to see.
+export function coreFamilyOf<T extends Person>(member: T, members: T[]) {
+  const { parents, partners, children, siblings, halfSiblings } = relativesOf(member, members);
+  return new Set([member.id, ...[...parents, ...partners, ...children, ...siblings, ...halfSiblings].map((m) => m.id)]);
+}

@@ -6,7 +6,7 @@
 2. Sees the welcome card over the veiled scene, first and last name prefilled.
 3. "Baum pflanzen" creates the tree "Familie <Nachname>" with the user as the first person.
 4. Camera settles on the user's card; the intro tour starts (skippable).
-5. Dashed slots invite the first relatives; mother, then father in one flow.
+5. Filled "+" slots invite the first relatives; mother, then father in one flow.
 - Goal: first own card in under 30 seconds, first relative within the first minute.
 - Alternative on the card: GEDCOM import (opens the Familien board).
 

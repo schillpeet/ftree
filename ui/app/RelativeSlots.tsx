@@ -7,7 +7,7 @@ import { useT } from './i18n';
 import { PencilIcon } from './icons';
 import { nameOf } from './names';
 import { CARD, type Point } from './pins';
-import QuickAdd from './QuickAdd';
+import QuickAdd, { type AddedExtra } from './QuickAdd';
 import { missingSlots, type SlotKind } from './slots';
 import './slots.css';
 
@@ -25,6 +25,7 @@ export type SlotMount = { memberId: string; render: (position: Point, distanceFa
 // the person panel.
 export default function RelativeSlots({
   member,
+  members,
   familyId,
   position,
   card,
@@ -33,11 +34,13 @@ export default function RelativeSlots({
   onEdit,
 }: {
   member: Member;
+  // The family's members, for the quick-add's suggestions.
+  members: Member[];
   familyId: string;
   position: Point;
   card: 'scroll' | 'pill';
   distanceFactor: number;
-  onAdded: (added: Member) => void;
+  onAdded: (added: Member, extra: AddedExtra) => void;
   onEdit?: (id: string) => void;
 }) {
   const t = useT();
@@ -95,6 +98,7 @@ export default function RelativeSlots({
           // Beside a pill sits the next pill, a few pixels away; below it is the room up to the next row, so all three go there.
           <div className="relative-slots-child">
             {edit}
+            {kinds.includes('sibling') && slot('sibling')}
             {kinds.includes('partner') && slot('partner')}
             {kinds.includes('child') && slot('child')}
           </div>
@@ -102,7 +106,13 @@ export default function RelativeSlots({
           <>
             {kinds.includes('partner') && <div className="relative-slots-partner">{slot('partner')}</div>}
             {kinds.includes('child') && <div className="relative-slots-child">{slot('child')}</div>}
-            {edit && <div className="relative-slots-edit">{edit}</div>}
+            {(edit || kinds.includes('sibling')) && (
+              // The sibling stands beside the person, on the side opposite the partner; the pencil stays nearest.
+              <div className="relative-slots-edit">
+                {kinds.includes('sibling') && slot('sibling')}
+                {edit}
+              </div>
+            )}
           </>
         )}
       </div>
@@ -112,11 +122,12 @@ export default function RelativeSlots({
           key={open.key}
           kind={open.kind}
           member={member}
+          members={members}
           familyId={familyId}
           anchor={open.anchor}
           onClose={() => setOpen(null)}
-          onSaved={(added, next) => {
-            onAdded(added);
+          onSaved={(added, next, extra) => {
+            onAdded(added, extra);
             setOpen(next ? { ...open, kind: next, key: open.key + 1 } : null);
           }}
         />

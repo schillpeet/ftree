@@ -1,13 +1,14 @@
 // Where the camera stands for a selected card: far enough back that the card and the slots around it (parents above,
-// child below, partner right, edit pencil left) fill about half of the free view, and shifted sideways so the card sits
+// child below, partner right, sibling and edit pencil left) fill about half of the free view, and shifted sideways so the card sits
 // in the middle of the screen part the person panel leaves free. Pure, so `cardFrame.check.mjs` can test it.
 
 export type PanelSide = 'left' | 'right' | null;
 
 type Size = { width: number; height: number };
 
-// World units around the card that the slots take (the slots are drawn at 50 CSS px per world unit).
-const SIDE_ROOM = 3;
+// World units around the card that the slots take (the slots are drawn at 50 CSS px per world unit); the wider side,
+// "+ Geschwister" and the pencil on the left, sets both.
+const SIDE_ROOM = 4.2;
 const VERTICAL_ROOM = 1.6;
 // How much of the free view the card with its slots may fill.
 const FILL = 0.55;

@@ -7,6 +7,7 @@ import { PUBLIC_APPEARANCE, themeOf, type Appearance, type Theme } from './acces
 import { useAppearance } from './appearance';
 import { useLanguage, useT, type Language } from './i18n';
 import { CheckIcon, CloseIcon, EvolutionIcon } from './icons';
+import { CARD_DENSITIES, useCardDensity } from './cardDensity';
 import { useMotion, useReducedMotion } from './motion';
 import { useCan, useMe, useMeLoaded } from './Permissions';
 import BrandLink from './home/BrandLink';
@@ -81,6 +82,21 @@ function MotionToggle() {
         </div>
       )}
     </>
+  );
+}
+
+// S | M: how much the cards in the tree show (`cardDensity.ts`); only where there is a tree.
+export function DensitySegment() {
+  const t = useT();
+  const [density, setDensity] = useCardDensity();
+  return (
+    <div className="segment header-density" role="group" aria-label={t.density.label} title={t.density.title}>
+      {CARD_DENSITIES.map((option) => (
+        <button key={option} type="button" aria-pressed={density === option} title={t.density[option]} onClick={() => setDensity(option)}>
+          {option.toUpperCase()}
+        </button>
+      ))}
+    </div>
   );
 }
 
@@ -173,6 +189,7 @@ export default function Header({
         <span className="dashboard-family-name">{activeFamily?.name ?? t.menu.noFamily}</span>
       </button>
       <div className="header-actions">
+        <DensitySegment />
         <ThemeSegment className="header-theme" />
         <LanguageSegment />
         {menu}

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Member, ParentLink, Partnership, Relatives, Sibling } from '../lib/api/generated/members';
 import { useT } from './i18n';
-import { nameOf } from './names';
+import { useDisplayName } from './placeholders';
 import { searchMembers } from './nameSearch';
 import { dateProblem, sortPartners, today } from './partnerships';
 import { RelativeChip } from './PersonPanel';
@@ -42,6 +42,21 @@ const kindsKey = (kinds: Kinds, ids: string[]) =>
     .sort()
     .join(',');
 
+// Stands in for a placeholder parent that saving creates first: siblings share parents, so a sibling picked for a
+// person without parents (who has none either) gets one shared with them (`withNewPlaceholder`).
+export const NEW_PLACEHOLDER = 'new-placeholder';
+
+// The relatives with the stand-in replaced by the id of the placeholder just created.
+export function withNewPlaceholder(relatives: Relatives, id: string): Relatives {
+  const swap = (ids: string[]) => ids.map((parentId) => (parentId === NEW_PLACEHOLDER ? id : parentId));
+  return {
+    ...relatives,
+    parentIds: swap(relatives.parentIds),
+    parentLinks: relatives.parentLinks?.map((link) => (link.parentId === NEW_PLACEHOLDER ? { ...link, parentId: id } : link)),
+    siblings: relatives.siblings?.map((sibling) => ({ ...sibling, parentIds: swap(sibling.parentIds) })),
+  };
+}
+
 const siblingKey = (s: Sibling) => `${s.id}:${[...s.parentIds].sort().join(',')}`;
 
 // "Add parents" opens a small search instead of a list of everybody; picking someone adds them and closes it.
@@ -60,6 +75,7 @@ function AddRelative({
   onCreate?: (name: string) => void;
 }) {
   const t = useT();
+  const nameOf = useDisplayName();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const results = searchMembers(options, query, 6);
@@ -114,7 +130,7 @@ function AddRelative({
         {results.map((m) => (
           <li key={m.id}>
             <button type="button" onClick={() => pick(m.id)}>
-              {nameOf(m, t.members.unknown)}
+              {nameOf(m)}
               <span>{[m.birthDate?.slice(0, 4), m.deathDate && `† ${m.deathDate.slice(0, 4)}`].filter(Boolean).join(' ')}</span>
             </button>
           </li>
@@ -152,7 +168,7 @@ export default function RelativesFields({
   linked?: Relation | null;
 }) {
   const t = useT();
-  const fullName = (m: Member) => nameOf(m, t.members.unknown);
+  const fullName = useDisplayName();
   const others = members.filter((m) => m.id !== member?.id);
   const [initial] = useState(() => {
     const parentIds = member?.parentIds ?? [];
@@ -219,6 +235,29 @@ export default function RelativesFields({
       <section className="person-group" role="group" aria-label={legend} data-relation={kind} data-linked={linked === kind || undefined}>
         <h3>{legend}</h3>
         <div className="person-chips person-chips-edit">
+          {kind === 'parent' && selected.includes(NEW_PLACEHOLDER) && (
+            <span className="person-edit-item">
+              <span className="person-chip person-chip-placeholder">
+                <span className="person-chip-main">
+                  <span className="person-avatar" aria-hidden="true">
+                    ?
+                  </span>
+                  <span className="person-chip-text">
+                    <span className="person-chip-name">{t.placeholder.role.parent}</span>
+                    <span className="person-chip-years">{t.placeholder.notEntered}</span>
+                  </span>
+                </span>
+                <button
+                  type="button"
+                  className="person-chip-remove"
+                  aria-label={t.relatives.remove(t.placeholder.role.parent)}
+                  onClick={() => onRemove(NEW_PLACEHOLDER)}
+                >
+                  ×
+                </button>
+              </span>
+            </span>
+          )}
           {chosen.map((m) => (
             <span key={m.id} className="person-edit-item">
               <RelativeChip
@@ -357,10 +396,18 @@ export default function RelativesFields({
         t.relatives.siblings,
         t.relatives.addSibling,
         fullIds,
-        [...parentIds, ...childIds, ...partnerIds, ...withOtherParents],
-        (id) => setShared(id, parentIds),
+        // Without parents the person may join a sibling's parents, so those with other parents are offered too.
+        [...parentIds, ...childIds, ...partnerIds, ...(parentIds.length > 0 ? withOtherParents : [])],
+        (id) => {
+          if (parentIds.length > 0) return setShared(id, parentIds);
+          const sibling = others.find((m) => m.id === id);
+          // The person takes the sibling's parents; without any on either side they share a new placeholder.
+          if (sibling && sibling.parentIds.length > 0) return setParentIds(sibling.parentIds);
+          setParentIds([NEW_PLACEHOLDER]);
+          setShared(id, [NEW_PLACEHOLDER]);
+        },
         (id) => setShared(id, []),
-        { hint: parentIds.length === 0 && t.relatives.parentsFirst, disabled: parentIds.length === 0 },
+        { hint: parentIds.length === 0 && t.relatives.siblingWithoutParents },
       )}
       {/* Existing half-siblings can always be removed; adding one needs a second parent to leave out. */}
       {group(

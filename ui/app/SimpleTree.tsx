@@ -10,11 +10,12 @@ import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
 import PresenceDot from './live/PresenceDot';
 import { useMotion, useReducedMotion } from './motion';
-import { initialsOf, isNameless, nameOf, shortFirstName } from './names';
-import { lifeSpan } from './PersonPanel';
+import { displayName, initialsOf, isNameless, lifeSpan, shortFirstName } from './names';
+import { useCardDensity } from './cardDensity';
+import { formatDate } from './MembersControls';
 import type { Point } from './pins';
 import type { SlotMount } from './RelativeSlots';
-import { lineageOf } from './relatives';
+import { coreFamilyOf, lineageOf } from './relatives';
 import { simpleLayout } from './simpleLayout';
 import { useTokenPaint } from './tokenColor';
 
@@ -156,11 +157,18 @@ export default function SimpleTree({
     const focus = members.find((m) => m.id === focusId);
     return focus ? lineageOf(focus, members) : null;
   }, [members, focusId]);
+  // A spotlight on the selection: it and its core family stay lit, everyone else fades; without a selection the lit
+  // lineage decides.
+  const lit = useMemo(() => {
+    const selected = members.find((m) => m.id === selectedId);
+    return selected ? coreFamilyOf(selected, members) : lineage;
+  }, [members, selectedId, lineage]);
   const paint = { none: useTokenPaint('--line-dim'), focus: useTokenPaint('--line-on'), blood: { color: BLOOD_COLOR, opacity: 1 } };
   const glow = useTokenPaint('--glow');
   const shadow = useTokenPaint('--line-shadow');
   const core = useTokenPaint('--line-core');
   const [motion] = useMotion();
+  const [density] = useCardDensity();
   const reduced = useReducedMotion();
   const pulse = motion && !reduced;
   const markOf = (links: Segment['links']) =>
@@ -273,25 +281,43 @@ export default function SimpleTree({
           </Html>
         ))}
       {members.map((member) => {
-        const state = member.id === selectedId ? ' is-selected' : !lineage ? '' : lineage.has(member.id) ? ' is-lineage' : ' is-dimmed';
+        const state =
+          member.id === selectedId ? ' is-selected' : !lit ? '' : !lit.has(member.id) ? ' is-dimmed' : lineage?.has(member.id) ? ' is-lineage' : '';
         const years = lifeSpan(member);
+        const placeholder = isNameless(member);
+        const name = displayName(member, members, t.placeholder.role);
+        // Fuller pills (`cardDensity.ts`) keep their size: full name, birth name, and the date of birth while the
+        // person lives (both dates would not fit, so the dead keep their years; the title has the dates).
+        const full = density === 'm' && !placeholder;
+        const nee = full && member.birthName && member.birthName !== member.lastName ? t.members.nee(member.birthName) : null;
+        const dates = [formatDate(member.birthDate) && `* ${formatDate(member.birthDate)}`, formatDate(member.deathDate) && `† ${formatDate(member.deathDate)}`]
+          .filter(Boolean)
+          .join(' ');
+        const when = full && member.birthDate && !member.deathDate ? `* ${formatDate(member.birthDate)}` : years;
         return (
           // Pills scale with the distance and the window height like the rest of the scene, so the gaps between them hold.
           <Html key={member.id} position={positions.get(member.id)} center distanceFactor={scale}>
             <button
-              className={`simple-name${state}`}
+              className={`simple-name${state}${placeholder ? ' is-placeholder' : ''}${full ? ' is-full' : ''}`}
                 data-self={member.id === selfId || undefined}
               type="button"
-              title={nameOf(member, t.members.unknown)}
-              aria-label={t.profile.open(nameOf(member, t.members.unknown))}
+              title={full && dates ? `${name} · ${dates}` : name}
+              aria-label={t.profile.open(name)}
               onClick={() => onOpen(member.id)}
             >
               <span className="simple-name-avatar" aria-hidden="true">
-                {isNameless(member) ? '?' : initialsOf(member)}
+                {placeholder ? '?' : initialsOf(member)}
               </span>
               <span className="simple-name-text">
-                <span>{isNameless(member) ? t.members.unknown : shortFirstName(member.firstName) || member.lastName}</span>
-                {years && <span className="simple-name-years">{years}</span>}
+                <span>
+                  {placeholder
+                    ? name
+                    : full
+                      ? [shortFirstName(member.firstName), member.lastName].filter(Boolean).join(' ')
+                      : shortFirstName(member.firstName) || member.lastName}
+                </span>
+                {nee && <span className="simple-name-years">{nee}</span>}
+                {when && <span className="simple-name-years">{when}</span>}
               </span>
               {member.id === selfId && <span className="self-badge">{t.tour.you}</span>}
               <PresenceDot memberId={member.id} />

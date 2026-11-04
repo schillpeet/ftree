@@ -642,16 +642,8 @@ textarea {
   font-size: 13px;
 }
 
-.scroll-note {
-  display: -webkit-box;
-  margin-top: 8px !important;
-  padding-top: 8px;
-  overflow: hidden;
-  border-top: 1px solid rgba(90, 50, 20, 0.3);
+.scroll-nee {
   font-style: italic;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 4;
-  line-clamp: 4;
 }
 
 .scroll-curl {
@@ -671,10 +663,10 @@ textarea {
   filter: drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 2px var(--line-on));
 }
 
-/* Outside the highlighted lineage: faded and desaturated. */
+/* Outside the selection's core family (or the highlighted lineage): faded and grey. */
 .scroll.is-dimmed {
-  opacity: 0.62;
-  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) saturate(0.6);
+  opacity: 0.35;
+  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) grayscale(1);
 }
 
 .debug-clock {
@@ -1504,6 +1496,10 @@ a.dashboard-nav-item {
    (NAME_W = 8.5 units in experimental/routing.ts). */
 .simple-name {
   position: relative;
+  transition:
+    opacity 0.25s,
+    filter 0.25s,
+    transform 0.25s;
   display: flex;
   box-sizing: border-box;
   align-items: center;
@@ -1559,12 +1555,62 @@ a.dashboard-nav-item {
   opacity: 0.7;
 }
 
+/* A placeholder (unknown or not entered yet): a dashed, quiet edge and "?" instead of initials, never "unknown". */
+.simple-name.is-placeholder {
+  border-style: dashed;
+  border-color: var(--avatar-dim);
+  color: var(--muted);
+}
+
+.simple-name.is-placeholder .simple-name-avatar {
+  border-style: dashed;
+  border-color: var(--avatar-dim);
+  background: transparent;
+  color: var(--muted);
+}
+
+.simple-name.is-placeholder .simple-name-text > span:first-child {
+  text-transform: none;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
+/* Fuller pills keep the pill's size, so the tree's spacing holds: three tight lines instead of two, and a smaller ring
+   and no tracking leave the full name room. */
+.simple-name.is-full {
+  gap: 5px;
+  padding-right: 8px;
+  letter-spacing: 0;
+}
+
+.simple-name.is-full .simple-name-avatar {
+  width: 24px;
+  height: 24px;
+  font-size: 10px;
+}
+
+.simple-name.is-full .simple-name-text {
+  line-height: 1.1;
+}
+
+.simple-name.is-full .simple-name-text > span:first-child {
+  font-size: 10.5px;
+}
+
 .simple-name.is-lineage {
   box-shadow: 0 0 14px var(--glow);
 }
 
 /* The selected person: a white edge, a lit face, and filled initials. */
+@media (prefers-reduced-motion: reduce) {
+  .simple-name {
+    transition: none;
+  }
+}
+
 .simple-name.is-selected {
+  transform: scale(1.12);
   border-color: var(--line-core);
   background: color-mix(in srgb, var(--accent) 20%, var(--node));
   box-shadow:
@@ -1579,7 +1625,8 @@ a.dashboard-nav-item {
 
 .simple-name.is-dimmed {
   border-color: var(--avatar-dim);
-  opacity: 0.78;
+  opacity: 0.3;
+  filter: grayscale(1);
 }
 
 .simple-name.is-dimmed .simple-name-avatar {
@@ -2009,6 +2056,22 @@ a.dashboard-nav-item {
   margin: 0;
   font: 500 24px/1.15 Georgia, 'Times New Roman', serif;
   overflow-wrap: anywhere;
+}
+
+.person-name-placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.person-enter {
+  margin-left: 8px;
+  padding: 2px 10px;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font: inherit;
+  cursor: pointer;
 }
 
 .person-muted {
@@ -3082,4 +3145,10 @@ button.dashboard-family:hover {
   from {
     --rez-in: 0px;
   }
+}
+
+/* A placeholder parent that saving creates: dashed and quiet like placeholders in the trees. */
+.person-chip-placeholder {
+  border-style: dashed;
+  color: var(--muted);
 }

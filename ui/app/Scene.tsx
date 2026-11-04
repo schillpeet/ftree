@@ -16,9 +16,11 @@ import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, 
 import { ScrollCard, SignCard } from './HangingCard';
 import { haloTexture, moonTexture } from './moon';
 import RelativeSlots, { type SlotMount } from './RelativeSlots';
+import type { AddedExtra } from './QuickAdd';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import { scrollLines } from './scrollLines';
-import { lineageOf } from './relatives';
+import { coreFamilyOf, lineageOf } from './relatives';
+import { displayName } from './names';
 import { useTokenPaint } from './tokenColor';
 import SimpleTree from './SimpleTree';
 import TieredTree, { TIERED_OPTIONS, buildTieredTree } from './TieredTree';
@@ -523,6 +525,7 @@ function Scrolls({
   // The "+" slots around the selected card, missing without the permission to add people.
   slots?: SlotMount;
 }) {
+  const t = useT();
   const { camera, events, gl, size } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
   const pinOf = useMemo(() => layerPins(members, pins, assignPins(members, pins.length), GENERATION_GAP), [members, pins]);
@@ -561,6 +564,11 @@ function Scrolls({
     return focused ? lineageOf(focused, members) : null;
   }, [members, focusId]);
   const lines = useMemo(() => scrollLines(members, positions, lineage ?? new Set()), [members, positions, lineage]);
+  // A spotlight on the selection: it and its core family stay lit, everyone else fades (as in `SimpleTree`).
+  const lit = useMemo(() => {
+    const selected = members.find((m) => m.id === selectedId);
+    return selected ? coreFamilyOf(selected, members) : lineage;
+  }, [members, selectedId, lineage]);
   const lineDim = useTokenPaint('--line-dim');
   const lineOn = useTokenPaint('--line-on');
   const glow = useTokenPaint('--glow');
@@ -684,12 +692,13 @@ function Scrolls({
       {members.map((member) => {
         const card = {
           member,
+          label: displayName(member, members, t.placeholder.role),
           familyId,
           position: positions.get(member.id)!,
           onOpen: () => onOpen(member.id),
           onDrag: onPlace && showPins && spacing == null ? (event: { clientX: number; clientY: number }) => startDrag(member.id, event) : undefined,
           selected: member.id === selectedId,
-          dimmed: lineage != null && !lineage.has(member.id),
+          dimmed: lit != null && !lit.has(member.id),
         };
         if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} isSelf={member.id === selfId} />;
         if (cardStyle === 'sign') return <SignCard key={member.id} {...card} evening={evening} isSelf={member.id === selfId} />;
@@ -746,7 +755,7 @@ export default function Scene({
   onOpen: (id: string) => void;
   onPlace?: (id: string, placement: Placement) => void;
   // A person was added through a "+" slot around `highlight`; missing without the permission to add people, which hides the slots.
-  onAdded?: (member: Member) => void;
+  onAdded?: (member: Member, extra: AddedExtra) => void;
   // The edit pencil beside `highlight`'s card; missing without the permission to edit.
   onEdit?: (id: string) => void;
   // Where the person panel is open: right for a profile, left while editing, null when closed.
@@ -930,6 +939,7 @@ export default function Scene({
             <RelativeSlots
               key={selected.id}
               member={selected}
+              members={members}
               familyId={familyId}
               position={position}
               card={card}

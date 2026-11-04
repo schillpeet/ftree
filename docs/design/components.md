@@ -17,10 +17,10 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Centre: the prompt button `<user>:<family>` – the user in `--muted`, the family name in `--font-display`; a click opens the family card. In GRID all in `--font-mono`, the user in `--accent` with glow.
 - No tree switcher in the header: trees are switched on the Familien board in the burger menu.
 - Below the family button: the presence bar (see "Live presence").
-- Right, in this order: in TRON the "Animation" toggle, theme segment (3D | GRID), language segment (DE | EN), burger; the public pages have no sign-in chip.
+- Right, in this order: the card density segment (S | M, titles "Schlank: Name und Jahre" and "Mehr: voller Name, Geburtsname und Daten"), in TRON the "Animation" toggle, theme segment (3D | GRID), language segment (DE | EN), burger; the public pages have no sign-in chip.
 - The wordmark's tooltip reads "Zur Startseite"; the burger menu's first entry, "Startseite" with a house icon, leads there too, in TRON as the ride back.
 - Without `tree.appearance` only TRON is offered and 3D is disabled with the title "Demnächst"; every signed-in user holds the permission today, so this only affects signed-out visitors.
-- Phones: the Evolution button shrinks to its icon below 480px; the family button moves to a second row below 700px.
+- Phones: the Evolution button shrinks to its icon and the density segment hides below 480px; the family button moves to a second row below 700px.
 - Controls are `--size-control` high with `--radius-control`; segments use `--radius-pill`, the active option `--segment-on`.
 
 ## Burger menu (top right)
@@ -78,6 +78,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 - A glass field above the dock with a search icon and "Mitglied suchen …"; arrows and Enter pick, Esc closes.
 - Results read "Vorname Nachname (Jahr)"; none: "Keine Treffer"; a pick selects the person and flies there.
+- Words match the start of name parts; one letter only given names ("M" → Marie, Karl Michael), two or more also surnames, ranked after given names.
 
 ## Person card
 
@@ -86,18 +87,23 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
   - Signed-in person: small "DU" badge in `--accent` on the rod; selected scroll gets a soft `--glow` halo.
 - `tron`: round pill in the chip look (`.simple-name` in `ui/app/globals.css`, markup in `ui/app/SimpleTree.tsx`), `--size-person-pill` high and at most 132px wide, `--radius-pill`, `--node` background, 1px `--accent` edge, glass blur, `--font-ui` (mono in GRID) 500 12px with 0.04em tracking.
   - Content: a 30px ring in `--avatar` with the initials on `--hover`, the first name in capitals, and the years at 10px (no role line).
-  - Lineage: a 14px glow; selected: a `--line-core` (white) edge, a face mixed with 20 % `--accent`, filled initials, and a 26px glow; dimmed: edge and ring in `--avatar-dim`, 78 % opacity.
+  - Lineage: a 14px glow; selected: 12 % larger, a `--line-core` (white) edge, a face mixed with 20 % `--accent`, filled initials, and a 26px glow; dimmed: edge and ring in `--avatar-dim`, grey at 30 % opacity.
   - Signed-in person: a 1.5px `--line-on` ring, a 14px glow and the "DU" badge.
-- Both: dimmed (`opacity .62`, desaturated scroll or `--avatar-dim`) when a lineage is highlighted and the person is not part of it; a presence dot shows when someone else views or edits the person.
+- Density M: 3D cards add "geb. …" and the dates of birth and death instead of the years; GRID pills keep their size with three tight lines (full name, "geb. …", date of birth or years). No card shows the note.
+- Placeholder (a nameless person): never "Unbekannt"; the role ("Elternteil", "Partner:in", "Kind", "Person") in italics, "?" in a dashed ring, and in GRID a dashed `--avatar-dim` edge with `--muted` text; the profile adds "noch nicht eingetragen" and, for editors, "Eintragen".
+- Both: a spotlight on the selection: the person and everyone their panel lists stay lit, every other card is dimmed (grey, `opacity .35` on scrolls, `.3` on pills); without a selection a highlighted lineage dims the rest the same way; a presence dot shows when someone else views or edits the person.
 
 ## Relative slots ("+")
 
-- Dashed 1.5px `--slot-border`, `--radius-pill`, `--size-slot` high, labels "+ Mutter", "+ Vater", "+ Elternteil" (parent of unknown gender), "+ Partner:in", "+ Kind".
-- Placed around the selected card: mother and father above, partner right, child below, and a round pencil left of the card that opens the edit form.
-- In GRID the pills stand too close side by side for that, so mother and father sit above and pencil, partner, and child share one row below the pill, all between the rows.
+- Filled in `--accent` with `--accent-ink` text and a 1.5px `--accent` edge (cyan in GRID, amber in 3D), so actions never look like the outlined people; hover and open add a `--line-core` edge and a `--glow`; `--radius-pill`, `--size-slot` high, labels "+ Mutter", "+ Vater", "+ Elternteil" (parent of unknown gender), "+ Geschwister", "+ Partner:in", "+ Kind".
+- Placed around the selected card: mother and father above, partner right, child below, and left of the card the sibling and, nearest to it, a round pencil that opens the edit form.
+- In GRID the pills stand too close side by side for that, so mother and father sit above and pencil, sibling, partner, and child share one row below the pill, all between the rows.
 - Shown only to editors and only for relations that are still missing.
 - A click opens the quick-add popover at the slot, titled "Mutter von <Name>" and so on: Vorname (focused) and Nachname (prefilled from the person for father and child); "Hinzufügen ↵"; hint "Esc schließt · Details später im Profil", for a mother "Danach geht es direkt mit dem Vater weiter."
 - After saving a mother the popover moves on to the father.
+- While typing, up to five fitting people already in the tree are listed under the first name ("Schon im Baum"): ring with initials, name, years, and "verknüpfen" on the highlighted one; a pick links them, the button then reads "Neu anlegen ↵", and the toast says "<Name> ist jetzt verknüpft" without undo.
+- After a partner the popover turns into "Auch Elternteil?": "Ist <Partner> auch Elternteil von <Kind>?" with "Ja ↵" and "Nein", one child with a single parent at a time.
+- "Noch nicht bekannt", a dashed-underlined link below the fields, adds a placeholder; for a sibling of someone without parents the hint says a placeholder parent comes along.
 - Each save shows a toast "<Name> wächst jetzt in deinem Baum" with "Rückgängig" for 6 seconds; undo deletes the person again.
 
 ## Connection lines

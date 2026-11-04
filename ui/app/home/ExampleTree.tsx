@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { AdminBadge, EvolutionButton, LanguageSegment, ThemeSegment } from '../Header';
+import { AdminBadge, DensitySegment, EvolutionButton, LanguageSegment, ThemeSegment } from '../Header';
 import { useT } from '../i18n';
 import { nameOf } from '../names';
 import { lifeSpan } from '../PersonPanel';
@@ -48,6 +48,7 @@ export default function ExampleTree() {
           <span>{t.landing.exampleHint}</span>
         </div>
         <div className="landing-segments">
+          <DensitySegment />
           <ThemeSegment />
           <LanguageSegment />
         </div>
