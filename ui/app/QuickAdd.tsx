@@ -7,7 +7,7 @@ import { useT } from './i18n';
 import { displayName, initialsOf, lifeSpan, nameOf } from './names';
 import { searchMembers } from './nameSearch';
 import { problemCode } from './problems';
-import { candidatesFor, linkExisting, linkOf, nextSlot, prefilledLastName, withParents, type SlotKind } from './slots';
+import { candidatesFor, coParentCandidates, linkExisting, linkOf, nextSlot, prefilledLastName, withParents, type SlotKind } from './slots';
 import './slots.css';
 
 // How long the "is now growing" toast stays.
@@ -71,6 +71,9 @@ export default function QuickAdd({
   const suggestions = firstName.trim() ? searchMembers(candidatesFor(kind, member, members), query, SUGGESTIONS) : [];
   const [active, setActive] = useState(-1);
   const chosen = suggestions[active] as Member | undefined;
+  // After a partner: is the partner also a parent of the person's children? Asked child by child, and only for children
+  // with fewer than two parents; `done` is what the popover reports once the questions are through.
+  const [asking, setAsking] = useState<{ partner: Member; children: Member[]; done: () => void } | null>(null);
 
   useLayoutEffect(() => {
     const form = formRef.current;
@@ -145,6 +148,25 @@ export default function QuickAdd({
     }
   }
 
+  // Ends a save: for a partner, first asks about the person's children who could share them as a parent.
+  function finish(person: Member, done: () => void) {
+    const children = kind === 'partner' ? coParentCandidates(member, person, members) : [];
+    if (children.length > 0) setAsking({ partner: person, children, done });
+    else done();
+  }
+
+  // "Ja": the partner becomes a parent of the child in question too.
+  function answer(yes: boolean) {
+    if (!asking) return;
+    const [child, ...rest] = asking.children;
+    const next = () => (rest.length > 0 ? setAsking({ ...asking, children: rest }) : asking.done());
+    if (!yes) return next();
+    void run(async () => {
+      await relink(child, withParents(child, [...child.parentIds, asking.partner.id], members));
+      next();
+    });
+  }
+
   // An existing person from the suggestions: linked to `member`, nobody new unless a placeholder parent is needed.
   function link(existing: Member) {
     return run(async (created) => {
@@ -155,7 +177,7 @@ export default function QuickAdd({
         const parentIds = kind === 'sibling' ? await sharedParents(created) : [];
         await relink(existing, linkExisting(kind, existing, member.id, members, parentIds));
       }
-      onSaved(existing, nextSlot(kind), { linked: true, alsoAdded: created });
+      finish(existing, () => onSaved(existing, nextSlot(kind), { linked: true, alsoAdded: created }));
     });
   }
 
@@ -169,8 +191,54 @@ export default function QuickAdd({
       const added = await createPerson(nameless ? '' : firstName.trim(), nameless ? '' : lastName.trim());
       created.push(added);
       await relink(added, linkOf(kind, member.id, added.version, parentIds));
-      onSaved(added, nextSlot(kind), { alsoAdded: created.filter((person) => person.id !== added.id) });
+      finish(added, () => onSaved(added, nextSlot(kind), { alsoAdded: created.filter((person) => person.id !== added.id) }));
     });
+  }
+
+  if (asking) {
+    const child = asking.children[0];
+    const partnerName = displayName(asking.partner, members, t.placeholder.role);
+    return createPortal(
+      <form
+        ref={formRef}
+        className="glass quick-add"
+        data-keeps-panel
+        style={position ?? { left: anchor.right + GAP, top: anchor.top }}
+        aria-label={t.slots.alsoParentTitle}
+        onSubmit={(event) => {
+          event.preventDefault();
+          answer(true);
+        }}
+        onKeyDown={(event) => {
+          if (event.key !== 'Escape') return;
+          event.stopPropagation();
+          // Escape skips the remaining questions; the partner stays.
+          if (!isSaving) asking.done();
+        }}
+      >
+        <div className="quick-add-head">
+          <h2>{t.slots.alsoParentTitle}</h2>
+        </div>
+        <p className="quick-add-question">
+          {t.slots.alsoParent(partnerName, displayName(child, members, t.placeholder.role))}
+        </p>
+        {error && (
+          <p className="quick-add-error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="quick-add-answers">
+          <button type="submit" className="quick-add-save" disabled={isSaving} autoFocus>
+            {t.slots.yes}
+          </button>
+          <button type="button" className="quick-add-no" disabled={isSaving} onClick={() => answer(false)}>
+            {t.slots.no}
+          </button>
+        </div>
+        {asking.children.length > 1 && <span className="quick-add-hint">{t.slots.moreChildren(asking.children.length - 1)}</span>}
+      </form>,
+      document.body,
+    );
   }
 
   return createPortal(

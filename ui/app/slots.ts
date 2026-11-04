@@ -113,3 +113,9 @@ export function withParents(person: Linked & { version: number }, parentIds: str
     partnerIds: person.partnerIds,
   };
 }
+
+// The children of `member` whom their new `partner` may also be a parent of: not already, and with room for a second
+// parent. The quick-add asks about them one by one.
+export function coParentCandidates<T extends Linked>(member: Linked, partner: Linked, members: T[]): T[] {
+  return members.filter((m) => m.parentIds.includes(member.id) && !m.parentIds.includes(partner.id) && m.parentIds.length < 2 && m.id !== partner.id);
+}

@@ -1,7 +1,7 @@
 // Run with `node app/slots.check.mjs`: the "+" slots around the selected person offer only the relations still
 // missing, and the quick-add prefills the person's surname for a father and a child.
 import assert from 'node:assert/strict';
-import { candidatesFor, linkExisting, linkOf, missingSlots, nextSlot, prefilledLastName } from './slots.ts';
+import { candidatesFor, coParentCandidates, linkExisting, linkOf, missingSlots, nextSlot, prefilledLastName } from './slots.ts';
 
 assert.deepEqual(missingSlots({ id: 'a', parentIds: [] }), ['mother', 'father', 'sibling', 'partner', 'child']);
 assert.deepEqual(missingSlots({ id: 'a', parentIds: ['p'] }), ['parent', 'sibling', 'partner', 'child']);
@@ -54,5 +54,14 @@ assert.deepEqual(
   { version: 5, parentIds: ['a', 'p'], childIds: [], partnerIds: [] },
   'a sibling gets the shared parents',
 );
+
+// After a new partner, only the children with a single parent are asked about.
+const kids = [
+  { id: 'c1', parentIds: ['a'], partnerIds: [] },
+  { id: 'c2', parentIds: ['a', 'q'], partnerIds: [] },
+  { id: 'c3', parentIds: ['a', 'n'], partnerIds: [] },
+  { id: 'c4', parentIds: ['z'], partnerIds: [] },
+];
+assert.deepEqual(idsOf(coParentCandidates({ id: 'a', parentIds: [], partnerIds: [] }, { id: 'n', parentIds: [], partnerIds: [] }, kids)), ['c1']);
 
 console.log('slots checks passed');

@@ -309,3 +309,35 @@
   color: var(--accent);
   font-size: 12px;
 }
+
+/* After a partner: "Ist … auch Elternteil von …?", one child at a time. */
+.quick-add-question {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.quick-add-answers {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.quick-add-no {
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font: 500 15px var(--font-ui);
+  cursor: pointer;
+}
+
+.quick-add-no:hover {
+  background: var(--hover);
+}
+
+.quick-add-no:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}

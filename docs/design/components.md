@@ -102,6 +102,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - A click opens the quick-add popover at the slot, titled "Mutter von <Name>" and so on: Vorname (focused) and Nachname (prefilled from the person for father and child); "Hinzufügen ↵"; hint "Esc schließt · Details später im Profil", for a mother "Danach geht es direkt mit dem Vater weiter."
 - After saving a mother the popover moves on to the father.
 - While typing, up to five fitting people already in the tree are listed under the first name ("Schon im Baum"): ring with initials, name, years, and "verknüpfen" on the highlighted one; a pick links them, the button then reads "Neu anlegen ↵", and the toast says "<Name> ist jetzt verknüpft" without undo.
+- After a partner the popover turns into "Auch Elternteil?": "Ist <Partner> auch Elternteil von <Kind>?" with "Ja ↵" and "Nein", one child with a single parent at a time.
 - "Noch nicht bekannt", a dashed-underlined link below the fields, adds a placeholder; for a sibling of someone without parents the hint says a placeholder parent comes along.
 - Each save shows a toast "<Name> wächst jetzt in deinem Baum" with "Rückgängig" for 6 seconds; undo deletes the person again.
 
