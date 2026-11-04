@@ -212,6 +212,7 @@ The profile and the relatives form list partners in one order: current ones firs
 In the profile the current partner stands on the person's row; every other partner gets a row of their own below, reached by a thin line that bends down from the person and carries the status, and a toggle folds the former partners away.
 A search square of the same size sits right of the burger menu; a click widens it to a text field.
 Typing shows up to eight matching members of the selected family as autocomplete suggestions (arrow keys and Enter or a click choose one; Escape or a press outside closes the field).
+Every name search matches the start of name parts only: a single letter looks at given names (second ones included), so "m" finds Marie and Karl Michael rather than everyone called Maci, and from two letters on surnames and birth names count too, ranked after given names (`ui/app/nameSearch.ts`).
 Choosing a suggestion flies the camera to that card (organic view) and opens the person's profile.
 "Mitglied hinzufügen" in the burger menu opens the form for a new person in the shown family; the members themselves are listed in the family card, and relatives are shown in the profile.
 A person panel in the middle of the screen (`ui/app/PersonPanel.tsx`) replaces the former profile dialog and member form: it sits below the top bar and has no dimmed backdrop, so the tree and camera stay usable around it.
