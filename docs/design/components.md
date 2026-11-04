@@ -95,7 +95,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Relative slots ("+")
 
-- Dashed 1.5px `--slot-border`, `--radius-pill`, `--size-slot` high, labels "+ Mutter", "+ Vater", "+ Elternteil" (parent of unknown gender), "+ Geschwister", "+ Partner:in", "+ Kind".
+- Filled in `--accent` with `--accent-ink` text and a 1.5px `--accent` edge (cyan in GRID, amber in 3D), so actions never look like the outlined people; hover and open add a `--line-core` edge and a `--glow`; `--radius-pill`, `--size-slot` high, labels "+ Mutter", "+ Vater", "+ Elternteil" (parent of unknown gender), "+ Geschwister", "+ Partner:in", "+ Kind".
 - Placed around the selected card: mother and father above, partner right, child below, and left of the card the sibling and, nearest to it, a round pencil that opens the edit form.
 - In GRID the pills stand too close side by side for that, so mother and father sit above and pencil, sibling, partner, and child share one row below the pill, all between the rows.
 - Shown only to editors and only for relations that are still missing.

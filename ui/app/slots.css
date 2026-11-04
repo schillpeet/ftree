@@ -71,10 +71,11 @@
 .relative-slot {
   height: var(--size-slot);
   padding: 0 14px;
-  border: 1.5px dashed var(--slot-border);
+  /* Filled in the accent, so actions never look like the people they belong to (pills and scrolls are outlined). */
+  border: 1.5px solid var(--accent);
   border-radius: var(--radius-pill);
-  background: var(--node);
-  color: var(--text);
+  background: var(--accent);
+  color: var(--accent-ink);
   font: 500 13px/1 var(--font-ui);
   white-space: nowrap;
   cursor: pointer;
@@ -83,12 +84,13 @@
 
 .relative-slot:hover,
 .relative-slot.is-open {
-  border-style: solid;
-  background: var(--panel-strong);
+  border-color: var(--line-core);
+  background: color-mix(in srgb, var(--accent) 80%, var(--line-core));
+  box-shadow: 0 0 14px var(--glow);
 }
 
 .relative-slot:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--line-core);
   outline-offset: 2px;
 }
 
