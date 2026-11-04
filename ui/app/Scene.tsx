@@ -749,7 +749,7 @@ export default function Scene({
   onOpen: (id: string) => void;
   onPlace?: (id: string, placement: Placement) => void;
   // A person was added through a "+" slot around `highlight`; missing without the permission to add people, which hides the slots.
-  onAdded?: (member: Member) => void;
+  onAdded?: (member: Member, linked?: boolean) => void;
   // The edit pencil beside `highlight`'s card; missing without the permission to edit.
   onEdit?: (id: string) => void;
   // Where the person panel is open: right for a profile, left while editing, null when closed.
@@ -933,6 +933,7 @@ export default function Scene({
             <RelativeSlots
               key={selected.id}
               member={selected}
+              members={members}
               familyId={familyId}
               position={position}
               card={card}

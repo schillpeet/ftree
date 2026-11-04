@@ -250,3 +250,62 @@
     animation: none;
   }
 }
+
+/* Existing people that fit the slot, offered while typing. */
+.quick-add-suggestions {
+  display: flex;
+  flex-direction: column;
+  margin: -4px 0 0;
+  padding: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  list-style: none;
+}
+
+.quick-add-suggestions button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font: 14px var(--font-ui);
+  text-align: left;
+  cursor: pointer;
+}
+
+.quick-add-suggestions button.is-active {
+  background: var(--hover);
+}
+
+.quick-add-suggestion-avatar {
+  display: grid;
+  flex: none;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 1px solid var(--avatar);
+  border-radius: 50%;
+  font-size: 10px;
+}
+
+.quick-add-suggestion-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick-add-suggestion-years {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.quick-add-suggestion-link {
+  margin-left: auto;
+  color: var(--accent);
+  font-size: 12px;
+}

@@ -4,9 +4,11 @@ import { useEffect, useLayoutEffect, useRef, useState, type FormEvent } from 're
 import { createPortal } from 'react-dom';
 import { createFamilyMember, deleteFamilyMember, updateFamilyMemberRelatives, type Member } from '../lib/api/generated/members';
 import { useT } from './i18n';
-import { nameOf } from './names';
+import { displayName, initialsOf, nameOf } from './names';
+import { lifeSpan } from './PersonPanel';
+import { searchMembers } from './nameSearch';
 import { problemCode } from './problems';
-import { linkOf, nextSlot, prefilledLastName, type SlotKind } from './slots';
+import { candidatesFor, linkExisting, linkOf, nextSlot, prefilledLastName, type SlotKind } from './slots';
 import './slots.css';
 
 // How long the "is now growing" toast stays.
@@ -14,6 +16,8 @@ const TOAST_MS = 6_000;
 // Air between the slot and the popover, and between the popover and the window edge.
 const GAP = 12;
 const EDGE = 16;
+// Existing people offered while typing, so nobody is added twice.
+const SUGGESTIONS = 5;
 
 // Where the popover opens: beside the slot that opened it, kept inside the window.
 function placeBeside(anchor: DOMRect, width: number, height: number) {
@@ -27,10 +31,13 @@ function placeBeside(anchor: DOMRect, width: number, height: number) {
 
 // The quick-add popover of a "+" slot: first and last name, Enter saves, Escape closes. Saving creates the person and
 // then links them to `member`; when the link fails, the new person is deleted again, so nobody is left half-linked.
+// While typing, it suggests people already in the tree who fit the slot (`candidatesFor`); choosing one links them
+// instead of creating anyone.
 // Rendered into the body, so it keeps its size and stays above the scene's labels.
 export default function QuickAdd({
   kind,
   member,
+  members,
   familyId,
   anchor,
   onSaved,
@@ -39,10 +46,13 @@ export default function QuickAdd({
   kind: SlotKind;
   // The selected person the new one is added to.
   member: Member;
+  // The family's members, for suggestions and for naming placeholders.
+  members: Member[];
   familyId: string;
   // The slot's box on screen when it was clicked.
   anchor: DOMRect;
-  onSaved: (added: Member, next: SlotKind | null) => void;
+  // `linked`: an existing person was linked, nobody was created.
+  onSaved: (added: Member, next: SlotKind | null, linked?: boolean) => void;
   onClose: () => void;
 }) {
   const t = useT();
@@ -52,7 +62,11 @@ export default function QuickAdd({
   const [error, setError] = useState<string | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
   const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
-  const name = nameOf(member, t.members.unknown);
+  const name = displayName(member, members, t.placeholder.role);
+  const query = `${firstName} ${lastName}`.trim();
+  const suggestions = firstName.trim() ? searchMembers(candidatesFor(kind, member, members), query, SUGGESTIONS) : [];
+  const [active, setActive] = useState(-1);
+  const chosen = suggestions[active] as Member | undefined;
 
   useLayoutEffect(() => {
     const form = formRef.current;
@@ -63,9 +77,31 @@ export default function QuickAdd({
     return () => window.removeEventListener('resize', place);
   }, [anchor, error]);
 
+  async function link(existing: Member) {
+    if (isSaving) return;
+    setIsSaving(true);
+    setError(null);
+    try {
+      const linked = await updateFamilyMemberRelatives(familyId, existing.id, linkExisting(kind, existing, member.id, members));
+      if (linked.status === 204) {
+        onSaved(existing, nextSlot(kind), true);
+        return;
+      }
+      const existingName = displayName(existing, members, t.placeholder.role);
+      setError(
+        linked.status === 403 ? t.slots.forbidden : linked.status === 409 ? t.slots.changed(existingName) : t.slots.linkFailed,
+      );
+    } catch {
+      setError(t.members.unreachable);
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
   // `nameless` adds a placeholder: someone not known or not entered yet.
   async function save(event: FormEvent<HTMLFormElement> | null, nameless = false) {
     event?.preventDefault();
+    if (!nameless && chosen) return void link(chosen);
     if (isSaving || (!nameless && !firstName.trim() && !lastName.trim())) return;
     setIsSaving(true);
     setError(null);
@@ -128,6 +164,13 @@ export default function QuickAdd({
       aria-label={t.slots.title[kind](name)}
       onSubmit={(event) => void save(event)}
       onKeyDown={(event) => {
+        if (suggestions.length > 0 && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
+          event.preventDefault();
+          const step = event.key === 'ArrowDown' ? 1 : -1;
+          // -1 is "none": Enter then adds a new person.
+          setActive((current) => ((current + 1 + step + suggestions.length + 1) % (suggestions.length + 1)) - 1);
+          return;
+        }
         if (event.key !== 'Escape') return;
         // Only the popover closes, not the panel behind it.
         event.stopPropagation();
@@ -147,17 +190,50 @@ export default function QuickAdd({
         aria-label={t.members.firstName}
         placeholder={t.members.firstName}
         value={firstName}
-        onChange={(event) => setFirstName(event.target.value)}
+        onChange={(event) => {
+          setFirstName(event.target.value);
+          setActive(-1);
+        }}
         maxLength={100}
         autoComplete="off"
         autoFocus
+        role="combobox"
+        aria-expanded={suggestions.length > 0}
+        aria-controls="quick-add-suggestions"
+        aria-activedescendant={chosen ? `quick-add-${chosen.id}` : undefined}
       />
+      {suggestions.length > 0 && (
+        <ul className="quick-add-suggestions" id="quick-add-suggestions" role="listbox" aria-label={t.slots.existing}>
+          {suggestions.map((m, i) => (
+            <li key={m.id} id={`quick-add-${m.id}`} role="option" aria-selected={i === active}>
+              <button
+                type="button"
+                className={i === active ? 'is-active' : undefined}
+                tabIndex={-1}
+                disabled={isSaving}
+                onMouseEnter={() => setActive(i)}
+                onClick={() => void link(m)}
+              >
+                <span className="quick-add-suggestion-avatar" aria-hidden="true">
+                  {initialsOf(m)}
+                </span>
+                <span className="quick-add-suggestion-name">{displayName(m, members, t.placeholder.role)}</span>
+                <span className="quick-add-suggestion-years">{lifeSpan(m)}</span>
+                {i === active && <span className="quick-add-suggestion-link">{t.slots.link}</span>}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
       <input
         className="quick-add-field"
         aria-label={t.members.lastName}
         placeholder={t.members.lastName}
         value={lastName}
-        onChange={(event) => setLastName(event.target.value)}
+        onChange={(event) => {
+          setLastName(event.target.value);
+          setActive(-1);
+        }}
         maxLength={100}
         autoComplete="off"
       />
@@ -167,7 +243,7 @@ export default function QuickAdd({
         </p>
       )}
       <button type="submit" className="quick-add-save" disabled={isSaving || (!firstName.trim() && !lastName.trim())}>
-        {isSaving ? t.saving : t.slots.add}
+        {isSaving ? t.saving : suggestions.length > 0 ? t.slots.addNew : t.slots.add}
       </button>
       <button type="button" className="quick-add-unknown" title={t.slots.notKnownHint} onClick={() => void save(null, true)} disabled={isSaving}>
         {t.slots.notKnown}
@@ -179,7 +255,8 @@ export default function QuickAdd({
 }
 
 // Confirms a person added through a slot, with an undo that deletes exactly that person again.
-export function AddedToast({ added, onDone }: { added: { member: Member; familyId: string }; onDone: () => void }) {
+// A person linked from the suggestions gets a plain confirmation instead: nobody was created, so there is nothing to undo.
+export function AddedToast({ added, onDone }: { added: { member: Member; familyId: string; linked?: boolean }; onDone: () => void }) {
   const t = useT();
   const [isUndoing, setIsUndoing] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -205,8 +282,18 @@ export function AddedToast({ added, onDone }: { added: { member: Member; familyI
 
   return (
     <div className="glass added-toast" role="status" data-keeps-panel>
-      <span>{failed ? t.slots.undoFailed : t.slots.added(nameOf(added.member, t.members.unknown))}</span>
-      {failed ? (
+      <span>
+        {failed
+          ? t.slots.undoFailed
+          : added.linked
+            ? t.slots.linked(nameOf(added.member, t.members.unknown))
+            : t.slots.added(nameOf(added.member, t.members.unknown))}
+      </span>
+      {added.linked ? (
+        <button type="button" onClick={onDone}>
+          {t.slots.close}
+        </button>
+      ) : failed ? (
         <button type="button" onClick={onDone}>
           {t.slots.close}
         </button>

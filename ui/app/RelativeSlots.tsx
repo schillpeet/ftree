@@ -25,6 +25,7 @@ export type SlotMount = { memberId: string; render: (position: Point, distanceFa
 // the person panel.
 export default function RelativeSlots({
   member,
+  members,
   familyId,
   position,
   card,
@@ -33,11 +34,13 @@ export default function RelativeSlots({
   onEdit,
 }: {
   member: Member;
+  // The family's members, for the quick-add's suggestions.
+  members: Member[];
   familyId: string;
   position: Point;
   card: 'scroll' | 'pill';
   distanceFactor: number;
-  onAdded: (added: Member) => void;
+  onAdded: (added: Member, linked?: boolean) => void;
   onEdit?: (id: string) => void;
 }) {
   const t = useT();
@@ -112,11 +115,12 @@ export default function RelativeSlots({
           key={open.key}
           kind={open.kind}
           member={member}
+          members={members}
           familyId={familyId}
           anchor={open.anchor}
           onClose={() => setOpen(null)}
-          onSaved={(added, next) => {
-            onAdded(added);
+          onSaved={(added, next, linked) => {
+            onAdded(added, linked);
             setOpen(next ? { ...open, kind: next, key: open.key + 1 } : null);
           }}
         />

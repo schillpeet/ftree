@@ -99,7 +99,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [shownId, setShownId] = useState<string | null>(null);
   const [isEditingShown, setIsEditingShown] = useState(false);
   // The person last added through a "+" slot, whose toast offers to undo it; a new key per person restarts the toast.
-  const [added, setAdded] = useState<{ member: Member; familyId: string; key: number } | null>(null);
+  const [added, setAdded] = useState<{ member: Member; familyId: string; linked?: boolean; key: number } | null>(null);
   const hideAdded = useCallback(() => setAdded(null), []);
   const onShownChange = useCallback((id: string | null, editing: boolean) => {
     setShownId(id);
@@ -378,7 +378,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         // The members follow through the live events, like any other save.
         onAdded={
           canPlace && activeFamilyId
-            ? (member) => setAdded((current) => ({ member, familyId: activeFamilyId, key: (current?.key ?? 0) + 1 }))
+            ? (member, linked) => setAdded((current) => ({ member, familyId: activeFamilyId, linked, key: (current?.key ?? 0) + 1 }))
             : undefined
         }
         onEdit={canPlace ? (id) => setEditRequest({ id }) : undefined}
