@@ -663,10 +663,10 @@ textarea {
   filter: drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 2px var(--line-on));
 }
 
-/* Outside the highlighted lineage: faded and desaturated. */
+/* Outside the selection's core family (or the highlighted lineage): faded and grey. */
 .scroll.is-dimmed {
-  opacity: 0.62;
-  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) saturate(0.6);
+  opacity: 0.35;
+  filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) grayscale(1);
 }
 
 .debug-clock {
@@ -1496,6 +1496,10 @@ a.dashboard-nav-item {
    (NAME_W = 8.5 units in experimental/routing.ts). */
 .simple-name {
   position: relative;
+  transition:
+    opacity 0.25s,
+    filter 0.25s,
+    transform 0.25s;
   display: flex;
   box-sizing: border-box;
   align-items: center;
@@ -1599,7 +1603,14 @@ a.dashboard-nav-item {
 }
 
 /* The selected person: a white edge, a lit face, and filled initials. */
+@media (prefers-reduced-motion: reduce) {
+  .simple-name {
+    transition: none;
+  }
+}
+
 .simple-name.is-selected {
+  transform: scale(1.12);
   border-color: var(--line-core);
   background: color-mix(in srgb, var(--accent) 20%, var(--node));
   box-shadow:
@@ -1614,7 +1625,8 @@ a.dashboard-nav-item {
 
 .simple-name.is-dimmed {
   border-color: var(--avatar-dim);
-  opacity: 0.78;
+  opacity: 0.3;
+  filter: grayscale(1);
 }
 
 .simple-name.is-dimmed .simple-name-avatar {

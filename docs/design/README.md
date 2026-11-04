@@ -61,6 +61,7 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - A card density segment S | M sits left of 3D | GRID; S (default) shows name and years, M the full name, birth name, and dates; the note moved to the profile (2026-11-04).
 - A "+ Geschwister" slot exists for everyone; without parents it adds a shared placeholder parent (2026-11-04).
 - The "+" slots and the profile's "Eintragen" are filled in the accent colour, so editing actions stand apart from the outlined people (2026-11-04).
+- Selecting a person puts a spotlight on them: they and their core family stay lit, everyone else turns grey and faint (2026-11-04).
 - "3D" is today's organic tree, "TRON" today's experimental grid view; the tiered tree moves into the evolution panel (2026-11-01).
 - The burger menu has no appearance row, since the header always shows the 3D | GRID segment; developers pick the appearance (including the tiered tree) in the Evolution panel's "Ansichts-Labor" (2026-11-01).
 - The administration is called "Admin-Tool" in the UI; developer tools are granted with a visible switch on the person's page, and the people list has a filter for who holds them (2026-11-01).

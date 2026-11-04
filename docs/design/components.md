@@ -87,11 +87,11 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
   - Signed-in person: small "DU" badge in `--accent` on the rod; selected scroll gets a soft `--glow` halo.
 - `tron`: round pill in the chip look (`.simple-name` in `ui/app/globals.css`, markup in `ui/app/SimpleTree.tsx`), `--size-person-pill` high and at most 132px wide, `--radius-pill`, `--node` background, 1px `--accent` edge, glass blur, `--font-ui` (mono in GRID) 500 12px with 0.04em tracking.
   - Content: a 30px ring in `--avatar` with the initials on `--hover`, the first name in capitals, and the years at 10px (no role line).
-  - Lineage: a 14px glow; selected: a `--line-core` (white) edge, a face mixed with 20 % `--accent`, filled initials, and a 26px glow; dimmed: edge and ring in `--avatar-dim`, 78 % opacity.
+  - Lineage: a 14px glow; selected: 12 % larger, a `--line-core` (white) edge, a face mixed with 20 % `--accent`, filled initials, and a 26px glow; dimmed: edge and ring in `--avatar-dim`, grey at 30 % opacity.
   - Signed-in person: a 1.5px `--line-on` ring, a 14px glow and the "DU" badge.
 - Density M: 3D cards add "geb. …" and the dates of birth and death instead of the years; GRID pills keep their size with three tight lines (full name, "geb. …", date of birth or years). No card shows the note.
 - Placeholder (a nameless person): never "Unbekannt"; the role ("Elternteil", "Partner:in", "Kind", "Person") in italics, "?" in a dashed ring, and in GRID a dashed `--avatar-dim` edge with `--muted` text; the profile adds "noch nicht eingetragen" and, for editors, "Eintragen".
-- Both: dimmed (`opacity .62`, desaturated scroll or `--avatar-dim`) when a lineage is highlighted and the person is not part of it; a presence dot shows when someone else views or edits the person.
+- Both: a spotlight on the selection: the person and everyone their panel lists stay lit, every other card is dimmed (grey, `opacity .35` on scrolls, `.3` on pills); without a selection a highlighted lineage dims the rest the same way; a presence dot shows when someone else views or edits the person.
 
 ## Relative slots ("+")
 

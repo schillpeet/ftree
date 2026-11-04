@@ -275,8 +275,8 @@ function GlowOrbs({ width, rope, seed, evening }: { width: number; rope: number;
   );
 }
 
-// Multiplies a dimmed card's colours: darker and greyer, like the faded scrolls.
-const DIMMED = '#8f8a84';
+// Multiplies a dimmed card's colours: much darker and greyer, like the faded scrolls, so the selection stands out.
+const DIMMED = '#4a4744';
 const shade = (dimmed?: boolean) => (dimmed ? { color: DIMMED } : {});
 
 // A soft halo in the theme's glow behind the selected card's sheet (local position and size).

@@ -130,6 +130,7 @@ The "Evolution" button in the upper-right corner (the former debug panel, closed
 The "Linien anzeigen" checkbox in the "Verbindungslinien" section hides or shows the parent and partner lines in all three appearances, so that only the cards remain.
 The choice is remembered per browser and the lines are shown by default.
 While a person panel is open, the lines from that person to everyone the panel lists (parents, partners, children, siblings, and half-siblings) are drawn in a highlight color in all three appearances.
+While a person is selected, a spotlight keeps them and everyone their panel lists lit and fades every other card to grey at 30 % in the experimental view (35 % on 3D scrolls), and the selected pill grows by 12 % (`coreFamilyOf` in `ui/app/relatives.ts`).
 The Evolution board has its own "Verbindungslinien" section, set slightly apart from the legend checkbox, with "Linien anzeigen", "Kernfamilie", and "Blutsverwandt".
 The "Kernfamilie" checkbox switches this highlight on or off; it is remembered per browser, on by default, and unavailable while the lines are hidden.
 In the experimental view, the highlight also follows everyone the person descends from up to the oldest generation in the tree: the lines from each parent, grandparent, and so on to their own parents, the partnership symbols between them, and any "▲ Eltern von …" stub where those parents are drawn elsewhere.

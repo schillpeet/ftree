@@ -15,7 +15,7 @@ import { useCardDensity } from './cardDensity';
 import { formatDate } from './MembersControls';
 import type { Point } from './pins';
 import type { SlotMount } from './RelativeSlots';
-import { lineageOf } from './relatives';
+import { coreFamilyOf, lineageOf } from './relatives';
 import { simpleLayout } from './simpleLayout';
 import { useTokenPaint } from './tokenColor';
 
@@ -157,6 +157,12 @@ export default function SimpleTree({
     const focus = members.find((m) => m.id === focusId);
     return focus ? lineageOf(focus, members) : null;
   }, [members, focusId]);
+  // A spotlight on the selection: it and its core family stay lit, everyone else fades; without a selection the lit
+  // lineage decides.
+  const lit = useMemo(() => {
+    const selected = members.find((m) => m.id === selectedId);
+    return selected ? coreFamilyOf(selected, members) : lineage;
+  }, [members, selectedId, lineage]);
   const paint = { none: useTokenPaint('--line-dim'), focus: useTokenPaint('--line-on'), blood: { color: BLOOD_COLOR, opacity: 1 } };
   const glow = useTokenPaint('--glow');
   const shadow = useTokenPaint('--line-shadow');
@@ -275,7 +281,8 @@ export default function SimpleTree({
           </Html>
         ))}
       {members.map((member) => {
-        const state = member.id === selectedId ? ' is-selected' : !lineage ? '' : lineage.has(member.id) ? ' is-lineage' : ' is-dimmed';
+        const state =
+          member.id === selectedId ? ' is-selected' : !lit ? '' : !lit.has(member.id) ? ' is-dimmed' : lineage?.has(member.id) ? ' is-lineage' : '';
         const years = lifeSpan(member);
         const placeholder = isNameless(member);
         const name = displayName(member, members, t.placeholder.role);

@@ -1,7 +1,7 @@
 // Run with `node app/relatives.check.mjs`: parents, children, and partners follow the stored links,
 // siblings share all parents, half-siblings only some.
 import assert from 'node:assert/strict';
-import { ancestorsOf, bloodRelativesOf, lineageOf, relativesOf } from './relatives.ts';
+import { ancestorsOf, bloodRelativesOf, coreFamilyOf, lineageOf, relativesOf } from './relatives.ts';
 
 const person = (id, parentIds = [], partnerIds = []) => ({ id, parentIds, partnerIds });
 const ids = (relatives) => Object.fromEntries(Object.entries(relatives).map(([key, list]) => [key, list.map((m) => m.id)]));
@@ -96,4 +96,7 @@ const lineage = [
 const lineageIds = (id) => [...lineageOf(lineage.find((m) => m.id === id), lineage)].sort();
 assert.deepEqual(lineageIds('me'), ['dad', 'gran', 'grandkid', 'grandpa', 'kid', 'me', 'mum', 'wife']);
 assert.deepEqual(lineageIds('loop-a'), ['loop-a', 'loop-b']);
+// The spotlight keeps the selected person and everyone their profile lists, not grandparents or grandchildren.
+const coreIds = (id) => [...coreFamilyOf(lineage.find((m) => m.id === id), lineage)].sort();
+assert.deepEqual(coreIds('me'), ['dad', 'half', 'kid', 'me', 'mum', 'sister', 'wife']);
 console.log('relatives ok');
