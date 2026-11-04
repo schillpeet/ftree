@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.39.0](https://github.com/schillpeet/ftree/compare/v0.38.0...v0.39.0) (2026-11-04)
+
+
+### Features
+
+* **ui:** add a card density switch ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+* **ui:** add siblings without known parents ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+* **ui:** ask whether a new partner is also a parent of the children ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+* **ui:** fill the relative slots in the accent colour ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+* **ui:** show nameless members as discreet placeholders ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+* **ui:** spotlight the selected person and their core family ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+* **ui:** suggest existing members when adding relatives ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+
+
+### Bug Fixes
+
+* **ui:** match member search by the start of names ([#324](https://github.com/schillpeet/ftree/issues/324)) ([f463e72](https://github.com/schillpeet/ftree/commit/f463e72d59d60b811a8988bd4b050611803324ae))
+
 ## [0.38.0](https://github.com/schillpeet/ftree/compare/v0.37.0...v0.38.0) (2026-11-03)
 
 
