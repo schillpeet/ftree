@@ -6,7 +6,8 @@ import { birthNameOf, formatDate, initialsOf } from './MembersControls';
 import { ChevronIcon, ChevronLeftIcon, CloseIcon, PencilIcon, PinIcon, TrashIcon } from './icons';
 import { onStorage, useT } from './i18n';
 import PresenceHint from './live/PresenceHint';
-import { nameOf } from './names';
+import { isNameless } from './names';
+import { useDisplayName } from './placeholders';
 import { sortPartners } from './partnerships';
 import { clampOffset, parsePin, type Offset } from './panelPosition';
 import { relativesOf } from './relatives';
@@ -72,7 +73,7 @@ export function RelativeChip({
   current?: boolean;
 }) {
   const t = useT();
-  const name = nameOf(member, t.members.unknown);
+  const name = useDisplayName()(member);
   const years = lifeSpan(member);
   const content = (
     <>
@@ -403,6 +404,7 @@ export function PersonView({
   members,
   photoOf,
   onShow,
+  onEnter,
   error,
 }: {
   member: Member;
@@ -410,9 +412,12 @@ export function PersonView({
   members: Member[];
   photoOf: (member: Member) => string | null | undefined;
   onShow: (id: string) => void;
+  // Opens the edit form; offered on a placeholder as "Eintragen", missing without the permission to edit.
+  onEnter?: () => void;
   error: string | null;
 }) {
   const t = useT();
+  const nameOfMember = useDisplayName();
   const relatives = relativesOf(member, members);
   const age = ageOf(member);
   const span = lifeSpan(member);
@@ -466,7 +471,17 @@ export function PersonView({
       <section className="person-hero">
         <Avatar member={member} photo={photo} large />
         <div className="person-hero-text">
-          <h2 className="person-name">{nameOf(member, t.members.unknown)}</h2>
+          <h2 className={isNameless(member) ? 'person-name person-name-placeholder' : 'person-name'}>{nameOfMember(member)}</h2>
+          {isNameless(member) && (
+            <p className="person-muted">
+              {t.placeholder.notEntered}
+              {onEnter && (
+                <button type="button" className="person-enter" onClick={onEnter}>
+                  {t.placeholder.enter}
+                </button>
+              )}
+            </p>
+          )}
           {birthName && <p className="person-muted">{birthName}</p>}
           {(span || age !== null) && (
             <p className="person-muted">{[span, age !== null && t.profile.age(age)].filter(Boolean).join(' · ')}</p>

@@ -3,7 +3,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import type { Member, ParentLink, Partnership, Relatives, Sibling } from '../lib/api/generated/members';
 import { useT } from './i18n';
-import { nameOf } from './names';
+import { useDisplayName } from './placeholders';
 import { searchMembers } from './nameSearch';
 import { dateProblem, sortPartners, today } from './partnerships';
 import { RelativeChip } from './PersonPanel';
@@ -60,6 +60,7 @@ function AddRelative({
   onCreate?: (name: string) => void;
 }) {
   const t = useT();
+  const nameOf = useDisplayName();
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const results = searchMembers(options, query, 6);
@@ -114,7 +115,7 @@ function AddRelative({
         {results.map((m) => (
           <li key={m.id}>
             <button type="button" onClick={() => pick(m.id)}>
-              {nameOf(m, t.members.unknown)}
+              {nameOf(m)}
               <span>{[m.birthDate?.slice(0, 4), m.deathDate && `† ${m.deathDate.slice(0, 4)}`].filter(Boolean).join(' ')}</span>
             </button>
           </li>
@@ -152,7 +153,7 @@ export default function RelativesFields({
   linked?: Relation | null;
 }) {
   const t = useT();
-  const fullName = (m: Member) => nameOf(m, t.members.unknown);
+  const fullName = useDisplayName();
   const others = members.filter((m) => m.id !== member?.id);
   const [initial] = useState(() => {
     const parentIds = member?.parentIds ?? [];

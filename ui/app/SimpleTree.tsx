@@ -10,7 +10,7 @@ import { route, type Segment, type XY } from './experimental/routing';
 import { useT } from './i18n';
 import PresenceDot from './live/PresenceDot';
 import { useMotion, useReducedMotion } from './motion';
-import { initialsOf, isNameless, nameOf, shortFirstName } from './names';
+import { displayName, initialsOf, isNameless, shortFirstName } from './names';
 import { lifeSpan } from './PersonPanel';
 import type { Point } from './pins';
 import type { SlotMount } from './RelativeSlots';
@@ -275,22 +275,24 @@ export default function SimpleTree({
       {members.map((member) => {
         const state = member.id === selectedId ? ' is-selected' : !lineage ? '' : lineage.has(member.id) ? ' is-lineage' : ' is-dimmed';
         const years = lifeSpan(member);
+        const placeholder = isNameless(member);
+        const name = displayName(member, members, t.placeholder.role);
         return (
           // Pills scale with the distance and the window height like the rest of the scene, so the gaps between them hold.
           <Html key={member.id} position={positions.get(member.id)} center distanceFactor={scale}>
             <button
-              className={`simple-name${state}`}
+              className={`simple-name${state}${placeholder ? ' is-placeholder' : ''}`}
                 data-self={member.id === selfId || undefined}
               type="button"
-              title={nameOf(member, t.members.unknown)}
-              aria-label={t.profile.open(nameOf(member, t.members.unknown))}
+              title={name}
+              aria-label={t.profile.open(name)}
               onClick={() => onOpen(member.id)}
             >
               <span className="simple-name-avatar" aria-hidden="true">
-                {isNameless(member) ? '?' : initialsOf(member)}
+                {placeholder ? '?' : initialsOf(member)}
               </span>
               <span className="simple-name-text">
-                <span>{isNameless(member) ? t.members.unknown : shortFirstName(member.firstName) || member.lastName}</span>
+                <span>{placeholder ? name : shortFirstName(member.firstName) || member.lastName}</span>
                 {years && <span className="simple-name-years">{years}</span>}
               </span>
               {member.id === selfId && <span className="self-badge">{t.tour.you}</span>}

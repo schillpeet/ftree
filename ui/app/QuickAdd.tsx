@@ -63,15 +63,16 @@ export default function QuickAdd({
     return () => window.removeEventListener('resize', place);
   }, [anchor, error]);
 
-  async function save(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (isSaving || (!firstName.trim() && !lastName.trim())) return;
+  // `nameless` adds a placeholder: someone not known or not entered yet.
+  async function save(event: FormEvent<HTMLFormElement> | null, nameless = false) {
+    event?.preventDefault();
+    if (isSaving || (!nameless && !firstName.trim() && !lastName.trim())) return;
     setIsSaving(true);
     setError(null);
     try {
       const created = await createFamilyMember(familyId, {
-        firstName: firstName.trim(),
-        lastName: lastName.trim(),
+        firstName: nameless ? '' : firstName.trim(),
+        lastName: nameless ? '' : lastName.trim(),
         birthName: null,
         birthDate: null,
         birthPlace: null,
@@ -167,6 +168,9 @@ export default function QuickAdd({
       )}
       <button type="submit" className="quick-add-save" disabled={isSaving || (!firstName.trim() && !lastName.trim())}>
         {isSaving ? t.saving : t.slots.add}
+      </button>
+      <button type="button" className="quick-add-unknown" title={t.slots.notKnownHint} onClick={() => void save(null, true)} disabled={isSaving}>
+        {t.slots.notKnown}
       </button>
       <span className="quick-add-hint">{nextSlot(kind) === 'father' ? t.slots.thenFather : t.slots.hint}</span>
     </form>,

@@ -10,7 +10,7 @@ import { formatDate, photoSrc } from './MembersControls';
 import { useT } from './i18n';
 import { useOthersAt } from './live/people';
 import PresenceDot from './live/PresenceDot';
-import { isNameless, nameOf } from './names';
+import { isNameless } from './names';
 import type { Point } from './pins';
 import { seededRandom } from './random';
 import { CLICK_TOLERANCE } from './Scroll';
@@ -22,6 +22,8 @@ import { useTokenPaint } from './tokenColor';
 type PointerStart = { clientX: number; clientY: number };
 type CardProps = {
   member: Member;
+  // The name on the card: the member's, or a placeholder's role (`displayName`).
+  label: string;
   familyId: string | null;
   // Where the ropes meet: right below the pin.
   position: Point;
@@ -37,8 +39,8 @@ const PX = 160;
 const SCROLL = { width: 2.9, height: 3.5, rope: 0.45 };
 const SIGN = { width: 3.4, height: 2, depth: 0.12, rope: 0.7 };
 
-const textOf = (m: Member, unknown: string): CardText => ({
-  name: nameOf(m, unknown),
+const textOf = (m: Member, label: string): CardText => ({
+  name: isNameless(m) ? `? ${label}` : label,
   unknown: isNameless(m),
   birth: formatDate(m.birthDate),
   death: formatDate(m.deathDate),
@@ -66,8 +68,8 @@ const plainTextures = () =>
 
 // The member's face of the card, redrawn once their photo has loaded. A photo that fails to load
 // (or is served without CORS headers) is left out.
-function useCardTexture(member: Member, familyId: string | null, width: number, height: number, draw: typeof drawScroll) {
-  const text = textOf(member, useT().members.unknown);
+function useCardTexture(member: Member, label: string, familyId: string | null, width: number, height: number, draw: typeof drawScroll) {
+  const text = textOf(member, label);
   const seed = seedOf(member.id);
   const key = JSON.stringify(text);
   const texture = useMemo(
@@ -313,10 +315,10 @@ function CardSelf({ position }: { position: Point }) {
 
 // Papyrus scroll with a rod on top and a rolled-up bottom edge, written on both sides. 'label'
 // turns to the camera and glows a little, so it stays readable against the low sun.
-export function ScrollCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, mode, evening, isSelf = false }: CardProps & { mode: 'scroll' | 'label'; evening: number; isSelf?: boolean }) {
+export function ScrollCard({ member, label, familyId, position, onOpen, onDrag, selected, dimmed, mode, evening, isSelf = false }: CardProps & { mode: 'scroll' | 'label'; evening: number; isSelf?: boolean }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, mode === 'label' ? 'face-camera' : 'sway', seed);
-  const face = useCardTexture(member, familyId, SCROLL.width * PX, SCROLL.height * PX, drawScroll);
+  const face = useCardTexture(member, label, familyId, SCROLL.width * PX, SCROLL.height * PX, drawScroll);
   const surface = plainTextures().papyrus;
   const glow = (mode === 'label' ? 0.45 : 0.08 + 0.42 * evening) * (dimmed ? 0.5 : 1);
   const { width, height, rope } = SCROLL;
@@ -355,10 +357,10 @@ export function ScrollCard({ member, familyId, position, onOpen, onDrag, selecte
 
 // Wooden board with burnt-in name and dates, the photo in a medallion beside them; written on
 // both sides like the scroll.
-export function SignCard({ member, familyId, position, onOpen, onDrag, selected, dimmed, evening, isSelf = false }: CardProps & { evening: number; isSelf?: boolean }) {
+export function SignCard({ member, label, familyId, position, onOpen, onDrag, selected, dimmed, evening, isSelf = false }: CardProps & { evening: number; isSelf?: boolean }) {
   const seed = seedOf(member.id);
   const ref = useHanging(position, 'sway', seed);
-  const face = useCardTexture(member, familyId, SIGN.width * PX, SIGN.height * PX, drawSign);
+  const face = useCardTexture(member, label, familyId, SIGN.width * PX, SIGN.height * PX, drawSign);
   const surface = plainTextures().wood;
   const { width, height, depth, rope } = SIGN;
   // BoxGeometry faces: +x, −x, +y, −y, +z (front), −z (back).

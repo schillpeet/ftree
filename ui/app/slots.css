@@ -154,6 +154,7 @@
 .quick-add-field:focus-visible,
 .quick-add-close:focus-visible,
 .quick-add-save:focus-visible,
+.quick-add-unknown:focus-visible,
 .added-toast button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -179,6 +180,23 @@
   color: var(--danger);
   font-size: 13px;
   line-height: 1.4;
+}
+
+.quick-add-unknown {
+  align-self: center;
+  padding: 2px 6px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font: 500 13px var(--font-ui);
+  text-decoration: underline dashed;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.quick-add-unknown:hover,
+.quick-add-unknown:focus-visible {
+  color: var(--text);
 }
 
 .quick-add-hint {

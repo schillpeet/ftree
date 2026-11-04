@@ -1559,6 +1559,27 @@ a.dashboard-nav-item {
   opacity: 0.7;
 }
 
+/* A placeholder (unknown or not entered yet): a dashed, quiet edge and "?" instead of initials, never "unknown". */
+.simple-name.is-placeholder {
+  border-style: dashed;
+  border-color: var(--avatar-dim);
+  color: var(--muted);
+}
+
+.simple-name.is-placeholder .simple-name-avatar {
+  border-style: dashed;
+  border-color: var(--avatar-dim);
+  background: transparent;
+  color: var(--muted);
+}
+
+.simple-name.is-placeholder .simple-name-text > span:first-child {
+  text-transform: none;
+  font-style: italic;
+  font-size: 11px;
+  letter-spacing: 0;
+}
+
 .simple-name.is-lineage {
   box-shadow: 0 0 14px var(--glow);
 }
@@ -2009,6 +2030,22 @@ a.dashboard-nav-item {
   margin: 0;
   font: 500 24px/1.15 Georgia, 'Times New Roman', serif;
   overflow-wrap: anywhere;
+}
+
+.person-name-placeholder {
+  color: var(--muted);
+  font-style: italic;
+}
+
+.person-enter {
+  margin-left: 8px;
+  padding: 2px 10px;
+  border: 1px solid var(--slot-border);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
 }
 
 .person-muted {

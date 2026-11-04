@@ -19,6 +19,7 @@ import RelativeSlots, { type SlotMount } from './RelativeSlots';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
 import { scrollLines } from './scrollLines';
 import { lineageOf } from './relatives';
+import { displayName } from './names';
 import { useTokenPaint } from './tokenColor';
 import SimpleTree from './SimpleTree';
 import TieredTree, { TIERED_OPTIONS, buildTieredTree } from './TieredTree';
@@ -523,6 +524,7 @@ function Scrolls({
   // The "+" slots around the selected card, missing without the permission to add people.
   slots?: SlotMount;
 }) {
+  const t = useT();
   const { camera, events, gl, size } = useThree();
   const [drag, setDrag] = useState<Drag | null>(null);
   const pinOf = useMemo(() => layerPins(members, pins, assignPins(members, pins.length), GENERATION_GAP), [members, pins]);
@@ -684,6 +686,7 @@ function Scrolls({
       {members.map((member) => {
         const card = {
           member,
+          label: displayName(member, members, t.placeholder.role),
           familyId,
           position: positions.get(member.id)!,
           onOpen: () => onOpen(member.id),

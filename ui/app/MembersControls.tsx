@@ -21,6 +21,7 @@ import { onLiveEvent } from './live/liveBus';
 import PresenceHint from './live/PresenceHint';
 import { useCan } from './Permissions';
 import { initialsOf, nameOf } from './names';
+import { MembersProvider } from './placeholders';
 import { dateProblem } from './partnerships';
 import { PanelShell, PersonView, usePanelPin } from './PersonPanel';
 import { CENTRE, type Offset } from './panelPosition';
@@ -445,6 +446,7 @@ export default function MembersControls({
   }
 
   return (
+    <MembersProvider value={members ?? []}>
     <div className="members-controls">
       {isFormOpen && (
         <PanelShell
@@ -621,10 +623,12 @@ export default function MembersControls({
             members={members}
             photoOf={(m) => photoSrc(m, familyId)}
             onShow={showProfile}
+            onEnter={canEdit ? () => openForm(profileMember) : undefined}
             error={viewError}
           />
         </PanelShell>
       )}
     </div>
+    </MembersProvider>
   );
 }
