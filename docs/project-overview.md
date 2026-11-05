@@ -43,7 +43,8 @@ Signed in, the three steps on `/home/how` link into the own tree (step 2 with `/
 The scene's canvas shows the theme's background until its first frame, so the example and the trees no longer flash white while loading.
 `/home/example` shows a read-only example family (`ui/app/home/exampleFamily.ts`, bundled with the UI, no BFF call) in the real scene; a click lights up a person's lineage and names them in a small card.
 `home` and `start` are reserved slugs.
-`/home` and its subpages stay behind Cloudflare Access like every other page, so only signed-in people see the landing page; only `/terms`, `/privacy`, and `/_next/static` are reachable without a login.
+`/home` and its subpages, `/terms`, `/privacy`, `/imprint`, `/icon.svg`, and `/_next/static` are reachable without a login; every other page and `/api/*` stay behind Cloudflare Access.
+At the edge `/` redirects to `/home`, before the Access check.
 The UI reads its colours, radii, sizes, and fonts from design tokens (`ui/app/tokens.css`, a copy of `docs/design/tokens.css` that `tokens.check.mjs` keeps equal) and switches between the 3D and TRON themes through `data-theme` on `<html>`, set from the appearance by `ThemeRoot`; the stored appearances `organic` and `organicExperimental` are 3D, `experimental` is TRON.
 The 3D | GRID segment switches between the organic tree (default) and an experimental view, remembered per browser in `localStorage`.
 In TRON an "Animation" toggle sits left of the 3D | GRID segment (`ui/app/motion.ts`); it is on by default, remembered per browser in `localStorage` (`ftree.motion`), and set on `<html>` as `data-motion` by `ThemeRoot`.
@@ -104,7 +105,7 @@ The tiered tree is rebuilt when the family's generations change; cards cannot be
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
 Below 520 px the footer line wraps, so every link stays reachable on a phone.
-Between "Datenschutz" and GitHub, a footer link "FAQ" opens `/home/faq` in the chosen language; like the landing page it stays behind Cloudflare Access.
+Between "Datenschutz" and GitHub, a footer link "FAQ" opens `/home/faq` in the chosen language; like the landing page it is public.
 `/terms` (Nutzungsbedingungen) and `/privacy` (Datenschutzhinweise) are server-rendered text pages in German (binding, the default) and English (`?lang=en`), with a back link and a language link (`ui/app/LegalPage.tsx`).
 The legal pages read their text from the BFF on the UI's server (`ui/app/legalDocuments.ts`) and do not need a signed-in user; `PermissionsProvider` (and so `/me`) lives in the `(tree)` and admin layouts instead of the root layout.
 Each text is kept in memory for five minutes and for as long as the BFF cannot answer, so a BFF restart does not take the pages down; only a UI that has no copy yet says the text cannot be loaded.
@@ -116,7 +117,6 @@ The profile lists the person's acceptances, and so does the person's page in `/a
 The legal pages fill in the operator's name and email from `OPERATOR_NAME` and `OPERATOR_EMAIL`, read per request through `connection()` (`ui/app/operator.ts`), so they are never baked into the build; unset, they read "nicht hinterlegt".
 `/imprint` (Impressum, heading "Anbieter") has the same frame but no versioned text and no BFF call, and shows the operator's name and email.
 A postal address appears there only if `OPERATOR_ADDRESS` (`operator.address` in the chart) is set, and only in the deployment's values; unset, the line is left out.
-`/imprint` needs its own entry in the Cloudflare Access bypass before it is reachable without a login.
 Every UI response carries `X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin` and no `X-Powered-By` (`ui/next.config.ts`).
 The UI's Content Security Policy, with `frame-ancestors 'none'`, runs as `Content-Security-Policy-Report-Only` for now, so browsers only log violations in the console and nothing is blocked yet.
 The policy keeps `'unsafe-inline'` for scripts and styles, because Next.js streams pages with inline scripts and nonces would make every page render per request.

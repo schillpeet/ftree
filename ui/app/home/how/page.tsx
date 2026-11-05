@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'ftree · So funktioniert’s',
 };
 
-// The three steps, under `/home` and behind Cloudflare Access like the landing page.
+// The three steps, under `/home` and public like the landing page.
 export default function HowPage() {
   return <HowItWorks />;
 }
