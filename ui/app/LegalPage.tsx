@@ -18,7 +18,7 @@ const TEXTS = {
     terms: 'Nutzungsbedingungen',
     privacy: 'Datenschutzhinweise',
     imprint: 'Impressum',
-    imprintHeading: 'Angaben nach § 18 Abs. 1 MStV',
+    imprintHeading: 'Anbieter',
     emailLabel: 'E-Mail',
     version: (version: number, date: string) => `Version ${version}, gültig seit ${date}.`,
     announced: (version: number, date: string) => `Version ${version}, gültig ab ${date}.`,
@@ -35,7 +35,7 @@ const TEXTS = {
     terms: 'Terms of use',
     privacy: 'Privacy policy',
     imprint: 'Imprint',
-    imprintHeading: 'Information under section 18(1) of the German Interstate Media Treaty (MStV)',
+    imprintHeading: 'Provider',
     emailLabel: 'Email',
     version: (version: number, date: string) => `Version ${version}, in force since ${date}.`,
     announced: (version: number, date: string) => `Version ${version}, in force from ${date}.`,
@@ -73,7 +73,7 @@ export async function ImprintPage({ lang }: { lang: string | string[] | undefine
   return (
     <Frame t={t} title={t.imprint} languageHref={`/imprint?lang=${t.switchTo}`}>
       <h2>{t.imprintHeading}</h2>
-      <p>{`${op.name ?? t.unset}\n${op.address ?? t.unset}`}</p>
+      <p>{[op.name ?? t.unset, op.address].filter(Boolean).join('\n')}</p>
       <p>{`${t.emailLabel}: ${op.email ?? t.unset}`}</p>
     </Frame>
   );

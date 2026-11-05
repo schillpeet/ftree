@@ -114,7 +114,8 @@ Announced versions show a quiet line with a link until they take effect.
 A `LEGAL_ACCEPTANCE_REQUIRED` answer during editing brings the card up over the page, whose form stays, so the save can be repeated afterwards; documents already open at page load make the page start over once they are accepted.
 The profile lists the person's acceptances, and so does the person's page in `/admin`.
 The legal pages fill in the operator's name and email from `OPERATOR_NAME` and `OPERATOR_EMAIL`, read per request through `connection()` (`ui/app/operator.ts`), so they are never baked into the build; unset, they read "nicht hinterlegt".
-`/imprint` (Impressum, "Angaben nach § 18 Abs. 1 MStV") has the same frame but no versioned text and no BFF call, and shows the operator's name, postal address, and email; the address comes from `OPERATOR_ADDRESS` (`operator.address` in the chart), is set only in the deployment's values, and reads "nicht hinterlegt" while unset.
+`/imprint` (Impressum, heading "Anbieter") has the same frame but no versioned text and no BFF call, and shows the operator's name and email.
+A postal address appears there only if `OPERATOR_ADDRESS` (`operator.address` in the chart) is set, and only in the deployment's values; unset, the line is left out.
 `/imprint` needs its own entry in the Cloudflare Access bypass before it is reachable without a login.
 Every UI response carries `X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin` and no `X-Powered-By` (`ui/next.config.ts`).
 The UI's Content Security Policy, with `frame-ancestors 'none'`, runs as `Content-Security-Policy-Report-Only` for now, so browsers only log violations in the console and nothing is blocked yet.

@@ -3,7 +3,8 @@ imagePullSecrets: []
 # Who runs this instance, shown on /terms, /privacy, and /imprint and as the "Feedback" address in the menu; the UI reads
 # OPERATOR_NAME, OPERATOR_EMAIL, and OPERATOR_ADDRESS at request time, so changing them needs no new image. Unset, the
 # legal pages say "nicht hinterlegt" and the menu has no "Feedback" entry.
-# The address is the imprint's postal address, line breaks kept; set it only in the deployment's values, never here.
+# The address is the imprint's optional postal address, line breaks kept; unset, the imprint leaves it out. Set it only in
+# the deployment's values, never here.
 operator:
   name: ""
   email: ""
