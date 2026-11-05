@@ -15,7 +15,7 @@ assert.deepEqual(hostDecision(adminUrl, adminHost.toUpperCase(), '/home'), toAdm
 assert.deepEqual(hostDecision(' https://ftree-admin.example.org// ', adminHost, '/home'), toAdmin);
 
 // The admin page, trees, `/start`, and the legal pages stay reachable on the admin host.
-for (const path of ['/admin', '/admin/people', '/start', '/privacy', '/terms', '/schiller', '/homework', '/loginfo']) {
+for (const path of ['/admin', '/admin/people', '/start', '/privacy', '/terms', '/imprint', '/schiller', '/homework', '/loginfo']) {
   assert.deepEqual(hostDecision(adminUrl, adminHost, path), next, path);
 }
 

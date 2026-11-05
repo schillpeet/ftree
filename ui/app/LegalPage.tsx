@@ -4,12 +4,12 @@ import { legalTexts } from './legalTexts';
 import { operator } from './operator';
 import './legal.css';
 
-// `/terms` and `/privacy`: plain server-rendered pages without any BFF call, so they work signed out (Cloudflare lets
+// `/terms`, `/privacy`, and `/imprint`: plain server-rendered pages without any BFF call, so they work signed out (Cloudflare lets
 // them through without login). The language comes from `?lang=`, German unless it is `en`.
-export default async function LegalPage({ page, lang }: { page: 'terms' | 'privacy'; lang: string | string[] | undefined }) {
+export default async function LegalPage({ page, lang }: { page: 'terms' | 'privacy' | 'imprint'; lang: string | string[] | undefined }) {
   const t = legalTexts(lang);
   const op = await operator();
-  const sections = t[page].sections({ name: op.name ?? t.unset, email: op.email ?? t.unset });
+  const sections = t[page].sections({ name: op.name ?? t.unset, email: op.email ?? t.unset, address: op.address ?? t.unset });
   return (
     <div className="legal-page">
       <header className="legal-header">
@@ -24,9 +24,11 @@ export default async function LegalPage({ page, lang }: { page: 'terms' | 'priva
       </header>
       <main lang={t.lang}>
         <h1>{t[page].title}</h1>
-        <p className="legal-muted">
-          {t.updated}. {t.binding}
-        </p>
+        {page !== 'imprint' && (
+          <p className="legal-muted">
+            {t.updated}. {t.binding}
+          </p>
+        )}
         {sections.map((section) => (
           <section key={section.heading}>
             <h2>{section.heading}</h2>

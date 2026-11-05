@@ -21,7 +21,7 @@ Running it in a cluster (Flux, Terraform, Secrets, backups) lives in the private
 | `bff.roles.admins` | `[]` | emails of the bootstrap admins, who always stay admins |
 | `bff.access` | empty | instead of `roles.admins`: an access file (`--set-file bff.access=access.yaml`) whose `admin: true` entries are the bootstrap admins and whose other entries the BFF imports into its database once; changing it restarts the BFF |
 | `bff.cloudflare.*` | empty | `existingSecret` (key `api-token`), `accountId`, and `accessGroupId` let the BFF keep the Access group equal to everyone with access; `dryRun` only logs; unset, nothing is synced |
-| `operator.name`, `operator.email` | empty | who runs the instance, shown on `/terms`, `/privacy`, and as the "Feedback" address; changing them needs a rollout, not a new image |
+| `operator.name`, `operator.email`, `operator.address` | empty | who runs the instance, shown on `/terms`, `/privacy`, `/imprint` (the address only there), and as the "Feedback" address; changing them needs a rollout, not a new image |
 | `db.url`, `db.user`, `db.existingSecret` | `ftree-db`, `app` | the database connection |
 | `ui.resources`, `bff.resources` | 256Mi, 512Mi | memory request and limit |
 

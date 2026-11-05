@@ -3071,6 +3071,22 @@ button.dashboard-family:hover {
   text-decoration: underline;
 }
 
+/* The legal line wraps on phones, so the imprint stays reachable; even three lines end below the dock (`bottom: 44px`). */
+@media (max-width: 520px) {
+  .app-version {
+    bottom: 4px;
+    justify-content: center;
+    width: calc(100vw - 32px);
+    white-space: normal;
+  }
+
+  .legal-links {
+    flex-wrap: wrap;
+    row-gap: 2px;
+    justify-content: center;
+  }
+}
+
 /* Above a tree opened on the administration's host: a reminder that this is an admin's view, clear of the legal links. */
 .admin-view-banner {
   position: fixed;

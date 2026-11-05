@@ -16,7 +16,7 @@ const en = {
   treeLimit: 'You already own 5 families; delete one before creating another.',
   memberLimit: 'A family can hold at most 100 people.',
   language: { switch: 'Switch to German', short: 'EN', label: 'Language' },
-  legal: { terms: 'Terms', privacy: 'Privacy', faq: 'FAQ' },
+  legal: { terms: 'Terms', privacy: 'Privacy', imprint: 'Imprint', faq: 'FAQ' },
   menu: { open: 'Open menu', close: 'Close menu', label: 'Menu', profile: 'Profile', families: 'Families', snapshot: 'Snapshot', adminSession: 'Signed in as admin', feedback: 'Feedback', noFamily: 'No family', admin: 'Admin tool', home: 'Home page', toHome: 'To the home page' },
   placeholder: {
     role: { parent: 'Parent', partner: 'Partner', child: 'Child', person: 'Person' },
@@ -852,7 +852,7 @@ const de: typeof en = {
   treeLimit: 'Du besitzt bereits 5 Familien; lösche eine, bevor du eine neue anlegst.',
   memberLimit: 'Eine Familie kann höchstens 100 Personen enthalten.',
   language: { switch: 'Auf Englisch umschalten', short: 'DE', label: 'Sprache' },
-  legal: { terms: 'Nutzungsbedingungen', privacy: 'Datenschutz', faq: 'FAQ' },
+  legal: { terms: 'Nutzungsbedingungen', privacy: 'Datenschutz', imprint: 'Impressum', faq: 'FAQ' },
   menu: { open: 'Menü öffnen', close: 'Menü schließen', label: 'Menü', profile: 'Profil', families: 'Familien', snapshot: 'Momentaufnahme', adminSession: 'Als Admin angemeldet', feedback: 'Feedback', noFamily: 'Keine Familie', admin: 'Admin-Tool', home: 'Startseite', toHome: 'Zur Startseite' },
   placeholder: {
     role: { parent: 'Elternteil', partner: 'Partner:in', child: 'Kind', person: 'Person' },
