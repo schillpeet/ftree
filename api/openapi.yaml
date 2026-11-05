@@ -190,12 +190,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LegalDocument"
+        "400":
+          description: An unknown `kind` or a `version` below 1. Code `VALIDATION_FAILED`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "404":
           description: No such version, or none in force yet. Code `NOT_FOUND`.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
   /users:

@@ -1602,6 +1602,21 @@ export type getLegalDocumentResponse200 = {
   status: 200
 }
 
+export type getLegalDocumentResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type getLegalDocumentResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getLegalDocumentResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
 export type getLegalDocumentResponse404 = {
   data: Problem
   status: 404
@@ -1615,7 +1630,7 @@ export type getLegalDocumentResponse500 = {
 export type getLegalDocumentResponseSuccess = (getLegalDocumentResponse200) & {
   headers: Headers;
 };
-export type getLegalDocumentResponseError = (getLegalDocumentResponse404 | getLegalDocumentResponse500) & {
+export type getLegalDocumentResponseError = (getLegalDocumentResponse400 | getLegalDocumentResponse401 | getLegalDocumentResponse403 | getLegalDocumentResponse404 | getLegalDocumentResponse500) & {
   headers: Headers;
 };
 
