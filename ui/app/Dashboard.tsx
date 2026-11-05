@@ -139,10 +139,10 @@ export default function Dashboard({
             </Link>
           </Can>
           <hr className="dashboard-nav-divider" />
-          {/* Ends the Cloudflare Access session; locally there is none, so the link only leads to a 404. */}
+          {/* Ends the Cloudflare Access session and returns to the landing page; Cloudflare only takes an absolute address on this
+              host. Locally there is no session, so the link only leads to a 404. */}
           {/* Cloudflare answers this path, not the app, so it needs a full page load; the `[slug]` route only looks alike. */}
-          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-          <a className="dashboard-nav-item" href="/cdn-cgi/access/logout">
+          <a className="dashboard-nav-item" href={`/cdn-cgi/access/logout?returnTo=${encodeURIComponent(`${location.origin}/home`)}`}>
             <LogoutIcon />
             <span>{t.account.logout}</span>
           </a>

@@ -831,6 +831,11 @@
   white-space: nowrap;
 }
 
+/* The toggles' hints (`Header.tsx`) stand above the button, which would otherwise cover them. */
+.example-page .motion-notice {
+  bottom: 100px;
+}
+
 /* On phones the legend steps up above the button, as it does above the dock in the tree. */
 @media (max-width: 700px) {
   .example-page .relation-legend {

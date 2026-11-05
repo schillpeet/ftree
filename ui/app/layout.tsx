@@ -12,6 +12,8 @@ const RIDE_PENDING = `try{if(Date.now()-Number(sessionStorage.getItem('ftree.rid
 
 export const metadata: Metadata = {
   title: 'ftree',
+  // For the test phase: nothing here belongs in a search engine, and page metadata inherits this.
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {

@@ -68,7 +68,7 @@ export default function HowItWorks() {
         <ol className="landing-steps">
           {t.landing.steps.map((step, i) => {
             const isDone = !!done?.[i];
-            const href = me ? STEP_LINKS[i] : i === 0 && me === null ? '/start' : null;
+            const href = me ? STEP_LINKS[i] : i === 0 && me === null ? '/login' : null;
             const body = (
               <>
                 <span className="landing-step-number" aria-label={isDone ? t.landing.stepDone : undefined}>
@@ -83,7 +83,7 @@ export default function HowItWorks() {
             );
             return (
               <li key={step.title} className={`glass${isDone ? ' landing-step-done' : ''}${i === next ? ' landing-step-next' : ''}`}>
-                {/* Plain links: `/start` sits behind Cloudflare Access, which needs a full page load to sign in. */}
+                {/* Plain links: `/start` and `/login` sit behind Cloudflare Access, which needs a full page load to sign in. */}
                 {href ? <a href={href}>{body}</a> : body}
               </li>
             );

@@ -26,6 +26,7 @@ import SimpleTree from './SimpleTree';
 import TieredTree, { TIERED_OPTIONS, buildTieredTree } from './TieredTree';
 import { tieredPlan } from './tieredLayout';
 import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { onLocationChange, useSunLocation } from './sunLocation';
 import { onStorage, useLanguage, useT } from './i18n';
 import { useCan } from './Permissions';
 import type { CameraView } from './Dock';
@@ -417,7 +418,7 @@ function DebugClock({ minutes, onMinutes }: { minutes: number; onMinutes: (value
 const formatTime = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
-// Sun, moon, stars, and light for the given moment at the browser's location. The moon simply
+// Sun, moon, stars, and light for the given moment at the given location. The moon simply
 // stands opposite the sun, lower, and is always full.
 function DaySky({ date, location }: { date: Date; location: Location }) {
   const stars = useRef<Points>(null);
@@ -828,7 +829,9 @@ export default function Scene({
     };
   }, [evolutionOpen, onEvolutionClose]);
   const [now, setNow] = useState(() => new Date());
-  const [location, setLocation] = useState(fallbackLocation);
+  // The time zone, unless the location toggle (`sunLocation.ts`) gave a position.
+  const [timeZoneLocation] = useState(fallbackLocation);
+  const location = useSunLocation() ?? timeZoneLocation;
   // Minutes after midnight shown by the debug clock, or null for the real time.
   const [clock, setClock] = useState<number | null>(null);
   // The server render has no localStorage and starts with the default.
@@ -858,14 +861,14 @@ export default function Scene({
     [tree, previewScale],
   );
   useEffect(() => {
-    const timer = setInterval(() => setNow(new Date()), 60_000);
-    // The location never leaves the browser; without permission the time zone has to do.
-    navigator.geolocation?.getCurrentPosition(
-      ({ coords }) => setLocation({ latitude: coords.latitude, longitude: coords.longitude }),
-      () => {},
-      { maximumAge: 24 * 60 * 60 * 1000 },
-    );
-    return () => clearInterval(timer);
+    const tick = () => setNow(new Date());
+    const timer = setInterval(tick, 60_000);
+    // Switching the location on sets the sun for this very moment, not the last full minute's.
+    const stopListening = onLocationChange(tick);
+    return () => {
+      clearInterval(timer);
+      stopListening();
+    };
   }, []);
   const date = useMemo(
     () => (clock == null ? now : new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, clock)),

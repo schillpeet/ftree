@@ -10,6 +10,7 @@ import { CheckIcon, CloseIcon, EvolutionIcon } from './icons';
 import { CARD_DENSITIES, useCardDensity } from './cardDensity';
 import { useMotion, useReducedMotion } from './motion';
 import { useCan, useMe, useMeLoaded } from './Permissions';
+import { setLocationOn, useLocationOn } from './sunLocation';
 import BrandLink from './home/BrandLink';
 import { chipName } from './home/chipName';
 import './header.css';
@@ -19,7 +20,7 @@ const THEMES: { theme: Theme; appearance: Appearance }[] = [
   { theme: 'tron', appearance: PUBLIC_APPEARANCE },
 ];
 
-// 3D | GRID, in GRID (`tron`) with the animation toggle before it. Without `tree.appearance` only the public appearance is
+// 3D | GRID, in GRID (`tron`) with the animation toggle before it, in 3D with the location toggle in that place. Without `tree.appearance` only the public appearance is
 // offered, the other is announced; choosing 3D from TRON leaves the tiered tree (see Evolution), choosing 3D while it is
 // shown changes nothing.
 export function ThemeSegment({ className }: { className?: string }) {
@@ -30,7 +31,7 @@ export function ThemeSegment({ className }: { className?: string }) {
   const current = themeOf(appearance);
   return (
     <>
-      {current === 'tron' && <MotionToggle />}
+      {current === 'tron' ? <MotionToggle /> : <LocationToggle />}
       <div className={`segment ${className ?? ''}`} role="group" aria-label={t.appearance.title}>
         {THEMES.map((option) => {
           const soon = locked && option.appearance !== PUBLIC_APPEARANCE;
@@ -77,6 +78,35 @@ function MotionToggle() {
             {t.motion.reducedHint} <Link href={`/home/faq?lang=${language}#animations`}>{t.motion.howTo}</Link>
           </p>
           <button type="button" className="auth-notice-close" aria-label={t.motion.close} onClick={() => setHint(false)}>
+            <CloseIcon />
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+// Lets the sun follow the browser's location instead of the time zone (`sunLocation.ts`); looks like `MotionToggle`. Only this
+// click raises the browser's prompt; if the browser refuses, the toggle goes back off and a hint says why.
+function LocationToggle() {
+  const t = useT();
+  const on = useLocationOn();
+  const [refused, setRefused] = useState(false);
+  const toggle = () => {
+    setRefused(false);
+    setLocationOn(!on, () => setRefused(true));
+  };
+  return (
+    <>
+      <div className="segment">
+        <button type="button" aria-pressed={on} title={t.location.title} onClick={toggle}>
+          {t.location.label}
+        </button>
+      </div>
+      {refused && (
+        <div className="glass auth-notice motion-notice" role="status">
+          <p>{t.location.refused}</p>
+          <button type="button" className="auth-notice-close" aria-label={t.location.close} onClick={() => setRefused(false)}>
             <CloseIcon />
           </button>
         </div>
