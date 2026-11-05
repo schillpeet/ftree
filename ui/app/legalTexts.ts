@@ -1,7 +1,7 @@
-// Texts of `/terms` and `/privacy`; `de` has to provide every key of `en`, and only the German version is binding.
+// Texts of `/terms`, `/privacy`, and `/imprint`; `de` has to provide every key of `en`, and only the German version is binding.
 // A body entry is a paragraph, an array a bullet list. `op` is the operator from the server's environment.
 
-type Operator = { name: string; email: string };
+type Operator = { name: string; email: string; address: string };
 export type LegalSection = { heading: string; body: (string | string[])[] };
 
 const en = {
@@ -69,6 +69,15 @@ const en = {
         body: [
           'German law applies. Mandatory consumer protection rules of the country you live in remain unaffected.',
         ],
+      },
+    ],
+  },
+  imprint: {
+    title: 'Imprint',
+    sections: (op: Operator): LegalSection[] => [
+      {
+        heading: 'Information under section 18(1) of the German Interstate Media Treaty (MStV)',
+        body: [`${op.name}\n${op.address}`, `Email: ${op.email}`],
       },
     ],
   },
@@ -211,6 +220,15 @@ const de: typeof en = {
         body: [
           'Es gilt deutsches Recht. Zwingende Verbraucherschutzvorschriften des Staates, in dem du lebst, bleiben unberührt.',
         ],
+      },
+    ],
+  },
+  imprint: {
+    title: 'Impressum',
+    sections: (op: Operator): LegalSection[] => [
+      {
+        heading: 'Angaben nach § 18 Abs. 1 MStV',
+        body: [`${op.name}\n${op.address}`, `E-Mail: ${op.email}`],
       },
     ],
   },

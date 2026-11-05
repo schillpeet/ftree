@@ -1,11 +1,13 @@
 # GHCR packages are private until made public
 imagePullSecrets: []
-# Who runs this instance, shown on /terms and /privacy and as the "Feedback" address in the menu; the UI reads
-# OPERATOR_NAME and OPERATOR_EMAIL at request time, so changing them needs no new image. Unset, the legal pages say
-# "nicht hinterlegt" and the menu has no "Feedback" entry.
+# Who runs this instance, shown on /terms, /privacy, and /imprint and as the "Feedback" address in the menu; the UI reads
+# OPERATOR_NAME, OPERATOR_EMAIL, and OPERATOR_ADDRESS at request time, so changing them needs no new image. Unset, the
+# legal pages say "nicht hinterlegt" and the menu has no "Feedback" entry.
+# The address is the imprint's postal address, line breaks kept; set it only in the deployment's values, never here.
 operator:
   name: ""
   email: ""
+  address: ""
 # The address people open ftree at, e.g. https://ftree.example.org: invitation texts link to it, and the administration
 # leads back to it. Unset, the BFF falls back to http://localhost:3000.
 publicUrl: ""

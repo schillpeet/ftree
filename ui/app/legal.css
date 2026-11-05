@@ -1,4 +1,4 @@
-/* `/terms`, `/privacy` and `/home/faq`: a scrolling text page over the admin page's night sky. */
+/* `/terms`, `/privacy`, `/imprint` and `/home/faq`: a scrolling text page over the admin page's night sky. */
 
 .legal-page {
   position: fixed;
@@ -42,6 +42,11 @@
 .legal-page p,
 .legal-page ul {
   margin: 0 0 8px;
+}
+
+/* The imprint's address keeps the line breaks of `OPERATOR_ADDRESS`. */
+.legal-page p {
+  white-space: pre-line;
 }
 
 .legal-page li + li {

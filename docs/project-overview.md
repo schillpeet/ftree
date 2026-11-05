@@ -99,12 +99,17 @@ Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a p
 The family is centred on the front of the tree; when the wedges do not fit around the trunk, all tiers reach further out.
 The tiered tree is rebuilt when the family's generations change; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
-Next to the version, small links "Terms · Privacy" ("Nutzungsbedingungen · Datenschutz") open `/terms` and `/privacy` in the chosen language.
+Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
+Below 520 px the footer line wraps, so every link stays reachable on a phone.
 Between "Datenschutz" and GitHub, a footer link "FAQ" opens `/home/faq` in the chosen language; like the landing page it stays behind Cloudflare Access.
 `/terms` (Nutzungsbedingungen) and `/privacy` (Datenschutzhinweise) are server-rendered text pages in German (binding, the default) and English (`?lang=en`), with a back link and a language link (`ui/app/LegalPage.tsx`, texts in `ui/app/legalTexts.ts`).
 The legal pages call no BFF and do not need a signed-in user; `PermissionsProvider` (and so `/me`) lives in the `(tree)` and admin layouts instead of the root layout.
 The legal pages fill in the operator's name and email from `OPERATOR_NAME` and `OPERATOR_EMAIL`, read per request through `connection()` (`ui/app/operator.ts`), so they are never baked into the build; unset, they read "nicht hinterlegt".
-There is no Impressum page, since ftree is run privately and non-commercially for a closed group.
+`/imprint` (Impressum, "Angaben nach § 18 Abs. 1 MStV") is built the same way and shows the operator's name, postal address, and email; the address comes from `OPERATOR_ADDRESS` (`operator.address` in the chart), is set only in the deployment's values, and reads "nicht hinterlegt" while unset.
+`/imprint` needs its own entry in the Cloudflare Access bypass before it is reachable without a login.
+Every UI response carries `X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin` and no `X-Powered-By` (`ui/next.config.ts`).
+The UI's Content Security Policy, with `frame-ancestors 'none'`, runs as `Content-Security-Policy-Report-Only` for now, so browsers only log violations in the console and nothing is blocked yet.
+The policy keeps `'unsafe-inline'` for scripts and styles, because Next.js streams pages with inline scripts and nonces would make every page render per request.
 
 ### Sky and time of day
 
@@ -189,7 +194,7 @@ The card offers "Später entscheiden", which swaps it for a reminder above the d
 Clicking a card in 3D frames it with all its slots beside the person panel (`ui/app/cardFrame.ts`), and a pencil slot left of the card opens the edit form on the left with the card on the right.
 The own card carries a "DU" badge, the camera flies to it when a tree opens, and a three-step intro tour runs once per browser after planting a tree or accepting an invitation.
 A slug that names no visible family, is malformed, or is reserved shows "Baum nicht gefunden" with a link back to the first tree; unknown and forbidden trees look the same.
-The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `terms`, and `privacy` are reserved for routes of their own and never open a tree.
+The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `terms`, `privacy`, and `imprint` are reserved for routes of their own and never open a tree.
 A new family gets a random slug of 10 lowercase letters and digits (`FamilySlugs.kt`), so the URL does not reveal the tree's name and never hits a reserved slug; V26 replaced the name-based slugs of older families the same way.
 Trees are switched on the families board in the burger menu; the header has no switcher.
 The scene lives in the `(tree)` route group's layout, so switching trees keeps the canvas and only swaps the family.
