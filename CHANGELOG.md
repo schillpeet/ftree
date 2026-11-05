@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.40.0](https://github.com/schillpeet/ftree/compare/v0.39.0...v0.40.0) (2026-11-05)
+
+
+### Features
+
+* **bff:** version legal documents and record acceptance ([#329](https://github.com/schillpeet/ftree/issues/329)) ([d98a02b](https://github.com/schillpeet/ftree/commit/d98a02b11c1bac7391be4e36f006034cc6602618))
+* **ui:** add an imprint ([#327](https://github.com/schillpeet/ftree/issues/327)) ([f69d0bf](https://github.com/schillpeet/ftree/commit/f69d0bfe31b026dd6dd3e33c4acb786c844d1948))
+* **ui:** ask for acceptance of new legal documents ([#329](https://github.com/schillpeet/ftree/issues/329)) ([d98a02b](https://github.com/schillpeet/ftree/commit/d98a02b11c1bac7391be4e36f006034cc6602618))
+* **ui:** return to the landing page after signing in ([#326](https://github.com/schillpeet/ftree/issues/326)) ([e2ec7d3](https://github.com/schillpeet/ftree/commit/e2ec7d34e22b7279b822642e2ab01728133946da))
+* **ui:** set response headers ([#327](https://github.com/schillpeet/ftree/issues/327)) ([f69d0bf](https://github.com/schillpeet/ftree/commit/f69d0bfe31b026dd6dd3e33c4acb786c844d1948))
+
+
+### Bug Fixes
+
+* **ui:** ask for the location only on request ([#326](https://github.com/schillpeet/ftree/issues/326)) ([e2ec7d3](https://github.com/schillpeet/ftree/commit/e2ec7d34e22b7279b822642e2ab01728133946da))
+* **ui:** show only name and email in the imprint ([#330](https://github.com/schillpeet/ftree/issues/330)) ([720e94c](https://github.com/schillpeet/ftree/commit/720e94ce44516fda37bf00a8801ccf16e88f1fb3))
+
 ## [0.39.0](https://github.com/schillpeet/ftree/compare/v0.38.0...v0.39.0) (2026-11-04)
 
 
