@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   title: 'ftree · FAQ',
 };
 
-// Questions and answers, under `/home` and behind Cloudflare Access like the landing page; laid out like the legal
+// Questions and answers, under `/home` and public like the landing page; laid out like the legal
 // pages, with the language from `?lang=` and every entry reachable by its anchor.
 export default async function FaqPage({ searchParams }: PageProps<'/home/faq'>) {
   const t = faqTexts((await searchParams).lang);
