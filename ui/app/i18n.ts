@@ -39,6 +39,12 @@ const en = {
     howTo: 'How to allow motion',
     close: 'Close hint',
   },
+  location: {
+    label: 'Location',
+    title: 'Set the sun by your location; it stays in this browser',
+    refused: 'Your browser does not share its location, so the sun keeps following the time zone.',
+    close: 'Close hint',
+  },
   account: {
     title: 'Profile',
     close: 'Close profile',
@@ -98,6 +104,7 @@ const en = {
     chip: 'Private · just for your family',
     githubLabel: 'ftree source code on GitHub',
     inviteOnly: 'No invitation yet? Ask someone in your family who already uses ftree.',
+    noCodeWithoutInvite: 'Without an invitation, no code arrives when you sign in.',
     phase: 'Closed test phase · access by invitation only',
     stepDone: 'Done',
     title: 'Your family. A tree that grows with all of you.',
@@ -868,6 +875,12 @@ const de: typeof en = {
     howTo: 'So erlaubst du Bewegung',
     close: 'Hinweis schließen',
   },
+  location: {
+    label: 'Standort',
+    title: 'Sonne nach deinem Standort stellen; er bleibt in diesem Browser',
+    refused: 'Dein Browser gibt den Standort nicht frei, deshalb folgt die Sonne weiter der Zeitzone.',
+    close: 'Hinweis schließen',
+  },
   account: {
     title: 'Profil',
     close: 'Profil schließen',
@@ -927,6 +940,7 @@ const de: typeof en = {
     chip: 'Privat · nur für eure Familie',
     githubLabel: 'Quellcode von ftree auf GitHub',
     inviteOnly: 'Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt.',
+    noCodeWithoutInvite: 'Ohne Einladung kommt beim Anmelden kein Code an.',
     phase: 'Geschlossene Testphase · Zugang nur mit Einladung',
     stepDone: 'Erledigt',
     title: 'Deine Familie. Ein Baum, der mit euch wächst.',

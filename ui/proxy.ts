@@ -6,7 +6,8 @@ import { hostDecision } from './app/adminHost';
 // which is where admins open them. Unset, as locally, both live together.
 // The BFF decides the rights either way; this only keeps each host to what it is for.
 // On the tree's host `/` is the landing page at `/home`, which like every page but the legal ones sits behind
-// Cloudflare Access; from there people go on to `/start`.
+// Cloudflare Access; from there people go on to `/start`. `/login` leads there too: it exists to be behind Access, so
+// that "Sign in" ends on the landing page and not in a tree.
 export function proxy(request: NextRequest) {
   const decision = hostDecision(process.env.ADMIN_URL, request.headers.get('host'), request.nextUrl.pathname);
   switch (decision.kind) {
@@ -25,5 +26,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/', '/home', '/home/:path*', '/admin', '/admin/:path*'],
+  matcher: ['/', '/login', '/home', '/home/:path*', '/admin', '/admin/:path*'],
 };

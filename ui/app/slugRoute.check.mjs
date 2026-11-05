@@ -22,6 +22,8 @@ for (const slug of RESERVED_SLUGS) {
   assert.ok(!isTreeSlug(slug));
   assert.equal(familyOfSlug([{ id: 'x', name: slug, slug }], slug), null);
 }
+assert.ok(!isTreeSlug('login'));
+assert.ok(!isTreeSlug('imprint'));
 assert.ok(isTreeSlug('admin-2'));
 assert.ok(isTreeSlug('a1-b2'));
 assert.ok(!isTreeSlug('a--b'));

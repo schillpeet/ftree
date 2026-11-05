@@ -1,11 +1,14 @@
 import { hostOf } from './access.ts';
 
-// What `proxy.ts` does with a request: let it through, send it to the admin page, hide it, or send `/` to the landing page.
+// What `proxy.ts` does with a request: let it through, send it to the admin page, hide it, or send `/` and `/login` to the landing page.
 export type HostDecision = { kind: 'next' } | { kind: 'toAdmin'; url: string } | { kind: 'notFound' } | { kind: 'toHome' };
+
+// `/` and `/login` lead to the landing page, the one straight away and the other, behind Cloudflare Access, after signing in.
+const leadsHome = (pathname: string) => pathname === '/' || pathname === '/login';
 
 // The landing page and its example family; the administration's host has no use for them.
 export function isLandingPath(pathname: string) {
-  return pathname === '/' || pathname === '/home' || pathname.startsWith('/home/');
+  return leadsHome(pathname) || pathname === '/home' || pathname.startsWith('/home/');
 }
 
 export function isAdminPath(pathname: string) {
@@ -16,7 +19,7 @@ export function isAdminPath(pathname: string) {
 // tree's host has no `/admin`; every other path, trees and legal pages included, stays reachable on both. Unset, both live
 // together. `host` is the request's `Host` header.
 export function hostDecision(adminUrl: string | undefined, host: string | null, pathname: string): HostDecision {
-  const toHome: HostDecision = pathname === '/' ? { kind: 'toHome' } : { kind: 'next' };
+  const toHome: HostDecision = leadsHome(pathname) ? { kind: 'toHome' } : { kind: 'next' };
   const adminHost = hostOf(adminUrl);
   if (!adminUrl || !adminHost) return toHome;
   const onAdminHost = host?.toLowerCase() === adminHost;

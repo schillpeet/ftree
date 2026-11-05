@@ -4,11 +4,12 @@ import type { FamilySummary } from '../lib/api/generated/members';
 type Family = Pick<FamilySummary, 'id' | 'name' | 'slug'>;
 
 // First path segments that are routes of their own and therefore never name a tree; a family with such a slug could
-// not be opened by its URL. `admin` is the admin page, `home` the landing page, `start` the tree's entry, `terms`,
-// `privacy`, and `imprint` the legal pages, and `healthz` the probe, static routes that win over `[slug]`; the `/api` rewrite runs
+// not be opened by its URL. `admin` is the admin page, `home` the landing page, `start` the tree's entry, `login` the way
+// through signing in back to the landing page, `terms`, `privacy`, and `imprint` the legal pages, and `healthz` the probe,
+// routes that win over `[slug]`; the `/api` rewrite runs
 // before dynamic routes; `cdn-cgi` is Cloudflare's.
 // New families get random 10-character slugs (FamilySlugs.kt), which never match one of these.
-export const RESERVED_SLUGS = ['admin', 'api', 'healthz', 'cdn-cgi', 'home', 'start', 'terms', 'privacy', 'imprint'] as const;
+export const RESERVED_SLUGS = ['admin', 'api', 'healthz', 'cdn-cgi', 'home', 'start', 'login', 'terms', 'privacy', 'imprint'] as const;
 
 // The BFF's slug format: lowercase ASCII words joined by `-`.
 const SLUG = /^[a-z0-9]+(-[a-z0-9]+)*$/;

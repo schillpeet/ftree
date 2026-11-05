@@ -132,6 +132,7 @@ jobs:
       - run: node app/adminHost.check.mjs
       - run: node app/tokens.check.mjs
       - run: node app/slugRoute.check.mjs
+      - run: node app/sunLocation.check.mjs
       - run: node app/conflict.check.mjs
       - run: node app/share.check.mjs
       - run: node app/home/exampleFamily.check.mjs

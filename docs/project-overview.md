@@ -23,7 +23,10 @@ The "ADM" chip and the Evolution button sit left of the header on the public pag
 The Evolution button also shows on `/home`, `/home/how`, and `/home/example` for signed-in holders of `dev.tools` (read from the page's `/me` probe), where the panel has the "Ansichts-Labor" only, except on the example, whose scene shows the full panel.
 The Evolution button and panel need `dev.tools`; the panel's "Zeit" section holds the former "Zeit" button's time-of-day preview, and its "Ansichts-Labor" section has a "Darstellung" select over the stored appearances `organic` ("3D"), `organicExperimental` ("Stufenbaum"), and `experimental` ("TRON"), which replaces the former "Stufenbaum" checkbox.
 The version, "Nutzungsbedingungen", "Datenschutz", and "GitHub" (with the GitHub mark, a link to the repository) sit in one small line at the bottom centre of every page.
-`/` redirects to the landing page at `/home` (outside the `(tree)` group, so it needs no `/me`), and the ftree logo in every header links there, with the tooltip "Zur Startseite"; the tree's entry, formerly `/`, is `/start`, which opens the last tree (or the welcome card), and the landing page's "Anmelden" leads there (it reads "Weiter zum Baum" once a quiet `/api/me` probe succeeds).
+`/` redirects to the landing page at `/home` (outside the `(tree)` group, so it needs no `/me`), and the ftree logo in every header links there, with the tooltip "Zur Startseite"; the tree's entry, formerly `/`, is `/start`, which opens the last tree (or the welcome card), and the landing page's main button leads there once a quiet `/api/me` probe succeeds and it reads "Weiter zum Baum".
+Signed out, "Anmelden" leads to `/login`, which redirects to `/home` (`ui/proxy.ts`), so behind Cloudflare Access signing in ends on the landing page and not in a tree; invitation links `/<slug>` still lead straight to the tree.
+Signed out, the note under the main button on `/home` and `/home/how` says that an invitation comes from someone in the family and that without one no code arrives when signing in.
+All pages carry `noindex, nofollow` for the test phase (`robots` in `ui/app/layout.tsx`).
 The landing page has no navigation; its hero buttons are "Anmelden" ("Weiter zum Baum" when signed in) and "So funktioniert's", which opens `/home/how` with the three steps explained.
 The public headers have no "Anmelden"; signed out, the main button of `/home`, `/home/how`, and `/home/example` is "Anmelden", since there is no registration.
 Signed out, a thin strip at the top of `/home` and `/home/how` reads "Geschlossene Testphase · Zugang nur mit Einladung", and nothing while the quiet `/api/me` probe runs.
@@ -113,7 +116,10 @@ The policy keeps `'unsafe-inline'` for scripts and styles, because Next.js strea
 
 ### Sky and time of day
 
-The sun stands where it currently is at the browser's location: the browser is asked once for its position (kept in the browser, never sent anywhere); without permission the time zone's standard meridian at 51° latitude is used.
+The sun stands where it currently is for the time zone: its standard meridian at 51° latitude; no page load raises a location prompt.
+In 3D a "Standort" toggle sits left of the 3D | GRID segment on every page with that segment, in the place and look of GRID's "Animation" toggle (`ui/app/sunLocation.ts`); on the landing page the still does not change, and the choice applies in the tree and the example family.
+Switching it on raises the browser's prompt and sets the sun for that position at once, without a reload; denied or unavailable, it goes back off with a dismissible hint and the time zone stays.
+Only the switch is remembered per browser in `localStorage` (`ftree.location`), never the position, which stays in the page's memory and is never sent anywhere; a later visit reads the position only if the browser already allows it without asking, else the toggle is off.
 South lies straight ahead from the start view.
 Sun and sky light, haze, and sky colors follow the sun's altitude, with the afterglow stretched through civil twilight; at night a full moon (a camera-facing disc with a painted texture of maria, craters, and ray craters, plus a soft halo) stands opposite the sun (its arc flattened to about 20° so it stays in view) and lights the scene bluish, and stars come out one by one as the sun sinks to 14° below the horizon.
 The time updates every minute.
@@ -194,7 +200,7 @@ The card offers "Später entscheiden", which swaps it for a reminder above the d
 Clicking a card in 3D frames it with all its slots beside the person panel (`ui/app/cardFrame.ts`), and a pencil slot left of the card opens the edit form on the left with the card on the right.
 The own card carries a "DU" badge, the camera flies to it when a tree opens, and a three-step intro tour runs once per browser after planting a tree or accepting an invitation.
 A slug that names no visible family, is malformed, or is reserved shows "Baum nicht gefunden" with a link back to the first tree; unknown and forbidden trees look the same.
-The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `terms`, `privacy`, and `imprint` are reserved for routes of their own and never open a tree.
+The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `home`, `start`, `login`, `terms`, `privacy`, and `imprint` are reserved for routes of their own and never open a tree.
 A new family gets a random slug of 10 lowercase letters and digits (`FamilySlugs.kt`), so the URL does not reveal the tree's name and never hits a reserved slug; V26 replaced the name-based slugs of older families the same way.
 Trees are switched on the families board in the burger menu; the header has no switcher.
 The scene lives in the `(tree)` route group's layout, so switching trees keeps the canvas and only swaps the family.
@@ -351,7 +357,7 @@ Dev mode refuses to start unless `app.public-url` is a local address (`localhost
 `app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
 A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` answers 401; an `Authorization: Bearer` header is ignored.
 The UI loads `GET /me` once at start and shows only what the permissions allow, those from `/me` together with those of the open family; it checks permissions, never role names, and the BFF still enforces them.
-The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator, otherwise the role in the open family: Eigentümer, Bearbeiter, or Gast), and whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode); "Abmelden" in the menu links to `/cdn-cgi/access/logout`.
+The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator, otherwise the role in the open family: Eigentümer, Bearbeiter, or Gast), and whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode); "Abmelden" in the menu links to `/cdn-cgi/access/logout` with `returnTo` set to the landing page on the same host, the only kind of address Cloudflare accepts there.
 "Familien" needs `family.create` (every signed-in user) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Momentaufnahme" and "Darstellung" are for everyone.
 "Admin-Tool" needs `users.view` and links to the admin page at `/admin`; the former read-only "Anmeldungen" board of `GET /users` is gone until the admin page gets a people tab.
 On the tree's host of a deployment whose administration has its own host, admins lack `users.view`, so the menu has no "Admin-Tool"; they open the administration's host directly, for example from the Cloudflare App Launcher.
