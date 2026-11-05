@@ -11,6 +11,7 @@
  * - `INVALID_REQUEST` (400): the request is well-formed but not possible, for example an infeasible generation or a cycle of ancestors.
  * - `UNAUTHENTICATED` (401): no valid sign-in.
  * - `FORBIDDEN` (403): signed in, but not allowed.
+ * - `LEGAL_ACCEPTANCE_REQUIRED` (403): the caller has to accept the documents in `pendingLegal` of `GET /me` first; this holds for admins and on the admin host as well.
  * - `NOT_FOUND` (404): the family, member, or photo does not exist or is not visible.
  * - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
  * - `NAME_TAKEN` (409): a family with this name already exists, possibly in the trash.
@@ -34,6 +35,7 @@ export const ProblemCode = {
   INVALID_REQUEST: 'INVALID_REQUEST',
   UNAUTHENTICATED: 'UNAUTHENTICATED',
   FORBIDDEN: 'FORBIDDEN',
+  LEGAL_ACCEPTANCE_REQUIRED: 'LEGAL_ACCEPTANCE_REQUIRED',
   NOT_FOUND: 'NOT_FOUND',
   METHOD_NOT_ALLOWED: 'METHOD_NOT_ALLOWED',
   NAME_TAKEN: 'NAME_TAKEN',
@@ -102,6 +104,41 @@ export const Permission = {
   usersmanage: 'users.manage',
 } as const;
 
+/**
+ * The terms are accepted; the privacy notice is acknowledged, not consented to.
+ */
+export type LegalKind = typeof LegalKind[keyof typeof LegalKind];
+
+
+export const LegalKind = {
+  terms: 'terms',
+  privacy: 'privacy',
+} as const;
+
+/**
+ * What the acceptance card says about one version, without its text.
+ */
+export interface LegalDocumentNotice {
+  kind: LegalKind;
+  version: number;
+  effectiveAt: string;
+  /**
+     * The newest version of this kind the user accepted; null when this is their first.
+     * @nullable
+     */
+  previousVersion: number | null;
+  /**
+     * What changed, one point per line; null for a first version.
+     * @nullable
+     */
+  changeSummaryDe: string | null;
+  /**
+     * What changed, one point per line; null for a first version.
+     * @nullable
+     */
+  changeSummaryEn: string | null;
+}
+
 export interface Me {
   /**
      * The user's `users.id`; null only before their sign-in was first recorded.
@@ -125,6 +162,63 @@ export interface Me {
   permissions: Permission[];
   /** True when Cloudflare Access confirmed the email; false in local dev mode. */
   verified: boolean;
+  /** The documents in force the user still has to accept; while this is not empty, every other call answers `LEGAL_ACCEPTANCE_REQUIRED`. */
+  pendingLegal: LegalDocumentNotice[];
+  /** Versions that need acceptance from `effectiveAt` on, which has not come yet; they block nothing. */
+  announcedLegal: LegalDocumentNotice[];
+}
+
+/**
+ * The language of the text; only the German one is binding.
+ */
+export type LegalLanguage = typeof LegalLanguage[keyof typeof LegalLanguage];
+
+
+export const LegalLanguage = {
+  de: 'de',
+  en: 'en',
+} as const;
+
+export interface LegalVersion {
+  version: number;
+  effectiveAt: string;
+}
+
+export interface LegalDocument {
+  kind: LegalKind;
+  version: number;
+  effectiveAt: string;
+  /** The binding text; lines starting with `## ` are headings and with `- ` bullets, and `{{operator.name}}` and `{{operator.email}}` stand for who runs the instance. */
+  bodyDe: string;
+  /** The translation, written like `bodyDe`. */
+  bodyEn: string;
+  /** The SHA-256 of `bodyDe` in hex. */
+  contentSha256: string;
+  /** Every published version of this kind, newest first. */
+  versions: LegalVersion[];
+}
+
+export interface LegalDocumentRef {
+  kind: LegalKind;
+  /** @minimum 1 */
+  version: number;
+}
+
+export interface AcceptLegalDocumentsRequest {
+  /**
+     * @minItems 1
+     * @maxItems 10
+     */
+  documents: LegalDocumentRef[];
+  language: LegalLanguage;
+}
+
+export interface LegalAcceptance {
+  kind: LegalKind;
+  version: number;
+  effectiveAt: string;
+  acceptedAt: string;
+  language: LegalLanguage;
 }
 
 export interface UserLogin {
@@ -1107,6 +1201,13 @@ export type EditConflictResponse = Problem;
  */
 export type InternalErrorResponse = Problem;
 
+export type GetLegalDocumentParams = {
+/**
+ * @minimum 1
+ */
+version?: number;
+};
+
 export type GetAdminAuditParams = {
 /**
  * How many entries at most; 50 by default.
@@ -1351,6 +1452,212 @@ export const listMyInvitations = async ( options?: RequestInit): Promise<listMyI
 
   const data: listMyInvitationsResponse['data'] = body ? JSON.parse(body) : {}
   return { data, status: res.status, headers: res.headers } as listMyInvitationsResponse
+}
+
+
+
+export type listMyLegalAcceptancesResponse200 = {
+  data: LegalAcceptance[]
+  status: 200
+}
+
+export type listMyLegalAcceptancesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type listMyLegalAcceptancesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type listMyLegalAcceptancesResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type listMyLegalAcceptancesResponseSuccess = (listMyLegalAcceptancesResponse200) & {
+  headers: Headers;
+};
+export type listMyLegalAcceptancesResponseError = (listMyLegalAcceptancesResponse401 | listMyLegalAcceptancesResponse403 | listMyLegalAcceptancesResponse500) & {
+  headers: Headers;
+};
+
+export type listMyLegalAcceptancesResponse = (listMyLegalAcceptancesResponseSuccess | listMyLegalAcceptancesResponseError)
+
+export const getListMyLegalAcceptancesUrl = () => {
+
+
+
+
+  return `/api/me/legal-acceptances`
+}
+
+/**
+ * Newest first. The privacy notice is acknowledged, not consented to, and is listed the same way.
+ * @summary List the legal documents the signed-in user accepted
+ */
+export const listMyLegalAcceptances = async ( options?: RequestInit): Promise<listMyLegalAcceptancesResponse> => {
+
+  const res = await fetch(getListMyLegalAcceptancesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: listMyLegalAcceptancesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as listMyLegalAcceptancesResponse
+}
+
+
+
+export type acceptLegalDocumentsResponse200 = {
+  data: Me
+  status: 200
+}
+
+export type acceptLegalDocumentsResponse400 = {
+  data: Problem
+  status: 400
+}
+
+export type acceptLegalDocumentsResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type acceptLegalDocumentsResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type acceptLegalDocumentsResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type acceptLegalDocumentsResponseSuccess = (acceptLegalDocumentsResponse200) & {
+  headers: Headers;
+};
+export type acceptLegalDocumentsResponseError = (acceptLegalDocumentsResponse400 | acceptLegalDocumentsResponse401 | acceptLegalDocumentsResponse403 | acceptLegalDocumentsResponse500) & {
+  headers: Headers;
+};
+
+export type acceptLegalDocumentsResponse = (acceptLegalDocumentsResponseSuccess | acceptLegalDocumentsResponseError)
+
+export const getAcceptLegalDocumentsUrl = () => {
+
+
+
+
+  return `/api/me/legal-acceptances`
+}
+
+/**
+ * Records that the caller accepted the named versions and writes `legal.accepted` to the audit log; no IP address and no user agent are stored. Only what `pendingLegal` of `GET /me` names can be accepted, and a version accepted before is left alone, so sending again changes nothing. This and `GET /me` and `GET /legal/{kind}` are the only calls that work while a document is open.
+ * @summary Accept the open legal documents
+ */
+export const acceptLegalDocuments = async (acceptLegalDocumentsRequest: AcceptLegalDocumentsRequest, options?: RequestInit): Promise<acceptLegalDocumentsResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Symbol.iterator in h) {
+      return Object.fromEntries(
+        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
+      );
+    }
+    const headers: Record<string, string | readonly string[]> = {};
+    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
+      if (value !== undefined) headers[name] = value;
+    }
+    return headers;
+  };
+const res = await fetch(getAcceptLegalDocumentsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(acceptLegalDocumentsRequest)
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: acceptLegalDocumentsResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as acceptLegalDocumentsResponse
+}
+
+
+
+export type getLegalDocumentResponse200 = {
+  data: LegalDocument
+  status: 200
+}
+
+export type getLegalDocumentResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getLegalDocumentResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getLegalDocumentResponseSuccess = (getLegalDocumentResponse200) & {
+  headers: Headers;
+};
+export type getLegalDocumentResponseError = (getLegalDocumentResponse404 | getLegalDocumentResponse500) & {
+  headers: Headers;
+};
+
+export type getLegalDocumentResponse = (getLegalDocumentResponseSuccess | getLegalDocumentResponseError)
+
+export const getGetLegalDocumentUrl = (kind: LegalKind,
+    params?: GetLegalDocumentParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/legal/${kind}?${stringifiedParams}` : `/api/legal/${kind}`
+}
+
+/**
+ * Needs no sign-in, because the UI's server reads it for the public pages `/terms` and `/privacy`; from outside the cluster `/api/*` stays behind Cloudflare Access. Without `version` it answers the version in force; with one, any published version, also one that is only announced.
+ * @summary Get a legal document
+ */
+export const getLegalDocument = async (kind: LegalKind,
+    params?: GetLegalDocumentParams, options?: RequestInit): Promise<getLegalDocumentResponse> => {
+
+  const res = await fetch(getGetLegalDocumentUrl(kind,params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getLegalDocumentResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getLegalDocumentResponse
 }
 
 
@@ -4788,6 +5095,72 @@ export const deleteAdminUser = async (userId: string, options?: RequestInit): Pr
 
   const data: deleteAdminUserResponse['data'] = body ? JSON.parse(body) : undefined
   return { data, status: res.status, headers: res.headers } as deleteAdminUserResponse
+}
+
+
+
+export type getAdminUserLegalAcceptancesResponse200 = {
+  data: LegalAcceptance[]
+  status: 200
+}
+
+export type getAdminUserLegalAcceptancesResponse401 = {
+  data: UnauthorizedResponse
+  status: 401
+}
+
+export type getAdminUserLegalAcceptancesResponse403 = {
+  data: ForbiddenResponse
+  status: 403
+}
+
+export type getAdminUserLegalAcceptancesResponse404 = {
+  data: Problem
+  status: 404
+}
+
+export type getAdminUserLegalAcceptancesResponse500 = {
+  data: InternalErrorResponse
+  status: 500
+}
+
+export type getAdminUserLegalAcceptancesResponseSuccess = (getAdminUserLegalAcceptancesResponse200) & {
+  headers: Headers;
+};
+export type getAdminUserLegalAcceptancesResponseError = (getAdminUserLegalAcceptancesResponse401 | getAdminUserLegalAcceptancesResponse403 | getAdminUserLegalAcceptancesResponse404 | getAdminUserLegalAcceptancesResponse500) & {
+  headers: Headers;
+};
+
+export type getAdminUserLegalAcceptancesResponse = (getAdminUserLegalAcceptancesResponseSuccess | getAdminUserLegalAcceptancesResponseError)
+
+export const getGetAdminUserLegalAcceptancesUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/users/${userId}/legal-acceptances`
+}
+
+/**
+ * Newest first. Needs `users.view`, which only admins have.
+ * @summary List the legal documents a person accepted
+ */
+export const getAdminUserLegalAcceptances = async (userId: string, options?: RequestInit): Promise<getAdminUserLegalAcceptancesResponse> => {
+
+  const res = await fetch(getGetAdminUserLegalAcceptancesUrl(userId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+)
+
+
+  const body = [204, 205, 304].includes(res.status) ? null : await res.text();
+
+  const data: getAdminUserLegalAcceptancesResponse['data'] = body ? JSON.parse(body) : {}
+  return { data, status: res.status, headers: res.headers } as getAdminUserLegalAcceptancesResponse
 }
 
 

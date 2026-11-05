@@ -26,6 +26,8 @@ tags:
     description: Deleted families, kept for 30 days before they are removed for good
   - name: access
     description: Who may open which tree, invitations, and the people with access
+  - name: Legal
+    description: Versioned terms and privacy notices, and who accepted which version
 paths:
   /me:
     get:
@@ -99,6 +101,101 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "403":
           $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /me/legal-acceptances:
+    get:
+      operationId: listMyLegalAcceptances
+      tags:
+        - Legal
+      summary: List the legal documents the signed-in user accepted
+      description: Newest first. The privacy notice is acknowledged, not consented to, and is listed the same way.
+      responses:
+        "200":
+          description: The caller's acceptances.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LegalAcceptance"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      operationId: acceptLegalDocuments
+      tags:
+        - Legal
+      summary: Accept the open legal documents
+      description: >-
+        Records that the caller accepted the named versions and writes `legal.accepted` to the audit log; no IP address and no user agent are stored.
+        Only what `pendingLegal` of `GET /me` names can be accepted, and a version accepted before is left alone, so sending again changes nothing.
+        This and `GET /me` and `GET /legal/{kind}` are the only calls that work while a document is open.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptLegalDocumentsRequest"
+      responses:
+        "200":
+          description: Accepted; the caller as `GET /me` shows them now.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "400":
+          description: The body breaks the schema (`VALIDATION_FAILED`), or a named version is not open for the caller (`INVALID_REQUEST`), for example because a newer one took effect meanwhile.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /legal/{kind}:
+    parameters:
+      - name: kind
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/LegalKind"
+    get:
+      operationId: getLegalDocument
+      tags:
+        - Legal
+      summary: Get a legal document
+      description: >-
+        Needs no sign-in, because the UI's server reads it for the public pages `/terms` and `/privacy`; from outside the cluster `/api/*` stays behind Cloudflare Access.
+        Without `version` it answers the version in force; with one, any published version, also one that is only announced.
+      security: []
+      parameters:
+        - name: version
+          in: query
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+      responses:
+        "200":
+          description: The document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LegalDocument"
+        "404":
+          description: No such version, or none in force yet. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "500":
           $ref: "#/components/responses/InternalError"
   /users:
@@ -1839,6 +1936,41 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalError"
+  /admin/users/{userId}/legal-acceptances:
+    parameters:
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getAdminUserLegalAcceptances
+      tags:
+        - Legal
+      summary: List the legal documents a person accepted
+      description: Newest first. Needs `users.view`, which only admins have.
+      responses:
+        "200":
+          description: The person's acceptances.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LegalAcceptance"
+        "404":
+          description: No person with this id. Code `NOT_FOUND`.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /admin/users/{userId}/sessions/revoke:
     parameters:
       - name: userId
@@ -2039,6 +2171,7 @@ components:
         - `INVALID_REQUEST` (400): the request is well-formed but not possible, for example an infeasible generation or a cycle of ancestors.
         - `UNAUTHENTICATED` (401): no valid sign-in.
         - `FORBIDDEN` (403): signed in, but not allowed.
+        - `LEGAL_ACCEPTANCE_REQUIRED` (403): the caller has to accept the documents in `pendingLegal` of `GET /me` first; this holds for admins and on the admin host as well.
         - `NOT_FOUND` (404): the family, member, or photo does not exist or is not visible.
         - `METHOD_NOT_ALLOWED` (405): the path does not support the method.
         - `NAME_TAKEN` (409): a family with this name already exists, possibly in the trash.
@@ -2058,6 +2191,7 @@ components:
         - INVALID_REQUEST
         - UNAUTHENTICATED
         - FORBIDDEN
+        - LEGAL_ACCEPTANCE_REQUIRED
         - NOT_FOUND
         - METHOD_NOT_ALLOWED
         - NAME_TAKEN
@@ -2106,6 +2240,8 @@ components:
         - canCreateTrees
         - permissions
         - verified
+        - pendingLegal
+        - announcedLegal
       properties:
         id:
           type: string
@@ -2136,6 +2272,153 @@ components:
         verified:
           type: boolean
           description: True when Cloudflare Access confirmed the email; false in local dev mode.
+        pendingLegal:
+          type: array
+          description: The documents in force the user still has to accept; while this is not empty, every other call answers `LEGAL_ACCEPTANCE_REQUIRED`.
+          items:
+            $ref: "#/components/schemas/LegalDocumentNotice"
+        announcedLegal:
+          type: array
+          description: Versions that need acceptance from `effectiveAt` on, which has not come yet; they block nothing.
+          items:
+            $ref: "#/components/schemas/LegalDocumentNotice"
+    LegalKind:
+      type: string
+      description: The terms are accepted; the privacy notice is acknowledged, not consented to.
+      enum:
+        - terms
+        - privacy
+    LegalLanguage:
+      type: string
+      description: The language of the text; only the German one is binding.
+      enum:
+        - de
+        - en
+    LegalDocumentNotice:
+      type: object
+      description: What the acceptance card says about one version, without its text.
+      required:
+        - kind
+        - version
+        - effectiveAt
+        - previousVersion
+        - changeSummaryDe
+        - changeSummaryEn
+      properties:
+        kind:
+          $ref: "#/components/schemas/LegalKind"
+        version:
+          type: integer
+          format: int32
+        effectiveAt:
+          type: string
+          format: date-time
+        previousVersion:
+          type: integer
+          format: int32
+          nullable: true
+          description: The newest version of this kind the user accepted; null when this is their first.
+        changeSummaryDe:
+          type: string
+          nullable: true
+          description: What changed, one point per line; null for a first version.
+        changeSummaryEn:
+          type: string
+          nullable: true
+          description: What changed, one point per line; null for a first version.
+    LegalVersion:
+      type: object
+      required:
+        - version
+        - effectiveAt
+      properties:
+        version:
+          type: integer
+          format: int32
+        effectiveAt:
+          type: string
+          format: date-time
+    LegalDocument:
+      type: object
+      required:
+        - kind
+        - version
+        - effectiveAt
+        - bodyDe
+        - bodyEn
+        - contentSha256
+        - versions
+      properties:
+        kind:
+          $ref: "#/components/schemas/LegalKind"
+        version:
+          type: integer
+          format: int32
+        effectiveAt:
+          type: string
+          format: date-time
+        bodyDe:
+          type: string
+          description: The binding text; lines starting with `## ` are headings and with `- ` bullets, and `{{operator.name}}` and `{{operator.email}}` stand for who runs the instance.
+        bodyEn:
+          type: string
+          description: The translation, written like `bodyDe`.
+        contentSha256:
+          type: string
+          description: The SHA-256 of `bodyDe` in hex.
+        versions:
+          type: array
+          description: Every published version of this kind, newest first.
+          items:
+            $ref: "#/components/schemas/LegalVersion"
+    LegalDocumentRef:
+      type: object
+      required:
+        - kind
+        - version
+      properties:
+        kind:
+          $ref: "#/components/schemas/LegalKind"
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+    AcceptLegalDocumentsRequest:
+      type: object
+      required:
+        - documents
+        - language
+      properties:
+        documents:
+          type: array
+          minItems: 1
+          maxItems: 10
+          items:
+            $ref: "#/components/schemas/LegalDocumentRef"
+        language:
+          $ref: "#/components/schemas/LegalLanguage"
+    LegalAcceptance:
+      type: object
+      required:
+        - kind
+        - version
+        - effectiveAt
+        - acceptedAt
+        - language
+      properties:
+        kind:
+          $ref: "#/components/schemas/LegalKind"
+        version:
+          type: integer
+          format: int32
+        effectiveAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: string
+          format: date-time
+        language:
+          $ref: "#/components/schemas/LegalLanguage"
     UserLogin:
       type: object
       required:

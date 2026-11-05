@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 import packageJson from "./package.json";
 
+const BFF_URL = process.env.BFF_URL ?? "http://localhost:8080";
+
 const isDev = process.env.NODE_ENV === "development";
 
 // Next.js streams the page with inline scripts, and `RIDE_PENDING` in `app/layout.tsx` is one too; nonces would make every
@@ -42,13 +44,14 @@ const nextConfig: NextConfig = {
   },
 
   // release-please bumps the version in package.json; it is baked into the bundle at build time.
-  env: { APP_VERSION: packageJson.version },
+  // BFF_URL too, like the rewrite below: the image only sets it during the build, and the legal pages read it on the server.
+  env: { APP_VERSION: packageJson.version, BFF_URL },
 
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: `${process.env.BFF_URL ?? "http://localhost:8080"}/:path*`,
+        destination: `${BFF_URL}/:path*`,
       },
     ];
   },

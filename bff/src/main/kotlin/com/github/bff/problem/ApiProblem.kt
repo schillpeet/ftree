@@ -20,7 +20,7 @@ val ProblemCode.status: HttpStatus
     get() = when (this) {
         ProblemCode.VALIDATION_FAILED, ProblemCode.INVALID_REQUEST -> HttpStatus.BAD_REQUEST
         ProblemCode.UNAUTHENTICATED -> HttpStatus.UNAUTHORIZED
-        ProblemCode.FORBIDDEN -> HttpStatus.FORBIDDEN
+        ProblemCode.FORBIDDEN, ProblemCode.LEGAL_ACCEPTANCE_REQUIRED -> HttpStatus.FORBIDDEN
         ProblemCode.NOT_FOUND -> HttpStatus.NOT_FOUND
         ProblemCode.METHOD_NOT_ALLOWED -> HttpStatus.METHOD_NOT_ALLOWED
         ProblemCode.NAME_TAKEN, ProblemCode.PIN_TAKEN, ProblemCode.EDIT_CONFLICT, ProblemCode.SEATS_EXHAUSTED, ProblemCode.MEMBER_TAKEN, ProblemCode.USER_OWNS_TREES,
@@ -38,6 +38,7 @@ private val ProblemCode.detail: String
         ProblemCode.INVALID_REQUEST -> "The request cannot be carried out."
         ProblemCode.UNAUTHENTICATED -> "A valid sign-in is required."
         ProblemCode.FORBIDDEN -> "You are not allowed to do this."
+        ProblemCode.LEGAL_ACCEPTANCE_REQUIRED -> "Accept the current legal documents first."
         ProblemCode.NOT_FOUND -> "The resource does not exist."
         ProblemCode.METHOD_NOT_ALLOWED -> "The resource does not support this method."
         ProblemCode.NAME_TAKEN -> "A family with this name already exists."

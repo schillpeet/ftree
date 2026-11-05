@@ -105,10 +105,16 @@ The f-monogram logo and the released version (for example `v0.18.0`, from `ui/pa
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
 Below 520 px the footer line wraps, so every link stays reachable on a phone.
 Between "Datenschutz" and GitHub, a footer link "FAQ" opens `/home/faq` in the chosen language; like the landing page it stays behind Cloudflare Access.
-`/terms` (Nutzungsbedingungen) and `/privacy` (Datenschutzhinweise) are server-rendered text pages in German (binding, the default) and English (`?lang=en`), with a back link and a language link (`ui/app/LegalPage.tsx`, texts in `ui/app/legalTexts.ts`).
-The legal pages call no BFF and do not need a signed-in user; `PermissionsProvider` (and so `/me`) lives in the `(tree)` and admin layouts instead of the root layout.
+`/terms` (Nutzungsbedingungen) and `/privacy` (Datenschutzhinweise) are server-rendered text pages in German (binding, the default) and English (`?lang=en`), with a back link and a language link (`ui/app/LegalPage.tsx`).
+The legal pages read their text from the BFF on the UI's server (`ui/app/legalDocuments.ts`) and do not need a signed-in user; `PermissionsProvider` (and so `/me`) lives in the `(tree)` and admin layouts instead of the root layout.
+Each text is kept in memory for five minutes and for as long as the BFF cannot answer, so a BFF restart does not take the pages down; only a UI that has no copy yet says the text cannot be loaded.
+`?version=` shows an older or an announced version, and a page lists all versions when there is more than one.
+The acceptance card (`ui/app/LegalGate.tsx`, on `/home`, in trees, and on the admin pages) cannot be dismissed and offers only accepting or signing out, as first acceptance, new terms, or a new privacy notice, which needs no tick because it is acknowledged, not consented to.
+Announced versions show a quiet line with a link until they take effect.
+A `LEGAL_ACCEPTANCE_REQUIRED` answer during editing brings the card up over the page, whose form stays, so the save can be repeated afterwards; documents already open at page load make the page start over once they are accepted.
+The profile lists the person's acceptances, and so does the person's page in `/admin`.
 The legal pages fill in the operator's name and email from `OPERATOR_NAME` and `OPERATOR_EMAIL`, read per request through `connection()` (`ui/app/operator.ts`), so they are never baked into the build; unset, they read "nicht hinterlegt".
-`/imprint` (Impressum, "Angaben nach § 18 Abs. 1 MStV") is built the same way and shows the operator's name, postal address, and email; the address comes from `OPERATOR_ADDRESS` (`operator.address` in the chart), is set only in the deployment's values, and reads "nicht hinterlegt" while unset.
+`/imprint` (Impressum, "Angaben nach § 18 Abs. 1 MStV") has the same frame but no versioned text and no BFF call, and shows the operator's name, postal address, and email; the address comes from `OPERATOR_ADDRESS` (`operator.address` in the chart), is set only in the deployment's values, and reads "nicht hinterlegt" while unset.
 `/imprint` needs its own entry in the Cloudflare Access bypass before it is reachable without a login.
 Every UI response carries `X-Content-Type-Options: nosniff` and `Referrer-Policy: same-origin` and no `X-Powered-By` (`ui/next.config.ts`).
 The UI's Content Security Policy, with `frame-ancestors 'none'`, runs as `Content-Security-Policy-Report-Only` for now, so browsers only log violations in the console and nothing is blocked yet.
@@ -394,6 +400,20 @@ The UI uses TypeScript, React, React Three Fiber, Drei, and Three.js.
 The Kotlin/Spring Boot BFF uses JPA and PostgreSQL for member records.
 pnpm configuration, dependencies, lockfile, and scripts live in `ui/`; the BFF uses its own Gradle build.
 
+### Legal documents
+
+`legal_documents` holds every version of the terms and of the privacy notice, and each version is a Flyway migration, so it goes through a pull request and Flyway's checksum refuses later edits; there is no admin UI.
+Version 1 of both comes from `V32__publish_terms_and_privacy_version_1.sql` and applies from the moment that migration runs.
+A text is a template with `{{operator.name}}` and `{{operator.email}}`, which the UI fills in; `content_sha256` covers the German text, the binding one.
+`GET /legal/{kind}?version=` needs no user, because the UI's server reads it for the public pages; from outside the cluster `/api/*` stays behind Cloudflare Access.
+`legal_acceptances` records who accepted which version, when, and in which language, is only added to, and goes with the account; neither an IP address nor a user agent is stored.
+`POST /me/legal-acceptances` accepts what is open and writes `legal.accepted` (category `access`) to the audit log.
+`GET /me` returns `pendingLegal`, what is in force and not yet accepted, and `announcedLegal`, what needs acceptance from a future `effective_at` on.
+A document is open when the person accepted neither the latest version in force with `requires_action` nor a later one, so a correction with `requires_action = false` asks nobody who accepted the version before it.
+While a document is open, `LegalGateInterceptor` answers every call but `GET /me`, `GET /legal/*`, and `POST /me/legal-acceptances` with 403 `LEGAL_ACCEPTANCE_REQUIRED`, also for admins and on the admin host.
+Tests leave the gate out through `LegalGateOffInTests` in the test sources unless they set `test.legal.gate=on`, so production has no switch for it; `PermissionMatrixTest` runs with the gate on and also checks that it lists every endpoint of the contract.
+Not built yet: the quiet hint when someone first adds a living person, which the revised texts' handling of third parties proposes.
+
 ### Sharing
 
 Roles per tree live in PostgreSQL (V20): `family_memberships` holds one role per family and normalized email (`owner`, `editor`, or `visitor`, with its own `id`, `granted_by`, and `granted_at`) and disappears with its family or its `users` row.
@@ -623,6 +643,7 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `bff/src/main/kotlin/com/github/bff/live/` holds the presence (`PresenceRegistry.kt`), the change events (`TreeEvent.kt`), the event streams (`TreeEventBroadcaster.kt`), and `LiveController.kt`; `PresenceRegistryTest` and `TreeEventsTest` cover them.
 - `bff/src/main/kotlin/com/github/bff/member/TrashService.kt` trashes, restores, and purges families and holds `TrashPurger`; `TrashController.kt` serves `/admin/trash`, and `TrashTest` covers it.
 - `bff/src/main/kotlin/com/github/bff/member/FamilyVisibility.kt` gives each user their role per family and hides the others; `bff/src/test/kotlin/com/github/bff/auth/PermissionMatrixTest.kt` checks every endpoint per role.
+- `bff/src/main/kotlin/com/github/bff/legal/` serves the legal documents, records acceptances, and holds the gate; `ui/app/LegalGate.tsx` is the card.
 - `bff/src/main/kotlin/com/github/bff/auth/` contains roles, permissions, the access file parser and policy, the Spring Security configuration, the dev-mode filter, and `GET /me`; tests are in `bff/src/test/kotlin/com/github/bff/auth/`.
 - `bff/src/main/kotlin/com/github/bff/auth/Memberships.kt` reads and grants the rights kept in the database and holds the audit log writer; `MembershipSeed.kt` copies the access file and the creators into it once and gives every tree without an owner the first bootstrap admin.
 - `bff/src/main/kotlin/com/github/bff/auth/MembershipService.kt` sets and revokes roles in a tree and keeps at least one owner; `MembershipServiceTest` covers it.

@@ -214,6 +214,13 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Bottom centre, 12px, `--muted`: version · Nutzungsbedingungen · Datenschutz; on every screen, below the dock where there is one.
 - `/terms` and `/privacy` are server-rendered and unthemed, with "← Zurück zu ftree" and a language toggle.
 
+## Acceptance card
+
+- `ui/app/LegalGate.tsx`, a modal `<dialog>` on the invitation card's surface (`.invitation-card`, `.consent-*` in `legal-gate.css`), over `/home`, trees and admin pages; the page behind it blurs and stays as it is.
+- It has no way to close, only the main button and "Abmelden"; the button stays greyed out until the terms are ticked.
+- States: first acceptance (with one sentence on cookies), new terms (version, date, what changed), only a new privacy notice ("Zur Kenntnis genommen", no tick).
+- An announced version is a quiet glass line under the header (`.consent-announced`), under the presence bar in a tree and above the legal line on admin pages.
+
 ## Known deviations from the tokens
 
 These literals predate the Horizont tokens or bypass them; they are debt for the next redesign round ([plan.md](plan.md)), not rules.
