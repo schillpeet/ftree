@@ -1,9 +1,10 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, Fragment, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { getMe, type FamilySummary, type Me, type Permission } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { CloseIcon } from './icons';
+import LegalGate from './LegalGate';
 import { authProblemOf, can, failedCallNeedsProbe, signedOutByProbe, type AuthProblem } from './access';
 import { responseProblemCode } from './problems';
 
@@ -26,6 +27,17 @@ export function OpenFamily({ family, children }: { family: FamilySummary | null;
 export function PermissionsProvider({ children }: { children: ReactNode }) {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [problem, setProblem] = useState<AuthProblem | null>(null);
+  // Bumped once when the documents open at page load are accepted: what the page tried to load meanwhile was refused, so it
+  // starts over. Documents that open later leave the page alone, so a form in progress stays and can be saved again.
+  const [loadAttempt, setLoadAttempt] = useState(0);
+  const blockedAtLoad = useRef(false);
+  const accepted = useCallback((next: Me) => {
+    setMe(next);
+    if (blockedAtLoad.current && next.pendingLegal.length === 0) {
+      blockedAtLoad.current = false;
+      setLoadAttempt((value) => value + 1);
+    }
+  }, []);
 
   useEffect(() => {
     // The generated client calls the global fetch, so watching it here covers every call
@@ -44,6 +56,20 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
           probing = false;
         });
     };
+    let refreshing = false;
+    const refreshMe = () => {
+      if (refreshing) return;
+      refreshing = true;
+      void original('/api/me', { cache: 'no-store' })
+        .then((answer) => (answer.ok ? (answer.json() as Promise<Me>) : null))
+        .then((body) => {
+          if (body) setMe(body);
+        })
+        .catch(() => {})
+        .finally(() => {
+          refreshing = false;
+        });
+    };
     window.fetch = async (input, init) => {
       const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
       let response: Response;
@@ -55,6 +81,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
       }
       if (response.ok) return response;
       void responseProblemCode(response).then((code) => {
+        // Documents took effect since `/me` was read: the card comes up over whatever is on the page.
+        if (code === 'LEGAL_ACCEPTANCE_REQUIRED') refreshMe();
         const found = authProblemOf(url, response.status, code, window.location.origin);
         if (found) setProblem(found);
       });
@@ -63,7 +91,9 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
     let current = true;
     getMe()
       .then((response) => {
-        if (current) setMe(response.status === 200 ? response.data : null);
+        if (!current) return;
+        setMe(response.status === 200 ? response.data : null);
+        if (response.status === 200 && response.data.pendingLegal.length > 0) blockedAtLoad.current = true;
       })
       .catch(() => {
         if (current) setMe(null);
@@ -77,7 +107,8 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   return (
     <MeContext value={me}>
       <SetMeContext value={setMe}>
-        {children}
+        <Fragment key={loadAttempt}>{children}</Fragment>
+        <LegalGate me={me} onAccepted={accepted} />
         {problem && <AuthNotice problem={problem} onClose={() => setProblem(null)} />}
       </SetMeContext>
     </MeContext>

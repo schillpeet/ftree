@@ -29,11 +29,13 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request
 import org.springframework.transaction.annotation.Transactional
+import java.io.File
 import java.util.UUID
+import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@SpringBootTest(properties = ["app.roles.admins=admin@example.com"])
+@SpringBootTest(properties = ["app.roles.admins=admin@example.com", "test.legal.gate=on"])
 @AutoConfigureMockMvc
 @Import(CloudflareTestDecoder::class)
 @Transactional
@@ -50,11 +52,30 @@ class PermissionMatrixTest {
     @Autowired
     private lateinit var jdbc: JdbcTemplate
 
+    // Everyone these tests sign in as has accepted the legal documents, except in the test of the gate itself.
+    @BeforeTest
+    fun acceptLegalDocuments() {
+        listOf("visitor", "editor", "owner", "creator", "admin", "plain").forEach { name ->
+            val email = "$name@example.com"
+            jdbc.update("INSERT INTO users (email) VALUES (?) ON CONFLICT (email) DO NOTHING", email)
+            jdbc.update(
+                "INSERT INTO legal_acceptances (user_id, document_id, language) " +
+                    "SELECT u.id, d.id, 'de' FROM users u CROSS JOIN legal_documents d WHERE u.email = ? ON CONFLICT DO NOTHING",
+                email,
+            )
+        }
+    }
+
     // null means any signed-in user.
     private data class Endpoint(val method: HttpMethod, val path: String, val permission: Permission?, val body: MediaType? = null)
 
     private fun endpoints(family: UUID, member: UUID = UUID.randomUUID()) = listOf(
         Endpoint(GET, "/me", null),
+        Endpoint(GET, "/me/invitations", null),
+        // The empty body answers 400.
+        Endpoint(POST, "/me/legal-acceptances", null, MediaType.APPLICATION_JSON),
+        Endpoint(GET, "/me/legal-acceptances", null),
+        Endpoint(GET, "/admin/users/$member/legal-acceptances", USERS_VIEW),
         Endpoint(GET, "/users", USERS_VIEW),
         Endpoint(GET, "/admin/overview", USERS_VIEW),
         Endpoint(GET, "/admin/presence", USERS_VIEW),
@@ -107,6 +128,7 @@ class PermissionMatrixTest {
         Endpoint(POST, "/families/$family/owner", FAMILY_SHARE, MediaType.APPLICATION_JSON),
         Endpoint(GET, "/admin/users", USERS_VIEW),
         Endpoint(GET, "/admin/invitations", USERS_VIEW),
+        Endpoint(POST, "/admin/invitations", USERS_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(PUT, "/admin/users/$member", USERS_MANAGE, MediaType.APPLICATION_JSON),
         Endpoint(POST, "/admin/users/$member/sessions/revoke", USERS_MANAGE),
         Endpoint(DELETE, "/admin/users/$member", USERS_MANAGE),
@@ -251,6 +273,56 @@ class PermissionMatrixTest {
             1,
             jdbc.queryForObject("SELECT count(*) FROM audit_log WHERE action = 'user.deleted' AND target_id = ?", Int::class.java, "deleted-${owner.toString().take(8)}"),
         )
+    }
+
+    // With an open document only `GET /me` and accepting work. Security comes first, so someone without the right keeps
+    // their FORBIDDEN, and the admin, who has every right, shows that the gate covers every endpoint.
+    @Test
+    fun `with an open legal document every other call answers 403`() {
+        val family = visibleFamily()
+        jdbc.update("DELETE FROM legal_acceptances")
+        val exempt = setOf("GET /me", "POST /me/legal-acceptances")
+        val mismatches = listOf("admin@example.com", "visitor@example.com").flatMap { email ->
+            endpoints(family).mapNotNull { endpoint ->
+                val builder = request(endpoint.method, endpoint.path).header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = email))
+                when (endpoint.body) {
+                    MediaType.APPLICATION_JSON -> builder.contentType(MediaType.APPLICATION_JSON).content("{}")
+                    MediaType.IMAGE_PNG -> builder.contentType(MediaType.IMAGE_PNG).content(byteArrayOf(1, 2, 3))
+                    else -> Unit
+                }
+                val response = mockMvc.perform(builder).andReturn().response
+                val name = "${endpoint.method} ${endpoint.path}"
+                val gated = response.status == 403 && response.contentAsString.contains("LEGAL_ACCEPTANCE_REQUIRED")
+                val ok = when {
+                    name in exempt -> response.status != 403
+                    email == "admin@example.com" -> gated
+                    else -> response.status == 403
+                }
+                if (ok) null else "$email $name: ${response.status}"
+            }
+        }
+        assertEquals(emptyList(), mismatches)
+        // The texts stay readable, with or without a user.
+        assertEquals(200, mockMvc.perform(request(GET, "/legal/terms")).andReturn().response.status)
+        assertEquals(200, mockMvc.perform(request(GET, "/legal/privacy").header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "visitor@example.com"))).andReturn().response.status)
+    }
+
+    // Keeps the matrix complete: a new endpoint in the contract has to be added above.
+    @Test
+    fun `the matrix covers every endpoint of the contract`() {
+        val spec = File("../api/openapi.yaml").readLines()
+        val paths = spec.dropWhile { it != "paths:" }.drop(1).takeWhile { it.isEmpty() || it.startsWith(" ") }
+        var path = ""
+        val operations = paths.mapNotNull { line ->
+            Regex("^  (/\\S*):$").find(line)?.let { path = it.groupValues[1] }
+            Regex("^    (get|put|post|delete):$").find(line)?.let { "${it.groupValues[1].uppercase()} ${path.replace(Regex("\\{\\w+}"), "{}")}" }
+        }.toSet()
+        val covered = endpoints(UUID.randomUUID(), UUID.randomUUID()).map { endpoint ->
+            val bare = endpoint.path.substringBefore('?').replace(Regex("[0-9a-f]{8}-[0-9a-f-]{27}"), "{}")
+            "${endpoint.method} $bare"
+        }.toSet()
+        // Public on purpose; `with an open legal document` reads it.
+        assertEquals(emptySet(), operations - covered - "GET /legal/{}")
     }
 
     @Test

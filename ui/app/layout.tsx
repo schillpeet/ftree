@@ -24,7 +24,7 @@ export default function RootLayout({ children }: LayoutProps<'/'>) {
         <script dangerouslySetInnerHTML={{ __html: RIDE_PENDING }} />
       </head>
       <body>
-        {/* `/me` is loaded by the tree's and the admin page's layouts, so `/terms`, `/privacy`, and `/imprint` need no BFF and no login. */}
+        {/* `/me` is loaded by the tree's and the admin page's layouts, so `/terms`, `/privacy`, and `/imprint` need no login. */}
         {children}
         <footer className="app-version">
           v{process.env.APP_VERSION}

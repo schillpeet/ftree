@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { updateMe, type FamilySummary } from '../lib/api/generated/members';
+import { useEffect, useState } from 'react';
+import { listMyLegalAcceptances, updateMe, type FamilySummary, type LegalAcceptance } from '../lib/api/generated/members';
 import { chipName } from './home/chipName';
 import { hasDevTools } from './home/signedIn';
 import { useLanguage, useT } from './i18n';
+import LegalAcceptances from './LegalAcceptances';
 import { CheckIcon, CloseIcon, PencilIcon, UserIcon } from './icons';
 import { useMe, useMeLoaded, useSetMe } from './Permissions';
 import { useMyInvitations } from './myInvitations';
@@ -31,6 +32,20 @@ export default function ProfilePanel({
   const [draft, setDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [acceptances, setAcceptances] = useState<LegalAcceptance[] | null>(null);
+  const signedIn = !!me;
+  useEffect(() => {
+    if (!signedIn) return;
+    let current = true;
+    listMyLegalAcceptances()
+      .then((response) => {
+        if (current && response.status === 200) setAcceptances(response.data);
+      })
+      .catch(() => {});
+    return () => {
+      current = false;
+    };
+  }, [signedIn]);
   const pending = invitations?.filter((invitation) => invitation.status === 'pending').length ?? 0;
 
   async function saveName() {
@@ -161,6 +176,13 @@ export default function ProfilePanel({
                 ) : (
                   <p className="person-muted">{t.account.noInvitations}</p>
                 )}
+              </>
+            )}
+
+            {acceptances && (
+              <>
+                <h3 className="dashboard-subhead">{t.consent.list.title}</h3>
+                {acceptances.length ? <LegalAcceptances acceptances={acceptances} className="profile-list" /> : <p className="person-muted">{t.consent.list.none}</p>}
               </>
             )}
           </>

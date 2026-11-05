@@ -57,3 +57,11 @@
   color: var(--muted);
   font-size: 13px;
 }
+
+.legal-versions a {
+  color: inherit;
+}
+
+.legal-versions a[aria-current='page'] {
+  font-weight: 600;
+}

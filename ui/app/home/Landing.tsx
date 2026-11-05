@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useLayoutEffect, useRef, type CSSProperties } from 'react';
 import { LanguageSegment, ThemeSegment } from '../Header';
 import { useT } from '../i18n';
+import LegalGate from '../LegalGate';
 import { takeRide, useRideReset } from '../ride';
 import ThemeRoot from '../ThemeRoot';
 import BrandLink from './BrandLink';
@@ -11,7 +12,7 @@ import BrandLink from './BrandLink';
 import still from './landing.jpg';
 import HomeEvolution from './HomeEvolution';
 import TronHorizon from './TronHorizon';
-import { useSignedIn } from './signedIn';
+import { useSignedInState } from './signedIn';
 import { PhaseStrip, StartButton, StartNote } from './Start';
 import './landing.css';
 
@@ -20,7 +21,7 @@ import './landing.css';
 // example family live on `/home/how`. The header only holds what switches; who is signed in shows under the buttons.
 export default function Landing() {
   const t = useT();
-  const me = useSignedIn();
+  const [me, setMe] = useSignedInState();
   const page = useRef<HTMLDivElement>(null);
   useRideReset();
   // The end of the ride back from a tree (`ride.ts`): the flash gives way, and the page builds itself up in scanlines
@@ -63,6 +64,7 @@ export default function Landing() {
         </div>
         <StartNote me={me} />
       </main>
+      <LegalGate me={me} onAccepted={setMe} />
     </div>
   );
 }

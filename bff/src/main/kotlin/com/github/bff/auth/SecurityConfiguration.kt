@@ -110,6 +110,11 @@ class SecurityConfiguration(
                 // An event stream ends with an async dispatch of the request that already passed these rules.
                 it.dispatcherTypeMatchers(DispatcherType.ASYNC).permitAll()
                 it.requestMatchers(GET, "/me").authenticated()
+                // The legal texts: public pages read them on the UI's server, without a user. /api/* stays behind Access.
+                it.requestMatchers(GET, "/legal/*").permitAll()
+                it.requestMatchers(GET, "/me/legal-acceptances").authenticated()
+                it.requestMatchers(POST, "/me/legal-acceptances").authenticated()
+                it.requestMatchers(GET, "/admin/users/*/legal-acceptances").hasAuthority(USERS_VIEW.key)
                 it.requestMatchers(GET, "/me/invitations").authenticated()
                 it.requestMatchers(GET, "/users", "/admin/overview", "/admin/presence", "/admin/families", "/admin/audit", "/admin/audit/filters").hasAuthority(USERS_VIEW.key)
                 // Lists only the families the user may see.

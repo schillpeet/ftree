@@ -4,14 +4,17 @@ import Link from 'next/link';
 import { useCallback, useState } from 'react';
 import {
   getAdminAudit,
+  getAdminUserLegalAcceptances,
   type AdminFamily,
   type AdminUser,
   type AuditPage,
+  type LegalAcceptance,
   type TreeRole,
   type UpdateAdminUserRequest,
 } from '../../lib/api/generated/members';
 import { useLanguage, useT } from '../i18n';
 import { ChevronLeftIcon, CloseIcon, PencilIcon, TrashIcon, TreeIcon } from '../icons';
+import LegalAcceptances from '../LegalAcceptances';
 import { endSessions, revoke, share, updateUser } from './accessActions';
 import ActionMenu from './ActionMenu';
 import ActivityList from './ActivityList';
@@ -228,6 +231,9 @@ export default function PersonDetail({
         {user.firstSeen && <span>{t.admin.people.firstSeen(date(user.firstSeen))}</span>}
       </p>
 
+      <h3>{t.consent.list.title}</h3>
+      <Acceptances userId={user.id} />
+
       <h3>{t.admin.people.activity}</h3>
       <RecentActivity userId={user.id} users={users} />
       <Link className="admin-more-link" href={`/admin/audit?person=${user.id}`}>
@@ -260,6 +266,16 @@ export default function PersonDetail({
       )}
     </section>
   );
+}
+
+function Acceptances({ userId }: { userId: string }) {
+  const t = useT();
+  const load = useCallback(() => getAdminUserLegalAcceptances(userId), [userId]);
+  const list = useAdminLoad<LegalAcceptance[]>(load);
+  if (list.failed && !list.data) return <LoadError text={t.consent.list.failed} onRetry={list.reload} />;
+  if (!list.data) return <p className="admin-muted">{t.admin.loading}</p>;
+  if (list.data.length === 0) return <p className="admin-muted">{t.consent.list.none}</p>;
+  return <LegalAcceptances acceptances={list.data} className="profile-list" />;
 }
 
 // The latest audit entries a person made or that are about them, as a short timeline.

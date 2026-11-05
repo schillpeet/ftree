@@ -13,6 +13,11 @@ export function hasDevTools(me: Me | null | undefined) {
 // "Sign in" nor the signed-in name until they know. Deliberately not the tree's `PermissionsProvider`, whose fetch
 // wrapper would show an auth banner to anonymous visitors.
 export function useSignedIn(): Me | null | undefined {
+  return useSignedInState()[0];
+}
+
+// With the setter for what `LegalGate` answers.
+export function useSignedInState() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   useEffect(() => {
     let current = true;
@@ -28,5 +33,5 @@ export function useSignedIn(): Me | null | undefined {
       current = false;
     };
   }, []);
-  return me;
+  return [me, setMe] as const;
 }

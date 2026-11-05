@@ -1,0 +1,146 @@
+/* LegalGate.tsx: the acceptance card, on the invitation card's surface; it has no way to close, only "Abmelden". */
+dialog.consent-card {
+  /* `.invitation-card` places it; a `<dialog>` brings its own colors and border. */
+  margin: 0;
+  border: 1px solid var(--border);
+  color: var(--text);
+  display: block;
+  text-align: left;
+}
+
+dialog.consent-card:not([open]) {
+  display: none;
+}
+
+dialog.consent-card::backdrop {
+  background: color-mix(in srgb, var(--bg) 35%, transparent);
+  backdrop-filter: blur(10px);
+}
+
+.consent-form {
+  display: grid;
+  justify-items: stretch;
+  gap: 14px;
+}
+
+.consent-form .welcome-eyebrow {
+  justify-self: start;
+}
+
+.consent-form h1 {
+  margin: 0;
+}
+
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.consent-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 1px 0 0;
+  accent-color: var(--accent);
+}
+
+.consent-check:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.consent-card a:not(.welcome-link),
+.consent-announced a {
+  color: var(--accent);
+}
+
+.consent-small {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.consent-changes {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: var(--radius-control);
+  background: var(--panel);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.consent-changes ul {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--muted);
+}
+
+.consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+/* The landing page's main button, which this page may not have loaded. */
+.consent-accept {
+  min-height: 48px;
+  padding: 0 24px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  box-shadow: var(--primary-glow);
+  color: var(--primary-ink);
+  cursor: pointer;
+  font: 600 16px/1 var(--font-ui);
+}
+
+.consent-accept:hover:not(:disabled) {
+  filter: brightness(1.06);
+}
+
+.consent-accept:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Greyed out until the terms are ticked. */
+.consent-accept:disabled {
+  opacity: 0.45;
+  cursor: default;
+  box-shadow: none;
+}
+
+.consent-announced {
+  position: fixed;
+  z-index: 5;
+  top: 76px;
+  left: 50%;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  margin: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 13px;
+  transform: translateX(-50%);
+}
+
+/* In a tree the presence bar hangs right under the header. */
+body:has(.presence-bar) .consent-announced {
+  top: 112px;
+}
+
+/* The admin page has its tabs there. */
+body:has(.admin-page) .consent-announced {
+  top: auto;
+  bottom: 44px;
+}
