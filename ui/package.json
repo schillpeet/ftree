@@ -27,7 +27,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "fast-check": "^4.10.2",
-    "orval": "^8.45.0",
+    "orval": "^8.46.0",
     "typescript": "^6"
   },
   "packageManager": "pnpm@10.33.4"
