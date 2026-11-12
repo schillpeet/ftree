@@ -149,13 +149,6 @@ body .member-search {
   }
 }
 
-/* On phones the relation legend spans the width; it moves above the dock instead of covering it. */
-@media (max-width: 700px) {
-  body .relation-legend {
-    bottom: calc(44px + var(--size-dock-primary) + 24px);
-  }
-}
-
 /* "Tippe auf ein + am Baum": shown for a few seconds above the dock after Person while someone is selected. */
 .dock-hint {
   position: absolute;

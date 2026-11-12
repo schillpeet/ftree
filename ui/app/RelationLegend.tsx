@@ -1,11 +1,10 @@
 'use client';
 
-import { useRef, useState, type ReactNode } from 'react';
-import { CloseIcon, FoldIcon, PinIcon } from './icons';
+import type { ReactNode } from 'react';
+import { EyeOffIcon, FoldIcon } from './icons';
 import { useT } from './i18n';
 import { useLegendFolded } from './lines';
-import { CENTRE, type Offset } from './panelPosition';
-import { usePanelDrag, usePanelPin } from './PersonPanel';
+import Sheet from './Sheet';
 import { BLOOD_COLOR } from './SimpleTree';
 
 // The lines' colours as the tree draws them: idle, and on the selected person's lineage.
@@ -22,24 +21,13 @@ function Sample({ color = DIM, dash, children }: { color?: string; dash?: string
   );
 }
 
-// The key to the experimental view's lines, symbols, and labels: lines in the left column, symbols and
-// labels in the right. It sits in the bottom right corner, can be folded to its header (remembered per
-// browser), and can be dragged by its header; like the person panel, a pinned position is remembered
-// and cannot be dragged.
+// The key to the experimental view's lines, symbols, and labels. Folded (remembered per browser) it is a small chip in the
+// bottom right corner; unfolded a narrow panel there, which keeps clear of the dock, and on phones a bottom sheet at half
+// height while the dock steps aside (`Sheet.tsx`). Escape and × fold it again; the eye hides it until the Evolution panel
+// shows it again.
 export default function RelationLegend({ onClose }: { onClose: () => void }) {
   const t = useT();
-  const panelRef = useRef<HTMLElement>(null);
-  const [pin, setPin] = usePanelPin('ftree.legendPin');
-  const [moved, setMoved] = useState<Offset>(CENTRE);
   const [folded, setFolded] = useLegendFolded();
-  const offset = pin ?? moved;
-  const dragHandle = usePanelDrag(panelRef, offset, (next) => (pin ? setPin(next) : setMoved(next)), !!pin);
-  const togglePin = () => {
-    if (pin) {
-      setMoved(pin);
-      setPin(null);
-    } else setPin(moved);
-  };
   const glyph = (symbol: string) => (
     <span className="relation-legend-sample relation-legend-glyph" aria-hidden>
       {symbol}
@@ -70,44 +58,33 @@ export default function RelationLegend({ onClose }: { onClose: () => void }) {
     [<span key="stub" className="relation-legend-stub" aria-hidden>▲</span>, t.legend.stub],
     [glyph('†'), t.legend.deceased],
   ];
-  return (
-    <aside
-      className="glass relation-legend"
-      aria-label={t.legend.title}
-      ref={panelRef}
-      data-folded={folded}
-      style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
-    >
-      <header className="person-header" {...dragHandle}>
-        <span className="person-header-label">{t.legend.title}</span>
-        <span className="person-header-actions">
-          <button
-            type="button"
-            className="person-icon-button person-pin"
-            aria-pressed={!!pin}
-            aria-label={pin ? t.profile.unpin : t.profile.pin}
-            title={pin ? t.profile.unpin : t.profile.pin}
-            onClick={togglePin}
-          >
-            <PinIcon />
-          </button>
-          <button
-            type="button"
-            className="person-icon-button relation-legend-fold"
-            aria-expanded={!folded}
-            aria-controls="relation-legend-list"
-            aria-label={folded ? t.legend.unfold : t.legend.fold}
-            title={folded ? t.legend.unfold : t.legend.fold}
-            onClick={() => setFolded(!folded)}
-          >
-            <FoldIcon />
-          </button>
-          <button type="button" className="person-icon-button" aria-label={t.legend.close} title={t.legend.close} onClick={onClose}>
-            <CloseIcon />
-          </button>
+  if (folded) {
+    return (
+      <button type="button" className="glass legend-chip" aria-expanded={false} aria-label={t.legend.unfold} title={t.legend.unfold} onClick={() => setFolded(false)}>
+        <span className="relation-legend-glyph" aria-hidden>
+          ⚭
         </span>
-      </header>
-      <ul id="relation-legend-list" hidden={folded}>
+        {t.legend.title}
+        <FoldIcon />
+      </button>
+    );
+  }
+  return (
+    <Sheet
+      place="corner"
+      initialSnap="half"
+      className="relation-legend"
+      label={t.legend.title}
+      eyebrow={t.legend.title}
+      closeLabel={t.legend.fold}
+      onClose={() => setFolded(true)}
+      actions={
+        <button type="button" className="person-icon-button" aria-label={t.legend.close} title={t.legend.close} onClick={onClose}>
+          <EyeOffIcon />
+        </button>
+      }
+    >
+      <ul className="legend-rows">
         {entries.map(([sample, text]) => (
           <li key={text}>
             {sample}
@@ -115,6 +92,6 @@ export default function RelationLegend({ onClose }: { onClose: () => void }) {
           </li>
         ))}
       </ul>
-    </aside>
+    </Sheet>
   );
 }

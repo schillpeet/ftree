@@ -19,6 +19,10 @@ The page sets `<html lang>` to the shown language and `translate="no"`, so brows
 The header of every signed-in screen shows the f-monogram and "ftree" on the left, followed by the "Evolution" button with a DEV badge (`dev.tools`) and, in an admin session, an "ADM" status chip ("Als Admin angemeldet"), `<user>:<family>` like a shell prompt in the centre, and on the right a 3D | GRID segment, a DE | EN segment, the burger menu; the language segment replaces the former language button, and the theme segment stays in the header on phones too, with tighter segments.
 The centred `<user>:<family>` names the signed-in user (display name, else email) and the open tree, opens the family card, and in TRON is set in mono with the user in cyan; it replaces the former "Angemeldet als <Name>" chip and the tree switcher.
 The burger menu's entries are "Startseite" (to `/home`, in TRON as the ride back), "Profil", "Familien" (`family.create`), "Momentaufnahme", "GEDCOM importieren" (`family.create`, opens the families board), "Feedback", "Admin-Tool" (`users.view`, with an external-link icon), and "Abmelden"; "Mitglied hinzufügen", the appearance board, and the appearance row are gone from it.
+Profil and Familien open as a `Sheet` (`ui/app/Sheet.tsx`, `sheet.css`) rendered in `document.body`: a centred glass card (at most 580px) between the header and the dock zone, or a narrow corner panel (340px, bottom right, between 701 and 1100px).
+Below 700px every sheet is a bottom sheet with a grip and three heights (peek 30dvh, half 52dvh, full `100dvh - 48px`, `ui/app/sheetSnap.ts`, `sheetSnap.check.mjs`); a tap on the grip steps, a drag rests at the nearest height, and a sheet pulled far down closes.
+While a sheet is open, `<html data-sheet-open>` hides the dock on phones; Escape, ×, and the veil close the sheet.
+The design tokens carry a z-index scale (`--z-hud` 4, `--z-chrome` 6, `--z-panel` 7, `--z-sheet` 30), checked by `tokens.check.mjs`.
 The "ADM" chip and the Evolution button sit left of the header on the public pages too, and the Evolution panel opens on the left.
 The Evolution button also shows on `/home`, `/home/how`, and `/home/example` for signed-in holders of `dev.tools` (read from the page's `/me` probe), where the panel has the "Ansichts-Labor" only, except on the example, whose scene shows the full panel.
 The Evolution button and panel need `dev.tools`; the panel's "Zeit" section holds the former "Zeit" button's time-of-day preview, and its "Ansichts-Labor" section has a "Darstellung" select over the stored appearances `organic` ("3D"), `organicExperimental` ("Stufenbaum"), and `experimental` ("TRON"), which replaces the former "Stufenbaum" checkbox.
@@ -27,7 +31,10 @@ The version, "Nutzungsbedingungen", "Datenschutz", and "GitHub" (with the GitHub
 Signed out, "Anmelden" leads to `/login`, which redirects to `/home` (`ui/proxy.ts`), so behind Cloudflare Access signing in ends on the landing page and not in a tree; invitation links `/<slug>` still lead straight to the tree.
 Signed out, the note under the main button on `/home` and `/home/how` says that an invitation comes from someone in the family and that without one no code arrives when signing in.
 All pages carry `noindex, nofollow` for the test phase (`robots` in `ui/app/layout.tsx`).
-The landing page has no navigation; its hero buttons are "Anmelden" ("Weiter zum Baum" when signed in) and "So funktioniert's", which opens `/home/how` with the three steps explained.
+The landing page's only navigation is the burger menu; its hero buttons are "Anmelden" ("Weiter zum Baum" when signed in) and "So funktioniert's", which opens `/home/how` with the three steps explained.
+The landing header has a burger menu after the theme and language segments (`ui/app/home/HomeMenu.tsx`): signed in "Profil", "Familien" (`family.create`) and "Abmelden", signed out only "Anmelden" (`/login`); it is disabled while the quiet `/me` probe runs.
+On phones (up to 560px) the landing header keeps wordmark, controls, and burger in one row with the prompt centred below.
+Profil and Familien open on the landing page itself; `KnownMe` in `ui/app/Permissions.tsx` hands the landing's `/me` probe to them.
 The public headers have no "Anmelden"; signed out, the main button of `/home`, `/home/how`, and `/home/example` is "Anmelden", since there is no registration.
 Signed out, a thin strip at the top of `/home` and `/home/how` reads "Geschlossene Testphase · Zugang nur mit Einladung", and nothing while the quiet `/api/me` probe runs.
 The landing headline reads "Deine Familie. Ein Baum, der mit euch wächst."
@@ -157,8 +164,8 @@ The "Blutsverwandt" checkbox highlights, in amber, the experimental view's lines
 It is remembered per browser, off by default, and unavailable while the lines are hidden or in the other appearances; where both highlights apply, the core family's color wins.
 The "Legende der Beziehungen" checkbox at the end of the "Ansicht" section shows a legend in the bottom right corner of the experimental view; it is remembered per browser, on by default, and unavailable in the other appearances.
 The legend explains the experimental view's solid, dashed, dotted, core-family, and blood-relative lines, branch points, bridges, the partnership symbols ⚭ ⚯ ⚮, the "▲ Eltern von …" stubs, and the † before a name (`ui/app/RelationLegend.tsx`).
-The legend lists its entries in two columns, can be dragged by its header, pinned in place like the person panel, folded to its header with the button next to ×, and closed with ×; the pinned position and the folded state are remembered per browser.
-The legend starts folded to its header until the user unfolds it.
+The legend lists its entries in one column; folded it is a small chip "⚭ Beziehungen" bottom right (above the dock on phones and between 701 and 1100px), unfolded it is a corner sheet, on phones a bottom sheet at half height while the dock steps aside.
+× and Escape fold the legend; an eye-off button hides it until the Evolution panel's checkbox brings it back; pinning and dragging were removed.
 A slider in "Vorschau" scales the crown and its pins together while the card size itself stays fixed.
 A second slider in "Vorschau" previews relation spacing: with "Bündeln" checked, pinned members linked as parent/child or partners are moved between pins by a local search so their links approach a target length: at −10 the closest two cards fit side by side, at 0 twice that, and at +10 the widest distance between any two pins, interpolated logarithmically in between; members without such links keep their pins, and the result is put back into generation order.
 The preview is not saved, and cards cannot be dragged while it is on.
@@ -168,7 +175,12 @@ The preview is not saved, and cards cannot be dragged while it is on.
 A `default` family is selected first on a fresh install; custom people created from the members form belong to the selected family.
 The "Zufallsfamilie generieren" button in the families board of the menu, shown to admins and people who may create trees below "GEDCOM importieren", unfolds the random family form below it.
 The random family board creates a named family set with up to 100 generated members across 1–10 generations and 0–3 children per parent.
-The family selector is the "Familien" entry of the burger menu in the upper-right corner, not in the Evolution panel, and its board opens beside the menu; Escape or a press outside closes it.
+The family selector is the "Familien" entry of the burger menu in the upper-right corner, not in the Evolution panel, and opens as a sheet (a centred card, a bottom sheet below 700px); Escape, ×, or a press on the veil closes it.
+The families board groups "Eigene Familien" (with "<n> von 5") and "Mit mir geteilt"; each row has a drag grip (admins reorder), the name, an "aktuell" marker for the current family, people and generations, and a chip with the role or "Einladung offen" when the person has not accepted the invitation into it.
+Below the lists, "Von dir eingeladen" shows the invitations the person sent (from `GET /me/invitations`) with email, family, role, date, and a status chip.
+The board's footer stays fixed at the bottom with "Neue Familie", "GEDCOM importieren", the ⓘ button, and the limit note; in the tree only the eye toggle and the family-card pencil are shown on a row.
+"Neue Familie" on the landing page's board leads to `/start?create=1`, which opens the new-family form in the tree.
+Opening a board closes the burger menu.
 The top centre shows the selected family's name, or "Keine Familie" while the tree is hidden.
 The family selector displays compact people and generation counts, switches the visible tree, and lets the user show or hide one family at a time with an eye control, and shows a family and opens its card with a pencil; any family, including `default`, can be deleted there after confirmation, which moves it to the trash.
 The UI offers no archiving; the BFF's `POST /families/{familyId}/archive` stays available.
@@ -210,6 +222,7 @@ A slug that names no visible family, is malformed, or is reserved shows "Baum ni
 The slugs `admin`, `api`, `healthz`, `cdn-cgi`, `home`, `start`, `login`, `terms`, `privacy`, and `imprint` are reserved for routes of their own and never open a tree.
 A new family gets a random slug of 10 lowercase letters and digits (`FamilySlugs.kt`), so the URL does not reveal the tree's name and never hits a reserved slug; V26 replaced the name-based slugs of older families the same way.
 Trees are switched on the families board in the burger menu; the header has no switcher.
+Signed in, the landing header shows the same `<user>:<family>` prompt, and a click opens the families board; on the landing page, choosing a family only makes it the current one (stored as `ftree.lastTree`, `ui/app/lastTree.ts`) and "Weiter zum Baum" opens it.
 The scene lives in the `(tree)` route group's layout, so switching trees keeps the canvas and only swaps the family.
 
 ### Members and relatives
@@ -364,7 +377,11 @@ Dev mode refuses to start unless `app.public-url` is a local address (`localhost
 `app.auth.team-domain` and `app.auth.audience` (env `APP_AUTH_TEAM_DOMAIN`, `APP_AUTH_AUDIENCE`, the Access application's AUD tag) are required in cloudflare mode; without them the BFF refuses to start.
 A missing, invalid, or foreign token leaves the request anonymous, so `GET /me` answers 401; an `Authorization: Bearer` header is ignored.
 The UI loads `GET /me` once at start and shows only what the permissions allow, those from `/me` together with those of the open family; it checks permissions, never role names, and the BFF still enforces them.
-The burger menu starts with "Profil" for everyone, a board with the email, the role (Administrator, otherwise the role in the open family: Eigentümer, Bearbeiter, or Gast), and whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode); "Abmelden" in the menu links to `/cdn-cgi/access/logout` with `returnTo` set to the landing page on the same host, the only kind of address Cloudflare accepts there.
+The burger menu starts with "Profil" for everyone, a sheet with the email and whether Cloudflare Access verified the email ("nicht verifiziert (Dev)" in dev mode); "Abmelden" in the menu links to `/cdn-cgi/access/logout` with `returnTo` set to the landing page on the same host, the only kind of address Cloudflare accepts there.
+The profile is a centred card (`ui/app/ProfilePanel.tsx`) with an initials avatar, the name with inline edit, the email, a "verifiziert" chip, an admin chip for admins, and the sections "Konto" (sign-in by code per email through Cloudflare Access) and "Entwickler-Tools".
+The profile no longer shows the role, "Meine Familien" or "Ausstehende Einladungen"; a row "Familien – <n> Familien · <m> Einladungen offen" opens the families board (`family.create`).
+At the bottom the profile has "Konto löschen": a disabled "Account löschen" button with a "Demnächst" badge and a hint that accounts and data are deleted on request until then, with a "Schreib uns" mailto link when `OPERATOR_EMAIL` is set.
+Deleting an account from the UI is planned and not implemented; only the announcement exists.
 "Familien" needs `family.create` (every signed-in user) and lists the families the user may see, with GEDCOM import for `family.create` and drag-and-drop reordering for `family.manage`; "Momentaufnahme" and "Darstellung" are for everyone.
 "Admin-Tool" needs `users.view` and links to the admin page at `/admin`; the former read-only "Anmeldungen" board of `GET /users` is gone until the admin page gets a people tab.
 On the tree's host of a deployment whose administration has its own host, admins lack `users.view`, so the menu has no "Admin-Tool"; they open the administration's host directly, for example from the Cloudflare App Launcher.
@@ -606,6 +623,8 @@ The tree's family card still says "delete"; the trash is shown on the admin page
 - `ui/app/Scene.tsx` configures the canvas, the time-of-day sky (sun, moon, stars, and lights from `ui/app/sky.ts`) with its clock, meadow, tree, camera controls, the Evolution panel, opened from the header (with "Zeit", the "Ansichts-Labor" appearance select, and "Ansicht" with the zoom slider, the pin toggle, and the card style select, and the "Vorschau" section with the crown scale and relation spacing sliders), the pins, member scrolls with their drag and drop and relation lines, and the camera flight to a selected scroll.
 - `ui/app/SimpleTree.tsx` renders the experimental view's names, lines, dots, bridges, symbols, and stubs from `ui/app/experimental/routing.ts` and highlights the lines to the focused person's core family and blood relatives (`ui/app/experimental/highlight.ts`, `highlight.check.mjs`); `ui/app/simpleLayout.ts` places the names, with `ui/app/simpleLayout.check.mjs` as its self-check.
 - `ui/app/RelationLegend.tsx` renders the experimental view's legend of lines, symbols, and stubs.
+- `ui/app/Sheet.tsx` and `sheet.css` are the shared sheet surface (card, corner, bottom sheet) in `document.body`; `sheetSnap.ts` holds its three heights.
+- `ui/app/home/HomeMenu.tsx` is the landing page's burger menu; `home/homeFamilies.ts`, `lastTree.ts`, and `menuDismiss.ts` support the landing page's families board, the stored current family, and outside-click dismissal.
 - `ui/app/experimental/model.ts` derives unions, partnerships, and generations for the experimental view (`model.check.mjs`); `routing.ts` routes the circuit-diagram lines (`route.check.mjs`); `verify.ts` and `families.check.mjs` prove them on fixtures and random families (`node app/experimental/families.check.mjs` in `ui/`).
 - `ui/app/familyLayout.ts` computes the relation lines between placed scrolls; `ui/app/familyLayout.check.mjs` is its self-check (`node app/familyLayout.check.mjs` in `ui/`).
 - `ui/app/arrange.ts` moves linked members between pins for the relation spacing preview; `ui/app/arrange.check.mjs` is its self-check (`node app/arrange.check.mjs` in `ui/`).

@@ -24,15 +24,15 @@
 ## Returning user
 
 1. `/start` (from "Weiter zum Baum" or "Anmelden") opens their last tree, else the tree "default", else the first; the camera flies to their own card.
-2. Dock for the main actions, header for family, theme, language, menu.
+2. Dock for the main actions, header for family, theme, language, menu; the landing page has the same prompt and menu (Profil, Familien, Abmelden), so the current family can be chosen there before "Weiter zum Baum".
 3. Selecting a person highlights their lineage and shows the person panel; "+" slots show what is missing.
-4. Other trees are one click away on the Familien board in the burger menu; an unknown or forbidden address shows "Baum nicht gefunden".
+4. Other trees are one click away on the Familien board in the burger menu (in the tree, a click on the prompt's family name opens the family card instead); an unknown or forbidden address shows "Baum nicht gefunden".
 - Goal: no hunting through menus; any relative is two clicks and a name away.
 
 ## Signed-out visitor
 
 1. `/` redirects to the landing page `/home`.
-2. A line at the top says the test phase is closed; the hero offers "Anmelden" and "So funktioniert's", and below them a note says that access needs an invitation from someone in the family.
+2. The header's burger menu offers only "Anmelden". A line at the top says the test phase is closed; the hero offers "Anmelden" and "So funktioniert's", and below them a note says that access needs an invitation from someone in the family.
 3. `/home/how` explains the three steps and leads on to "Beispielfamilie ansehen", a read-only example tree, or to signing in.
 4. Signed in, the steps link into the own tree and tick off what is done (own card, tree shared, three people); step 2 opens the share dialog.
 5. "← Zurück" on the steps and example pages leads back to the landing page.

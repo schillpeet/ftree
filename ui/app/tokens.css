@@ -6,6 +6,7 @@
   --radius-pill: 999px; --radius-control: 12px; --radius-panel: 20px; --radius-dock: 22px; --radius-dock-primary: 16px; --radius-menu: 16px;
   --size-control: 42px; --size-dock-primary: 54px; --size-person-pill: 42px; --size-avatar: 30px; --size-slot: 36px;
   --blur-glass: blur(16px) saturate(140%);
+  --z-hud: 4; --z-chrome: 6; --z-panel: 7; --z-sheet: 30;
 }
 :root, [data-theme="3d"] {
   --bg: #0B0F10; --text: #F4F1EA; --muted: rgba(244,241,234,.68);

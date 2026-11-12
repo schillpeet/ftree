@@ -1,0 +1,631 @@
+/* Sheet.tsx: the surface of Profil, Familien and the relation legend. Tokens only. */
+
+.sheet-veil {
+  position: fixed;
+  z-index: var(--z-sheet);
+  inset: 0;
+  background: color-mix(in srgb, var(--bg) 50%, transparent);
+  backdrop-filter: blur(3px);
+}
+
+.sheet {
+  position: fixed;
+  z-index: var(--z-sheet);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: var(--panel-strong);
+  outline: none;
+}
+
+/* The card sits in the middle between the header and the dock's zone, never lower than the dock's top edge. */
+.sheet[data-place='card'] {
+  top: 76px;
+  right: 0;
+  bottom: 128px;
+  left: 0;
+  width: min(580px, calc(100vw - 32px));
+  height: fit-content;
+  max-height: calc(100dvh - 204px);
+  margin: auto;
+}
+
+/* The corner panel (the legend) stands right; between phone and wide desktop the dock would meet it, so it moves above. */
+.sheet[data-place='corner'] {
+  z-index: var(--z-hud);
+  right: 16px;
+  bottom: 16px;
+  width: min(340px, calc(100vw - 32px));
+  max-height: calc(100dvh - 220px);
+}
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .sheet[data-place='corner'] {
+    bottom: 128px;
+  }
+}
+
+.sheet-grip {
+  display: none;
+}
+
+.sheet-head {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 14px 4px 24px;
+}
+
+.sheet[data-place='corner'] .sheet-head {
+  padding: 10px 8px 2px 16px;
+}
+
+.sheet-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--accent);
+  font: 500 12px/1 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.sheet-eyebrow .icon {
+  width: 16px;
+  height: 16px;
+}
+
+.sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.sheet-body {
+  display: grid;
+  flex: 1 1 auto;
+  align-content: start;
+  gap: 22px;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 24px 24px;
+}
+
+.sheet[data-place='corner'] .sheet-body {
+  padding: 6px 16px 16px;
+}
+
+.sheet-foot {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 24px 16px;
+  border-top: 1px solid var(--border);
+}
+
+.sheet .dashboard-subhead {
+  margin: 0 0 10px;
+}
+
+/* Phones: everything is a bottom sheet with a grip and three heights (sheetSnap.ts); the dock steps aside meanwhile. */
+@media (max-width: 700px) {
+  .sheet[data-place] {
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    width: auto;
+    height: var(--sheet-height);
+    max-height: none;
+    margin: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    border-bottom: 0;
+    border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+    transition: height 0.22s ease;
+  }
+
+  .sheet[data-dragging] {
+    transition: none;
+  }
+
+  .sheet[data-snap='peek'] {
+    --sheet-height: 30dvh;
+  }
+
+  .sheet[data-snap='half'] {
+    --sheet-height: 52dvh;
+  }
+
+  .sheet[data-snap='full'] {
+    --sheet-height: calc(100dvh - 48px);
+  }
+
+  .sheet-grip {
+    display: grid;
+    flex: none;
+    place-items: center;
+    height: 22px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .sheet-grip span {
+    width: 40px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--muted);
+    opacity: 0.6;
+  }
+
+  .sheet-head,
+  .sheet[data-place='corner'] .sheet-head {
+    padding: 2px 10px 0 20px;
+  }
+
+  .sheet-body,
+  .sheet[data-place='corner'] .sheet-body {
+    padding: 8px 20px 20px;
+  }
+
+  .sheet-foot {
+    padding: 12px 20px 16px;
+  }
+
+  .sheet-veil {
+    backdrop-filter: none;
+  }
+
+  html[data-sheet-open] .dock-root {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet[data-place] {
+    transition: none;
+  }
+}
+
+/* ---- Inside the sheets: the profile ---- */
+
+.account-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+.account-avatar {
+  display: grid;
+  flex: none;
+  width: 76px;
+  height: 76px;
+  place-items: center;
+  border: 1.5px solid var(--accent);
+  border-radius: 50%;
+  background: var(--hover);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  font: 400 32px/1 var(--font-display);
+}
+
+.account-hero-text {
+  min-width: 0;
+}
+
+.account-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.account-name h2 {
+  margin: 0;
+  overflow: hidden;
+  font: 400 34px/1.1 var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-mail {
+  margin: 4px 0 10px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 14px;
+  text-overflow: ellipsis;
+}
+
+.account-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.account-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  color: var(--muted);
+  font: 500 12px/1 var(--font-ui);
+  white-space: nowrap;
+}
+
+.account-chip .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.account-chip-on {
+  border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+  color: var(--accent);
+}
+
+.account-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px 28px;
+}
+
+.account-grid .profile-facts {
+  margin: 0;
+}
+
+.account-link {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) 20px;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.account-link:hover {
+  background: var(--hover);
+}
+
+.account-link:focus-visible,
+.family-row button:focus-visible,
+.sheet-button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.account-link strong {
+  display: block;
+  font: 600 15px/1.3 var(--font-ui);
+}
+
+.account-link small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.account-danger {
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.account-danger-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.account-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 55%, transparent);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--danger);
+  cursor: not-allowed;
+  font: 600 14px/1 var(--font-ui);
+  opacity: 0.55;
+}
+
+.account-soon {
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.sheet-hint {
+  margin: 10px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.sheet-hint a {
+  color: var(--accent);
+}
+
+/* ---- Inside the sheets: the families ---- */
+
+.family-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.family-group-head .dashboard-subhead {
+  margin: 0;
+}
+
+.family-count {
+  color: var(--muted);
+  font: 12px/1 var(--font-mono);
+}
+
+.family-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.family-row {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 6px 6px 4px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+
+.family-row[aria-current='true'] {
+  border-color: var(--accent);
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.family-row[data-drop='before'] {
+  box-shadow: 0 -2px 0 var(--accent);
+}
+
+.family-row[data-drop='after'] {
+  box-shadow: 0 2px 0 var(--accent);
+}
+
+.family-row-grip {
+  display: grid;
+  color: var(--muted);
+}
+
+.family-row[draggable='true'] .family-row-grip {
+  cursor: grab;
+}
+
+.family-row-grip .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.family-row-select {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  padding: 4px 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.family-row-select:hover {
+  background: var(--hover);
+}
+
+.family-row-select strong {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  font: 400 22px/1.15 var(--font-display);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+[data-theme='tron'] .family-row-select strong {
+  font: 500 15px/1.3 var(--font-ui);
+}
+
+.family-row-select > span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.family-current {
+  color: var(--accent);
+  font: 500 10px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.family-invite {
+  grid-template-columns: 34px minmax(0, 1fr) auto;
+  padding: 8px 10px 8px 8px;
+  border-style: dashed;
+}
+
+.family-invite-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+}
+
+.family-invite-icon .icon {
+  width: 18px;
+  height: 18px;
+}
+
+.family-invite strong {
+  display: block;
+  font: 600 15px/1.3 var(--font-ui);
+}
+
+.family-invite small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.sheet-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font: 600 14px/1 var(--font-ui);
+}
+
+.sheet-button:hover:not(:disabled) {
+  background: var(--hover);
+}
+
+.sheet-button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+.sheet-button-primary {
+  border-color: transparent;
+  background: var(--primary);
+  box-shadow: var(--primary-glow);
+  color: var(--primary-ink);
+}
+
+.sheet-button-primary:hover:not(:disabled) {
+  background: var(--primary);
+  filter: brightness(1.06);
+}
+
+.sheet-foot .family-limit,
+.sheet-foot .gedcom-info {
+  flex-basis: 100%;
+  margin: 4px 0 0;
+}
+
+.sheet-foot .gedcom-info p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* The relation legend's rows. */
+.legend-rows {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  font: 13px/1.35 var(--font-ui);
+  list-style: none;
+}
+
+.legend-rows li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Folded, the legend is only this chip in the corner where it opens. */
+.legend-chip {
+  position: fixed;
+  z-index: var(--z-hud);
+  right: 16px;
+  bottom: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 12px 0 14px;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  font: 500 13px/1 var(--font-ui);
+}
+
+.legend-chip .icon {
+  width: 16px;
+  height: 16px;
+  color: var(--muted);
+  transform: rotate(180deg);
+}
+
+.legend-chip:hover {
+  background-image: linear-gradient(var(--hover), var(--hover));
+}
+
+.legend-chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+@media (min-width: 701px) and (max-width: 1100px) {
+  .legend-chip {
+    bottom: 128px;
+  }
+}
+
+@media (max-width: 700px) {
+  .legend-chip {
+    bottom: calc(44px + var(--size-dock-primary) + 24px);
+  }
+
+  .account-avatar {
+    width: 60px;
+    height: 60px;
+    font-size: 26px;
+  }
+
+  .account-name h2 {
+    font-size: 28px;
+  }
+}

@@ -128,6 +128,24 @@ export const LogoutIcon = () => (
   </Icon>
 );
 
+export const LoginIcon = () => (
+  <Icon>
+    <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M9 8l4 4-4 4M13 12H3" />
+  </Icon>
+);
+
+// The handle of a row that can be dragged to reorder it.
+export const GripIcon = () => (
+  <Icon>
+    <circle cx="9" cy="6" r="1" />
+    <circle cx="15" cy="6" r="1" />
+    <circle cx="9" cy="12" r="1" />
+    <circle cx="15" cy="12" r="1" />
+    <circle cx="9" cy="18" r="1" />
+    <circle cx="15" cy="18" r="1" />
+  </Icon>
+);
+
 export const EyeIcon = () => (
   <Icon>
     <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />

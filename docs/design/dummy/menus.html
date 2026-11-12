@@ -1,0 +1,1401 @@
+<!doctype html>
+<html lang="de" data-theme="3d">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ftree · Dummy · Menü, Profil, Familien, Fenster (Entwurf)</title>
+    <script>
+      try {
+        document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') || localStorage.getItem('ftree-dummy-theme') || '3d';
+      } catch {}
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" />
+    <link rel="stylesheet" href="../tokens.css" />
+    <link rel="stylesheet" href="dummy.css" />
+    <style>
+      /* ===== Drafts for feat/ui-add-the-burger-menu-to-the-landing-page (2026-11-12) =====================================
+         Not on main yet: the burger menu on the landing page, the profile as a larger card, the families board with the
+         families and the sent invitations, and one rule for windows on small screens (bottom sheets, relation legend). Once a variant
+         is chosen, its rules move into dummy.css and ui/. */
+
+      /* ---- Dummy glue: one landing and one tree on this page, switched by the screen's data-place ---- */
+      body[data-place='home'] :is(.app-header, .dock-root, .tree, .scene3d, .tron-floor, .relation-legend, .legend-chip, .legend2) {
+        display: none !important;
+      }
+
+      body[data-place='tree'] .landing {
+        display: none;
+      }
+
+      /* The draft controls: screen, variants, device. Not part of the app. */
+      .dummy-tools {
+        position: fixed;
+        z-index: 100;
+        bottom: 12px;
+        left: 12px;
+        display: grid;
+        gap: 10px;
+        box-sizing: border-box;
+        width: 290px;
+        max-height: calc(100dvh - 24px);
+        overflow: auto;
+        padding: 12px;
+        border-radius: 16px;
+        background: var(--panel-strong);
+        font: 12px/1.45 var(--font-ui);
+      }
+
+      .dummy-tools summary {
+        color: var(--accent);
+        cursor: pointer;
+        font: 500 12px/1 var(--font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .dummy-tools[open] summary {
+        margin-bottom: 10px;
+      }
+
+      .dummy-tools-body {
+        display: grid;
+        gap: 10px;
+      }
+
+      .dummy-tools label {
+        display: grid;
+        gap: 4px;
+        color: var(--muted);
+      }
+
+      .dummy-tools select {
+        padding: 6px 8px;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        background: var(--panel-strong);
+        color: var(--text);
+      }
+
+      .dummy-tools .segment {
+        display: flex;
+        width: max-content;
+      }
+
+      .dummy-tools .segment button {
+        padding: 6px 10px;
+        font-size: 12px;
+      }
+
+      .dummy-tools a {
+        color: var(--muted);
+      }
+
+      .dummy-note {
+        margin: 0;
+        color: var(--text);
+      }
+
+      .dummy-note strong {
+        color: var(--accent);
+      }
+
+      body:not([data-surface='a']) .note-a,
+      body:not([data-surface='b']) .note-b,
+      body:not([data-legend='a']) .note-legend-a,
+      body:not([data-legend='b']) .note-legend-b {
+        display: none;
+      }
+
+      .dummy-phone-stage {
+        display: none;
+      }
+
+      html.dummy-phone body > :not(.dummy-tools):not(.dummy-phone-stage) {
+        display: none !important;
+      }
+
+      html.dummy-phone .dummy-phone-stage {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: radial-gradient(circle at 50% 40%, #1c2328, #05070a 70%);
+      }
+
+      .dummy-phone-stage iframe {
+        width: 390px;
+        height: min(844px, calc(100dvh - 48px));
+        border: 10px solid #0b0d0f;
+        border-radius: 46px;
+        background: var(--bg);
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      }
+
+      html.dummy-in-frame .dummy-tools {
+        display: none;
+      }
+
+      /* ---- Header prompt `user:family` (copied from ui/app/header.css), now on the landing page too ---- */
+      .header-prompt {
+        gap: 0;
+        cursor: pointer;
+      }
+
+      .header-prompt-user {
+        overflow: hidden;
+        max-width: 180px;
+        color: var(--muted);
+        font: 500 15px/1.2 var(--font-ui);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .header-prompt-sep {
+        margin: 0 8px 0 2px;
+        color: var(--muted);
+        font: 500 15px/1.2 var(--font-ui);
+      }
+
+      [data-theme='tron'] .header-prompt .dashboard-family-name {
+        font: 500 15px/1.2 var(--font-ui);
+      }
+
+      [data-theme='tron'] .header-prompt-user {
+        color: var(--accent);
+        text-shadow: 0 0 8px var(--glow);
+      }
+
+      [data-theme='tron'] .header-prompt-sep {
+        margin: 0 2px 0 0;
+      }
+
+      .landing-prompt {
+        justify-self: center;
+        border: 1px solid var(--border);
+      }
+
+      @media (max-width: 860px) {
+        .landing-prompt {
+          grid-row: 2;
+          grid-column: 1 / -1;
+        }
+      }
+
+      /* Phones: like the tree's header, wordmark and controls in one row, the prompt centred below. */
+      @media (max-width: 560px) {
+        .landing-header {
+          display: grid;
+          grid-template-columns: auto 1fr;
+          row-gap: 10px;
+        }
+
+        .landing-segments {
+          gap: 6px;
+        }
+      }
+
+      /* ---- Sheet: the one surface for Profil and Familien (and, on phones, the legend) ---- */
+      .sheet-veil {
+        position: fixed;
+        z-index: 29;
+        inset: 0;
+        background: rgba(5, 8, 10, 0.45);
+        backdrop-filter: blur(3px);
+      }
+
+      body[data-surface='b'] .sheet-veil {
+        background: rgba(5, 8, 10, 0.22);
+        backdrop-filter: none;
+      }
+
+      .acct {
+        position: fixed;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        overflow: hidden;
+        border-radius: var(--radius-panel);
+        background: var(--panel-strong);
+        box-shadow: 0 24px 70px rgba(0, 0, 0, 0.5);
+      }
+
+      /* A · Karte: centred between the header and the dock zone, never lower than the dock's top edge. */
+      body[data-surface='a'] .acct {
+        top: 76px;
+        right: 0;
+        bottom: 128px;
+        left: 0;
+        width: min(580px, calc(100vw - 32px));
+        height: fit-content;
+        max-height: calc(100dvh - 204px);
+        margin: auto;
+      }
+
+      /* B · Seitenblatt: full height on the right, from below the header to above the legal line. */
+      body[data-surface='b'] .acct {
+        top: 76px;
+        right: 16px;
+        bottom: 40px;
+        width: min(440px, calc(100vw - 32px));
+      }
+
+      .sheet-grip {
+        display: none;
+      }
+
+      .acct-head {
+        display: flex;
+        flex: none;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 14px 14px 4px 24px;
+      }
+
+      .acct-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--accent);
+        font: 500 12px/1 var(--font-mono);
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .acct-eyebrow .icon {
+        width: 16px;
+        height: 16px;
+      }
+
+      .acct-body {
+        display: grid;
+        flex: 1 1 auto;
+        align-content: start;
+        gap: 22px;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 10px 24px 24px;
+      }
+
+      .acct-foot {
+        display: flex;
+        flex: none;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        padding: 14px 24px 16px;
+        border-top: 1px solid var(--border);
+      }
+
+      .acct-hero {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+      }
+
+      .acct-avatar {
+        display: grid;
+        flex: none;
+        width: 76px;
+        height: 76px;
+        place-items: center;
+        border: 1.5px solid var(--accent);
+        border-radius: 50%;
+        background: var(--hover);
+        box-shadow: 0 0 0 5px color-mix(in srgb, var(--accent) 14%, transparent);
+        color: var(--accent);
+        font: 400 32px/1 var(--font-display);
+      }
+
+      .acct-hero-text {
+        min-width: 0;
+      }
+
+      .acct-name {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .acct-name h2 {
+        margin: 0;
+        overflow: hidden;
+        font: 400 34px/1.1 var(--font-display);
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .acct-mail {
+        margin: 4px 0 10px;
+        overflow: hidden;
+        color: var(--muted);
+        font-size: 14px;
+        text-overflow: ellipsis;
+      }
+
+      .acct-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .acct-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        height: 24px;
+        box-sizing: border-box;
+        padding: 0 10px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-pill);
+        color: var(--muted);
+        font: 500 12px/1 var(--font-ui);
+        white-space: nowrap;
+      }
+
+      .acct-chip .icon {
+        width: 14px;
+        height: 14px;
+      }
+
+      .acct-chip-ok {
+        border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+        color: var(--accent);
+      }
+
+      .acct-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+        gap: 18px 28px;
+      }
+
+      .acct .dashboard-subhead {
+        margin: 0 0 10px;
+      }
+
+      .acct .profile-facts {
+        margin: 0;
+      }
+
+      .acct-link {
+        display: grid;
+        grid-template-columns: 20px minmax(0, 1fr) 20px;
+        align-items: center;
+        gap: 14px;
+        width: 100%;
+        box-sizing: border-box;
+        padding: 14px 16px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .acct-link:hover {
+        background: var(--hover);
+      }
+
+      .acct-link strong {
+        display: block;
+        font: 600 15px/1.3 var(--font-ui);
+      }
+
+      .acct-link small {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .acct-danger {
+        padding-top: 20px;
+        border-top: 1px solid var(--border);
+      }
+
+      .acct-danger-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .acct-delete {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 16px;
+        border: 1px solid color-mix(in srgb, var(--danger) 55%, transparent);
+        border-radius: var(--radius-control);
+        background: transparent;
+        color: var(--danger);
+        cursor: not-allowed;
+        font: 600 14px/1 var(--font-ui);
+        opacity: 0.55;
+      }
+
+      .acct-soon {
+        padding: 5px 10px;
+        border-radius: var(--radius-pill);
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+        color: var(--accent);
+        font: 500 11px/1 var(--font-mono);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .acct-hint {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      .acct-hint a {
+        color: var(--accent);
+      }
+
+      .acct-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 40px;
+        padding: 0 16px;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-control);
+        background: transparent;
+        color: var(--text);
+        cursor: pointer;
+        font: 600 14px/1 var(--font-ui);
+      }
+
+      .acct-btn:hover {
+        background: var(--hover);
+      }
+
+      .acct-btn-primary {
+        border-color: transparent;
+        background: var(--primary);
+        box-shadow: var(--primary-glow);
+        color: var(--primary-ink);
+      }
+
+      .acct-btn-primary:hover {
+        background: var(--primary);
+        filter: brightness(1.06);
+      }
+
+      .acct .gedcom-info {
+        flex-basis: 100%;
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+        line-height: 1.5;
+      }
+
+      /* ---- Families board ---- */
+      .fam-group-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+
+      .fam-group-head .dashboard-subhead {
+        margin: 0;
+      }
+
+      .fam-count {
+        color: var(--muted);
+        font: 12px/1 var(--font-mono);
+      }
+
+      .fam-list {
+        display: grid;
+        gap: 6px;
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+
+      .fam-row {
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr) auto auto auto;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 6px 6px 4px;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+      }
+
+      .fam-row[aria-current='true'] {
+        border-color: var(--accent);
+        box-shadow: inset 3px 0 0 var(--accent);
+      }
+
+      .fam-grip {
+        color: var(--muted);
+        cursor: grab;
+      }
+
+      .fam-grip .icon {
+        width: 18px;
+        height: 18px;
+      }
+
+      .fam-select {
+        display: grid;
+        gap: 3px;
+        min-width: 0;
+        padding: 4px 6px;
+        border: 0;
+        border-radius: 8px;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        text-align: left;
+      }
+
+      .fam-select:hover {
+        background: var(--hover);
+      }
+
+      .fam-select strong {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
+        min-width: 0;
+        overflow: hidden;
+        font: 400 22px/1.15 var(--font-display);
+        white-space: nowrap;
+      }
+
+      [data-theme='tron'] .fam-select strong {
+        font: 500 15px/1.3 var(--font-ui);
+      }
+
+      .fam-select > span {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .fam-current {
+        color: var(--accent);
+        font: 500 10px/1 var(--font-mono);
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+
+      .fam-row:not([aria-current='true']) .fam-current {
+        display: none;
+      }
+
+      .fam-row[data-off] .fam-select {
+        opacity: 0.5;
+      }
+
+      .fam-invite {
+        grid-template-columns: 34px minmax(0, 1fr) auto;
+        padding: 8px 10px 8px 8px;
+        border-style: dashed;
+      }
+
+      .fam-invite-icon {
+        display: grid;
+        width: 34px;
+        height: 34px;
+        place-items: center;
+        border-radius: 50%;
+        background: color-mix(in srgb, var(--accent) 16%, transparent);
+        color: var(--accent);
+      }
+
+      .fam-invite-icon .icon {
+        width: 18px;
+        height: 18px;
+      }
+
+      .fam-invite strong {
+        display: block;
+        font: 600 15px/1.3 var(--font-ui);
+      }
+
+      .fam-invite small {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      /* ---- Relation legend, proposal ---- */
+      .legend-chip {
+        position: fixed;
+        z-index: 4;
+        right: 16px;
+        bottom: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 38px;
+        padding: 0 12px 0 14px;
+        border-radius: var(--radius-pill);
+        cursor: pointer;
+        font: 500 13px/1 var(--font-ui);
+      }
+
+      .legend-chip .icon {
+        width: 16px;
+        height: 16px;
+        color: var(--muted);
+      }
+
+      .legend2 {
+        position: fixed;
+        z-index: 4;
+        right: 16px;
+        bottom: 16px;
+        display: flex;
+        flex-direction: column;
+        box-sizing: border-box;
+        width: min(340px, calc(100vw - 32px));
+        max-height: calc(100dvh - 220px);
+        overflow: hidden;
+        border-radius: var(--radius-panel);
+        background: var(--panel-strong);
+      }
+
+      .legend2 .acct-head {
+        padding: 10px 8px 2px 16px;
+      }
+
+      .legend2-list {
+        display: grid;
+        gap: 9px;
+        margin: 0;
+        padding: 8px 16px 16px;
+        overflow-y: auto;
+        font: 13px/1.35 var(--font-ui);
+        list-style: none;
+      }
+
+      .legend2-list li {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      [data-theme='3d'] :is(.legend-chip, .legend2) {
+        display: none;
+      }
+
+      /* Between phone and wide desktop the dock and the corner would meet: the legend moves above the dock zone. */
+      @media (min-width: 701px) and (max-width: 1100px) {
+        .legend-chip,
+        .legend2,
+        .relation-legend {
+          bottom: 128px;
+        }
+      }
+
+      /* ---- Phones: everything that opens is a bottom sheet with a grip and three heights ---- */
+      @media (max-width: 700px) {
+        body[data-surface] .acct,
+        body[data-legend='a'] .legend2 {
+          top: auto;
+          right: 0;
+          bottom: 0;
+          left: 0;
+          width: auto;
+          height: var(--sheet-h);
+          max-height: none;
+          margin: 0;
+          border-bottom: 0;
+          border-radius: var(--radius-panel) var(--radius-panel) 0 0;
+          padding-bottom: env(safe-area-inset-bottom);
+          transition: height 0.22s ease;
+        }
+
+        body .acct.is-dragging,
+        body .legend2.is-dragging {
+          transition: none;
+        }
+
+        .sheet[data-snap='peek'] {
+          --sheet-h: 30dvh;
+        }
+
+        .sheet[data-snap='half'] {
+          --sheet-h: 52dvh;
+        }
+
+        .sheet[data-snap='full'] {
+          --sheet-h: calc(100dvh - 48px);
+        }
+
+        body[data-surface] .acct .sheet-grip,
+        body[data-legend='a'] .legend2 .sheet-grip {
+          display: grid;
+          flex: none;
+          place-items: center;
+          height: 22px;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          cursor: grab;
+          touch-action: none;
+        }
+
+        .sheet-grip span {
+          width: 40px;
+          height: 5px;
+          border-radius: 3px;
+          background: var(--muted);
+          opacity: 0.6;
+        }
+
+        .acct-head {
+          padding: 2px 10px 0 20px;
+        }
+
+        .acct-body {
+          padding: 8px 20px 20px;
+        }
+
+        .acct-foot {
+          padding: 12px 20px 16px;
+        }
+
+        .acct-avatar {
+          width: 60px;
+          height: 60px;
+          font-size: 26px;
+        }
+
+        .acct-name h2 {
+          font-size: 28px;
+        }
+
+        body[data-surface] .sheet-veil {
+          background: rgba(5, 8, 10, 0.4);
+          backdrop-filter: none;
+        }
+
+        /* One thing at a time: while a sheet is open, the dock steps aside. */
+        body:has(.acct:not([hidden])) .dock-root,
+        body[data-legend='a']:has(.legend2:not([hidden])) .dock-root {
+          display: none;
+        }
+
+        .legend-chip {
+          bottom: calc(44px + var(--size-dock-primary) + 24px);
+        }
+
+        /* B: a popover above the chip's place, half the height at most; the dock stays. */
+        body[data-legend='b'] .legend2 {
+          right: 16px;
+          bottom: calc(44px + var(--size-dock-primary) + 24px);
+          left: 16px;
+          width: auto;
+          max-height: 50dvh;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="backdrop" aria-hidden="true"></div>
+
+    <div class="tron-floor" aria-hidden="true"></div>
+    <!-- 3D: the real scene (shots of /home/example at dusk); a click on a card shows its shot with the lineage lit. -->
+    <div class="scene3d">
+      <img src="scene-3d.jpg" alt="" data-for="" />
+      <img src="scene-3d-lea.jpg" alt="" data-for="lea" hidden />
+      <img src="scene-3d-clara.jpg" alt="" data-for="clara" hidden />
+      <img src="scene-3d-ida.jpg" alt="" data-for="ida" hidden />
+      <img src="scene-3d-emil.jpg" alt="" data-for="emil" hidden />
+      <img src="scene-3d-ursula.jpg" alt="" data-for="ursula" hidden />
+      <img src="scene-3d-heinrich.jpg" alt="" data-for="heinrich" hidden />
+      <a class="node hotspot" tabindex="0" aria-label="Profil von Lea Linde öffnen" style="left: 27.9%; top: 51.3%; width: 2.2%; height: 8%" data-id="lea" data-line="lea sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s8 s9 s12 s13 s16 s17 s19 s21 s23 s25 d0 d2 d4 d5 g0 g2" data-name="Lea Linde" data-first="Lea" data-last="Linde" data-initials="LL" data-born="" data-meta="1992" data-span="1992 · 34 Jahre" data-birth="03.06.1992" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children=""></a>
+      <a class="node hotspot" tabindex="0" aria-label="Profil von Clara Hartmann öffnen" style="left: 44%; top: 47%; width: 3.6%; height: 8.8%" data-id="clara" data-line="clara thomas ursula margarete heinrich" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Clara Hartmann" data-first="Clara" data-last="Hartmann" data-initials="CH" data-born="" data-meta="1994" data-span="1994 · 32 Jahre" data-birth="15.10.1994" data-death="" data-parents="Ursula Hartmann, Thomas Hartmann" data-partners="" data-children=""></a>
+      <a class="node hotspot" tabindex="0" aria-label="Profil von Ida Linde öffnen" style="left: 43%; top: 55.8%; width: 2.3%; height: 3.4%" data-id="ida" data-line="ida mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s29 s31 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Ida Linde" data-first="Ida" data-last="Linde" data-initials="IL" data-born="" data-meta="2022" data-span="2022 · 4 Jahre" data-birth="08.07.2022" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children=""></a>
+      <a class="node hotspot" tabindex="0" aria-label="Profil von Emil Linde öffnen" style="left: 48.7%; top: 46%; width: 4.9%; height: 9.4%" data-id="emil" data-line="emil mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s28 s30 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Emil Linde" data-first="Emil" data-last="Linde" data-initials="EL" data-born="" data-meta="2019" data-span="2019 · 7 Jahre" data-birth="26.02.2019" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children=""></a>
+      <a class="node hotspot" tabindex="0" aria-label="Profil von Ursula Hartmann öffnen" style="left: 63.2%; top: 39.4%; width: 2.5%; height: 5.2%" data-id="ursula" data-line="ursula margarete heinrich thomas clara" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Ursula Hartmann" data-first="Ursula" data-last="Hartmann" data-initials="UH" data-born="geb. Linde" data-meta="1962" data-span="1962 · 63 Jahre" data-birth="04.12.1962" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Thomas Hartmann" data-children="Clara Hartmann"></a>
+      <a class="node hotspot" tabindex="0" aria-label="Profil von Heinrich Linde öffnen" style="left: 63%; top: 26.2%; width: 3.4%; height: 6.2%" data-id="heinrich" data-line="heinrich margarete peter ursula clara jonas lea emil ida" data-lit="s0 s1 s3 s5 s6 s8 s9 s11 s13 s14 s16 s17 s18 s19 s20 s21 s22 s23 s24 s25 s26 s27 s28 s29 s30 s31 d0 d1 d2 d3 d4 d5 d6 g0" data-name="Heinrich Linde" data-first="Heinrich" data-last="Linde" data-initials="HL" data-born="" data-meta="1931 – 2009" data-span="1931 – 2009 · 78 Jahre" data-birth="14.03.1931" data-death="02.11.2009" data-parents="" data-partners="Margarete Linde" data-children="Peter Linde, Ursula Hartmann"></a>
+    </div>
+    <!-- TRON: SimpleTree.tsx, laid out and routed by simpleLayout.ts and experimental/routing.ts. -->
+    <div class="tree">
+      <div class="tree-origin">
+        <svg class="tree-lines" viewBox="-30 -30 60 32" aria-hidden="true">
+          <path d="M0 -19.05 L0 -18.6" data-k="s0" />
+          <path d="M9.5 -19.05 L9.5 -18.6" data-k="s1" />
+          <path d="M-9.5 -12.25 L-9.5 -11.8" data-k="s2" />
+          <path d="M0 -12.25 L0 -11.8" data-k="s3" />
+          <path d="M-19 -5.45 L-19 -5" data-k="s4" />
+          <path d="M-9.5 -5.45 L-9.5 -5" data-k="s5" />
+          <path d="M9.5 -12.25 L9.5 -11.8" data-k="s6" />
+          <path d="M19 -12.25 L19 -11.8" data-k="s7" />
+          <path d="M0 -18.6 L4.75 -18.6" data-k="s8" />
+          <path d="M4.75 -18.6 L9.5 -18.6" data-k="s9" />
+          <path d="M-19 -5 L-14.25 -5" data-k="s10" />
+          <path d="M-14.25 -5 L-9.5 -5" data-k="s11" />
+          <path d="M-9.5 -11.8 L-4.75 -11.8" data-k="s12" />
+          <path d="M-4.75 -11.8 L0 -11.8" data-k="s13" />
+          <path d="M9.5 -11.8 L14.25 -11.8" data-k="s14" />
+          <path d="M14.25 -11.8 L19 -11.8" data-k="s15" />
+          <path d="M4.75 -18.6 L4.75 -15.7" data-k="s16" />
+          <path d="M0 -15.7 L4.75 -15.7" data-k="s17" />
+          <path d="M4.75 -15.7 L9.5 -15.7" data-k="s18" />
+          <path d="M0 -15.7 L0 -14.95" data-k="s19" />
+          <path d="M9.5 -15.7 L9.5 -14.95" data-k="s20" />
+          <path d="M-4.75 -11.8 L-4.75 -8.9" data-k="s21" />
+          <path d="M-9.5 -8.9 L-4.75 -8.9" data-k="s22" />
+          <path d="M-4.75 -8.9 L0 -8.9" data-k="s23" />
+          <path d="M-9.5 -8.9 L-9.5 -8.15" data-k="s24" />
+          <path d="M0 -8.9 L0 -8.15" data-k="s25" />
+          <path d="M14.25 -11.8 L14.25 -8.15" data-k="s26" />
+          <path d="M-14.25 -5 L-14.25 -2.1" data-k="s27" />
+          <path d="M-19 -2.1 L-14.25 -2.1" data-k="s28" />
+          <path d="M-14.25 -2.1 L-9.5 -2.1" data-k="s29" />
+          <path d="M-19 -2.1 L-19 -1.35" data-k="s30" />
+          <path d="M-9.5 -2.1 L-9.5 -1.35" data-k="s31" />
+          <circle cx="4.75" cy="-18.6" r="0.12" data-k="d0" />
+          <circle cx="-14.25" cy="-5" r="0.12" data-k="d1" />
+          <circle cx="-4.75" cy="-11.8" r="0.12" data-k="d2" />
+          <circle cx="14.25" cy="-11.8" r="0.12" data-k="d3" />
+          <circle cx="4.75" cy="-15.7" r="0.12" data-k="d4" />
+          <circle cx="-4.75" cy="-8.9" r="0.12" data-k="d5" />
+          <circle cx="-14.25" cy="-2.1" r="0.12" data-k="d6" />
+        </svg>
+        <span class="simple-glyph" data-k="g0" style="--x: 4.75; --y: 19.1" aria-hidden="true">⚭</span>
+        <span class="simple-glyph" data-k="g1" style="--x: -14.25; --y: 5.5" aria-hidden="true">⚭</span>
+        <span class="simple-glyph" data-k="g2" style="--x: -4.75; --y: 12.3" aria-hidden="true">⚭</span>
+        <span class="simple-glyph" data-k="g3" style="--x: 14.25; --y: 12.3" aria-hidden="true">⚭</span>
+        <a class="node" tabindex="0" style="--x: 0; --y: 20.4" data-id="heinrich" data-line="heinrich margarete peter ursula clara jonas lea emil ida" data-lit="s0 s1 s3 s5 s6 s8 s9 s11 s13 s14 s16 s17 s18 s19 s20 s21 s22 s23 s24 s25 s26 s27 s28 s29 s30 s31 d0 d1 d2 d3 d4 d5 d6 g0" data-name="Heinrich Linde" data-first="Heinrich" data-last="Linde" data-initials="HL" data-born="" data-meta="1931 – 2009" data-span="1931 – 2009 · 78 Jahre" data-birth="14.03.1931" data-death="02.11.2009" data-parents="" data-partners="Margarete Linde" data-children="Peter Linde, Ursula Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">HL</span><span class="simple-name-text"><span>Heinrich</span><span class="simple-name-years">1931 – 2009</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: 9.5; --y: 20.4" data-id="margarete" data-line="margarete heinrich peter ursula clara jonas lea emil ida" data-lit="s0 s1 s3 s5 s6 s8 s9 s11 s13 s14 s16 s17 s18 s19 s20 s21 s22 s23 s24 s25 s26 s27 s28 s29 s30 s31 d0 d1 d2 d3 d4 d5 d6 g0" data-name="Margarete Linde" data-first="Margarete" data-last="Linde" data-initials="ML" data-born="geb. Vogt" data-meta="1934 – 2018" data-span="1934 – 2018 · 83 Jahre" data-birth="28.07.1934" data-death="19.01.2018" data-parents="" data-partners="Heinrich Linde" data-children="Peter Linde, Ursula Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">ML</span><span class="simple-name-text"><span>Margarete</span><span class="simple-name-years">1934 – 2018</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: -9.5; --y: 13.6" data-id="sabine" data-line="sabine peter jonas lea emil ida" data-lit="s2 s3 s5 s11 s12 s13 s21 s22 s23 s24 s25 s27 s28 s29 s30 s31 d1 d2 d5 d6 g2" data-name="Sabine Linde" data-first="Sabine" data-last="Linde" data-initials="SL" data-born="geb. Brandt" data-meta="1961" data-span="1961 · 65 Jahre" data-birth="30.09.1961" data-death="" data-parents="" data-partners="Peter Linde" data-children="Jonas Linde, Lea Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">SL</span><span class="simple-name-text"><span>Sabine</span><span class="simple-name-years">1961</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: 0; --y: 13.6" data-id="peter" data-line="peter margarete heinrich sabine jonas lea emil ida" data-lit="s0 s1 s2 s3 s5 s8 s9 s11 s12 s13 s16 s17 s19 s21 s22 s23 s24 s25 s27 s28 s29 s30 s31 d0 d1 d2 d4 d5 d6 g0 g2" data-name="Peter Linde" data-first="Peter" data-last="Linde" data-initials="PL" data-born="" data-meta="1958" data-span="1958 · 68 Jahre" data-birth="09.05.1958" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Sabine Linde" data-children="Jonas Linde, Lea Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">PL</span><span class="simple-name-text"><span>Peter</span><span class="simple-name-years">1958</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: -19; --y: 6.8" data-id="mira" data-line="mira jonas emil ida" data-lit="s4 s5 s10 s11 s27 s28 s29 s30 s31 d1 d6 g1" data-name="Mira Linde" data-first="Mira" data-last="Linde" data-initials="ML" data-born="geb. Okafor" data-meta="1990" data-span="1990 · 36 Jahre" data-birth="11.08.1990" data-death="" data-parents="" data-partners="Jonas Linde" data-children="Emil Linde, Ida Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">ML</span><span class="simple-name-text"><span>Mira</span><span class="simple-name-years">1990</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: -9.5; --y: 6.8" data-id="jonas" data-line="jonas sabine peter margarete heinrich mira emil ida" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s28 s29 s30 s31 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Jonas Linde" data-first="Jonas" data-last="Linde" data-initials="JL" data-born="" data-meta="1988" data-span="1988 · 38 Jahre" data-birth="21.04.1988" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="Mira Linde" data-children="Emil Linde, Ida Linde">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">JL</span><span class="simple-name-text"><span>Jonas</span><span class="simple-name-years">1988</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: -19; --y: 0" data-id="emil" data-line="emil mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s28 s30 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Emil Linde" data-first="Emil" data-last="Linde" data-initials="EL" data-born="" data-meta="2019" data-span="2019 · 7 Jahre" data-birth="26.02.2019" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children="">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">EL</span><span class="simple-name-text"><span>Emil</span><span class="simple-name-years">2019</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: -9.5; --y: 0" data-id="ida" data-line="ida mira jonas sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s4 s5 s8 s9 s10 s11 s12 s13 s16 s17 s19 s21 s22 s24 s27 s29 s31 d0 d1 d2 d4 d5 d6 g0 g1 g2" data-name="Ida Linde" data-first="Ida" data-last="Linde" data-initials="IL" data-born="" data-meta="2022" data-span="2022 · 4 Jahre" data-birth="08.07.2022" data-death="" data-parents="Jonas Linde, Mira Linde" data-partners="" data-children="">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">IL</span><span class="simple-name-text"><span>Ida</span><span class="simple-name-years">2022</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: 0; --y: 6.8" data-id="lea" data-line="lea sabine peter margarete heinrich" data-lit="s0 s1 s2 s3 s8 s9 s12 s13 s16 s17 s19 s21 s23 s25 d0 d2 d4 d5 g0 g2" data-name="Lea Linde" data-first="Lea" data-last="Linde" data-initials="LL" data-born="" data-meta="1992" data-span="1992 · 34 Jahre" data-birth="03.06.1992" data-death="" data-parents="Peter Linde, Sabine Linde" data-partners="" data-children="">
+          <span class="simple-name" data-self><span class="simple-name-avatar" aria-hidden="true">LL</span><span class="simple-name-text"><span>Lea</span><span class="simple-name-years">1992</span></span><span class="self-badge">DU</span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: 9.5; --y: 13.6" data-id="ursula" data-line="ursula margarete heinrich thomas clara" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Ursula Hartmann" data-first="Ursula" data-last="Hartmann" data-initials="UH" data-born="geb. Linde" data-meta="1962" data-span="1962 · 63 Jahre" data-birth="04.12.1962" data-death="" data-parents="Heinrich Linde, Margarete Linde" data-partners="Thomas Hartmann" data-children="Clara Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">UH</span><span class="simple-name-text"><span>Ursula</span><span class="simple-name-years">1962</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: 19; --y: 13.6" data-id="thomas" data-line="thomas ursula clara" data-lit="s6 s7 s14 s15 s26 d3 g3" data-name="Thomas Hartmann" data-first="Thomas" data-last="Hartmann" data-initials="TH" data-born="" data-meta="1960" data-span="1960 · 66 Jahre" data-birth="17.02.1960" data-death="" data-parents="" data-partners="Ursula Hartmann" data-children="Clara Hartmann">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">TH</span><span class="simple-name-text"><span>Thomas</span><span class="simple-name-years">1960</span></span></span>
+        </a>
+        <a class="node" tabindex="0" style="--x: 14.25; --y: 6.8" data-id="clara" data-line="clara thomas ursula margarete heinrich" data-lit="s0 s1 s6 s7 s8 s9 s14 s15 s16 s18 s20 s26 d0 d3 d4 g0 g3" data-name="Clara Hartmann" data-first="Clara" data-last="Hartmann" data-initials="CH" data-born="" data-meta="1994" data-span="1994 · 32 Jahre" data-birth="15.10.1994" data-death="" data-parents="Ursula Hartmann, Thomas Hartmann" data-partners="" data-children="">
+          <span class="simple-name"><span class="simple-name-avatar" aria-hidden="true">CH</span><span class="simple-name-text"><span>Clara</span><span class="simple-name-years">1994</span></span></span>
+        </a>
+      </div>
+    </div>
+    <!-- RelationLegend.tsx as on main, unfolded (screen "Heute"). -->
+    <aside class="glass relation-legend" aria-label="Beziehungen" data-folded="false" data-show="legend-now">
+      <header class="person-header">
+        <span class="person-header-label">Beziehungen</span>
+        <span class="person-header-actions">
+          <button type="button" class="person-icon-button person-pin" aria-pressed="false" aria-label="Position fixieren" title="Position fixieren"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4h6M10 4v5l-3 4h10l-3-4V4M12 13v7" /></svg></button>
+          <button type="button" class="person-icon-button relation-legend-fold" aria-expanded="true" aria-label="Legende ausklappen" title="Legende ausklappen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18h14M7 7l5 5 5-5" /></svg></button>
+          <button type="button" class="person-icon-button" data-close aria-label="Legende schließen" title="Legende schließen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+        </span>
+      </header>
+      <ul>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" /></svg>Eltern und Kinder, Partner</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round" /></svg>Getrennt oder geschieden</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" stroke-dasharray="0.5 4" stroke-linecap="round" /></svg>Nur nicht leibliche Eltern (Adoptiv-, Stief-, Pflegeeltern)</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" /><line x1="20" y1="7" x2="20" y2="14" style="stroke: var(--line-dim)" stroke-width="2" /><circle cx="20" cy="7" r="3" style="fill: var(--line-dim)" /></svg>Abzweigung</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><path d="M2 10 H15 A5 5 0 0 1 25 10 H38 M20 2 V14" fill="none" style="stroke: var(--line-dim)" stroke-width="2" /></svg>Kreuzung ohne Verbindung</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-on)" stroke-width="2" /></svg>Linie der ausgewählten Person: Vorfahren, Nachkommen, Partner:innen</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: #ffb347" stroke-width="2" /></svg>Blutsverwandte der ausgewählten Person</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚭</span>Verheiratet (auch verwitwet)</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚯</span>Zusammen, nicht verheiratet</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚮</span>Geschieden</li>
+        <li><span class="relation-legend-stub" aria-hidden="true">▲</span>Eltern von … stehen an anderer Stelle; ein Klick öffnet sie</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">†</span>Verstorben</li>
+      </ul>
+    </aside>
+
+    <!-- Header.tsx (main): wordmark, `user:family`, segments, burger (Dashboard.tsx). -->
+    <header class="app-header">
+      <div class="header-lead">
+        <a class="header-brand" href="#home" title="Zur Startseite">
+          <svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg>
+          <span class="header-wordmark">ftree</span>
+        </a>
+      </div>
+      <button type="button" class="glass dashboard-family header-prompt" data-go="returning.html#family" title="Familienkarte öffnen">
+        <span class="header-prompt-user">Lea Linde</span><span class="header-prompt-sep">:</span><span class="dashboard-family-name" data-prompt-family>Linde</span>
+      </button>
+      <div class="header-actions">
+        <div class="segment motion-toggle"><button type="button" aria-pressed="true" title="GRID-Animationen abspielen">Animation</button></div><div class="segment" role="group" aria-label="Darstellung"><button type="button" data-theme-set="3d">3D</button><button type="button" data-theme-set="tron">GRID</button></div>
+        <div class="segment" role="group" aria-label="Sprache"><button type="button" aria-pressed="true">DE</button><button type="button" aria-pressed="false" disabled title="Der Dummy ist nur auf Deutsch">EN</button></div>
+        <div class="dashboard-menu">
+          <button type="button" class="glass header-button header-button-icon" data-go="#tree-menu" aria-label="Menü öffnen" data-show="tree profile families legend-now legend legend-open">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+          </button>
+          <button type="button" class="glass header-button header-button-icon" data-go="#tree" aria-label="Menü schließen" aria-expanded="true" data-show="tree-menu">
+            <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
+          <nav class="glass dashboard-nav" aria-label="Menü" data-show="tree-menu">
+            <button type="button" class="dashboard-nav-item" data-go="#home"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 11l8-7 8 7M6 9.5V20h12V9.5" /></svg><span>Startseite</span></button>
+            <button type="button" class="dashboard-nav-item" data-go="#profile"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg><span>Profil</span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+            <button type="button" class="dashboard-nav-item" data-go="#families"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg><span>Familien</span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+            <button type="button" class="dashboard-nav-item" data-go="#tree" title="Lädt in der App ein PNG des Baums herunter"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h1a2 2 0 0 0 2-2 1 1 0 0 1 1-1h6a1 1 0 0 1 1 1 2 2 0 0 0 2 2h1a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" /><circle cx="12" cy="13" r="3" /></svg><span>Momentaufnahme</span></button>
+            <hr class="dashboard-nav-divider" />
+            <button type="button" class="dashboard-nav-item" data-go="#home-out"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" /></svg><span>Abmelden</span></button>
+          </nav>
+        </div>
+      </div>
+    </header>
+
+    <!-- Dock.tsx -->
+    <div class="dock-root">
+      <nav class="glass dock" aria-label="Hauptaktionen">
+        <button type="button" class="dock-primary">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="2" aria-hidden="true"><path d="M10 4v12M4 10h12" /></svg>
+          Person
+        </button>
+        <button type="button" class="dock-item">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="9" cy="9" r="5.5" /><path d="M13.5 13.5l3.5 3.5" /></svg>
+          Suchen
+        </button>
+        <button type="button" class="dock-item">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><circle cx="7.5" cy="7" r="3" /><path d="M2 17c.6-3 2.8-4.5 5.5-4.5S12.4 14 13 17" /><path d="M15.5 6v6M12.5 9h6" /></svg>
+          Einladen
+        </button>
+        <button type="button" class="dock-item">
+          <svg class="icon dock-icon" viewBox="0 0 20 20" stroke-width="1.8" aria-hidden="true"><path d="M2 10s3-5.5 8-5.5S18 10 18 10s-3 5.5-8 5.5S2 10 2 10z" /><circle cx="10" cy="10" r="2.2" /></svg>
+          Ansicht
+        </button>
+      </nav>
+    </div>
+
+    <!-- Proposal: the relation legend folded to a chip, opened as a panel (desktop), a bottom sheet (A) or a popover (B) on phones. -->
+    <button type="button" class="glass legend-chip" data-show="legend" data-go="#legend-open" aria-expanded="false">
+      <span class="relation-legend-glyph" aria-hidden="true">⚭</span>
+      Beziehungen
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 14l5-5 5 5" /></svg>
+    </button>
+    <aside class="glass legend2 sheet" aria-label="Beziehungen" data-show="legend-open" data-snap="half" data-snap-default="half">
+      <button type="button" class="sheet-grip" aria-label="Höhe ändern"><span></span></button>
+      <header class="acct-head">
+        <span class="acct-eyebrow">Beziehungen</span>
+        <span class="person-header-actions">
+          <button type="button" class="person-icon-button" data-go="#legend" aria-label="Legende einklappen" title="Legende einklappen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 10l5 5 5-5" /></svg></button>
+        </span>
+      </header>
+      <ul class="legend2-list">
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" /></svg>Eltern und Kinder, Partner</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" stroke-dasharray="6 5" stroke-linecap="round" /></svg>Getrennt oder geschieden</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" stroke-dasharray="0.5 4" stroke-linecap="round" /></svg>Nur nicht leibliche Eltern (Adoptiv-, Stief-, Pflegeeltern)</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-dim)" stroke-width="2" /><line x1="20" y1="7" x2="20" y2="14" style="stroke: var(--line-dim)" stroke-width="2" /><circle cx="20" cy="7" r="3" style="fill: var(--line-dim)" /></svg>Abzweigung</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><path d="M2 10 H15 A5 5 0 0 1 25 10 H38 M20 2 V14" fill="none" style="stroke: var(--line-dim)" stroke-width="2" /></svg>Kreuzung ohne Verbindung</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: var(--line-on)" stroke-width="2" /></svg>Linie der ausgewählten Person: Vorfahren, Nachkommen, Partner:innen</li>
+        <li><svg class="relation-legend-sample" viewBox="0 0 40 14" aria-hidden="true"><line x1="2" y1="7" x2="38" y2="7" style="stroke: #ffb347" stroke-width="2" /></svg>Blutsverwandte der ausgewählten Person</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚭</span>Verheiratet (auch verwitwet)</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚯</span>Zusammen, nicht verheiratet</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">⚮</span>Geschieden</li>
+        <li><span class="relation-legend-stub" aria-hidden="true">▲</span>Eltern von … stehen an anderer Stelle; ein Klick öffnet sie</li>
+        <li><span class="relation-legend-sample relation-legend-glyph" aria-hidden="true">†</span>Verstorben</li>
+      </ul>
+    </aside>
+
+    <!-- /home: Landing.tsx with the new burger menu and, signed in, the `user:family` prompt. -->
+    <div class="landing">
+      <p class="landing-phase" data-show="home-out home-out-menu">Geschlossene Testphase · Zugang nur mit Einladung</p>
+      <div class="tron-horizon" aria-hidden="true">
+        <div class="tron-horizon-floor"></div>
+        <svg class="tron-horizon-ridge" viewBox="0 0 680 47" preserveAspectRatio="none">
+          <path d="M0 47V40L60 22l45 12 65-30 55 26 40-10 35 20h80l40-22 50 14 60-32 60 28 50-14 40 16v17z" vector-effect="non-scaling-stroke" />
+        </svg>
+        <div class="tron-horizon-line"></div>
+        <div class="tron-horizon-reflection"></div>
+        <svg class="tron-horizon-tree" viewBox="0 0 240 220">
+          <defs>
+            <filter id="tron-tree-glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
+          <g filter="url(#tron-tree-glow)">
+            <path class="tron-trunk" pathLength="1" d="M120 220V91" />
+            <path class="tron-branch" pathLength="1" d="M120 131h32l20-20V93" />
+            <path class="tron-branch" pathLength="1" d="M120 157H90l-18-18v-18" />
+            <path class="tron-branch" pathLength="1" d="M120 91H50V65" />
+            <path class="tron-branch" pathLength="1" d="M120 91h70V65" />
+            <path class="tron-twig" pathLength="1" d="M50 65H16V39" />
+            <path class="tron-twig" pathLength="1" d="M50 65h30V35" />
+            <path class="tron-twig" pathLength="1" d="M190 65h-30V35" />
+            <path class="tron-twig" pathLength="1" d="M190 65h36V39" />
+            <path class="tron-twig" pathLength="1" d="M120 91V21" />
+            <circle cx="16" cy="39" r="4.5" />
+            <circle cx="80" cy="35" r="4.5" />
+            <circle cx="160" cy="35" r="4.5" />
+            <circle cx="226" cy="39" r="4.5" />
+            <circle cx="120" cy="21" r="5.5" />
+            <circle cx="172" cy="93" r="4" />
+            <circle cx="72" cy="121" r="4" />
+          </g>
+        </svg>
+      </div>
+      <header class="landing-header">
+        <div class="landing-brand-group">
+          <a class="header-brand" href="#home"><svg class="header-monogram" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M15 27V13" /><path d="M15 17C10 17 7 14 7 9c5 0 8 3 8 8z" /><path d="M15 14c0-5 3-8 8-8 0 5-3 8-8 8z" /><path d="M9 27h12" /></svg><span class="header-wordmark">ftree</span></a>
+        </div>
+        <button type="button" class="glass dashboard-family header-prompt landing-prompt" data-go="#home-families" title="Familien öffnen" data-show="home home-menu home-profile home-families">
+          <span class="header-prompt-user">Lea Linde</span><span class="header-prompt-sep">:</span><span class="dashboard-family-name" data-prompt-family>Linde</span>
+        </button>
+        <span data-show="home-out home-out-menu"></span>
+        <div class="landing-segments">
+          <div class="segment motion-toggle"><button type="button" aria-pressed="true" title="GRID-Animationen abspielen">Animation</button></div><div class="segment" role="group" aria-label="Darstellung"><button type="button" data-theme-set="3d">3D</button><button type="button" data-theme-set="tron">GRID</button></div>
+          <div class="segment" role="group" aria-label="Sprache"><button type="button" aria-pressed="true">DE</button><button type="button" aria-pressed="false" disabled title="Der Dummy ist nur auf Deutsch">EN</button></div>
+          <div class="dashboard-menu">
+            <button type="button" class="glass header-button header-button-icon" data-go="#home-menu" aria-label="Menü öffnen" data-show="home home-profile home-families"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
+            <button type="button" class="glass header-button header-button-icon" data-go="#home" aria-label="Menü schließen" aria-expanded="true" data-show="home-menu"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+            <button type="button" class="glass header-button header-button-icon" data-go="#home-out-menu" aria-label="Menü öffnen" data-show="home-out"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" /></svg></button>
+            <button type="button" class="glass header-button header-button-icon" data-go="#home-out" aria-label="Menü schließen" aria-expanded="true" data-show="home-out-menu"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+            <nav class="glass dashboard-nav" aria-label="Menü" data-show="home-menu">
+              <button type="button" class="dashboard-nav-item" data-go="#home-profile"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg><span>Profil</span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+              <button type="button" class="dashboard-nav-item" data-go="#home-families"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg><span>Familien</span><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg></button>
+              <hr class="dashboard-nav-divider" />
+              <button type="button" class="dashboard-nav-item" data-go="#home-out"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4M15 8l4 4-4 4M19 12H9" /></svg><span>Abmelden</span></button>
+            </nav>
+            <nav class="glass dashboard-nav" aria-label="Menü" data-show="home-out-menu">
+              <button type="button" class="dashboard-nav-item" data-go="visitor.html#login"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4M9 8l4 4-4 4M13 12H3" /></svg><span>Anmelden</span></button>
+            </nav>
+          </div>
+        </div>
+      </header>
+      <main class="landing-hero">
+        <h1>Deine Familie. Ein Baum, der mit euch wächst.</h1>
+        <p class="landing-chip">Privat · nur für eure Familie</p>
+        <p class="landing-lead">Leg dich an, lade deine Familie ein – und seht gemeinsam zu, wie aus Namen eine Geschichte wird.</p>
+        <div class="landing-actions">
+          <a class="landing-primary" href="#tree" data-show="home home-menu home-profile home-families">Weiter zum Baum</a>
+          <a class="landing-primary" href="visitor.html#login" data-show="home-out home-out-menu">Anmelden</a>
+          <a class="glass landing-secondary" href="visitor.html#how">So funktioniert’s</a>
+        </div>
+        <p class="landing-note" data-show="home home-menu home-profile home-families">Angemeldet als Lea Linde</p>
+        <p class="landing-note" data-show="home-out home-out-menu">Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt.</p>
+      </main>
+    </div>
+
+    <p class="app-version">v0.39.0 <span class="legal-links">· <a href="#home">Nutzungsbedingungen</a> · <a href="#home">Datenschutz</a> · <a href="#home">Impressum</a> · <a href="#home">FAQ</a></span></p>
+
+    <!-- The sheet's veil: a click closes, like Esc. -->
+    <div class="sheet-veil" data-back-go data-show="home-profile home-families profile families"></div>
+
+    <!-- ProfilePanel.tsx, new: only the person and their account; families and invitations moved to the families board. -->
+    <section class="glass acct sheet" role="dialog" aria-modal="true" aria-labelledby="acct-profile-name" data-show="home-profile profile" data-snap="full" data-snap-default="full">
+      <button type="button" class="sheet-grip" aria-label="Höhe ändern"><span></span></button>
+      <header class="acct-head">
+        <span class="acct-eyebrow"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5" /><path d="M5 20c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5" /></svg>Profil</span>
+        <button type="button" class="person-icon-button" data-back-go aria-label="Profil schließen" title="Schließen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+      </header>
+      <div class="acct-body">
+        <div class="acct-hero">
+          <span class="acct-avatar" aria-hidden="true">LL</span>
+          <div class="acct-hero-text">
+            <div class="acct-name">
+              <h2 id="acct-profile-name">Lea Linde</h2>
+              <button type="button" class="profile-icon-button" aria-label="Name bearbeiten" title="Name bearbeiten"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg></button>
+            </div>
+            <p class="acct-mail">lea@beispiel.de</p>
+            <div class="acct-chips">
+              <span class="acct-chip acct-chip-ok"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>verifiziert</span>
+            </div>
+          </div>
+        </div>
+        <div class="acct-grid">
+          <section>
+            <h3 class="dashboard-subhead">Konto</h3>
+            <dl class="profile-facts">
+              <dt>Anmeldung</dt>
+              <dd>Code per E-Mail (Cloudflare Access)</dd>
+            </dl>
+          </section>
+          <section>
+            <h3 class="dashboard-subhead">Entwickler-Tools</h3>
+            <p class="profile-dev person-muted">Entwickler-Tools nicht aktiv</p>
+          </section>
+        </div>
+        <button type="button" class="acct-link" data-families-go>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>
+          <span><strong>Familien</strong><small>2 Familien · 1 Einladung offen</small></span>
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" /></svg>
+        </button>
+        <section class="acct-danger">
+          <h3 class="dashboard-subhead">Konto löschen</h3>
+          <div class="acct-danger-row">
+            <button type="button" class="acct-delete" disabled aria-describedby="acct-delete-hint"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3" /></svg>Account löschen</button>
+            <span class="acct-soon">Demnächst</span>
+          </div>
+          <p class="acct-hint" id="acct-delete-hint">Das kommt in einer späteren Version. Bis dahin löschen wir dein Konto und deine Daten auf Anfrage. <a href="#">Schreib uns</a></p>
+        </section>
+      </div>
+    </section>
+
+    <!-- FamiliesPanel.tsx, new: own and shared families with the role (or "Einladung offen"), the current family marked, then the invitations the person sent. -->
+    <section class="glass acct sheet" role="dialog" aria-modal="true" aria-labelledby="acct-families-title" data-show="home-families families" data-snap="full" data-snap-default="full">
+      <button type="button" class="sheet-grip" aria-label="Höhe ändern"><span></span></button>
+      <header class="acct-head">
+        <span class="acct-eyebrow" id="acct-families-title"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.2" /><path d="M3 19c0-3.3 2.7-5.5 6-5.5s6 2.2 6 5.5" /><path d="M16 5.2a3 3 0 0 1 0 5.6M18 14c1.8.7 3 2.4 3 5" /></svg>Familien</span>
+        <button type="button" class="person-icon-button" data-back-go aria-label="Familien schließen" title="Schließen"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg></button>
+      </header>
+      <div class="acct-body">
+        <section>
+          <div class="fam-group-head"><h3 class="dashboard-subhead">Eigene Familien</h3><span class="fam-count">1 von 5</span></div>
+          <ul class="fam-list">
+            <li class="fam-row" aria-current="true" data-family="Linde" title="Zum Umsortieren ziehen">
+              <span class="fam-grip"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1" /><circle cx="15" cy="6" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="9" cy="18" r="1" /><circle cx="15" cy="18" r="1" /></svg></span>
+              <button type="button" class="fam-select"><strong>Linde <span class="fam-current">aktuell</span></strong><span>12 Personen · 4 Generationen</span></button>
+              <span class="acct-chip">Eigentümer</span>
+              <button type="button" class="person-icon-button" aria-label="Linde ausblenden" title="Ausblenden"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg></button>
+              <button type="button" class="person-icon-button" aria-label="Familienkarte von Linde öffnen" title="Familienkarte öffnen" data-show="families"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg></button>
+            </li>
+          </ul>
+        </section>
+        <section>
+          <div class="fam-group-head"><h3 class="dashboard-subhead">Mit mir geteilt</h3></div>
+          <ul class="fam-list">
+            <li class="fam-row" data-family="Hartmann" title="Zum Umsortieren ziehen">
+              <span class="fam-grip"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1" /><circle cx="15" cy="6" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="9" cy="18" r="1" /><circle cx="15" cy="18" r="1" /></svg></span>
+              <button type="button" class="fam-select"><strong>Hartmann <span class="fam-current">aktuell</span></strong><span>4 Personen · 2 Generationen</span></button>
+              <span class="acct-chip">Bearbeiter</span>
+              <button type="button" class="person-icon-button" aria-label="Hartmann ausblenden" title="Ausblenden"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg></button>
+              <button type="button" class="person-icon-button" aria-label="Familienkarte von Hartmann öffnen" title="Familienkarte öffnen" data-show="families"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg></button>
+            </li>
+            <li class="fam-row" data-family="Brandt" title="Zum Umsortieren ziehen">
+              <span class="fam-grip"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="6" r="1" /><circle cx="15" cy="6" r="1" /><circle cx="9" cy="12" r="1" /><circle cx="15" cy="12" r="1" /><circle cx="9" cy="18" r="1" /><circle cx="15" cy="18" r="1" /></svg></span>
+              <button type="button" class="fam-select"><strong>Brandt <span class="fam-current">aktuell</span></strong><span>23 Personen · 5 Generationen</span></button>
+              <span class="acct-chip acct-chip-ok">Einladung offen</span>
+              <button type="button" class="person-icon-button" aria-label="Brandt ausblenden" title="Ausblenden"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" /></svg></button>
+              <button type="button" class="person-icon-button" aria-label="Familienkarte von Brandt öffnen" title="Familienkarte öffnen" data-show="families"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4L16.5 4.5a2 2 0 0 1 3 3L8 19l-4 1Z" /></svg></button>
+            </li>
+          </ul>
+        </section>
+        <section>
+          <div class="fam-group-head"><h3 class="dashboard-subhead">Von dir eingeladen</h3></div>
+          <ul class="fam-list">
+            <li class="fam-row fam-invite">
+              <span class="fam-invite-icon"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2" /><path d="M3 7l9 6 9-6" /></svg></span>
+              <span><strong>jonas@beispiel.de · Linde</strong><small>als Bearbeiter · eingeladen am 28.10.2026</small></span>
+              <span class="acct-chip">ausstehend</span>
+            </li>
+          </ul>
+        </section>
+      </div>
+      <footer class="acct-foot">
+        <button type="button" class="acct-btn acct-btn-primary"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>Neue Familie</button>
+        <button type="button" class="acct-btn"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V5M7 10l5-5 5 5M5 20h14" /></svg>GEDCOM importieren</button>
+        <button type="button" class="gedcom-info-button person-icon-button" aria-label="Über GEDCOM" title="Über GEDCOM" aria-expanded="false" data-gedcom><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 11v5.5M12 7.6v.1" /></svg></button>
+        <p class="gedcom-info" hidden>GEDCOM (.ged) ist das Standard-Austauschformat, in das Genealogie-Programme Stammbäume exportieren. Der Import legt immer eine neue Familie an und zählt zu deinem Limit von 5 eigenen Bäumen.</p>
+      </footer>
+    </section>
+
+    <!-- Screens: data-place picks landing or tree; data-back is where ×, Esc and the veil lead; data-families is the families board of the same place. -->
+    <section class="screen" id="home" data-place="home"></section>
+    <section class="screen" id="home-menu" data-place="home"></section>
+    <section class="screen" id="home-profile" data-place="home" data-back="#home" data-families="#home-families"></section>
+    <section class="screen" id="home-families" data-place="home" data-back="#home"></section>
+    <section class="screen" id="home-out" data-place="home"></section>
+    <section class="screen" id="home-out-menu" data-place="home"></section>
+    <section class="screen" id="tree" data-place="tree"></section>
+    <section class="screen" id="tree-menu" data-place="tree"></section>
+    <section class="screen" id="profile" data-place="tree" data-back="#tree" data-families="#families"></section>
+    <section class="screen" id="families" data-place="tree" data-back="#tree"></section>
+    <section class="screen" id="legend-now" data-place="tree"></section>
+    <section class="screen" id="legend" data-place="tree"></section>
+    <section class="screen" id="legend-open" data-place="tree" data-back="#legend"></section>
+
+    <!-- Phone preview: the same page at 390 px in a frame, so the real media queries apply. -->
+    <div class="dummy-phone-stage"><iframe title="Handy-Vorschau"></iframe></div>
+
+    <details class="glass dummy-tools" open>
+      <summary>Entwurf · Menü &amp; Fenster</summary>
+      <div class="dummy-tools-body">
+        <div class="dummy-note" data-show="home">Startseite, <strong>angemeldet</strong>: oben mittig <code>Lea Linde:Linde</code> wie im Baum (Klick öffnet Familien), rechts der Burger. „Angemeldet als …“ bleibt unter dem Hauptbutton.</div>
+        <div class="dummy-note" data-show="home-menu">Menü auf der Startseite: nur <strong>Profil, Familien, Abmelden</strong>. Startseite, Momentaufnahme und Feedback gehören in den Baum.</div>
+        <div class="dummy-note" data-show="home-out home-out-menu">Startseite, <strong>abgemeldet</strong>: das Menü enthält nur „Anmelden“; kein Prompt.</div>
+        <div class="dummy-note" data-show="home-profile profile">
+          <span class="note-a"><strong>A · Karte</strong>: große Profilkarte in der Mitte über einem Schleier; ihre Unterkante bleibt immer über dem Dock.</span>
+          <span class="note-b"><strong>B · Seitenblatt</strong>: volle Höhe rechts, der Baum bleibt links sichtbar.</span>
+          Profil geht nur noch um dich: Name, E-Mail, Bestätigung, Entwickler-Tools, Familien als Sprung und „Account löschen“ (Demnächst). Auf dem Handy wird beides zum Bottom Sheet – am Griff ziehen oder tippen.
+        </div>
+        <div class="dummy-note" data-show="home-families">Familien auf der Startseite: Antippen macht eine Familie zur <strong>aktuellen</strong> – du bleibst hier, oben ändert sich der Prompt, „Weiter zum Baum“ öffnet sie. Probier es aus.</div>
+        <div class="dummy-note" data-show="families">Familien im Baum: eigene und geteilte Familien mit deiner Rolle (oder „Einladung offen“), die aktuelle markiert; darunter „Von dir eingeladen“; „Neue Familie“ und GEDCOM fest unten.</div>
+        <div class="dummy-note" data-show="tree tree-menu">Baum: Menü wie heute. Profil und Familien öffnen jetzt dieselbe Fläche wie auf der Startseite, und das Menü schließt sich dabei.</div>
+        <div class="dummy-note" data-show="legend-now"><strong>Heute</strong> (nur GRID): die Legende ist bis 640 px breit, liegt auf dem Desktop unter dem Dock und verdeckt auf dem Handy viel vom Baum.</div>
+        <div class="dummy-note" data-show="legend legend-open">
+          <strong>Vorschlag</strong> (nur GRID): zugeklappt ein Chip, aufgeklappt einspaltig und schmal; zwischen 700 und 1100 px über der Dock-Zone.
+          <span class="note-legend-a">Handy <strong>A</strong>: Bottom Sheet auf halber Höhe, das Dock weicht.</span>
+          <span class="note-legend-b">Handy <strong>B</strong>: Popover über dem Dock, höchstens halbe Höhe.</span>
+        </div>
+        <label>Screen
+          <select class="dummy-screens">
+            <optgroup label="Startseite">
+              <option value="home">Angemeldet</option>
+              <option value="home-menu">Angemeldet · Menü offen</option>
+              <option value="home-profile">Angemeldet · Profil</option>
+              <option value="home-families">Angemeldet · Familien</option>
+              <option value="home-out">Abgemeldet</option>
+              <option value="home-out-menu">Abgemeldet · Menü offen</option>
+            </optgroup>
+            <optgroup label="Baum">
+              <option value="tree">Baum</option>
+              <option value="tree-menu">Menü offen</option>
+              <option value="profile">Profil</option>
+              <option value="families">Familien</option>
+            </optgroup>
+            <optgroup label="Legende (GRID)">
+              <option value="legend-now">Heute</option>
+              <option value="legend">Vorschlag · zugeklappt</option>
+              <option value="legend-open">Vorschlag · offen</option>
+            </optgroup>
+          </select>
+        </label>
+        <label>Profil &amp; Familien
+          <span class="segment" role="group"><button type="button" data-tool="surface" data-value="a">A · Karte</button><button type="button" data-tool="surface" data-value="b">B · Seitenblatt</button></span>
+        </label>
+        <label>Legende auf dem Handy
+          <span class="segment" role="group"><button type="button" data-tool="legend" data-value="a">A · Sheet</button><button type="button" data-tool="legend" data-value="b">B · Popover</button></span>
+        </label>
+        <label>Gerät
+          <span class="segment" role="group"><button type="button" data-tool="device" data-value="desktop">Desktop</button><button type="button" data-tool="device" data-value="phone">Handy</button></span>
+        </label>
+        <a href="index.html">← Alle Journeys</a>
+      </div>
+    </details>
+
+    <script src="dummy.js"></script>
+    <script>
+      // This page's own glue: variants and device (remembered like the theme), the screen picker, the phone frame, closing
+      // sheets, choosing the current family, and the sheet's grip (tap: next height; drag: nearest height, far down: close).
+      const params = new URLSearchParams(location.search);
+      const inFrame = params.has('phone');
+      const html = document.documentElement;
+      const read = (key, fallback) => {
+        try {
+          return localStorage.getItem(key) ?? fallback;
+        } catch {
+          return fallback;
+        }
+      };
+      const state = {
+        surface: params.get('surface') ?? read('ftree-dummy-surface', 'a'),
+        legend: params.get('legend') ?? read('ftree-dummy-legend', 'a'),
+        device: inFrame ? 'desktop' : read('ftree-dummy-device', 'desktop'),
+      };
+      if (inFrame) html.classList.add('dummy-in-frame');
+
+      const screen = () => document.getElementById(location.hash.slice(1)) ?? document.querySelector('.screen');
+
+      function sync() {
+        const current = screen();
+        document.body.dataset.place = current.dataset.place;
+        document.body.dataset.surface = state.surface;
+        document.body.dataset.legend = state.legend;
+        html.classList.toggle('dummy-phone', state.device === 'phone');
+        document.querySelectorAll('[data-tool]').forEach((button) => {
+          button.setAttribute('aria-pressed', String(state[button.dataset.tool] === button.dataset.value));
+        });
+        document.querySelector('.dummy-screens').value = current.id;
+        document.querySelectorAll('.sheet').forEach((sheet) => (sheet.dataset.snap = sheet.dataset.snapDefault));
+        if (state.device === 'phone' && !inFrame) {
+          const frame = document.querySelector('.dummy-phone-stage iframe');
+          const src = `menus.html?phone=1&surface=${state.surface}&legend=${state.legend}&theme=${html.dataset.theme}#${current.id}`;
+          if (frame.dataset.src !== src) frame.src = frame.dataset.src = src;
+        }
+      }
+
+      document.addEventListener('click', (event) => {
+        const tool = event.target.closest('[data-tool]');
+        if (tool) {
+          state[tool.dataset.tool] = tool.dataset.value;
+          try {
+            localStorage.setItem(`ftree-dummy-${tool.dataset.tool}`, tool.dataset.value);
+          } catch {}
+        }
+        if (tool || event.target.closest('[data-theme-set]')) sync();
+        if (event.target.closest('[data-back-go]')) location.hash = screen().dataset.back;
+        if (event.target.closest('[data-families-go]')) location.hash = screen().dataset.families;
+        const pick = event.target.closest('.fam-select');
+        if (pick) {
+          const name = pick.closest('[data-family]').dataset.family;
+          document.querySelectorAll('[data-family]').forEach((row) => row.setAttribute('aria-current', String(row.dataset.family === name)));
+          document.querySelectorAll('[data-prompt-family]').forEach((field) => (field.textContent = name));
+        }
+        const gedcom = event.target.closest('[data-gedcom]');
+        if (gedcom) {
+          const open = gedcom.getAttribute('aria-expanded') !== 'true';
+          gedcom.setAttribute('aria-expanded', String(open));
+          gedcom.parentElement.querySelector('.gedcom-info').hidden = !open;
+        }
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && screen().dataset.back) location.hash = screen().dataset.back;
+      });
+
+      document.querySelector('.dummy-screens').addEventListener('change', (event) => (location.hash = event.target.value));
+
+      const SNAPS = { peek: 0.3, half: 0.52, full: 1 };
+      const heightOf = (snap) => (snap === 'full' ? innerHeight - 48 : innerHeight * SNAPS[snap]);
+      document.addEventListener('pointerdown', (event) => {
+        const grip = event.target.closest('.sheet-grip');
+        if (!grip) return;
+        const sheet = grip.closest('.sheet');
+        const startY = event.clientY;
+        const startHeight = sheet.getBoundingClientRect().height;
+        grip.setPointerCapture(event.pointerId);
+        sheet.classList.add('is-dragging');
+        const move = (moveEvent) => (sheet.style.height = `${Math.max(60, startHeight - (moveEvent.clientY - startY))}px`);
+        const up = (upEvent) => {
+          grip.removeEventListener('pointermove', move);
+          grip.removeEventListener('pointerup', up);
+          sheet.classList.remove('is-dragging');
+          sheet.style.height = '';
+          const moved = upEvent.clientY - startY;
+          const names = Object.keys(SNAPS);
+          if (Math.abs(moved) < 6) {
+            sheet.dataset.snap = names[(names.indexOf(sheet.dataset.snap) + 1) % names.length];
+            return;
+          }
+          const height = startHeight - moved;
+          if (height < innerHeight * 0.18) {
+            location.hash = screen().dataset.back;
+            return;
+          }
+          sheet.dataset.snap = names.reduce((best, name) => (Math.abs(heightOf(name) - height) < Math.abs(heightOf(best) - height) ? name : best));
+        };
+        grip.addEventListener('pointermove', move);
+        grip.addEventListener('pointerup', up);
+      });
+
+      addEventListener('hashchange', sync);
+      sync();
+    </script>
+  </body>
+</html>
