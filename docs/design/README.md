@@ -36,7 +36,7 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - A selected card is framed with all its slots and moved beside the person panel; editing from the tree's pencil slot opens the form on the left, with the card on the right (2026-11-01).
 - The themes are called "3D" and "GRID" in the UI (not "Abend", and no longer "TRON", a Disney trademark); code and these docs keep `tron` as the theme's internal name (2026-11-03).
 - The landing page lives at `/home` and is public (Cloudflare Access bypass for `/home` and its static assets); `/` redirects to `/home`, and the ftree logo in the header links there; signed-in users go on to their last tree from the landing through `/start` (2026-11-01).
-- The landing page has no navigation: the hero offers "Anmelden" / "Weiter zum Baum" and "So funktioniert's"; the three steps and the example family live on `/home/how` (2026-11-02).
+- Superseded by the burger menu on 2026-11-12: the landing page had no navigation; the hero offers "Anmelden" / "Weiter zum Baum" and "So funktioniert's"; the three steps and the example family live on `/home/how` (2026-11-02).
 - The public headers show only what switches, without "Anmelden" (it is the main button signed out, 2026-11-03); "Angemeldet als <Name>" sits as a small line under the main button, and signed out that line says access needs an invitation (2026-11-02).
 - `/home/how` and `/home/example` have a "← Zurück" control to `/home` (2026-11-01).
 - Signed in, the steps on `/home/how` are links into the own tree and tick off what is done (2026-11-02).
@@ -50,7 +50,7 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - The landing hero is the same in 3D and TRON: the headline's bottom at 61.8 % of the viewport height, the "Privat · nur für eure Familie" chip below the headline (2026-11-01).
 - The 3D start view is lower and closer (tree ~60 % of the height, horizon ~57 % on desktop), and the horizon haze is warmer (2026-11-01).
 - Only invited (allowed) users can sign in; the welcome card is for signed-in users who are not assigned to any tree yet.
-- The burger menu stays, top right, for secondary actions; language (DE/EN) stays visible in the header.
+- The burger menu stays, top right, for secondary actions (also on the landing page since 2026-11-12); language (DE/EN) stays visible in the header.
 - "Evolution" is a header button with a DEV badge, shown only with the "Entwicklertools" permission.
 - Terms and privacy sit in one small line at the bottom centre (version · Nutzungsbedingungen · Datenschutz · GitHub), below the dock.
 - Connection lines use the accent colour (amber in 3D) – thin, dim by default, glowing for the selected lineage.
@@ -75,6 +75,15 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - The TRON scene shares the landing's space: sky, glowing horizon and a bright grid line every ten cells (2026-11-03).
 - In TRON the landing headline flickers once softly every 8 s, only with animations on (2026-11-03).
 - The burger menu starts with "Startseite", and the wordmark's tooltip says "Zur Startseite", because few people know the logo is a link (2026-11-03).
+- The landing page has a burger menu top right, after the theme and language segments: signed in "Profil", "Familien" (with `family.create`) and "Abmelden", signed out only "Anmelden"; "Startseite", "Momentaufnahme" and "Feedback" stay in the tree (2026-11-12).
+- Signed in, the landing header shows the `<user>:<family>` prompt like the tree, and a click opens the families board; on phones the prompt sits centred below the wordmark row (2026-11-12).
+- Profil and Familien are one centred glass card (a "sheet", variant A of `dummy/menus.html`) over a veil, on the landing page and in the tree alike, instead of boards beside the menu; opening one closes the burger menu (2026-11-12).
+- On the landing page, choosing a family only makes it the current one; "Weiter zum Baum" opens it (2026-11-12).
+- Below 700px every sheet is a bottom sheet with a grip and three heights (peek, half, full), and the dock steps aside while one is open (2026-11-12).
+- The relation legend is a small chip "⚭ Beziehungen" when folded and a corner sheet when open, a bottom sheet at half height on phones (legend variant A); it can be hidden with an eye-off button, and pinning and dragging are gone (2026-11-12).
+- Account deletion is announced in the profile as a disabled "Account löschen" with a "Demnächst" badge; until it exists, accounts are deleted on request (2026-11-12).
+- The families board lists "Eigene Familien" and "Mit mir geteilt"; a received invitation is a chip "Einladung offen" on the family row, and the invitations the person sent are listed below as "Von dir eingeladen" (2026-11-12).
+- Stacking uses a z-index scale in the tokens (`--z-hud`, `--z-chrome`, `--z-panel`, `--z-sheet`); sheets render in the document body so header and dock never cover them (2026-11-12).
 - This folder describes `main`; design work happens in the click dummy in the repository instead of the private canvas, so others can join (2026-11-02).
 
 ## Open questions

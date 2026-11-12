@@ -197,7 +197,6 @@ textarea {
   border-color: rgba(23, 58, 43, 0.36);
 }
 
-.families-panel,
 .random-family-panel {
   overflow-y: auto;
   border: 1px solid rgba(23, 58, 43, 0.16);
@@ -275,138 +274,9 @@ textarea {
   margin-left: auto;
 }
 
-.families-panel-body {
-  padding: 12px 16px 16px;
-  font-family: var(--font-ui);
-  font-size: 14px;
-}
-
-.family-set-list {
-  display: grid;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.family-set-item {
-  display: flex;
-  align-items: stretch;
-  gap: 6px;
-  cursor: grab;
-}
-
-.family-set-item[data-drop='before'] {
-  box-shadow: 0 -3px 0 #e89155;
-}
-
-.family-set-item[data-drop='after'] {
-  box-shadow: 0 3px 0 #e89155;
-}
-
-.family-set-select {
-  display: grid;
-  flex: 1;
-  gap: 4px;
-  min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(23, 58, 43, 0.2);
-  border-radius: 5px;
-  background: #fffdf7;
-  color: #173a2b;
-  cursor: pointer;
-  text-align: left;
-}
-
-.family-set-select[aria-pressed='true'] {
-  border-color: #173a2b;
-  background: #edf1e8;
-  box-shadow: inset 3px 0 #173a2b;
-}
-
-.family-set-select strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.family-set-select span {
-  color: #42564a;
-  font-size: 12px;
-  line-height: 1.35;
-}
-
-.family-set-delete {
-  width: 40px;
-  flex: 0 0 40px;
-  border: 1px solid rgba(139, 50, 29, 0.2);
-  border-radius: 5px;
-  background: #fffdf7;
-  color: #8b321d;
-  cursor: pointer;
-  font: 22px/1 var(--font-ui);
-}
-
-.family-set-visibility {
-  display: grid;
-  width: 40px;
-  flex: 0 0 40px;
-  place-items: center;
-  border: 1px solid rgba(23, 58, 43, 0.2);
-  border-radius: 5px;
-  background: #fffdf7;
-  color: #173a2b;
-  cursor: pointer;
-}
-
-/* The download link looks like the visibility toggle. */
-.family-set-export {
-  display: grid;
-  width: 40px;
-  flex: 0 0 40px;
-  place-items: center;
-  border: 1px solid rgba(23, 58, 43, 0.2);
-  border-radius: 5px;
-  background: #fffdf7;
-  color: #173a2b;
-}
-
-.family-set-import > button {
-  margin-top: 12px;
-  padding: 8px 12px;
-  border: 1px solid rgba(23, 58, 43, 0.25);
-  border-radius: 5px;
-  background: #fffdf7;
-  color: #173a2b;
-  cursor: pointer;
-}
-
-.family-set-visibility[aria-pressed='true'] {
-  background: #edf1e8;
-}
-
-.family-set-visibility svg,
-.family-set-export svg {
-  width: 20px;
-  height: 20px;
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 1.8;
-}
-
-.family-set-delete:disabled,
-.family-set-select:disabled,
-.family-set-visibility:disabled,
-.family-set-import > button:disabled,
 .random-family-control > button:disabled {
   cursor: wait;
   opacity: 0.65;
-}
-
-.family-set-import > button[aria-describedby='family-limit']:disabled {
-  cursor: not-allowed;
 }
 
 .family-limit {
@@ -419,11 +289,6 @@ textarea {
   font-size: 13px;
 }
 
-.family-set-select:focus-visible,
-.family-set-delete:focus-visible,
-.family-set-visibility:focus-visible,
-.family-set-export:focus-visible,
-.families-panel button:focus-visible,
 .random-family-panel button:focus-visible {
   outline: 3px solid #e89155;
   outline-offset: 2px;
@@ -848,49 +713,6 @@ a.dashboard-nav-item {
   color: #fff;
 }
 
-.dashboard-board {
-  position: fixed;
-  z-index: 5;
-  top: 76px;
-  right: 288px;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
-  width: min(400px, calc(100vw - 312px));
-  max-height: calc(100dvh - 92px);
-  overflow: hidden;
-}
-
-.dashboard-board-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 14px 14px 12px 18px;
-  border-bottom: 1px solid var(--border);
-}
-
-.dashboard-board-header h2 {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  font: 600 17px/1.2 var(--font-ui);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.dashboard-board-header button {
-  display: grid;
-  width: 32px;
-  height: 32px;
-  place-items: center;
-  border: 0;
-  border-radius: 8px;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
-}
-
 .dashboard-subhead {
   margin: 16px 0 8px;
   color: var(--muted);
@@ -899,22 +721,12 @@ a.dashboard-nav-item {
   text-transform: uppercase;
 }
 
-.dashboard-board button:focus-visible,
 .dashboard-nav-item:focus-visible,
 .glass-button:focus-visible,
 .dashboard-family:focus-within,
 .header-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-}
-
-.families-panel-body {
-  overflow-y: auto;
-  padding: 14px 16px 16px;
-}
-
-.families-panel-body {
-  display: block;
 }
 
 .members-error,
@@ -927,12 +739,6 @@ a.dashboard-nav-item {
   color: var(--muted);
 }
 
-.family-set-import {
-  display: grid;
-  gap: 8px;
-}
-
-.family-set-import > button,
 .random-family-control > button,
 .members-error button {
   display: flex;
@@ -951,45 +757,6 @@ a.dashboard-nav-item {
   font: 500 14px/1.2 var(--font-ui);
 }
 
-.family-set-import-row {
-  display: flex;
-  gap: 8px;
-}
-
-.family-set-import-row > button:first-child {
-  flex: 1;
-}
-
-.family-set-import > .family-set-import-row > button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: #fff;
-  cursor: pointer;
-  font: 500 14px/1.2 var(--font-ui);
-}
-
-.family-set-import-row > .gedcom-info-button {
-  flex: none;
-  width: 40px;
-  padding: 0;
-}
-
-.family-set-import-row > button:hover:not(:disabled),
-.family-set-import-row > .gedcom-info-button[aria-expanded='true'] {
-  background: var(--hover);
-}
-
-.family-set-import-row > button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .gedcom-info {
   display: grid;
   gap: 8px;
@@ -1005,32 +772,10 @@ a.dashboard-nav-item {
   margin: 0;
 }
 
-.family-set-import > button:hover,
 .random-family-control > button:hover,
 .random-family-control > button[aria-expanded='true'],
 .members-error button:hover {
   background: var(--hover);
-}
-
-.family-set-select {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-}
-
-.family-set-select:hover {
-  background: var(--hover);
-}
-
-.family-set-select[aria-pressed='true'] {
-  border-color: var(--accent);
-  background: rgba(127, 214, 255, 0.14);
-  box-shadow: none;
-}
-
-.family-set-select span {
-  color: var(--muted);
 }
 
 .icon-button {
@@ -1194,18 +939,6 @@ a.dashboard-nav-item {
     overflow: hidden;
   }
 
-  /* Below the header's two rows. */
-  .dashboard-board {
-    top: 112px;
-    right: 10px;
-    width: calc(100vw - 20px);
-    max-height: calc(100dvh - 122px);
-  }
-
-  .dashboard-menu[data-panel-open] .dashboard-nav {
-    display: none;
-  }
-
   .debug-panel {
     top: 112px;
     left: 10px;
@@ -1217,30 +950,10 @@ a.dashboard-nav-item {
     max-height: calc(100dvh - 176px);
   }
 
-  .relation-legend {
-    right: 10px;
-    bottom: 10px;
-    width: calc(100vw - 20px);
-  }
-
-  .relation-legend ul {
-    column-gap: 10px;
-  }
-
-  .relation-legend .relation-legend-sample,
-  .relation-legend .relation-legend-stub {
-    width: 28px;
-  }
-
   .random-family-panel {
     top: 116px;
     max-height: calc(100dvh - 126px);
   }
-}
-
-.profile-panel-body {
-  padding: 0 18px 18px;
-  font: 14px/1.4 var(--font-ui);
 }
 
 .profile-facts {
@@ -1257,10 +970,6 @@ a.dashboard-nav-item {
 .profile-facts dd {
   margin: 0;
   overflow-wrap: anywhere;
-}
-
-.profile-panel-body {
-  overflow-y: auto;
 }
 
 .profile-name {
@@ -1683,70 +1392,6 @@ a.dashboard-nav-item {
   border-color: #ffb347;
   color: #ffe9cc;
   box-shadow: 0 0 8px rgba(255, 179, 71, 0.6);
-}
-
-/* The key to the experimental view's lines and symbols, below the tool boards: wide and low, so the
-   tree stays in view, with the lines in the left column and the symbols in the right. */
-.relation-legend {
-  position: fixed;
-  z-index: 4;
-  right: 16px;
-  bottom: 16px;
-  box-sizing: border-box;
-  width: min(640px, calc(100vw - 32px));
-  font: 12px/1.3 var(--font-ui);
-}
-
-.relation-legend .person-header {
-  gap: 16px;
-  padding: 4px 6px 4px 14px;
-}
-
-/* Folded, only the header remains, anchored at the same bottom right corner. */
-.relation-legend[data-folded='true'] {
-  width: auto;
-}
-
-.relation-legend[data-folded='true'] .person-header {
-  border-bottom: 0;
-}
-
-/* Quiet like the pin; the shared open-state background would make an unfolded legend look pressed. */
-.relation-legend .relation-legend-fold {
-  color: var(--muted);
-}
-
-.relation-legend .relation-legend-fold:not(:hover) {
-  background: transparent;
-}
-
-.relation-legend .relation-legend-fold:hover {
-  color: #fff;
-}
-
-.relation-legend-fold[aria-expanded='false'] .icon {
-  transform: rotate(180deg);
-}
-
-.relation-legend ul[hidden] {
-  display: none;
-}
-
-.relation-legend ul {
-  display: grid;
-  grid-template-rows: repeat(6, auto);
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-flow: column;
-  gap: 6px 20px;
-  margin: 0;
-  padding: 10px 14px 12px;
-  list-style: none;
-}
-
-.relation-legend li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
 }
 
 .relation-legend-sample {
@@ -3145,13 +2790,12 @@ button.dashboard-family:hover {
 
 /* Not gated on the theme: `.riding-in` is only set by a ride, which needed TRON and motion; until the scene sets it, the
    `#ride-pending` style of the root layout hides the same chrome. */
-.riding-in :is(.app-header, .dock-root, .app-version, .relation-legend, .presence-bar, .presence-hint, .admin-view-banner) {
+.riding-in :is(.app-header, .dock-root, .app-version, .legend-chip, .sheet[data-place='corner'], .presence-bar, .presence-hint, .admin-view-banner) {
   visibility: hidden;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-
-  [data-motion='on'][data-theme='tron'].riding-arrived :is(.app-header, .dock-root, .app-version, .relation-legend, .presence-bar, .presence-hint, .admin-view-banner) {
+  [data-motion='on'][data-theme='tron'].riding-arrived :is(.app-header, .dock-root, .app-version, .legend-chip, .sheet[data-place='corner'], .presence-bar, .presence-hint, .admin-view-banner) {
     mask-image: repeating-linear-gradient(#000 0 var(--rez-in), transparent var(--rez-in) 6px);
     animation: tron-rez-in 0.6s ease-out both;
   }

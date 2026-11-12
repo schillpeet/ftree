@@ -21,7 +21,7 @@ function block(selector) {
 
 // The fonts point at the `next/font` variables in `ui/`, so only the rest is compared.
 const shared = declarations(block(':root'));
-const expectedShared = { ...flat(json.radius, 'radius'), ...flat(json.size, 'size'), ...flat(json.blur, 'blur') };
+const expectedShared = { ...flat(json.radius, 'radius'), ...flat(json.size, 'size'), ...flat(json.blur, 'blur'), ...flat(json.z, 'z') };
 for (const [name, value] of Object.entries(expectedShared)) assert.equal(shared[name], value, `--${name}`);
 
 for (const theme of ['3d', 'tron']) {

@@ -15,6 +15,7 @@ import {
 import Dock, { type CameraView } from './Dock';
 import Dashboard, { type DashboardPanel } from './Dashboard';
 import FamiliesPanel from './FamiliesPanel';
+import ProfilePanel from './ProfilePanel';
 import type { FamilyCardMode } from './FamilyCard';
 import Header from './Header';
 import MemberSearch from './MemberSearch';
@@ -36,21 +37,11 @@ import { emptyTreeOf, familyOfSlug, firstFamily, homePath, pathOf } from './slug
 import EmptyTree from './EmptyTree';
 import IntroTour from './IntroTour';
 import InvitationCard, { InvitationPending, InvitationTasks } from './InvitationCard';
+import { lastTree, rememberTree } from './lastTree';
 import { needsWelcome } from './welcomed';
 import { useTour } from './tour';
 import WelcomeCard, { PlantRetry, type PartialPlant } from './WelcomeCard';
 import TreeNotFound from './TreeNotFound';
-
-// The slug of the tree last open in this browser, which `/start` opens again while it is still visible.
-const LAST_TREE_KEY = 'ftree.lastTree';
-
-function lastTree() {
-  try {
-    return localStorage.getItem(LAST_TREE_KEY);
-  } catch {
-    return null;
-  }
-}
 
 // Shares the members between the scene's scrolls and the list/form overlay. Rendered by the `(tree)` layout, so it
 // stays mounted while the URL switches between trees; the open tree is the one the URL's slug names.
@@ -84,6 +75,9 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   // `?share=1` (step 2 on `/home/how`, through `/start`) opens the share dialog once the tree is there; the scene stays
   // mounted from `/start` to the tree, so the flag survives the redirect.
   const [shareFromLink, setShareFromLink] = useState(() => typeof location !== 'undefined' && new URLSearchParams(location.search).has('share'));
+  // `?create=1` ("New family" on the landing page's families board, through `/start`) opens the form for a new family once
+  // the tree `/start` leads to is open, or right away when there is none.
+  const [createFromLink, setCreateFromLink] = useState(() => typeof location !== 'undefined' && new URLSearchParams(location.search).has('create'));
   const [cameraView, setCameraView] = useState<{ view: CameraView; nonce: number } | null>(null);
   const [focus, setFocus] = useState<Focus>(null);
   // The own card of a tree just planted: focused once the members are loaded, since the camera needs the card placed.
@@ -138,12 +132,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const selfId = activeFamily?.selfMemberId ?? null;
   const activeSlug = activeFamily?.slug;
   useEffect(() => {
-    if (!activeSlug) return;
-    try {
-      localStorage.setItem(LAST_TREE_KEY, activeSlug);
-    } catch {
-      // Without storage `/start` opens the default tree.
-    }
+    if (activeSlug) rememberTree(activeSlug);
   }, [activeSlug]);
 
   // Whatever belongs to the previous tree goes when another one opens, also by back/forward or a typed URL.
@@ -151,6 +140,10 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   if (openedFamilyId !== activeFamilyId) {
     setOpenedFamilyId(activeFamilyId);
     forgetOpenFamily();
+  }
+  if (createFromLink && families && (activeFamilyId || families.length === 0)) {
+    setCreateFromLink(false);
+    setFamilyCard('create');
   }
 
   // The tree the camera already flew to the own card in; once per opened tree, and only when nothing else is focused.
@@ -397,7 +390,6 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         onFamilyClick={() => {
           if (activeFamilyId) return setFamilyCard((current) => current ?? 'view');
           if (!canCreate) return;
-          setIsMenuOpen(true);
           setPanel('families');
         }}
         menu={
@@ -412,7 +404,10 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
               setPanel(null);
               setIsEvolutionOpen(false);
             }}
-            onPanel={(next) => setPanel((current) => (current === next ? null : next))}
+            onPanel={(next) => {
+              setIsMenuOpen(false);
+              setPanel((current) => (current === next ? null : next));
+            }}
           />
         }
       />
@@ -433,7 +428,6 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           onPlanted={planted}
           onPartial={plantedPartly}
           onImport={() => {
-            setIsMenuOpen(true);
             setPanel('families');
           }}
         />
@@ -469,7 +463,6 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           kind={emptyTree}
           onCreate={() => setFamilyCard('create')}
           onImport={() => {
-            setIsMenuOpen(true);
             setPanel('families');
           }}
           onAddPerson={addMember}
@@ -533,6 +526,14 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         onShownChange={onShownChange}
         onFamiliesChanged={() => void loadFamilies()}
       />
+      {panel === 'profile' && (
+        <ProfilePanel
+          families={families}
+          feedbackEmail={operatorEmail}
+          onOpenFamilies={canCreate ? () => setPanel('families') : undefined}
+          onClose={() => setPanel(null)}
+        />
+      )}
       <FamiliesPanel
         families={families}
         setFamilies={setFamilies}

@@ -3,21 +3,18 @@
 import { toPng } from 'html-to-image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useRef, type ReactNode } from 'react';
 import type { FamilySummary } from '../lib/api/generated/members';
 import { useT } from './i18n';
 import { BurgerIcon, CameraIcon, ChevronIcon, CloseIcon, ExternalLinkIcon, HomeIcon, LogoutIcon, MailIcon, SettingsIcon, UserIcon, UsersIcon } from './icons';
 import { Can } from './Permissions';
+import { useMenuDismiss } from './menuDismiss';
 import { rideBack } from './ride';
-import ProfilePanel from './ProfilePanel';
 
 export type DashboardPanel = 'profile' | 'families';
 
-// Boards drawn here inside the menu, which closes with them on a press outside.
-const OWN_PANELS: (DashboardPanel | null)[] = [null, 'profile'];
-
-// The burger menu at the header's right end (rendered inside `Header`); the boards it opens are rendered by
-// `FamiliesPanel` and `MembersControls` (the small profile board lives here; the admin page has its own route).
+// The burger menu at the header's right end (rendered inside `Header`); the boards it opens (`ProfilePanel`,
+// `FamiliesPanel`) are sheets of their own, rendered by `FamilyTree`, and opening one closes the menu.
 export default function Dashboard({
   isOpen,
   panel,
@@ -41,23 +38,7 @@ export default function Dashboard({
   const menuRef = useRef<HTMLDivElement>(null);
   const activeFamily = families?.find((family) => family.id === activeFamilyId);
 
-  // A press outside the menu (or an Escape) closes the menu; while another board is open it handles both itself.
-  useEffect(() => {
-    if (!isOpen || !OWN_PANELS.includes(panel)) return;
-    function closeOnOutsidePress(event: PointerEvent) {
-      const target = event.target as Node;
-      if (!menuRef.current?.contains(target)) onToggle();
-    }
-    function closeOnEscape(event: KeyboardEvent) {
-      if (event.key === 'Escape') onToggle();
-    }
-    document.addEventListener('pointerdown', closeOnOutsidePress);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutsidePress);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [isOpen, panel, onToggle]);
+  useMenuDismiss(menuRef, isOpen, onToggle);
 
   const boardItem = (id: DashboardPanel, label: string, icon: ReactNode) => (
     <button key={id} type="button" className="dashboard-nav-item" aria-expanded={panel === id} onClick={() => onPanel(id)}>
@@ -93,7 +74,7 @@ export default function Dashboard({
   }
 
   return (
-    <div className="dashboard-menu" data-panel-open={panel ? '' : undefined} ref={menuRef}>
+    <div className="dashboard-menu" ref={menuRef}>
       <button
         className="glass header-button header-button-icon"
         type="button"
@@ -148,7 +129,6 @@ export default function Dashboard({
           </a>
         </nav>
       )}
-      {isOpen && panel === 'profile' && <ProfilePanel families={families} activeFamily={activeFamily} onClose={() => onPanel('profile')} />}
     </div>
   );
 }

@@ -726,9 +726,20 @@
   box-shadow: var(--primary-glow);
 }
 
+/* Signed in, `user:family` sits in the middle like in the tree (HeaderPrompt in Header.tsx). */
+.landing-header .header-prompt {
+  justify-self: center;
+  min-width: 0;
+}
+
 @media (max-width: 860px) {
   .landing-header {
     grid-template-columns: 1fr auto;
+  }
+
+  .landing-header .header-prompt {
+    grid-row: 2;
+    grid-column: 1 / -1;
   }
 
   .landing-header > span:empty {
@@ -752,6 +763,20 @@
     order: 3;
     flex-basis: auto;
     margin: 0 auto;
+  }
+}
+
+/* Phones, landing page: like the tree's header, the wordmark and the controls with the burger in one row, `user:family`
+   centred below. */
+@media (max-width: 560px) {
+  .landing-header:has(.dashboard-menu) {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    row-gap: 10px;
+  }
+
+  .landing-header:has(.dashboard-menu) .landing-segments {
+    gap: 6px;
   }
 }
 
@@ -836,9 +861,9 @@
   bottom: 100px;
 }
 
-/* On phones the legend steps up above the button, as it does above the dock in the tree. */
+/* On phones the folded legend steps up above the button, as it does above the dock in the tree. */
 @media (max-width: 700px) {
-  .example-page .relation-legend {
+  .example-page .legend-chip {
     bottom: 104px;
   }
 }

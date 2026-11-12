@@ -158,6 +158,21 @@ export function AdminBadge() {
   );
 }
 
+// The centred `user:family` like a shell prompt, in the tree's header and, signed in, on the landing page.
+export function HeaderPrompt({ user, family, title, onClick }: { user: string | null; family: string; title: string; onClick: () => void }) {
+  return (
+    <button type="button" className="glass dashboard-family header-prompt" title={title} onClick={onClick}>
+      {user && (
+        <>
+          <span className="header-prompt-user">{user}</span>
+          <span className="header-prompt-sep">:</span>
+        </>
+      )}
+      <span className="dashboard-family-name">{family}</span>
+    </button>
+  );
+}
+
 // The developers' Evolution button with its DEV badge; the signed-in header, the public pages, and the example share it.
 export function EvolutionButton({ open, onClick }: { open: boolean; onClick: () => void }) {
   const t = useT();
@@ -204,20 +219,12 @@ export default function Header({
         {evolution && <EvolutionButton open={evolutionOpen} onClick={onEvolution} />}
         {admin && <AdminBadge />}
       </div>
-      <button
-        type="button"
-        className="glass dashboard-family header-prompt"
+      <HeaderPrompt
+        user={user}
+        family={activeFamily?.name ?? t.menu.noFamily}
         title={activeFamily ? t.familyCard.open(activeFamily.name) : t.menu.families}
         onClick={onFamilyClick}
-      >
-        {user && (
-          <>
-            <span className="header-prompt-user">{user}</span>
-            <span className="header-prompt-sep">:</span>
-          </>
-        )}
-        <span className="dashboard-family-name">{activeFamily?.name ?? t.menu.noFamily}</span>
-      </button>
+      />
       <div className="header-actions">
         <DensitySegment />
         <ThemeSegment className="header-theme" />

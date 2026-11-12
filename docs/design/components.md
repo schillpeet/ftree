@@ -14,8 +14,8 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Left: f-monogram in `--accent` and the wordmark "ftree" in `--font-display`, a link to `/home`.
 - Left, after the wordmark: "Evolution" with DEV badge (only with "Entwicklertools"), then the admin badge.
 - The admin badge is a status chip, not a button: check icon and "ADM" in the accent colour, title "Als Admin angemeldet"; it shows only in an admin session, with or without the Evolution button, and shrinks to the check mark on phones.
-- Centre: the prompt button `<user>:<family>` – the user in `--muted`, the family name in `--font-display`; a click opens the family card. In GRID all in `--font-mono`, the user in `--accent` with glow.
-- No tree switcher in the header: trees are switched on the Familien board in the burger menu.
+- Centre: the prompt button `<user>:<family>` (`HeaderPrompt` in `ui/app/Header.tsx`, shared with the landing page) – the user in `--muted`, the family name in `--font-display`; in the tree a click opens the family card, on the landing page the families board. In GRID all in `--font-mono`, the user in `--accent` with glow.
+- No tree switcher in the header: trees are switched on the Familien board (sheet) in the burger menu.
 - Below the family button: the presence bar (see "Live presence").
 - Right, in this order: the card density segment (S | M, titles "Schlank: Name und Jahre" and "Mehr: voller Name, Geburtsname und Daten"), in TRON the "Animation" toggle, theme segment (3D | GRID), language segment (DE | EN), burger; the public pages have no sign-in chip.
 - The wordmark's tooltip reads "Zur Startseite"; the burger menu's first entry, "Startseite" with a house icon, leads there too, in TRON as the ride back.
@@ -28,6 +28,9 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Profil, Familien (with `family.create`), Momentaufnahme, Feedback (only if an operator email is configured; a `mailto:` link), Admin-Tool (with `users.view`), divider, Abmelden.
 - Momentaufnahme downloads `ftree-<Name>-<yyyy-mm-dd>.png` and changes nothing on screen.
 - Abmelden goes to the Cloudflare Access logout.
+- Opening Profil or Familien closes the menu; the board is a sheet (see "Sheet" and "Menu boards").
+- On the landing page (`ui/app/home/HomeMenu.tsx`) the menu comes after the theme and language segments: signed in "Profil", "Familien" (with `family.create`), divider, "Abmelden"; signed out only "Anmelden" (to `/login`). "Startseite", "Momentaufnahme", "Feedback" and "Admin-Tool" are not offered there.
+- While the quiet `/me` probe runs the burger is disabled.
 - Admin-Tool ends in an external-link icon instead of a chevron, since it leaves the page (and, in production, the host); entries that open a board keep the chevron.
 - No appearance row: the 3D | GRID segment is always in the header, on phones too, where its segments get tighter.
 - The divider is a thin `--border` line across the menu, not a bare `hr` (which a grid shrinks to a dot).
@@ -36,12 +39,26 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Menu boards (Profil, Familien)
 
-- Both open as a fixed glass board right next to the burger menu (`.dashboard-board`: 76px from the top, 288px from the right, `min(400px, 100vw - 312px)` wide); below 700px it spans the width, 112px from the top; no board positions itself.
-- Profil: sections with small headings – Name (inline edit: pencil, input "Dein Name", save/cancel; blank falls back to the email; saving refreshes `/me` everywhere), Privat (E-Mail, Rolle, Bestätigung "verifiziert durch Cloudflare Access" or "nicht verifiziert (Dev)"), Entwickler-Tools, Meine Familien (role per family), Ausstehende Einladungen (counter badge; pending first, then accepted, each "als <Rolle> · eingeladen am <Datum>"; hidden when `GET /me/invitations` is unavailable).
-- "Entwickler-Tools aktiv" is an accent badge with a soft pulsing glow, static under `prefers-reduced-motion`; without the permission a muted "nicht aktiv" line shows.
-- Familien: "Neue Familie" and "GEDCOM importieren", both disabled at five own trees ("Du besitzt bereits 5 Familien; lösche eine, bevor du eine neue anlegst.").
-- Next to "GEDCOM importieren" sits a round ⓘ button (`aria-expanded`) that toggles a short text: what GEDCOM is, what gets imported, what to watch out for. The text only states what the importer does (new family, counts toward the limit of own trees, .ged up to about 5 MB read as UTF-8, up to 100 people, no photos or card positions).
-- The list "Alle Familien" shows per family: name, "<n> Personen · <m> Generationen", an eye toggle to hide or show it, and a button that opens its family card; rows are reordered by dragging ("Zum Umsortieren ziehen").
+- Both are a `Sheet` (see "Sheet"): by default `place="card"`, a centred glass card over a veil, on the landing page and in the tree; they no longer sit beside the burger menu. Below 700px they are bottom sheets.
+- On the landing page they open in place: `KnownMe` in `ui/app/Permissions.tsx` hands the landing's quiet `/me` probe to them, so no permissions provider is needed.
+- Profil (`ProfilePanel.tsx`): a header with an initials avatar, the name in `--font-display` with inline edit (pencil, input "Dein Name", save/cancel; blank falls back to the email; saving refreshes `/me` everywhere), the email, a chip "verifiziert" (or "nicht verifiziert (Dev)") and an admin chip for admins.
+- Profil sections: "Konto" ("Anmeldung: Code per E-Mail (Cloudflare Access)") and "Entwickler-Tools" ("Entwickler-Tools aktiv" is an accent badge with a soft pulsing glow, static under `prefers-reduced-motion`; without the permission a muted "nicht aktiv" line).
+- A link row "Familien – <n> Familien · <m> Einladungen offen" opens the families board (only with `family.create`); the person's accepted legal documents stay listed.
+- At the bottom, "Konto löschen": a disabled "Account löschen" button with a "Demnächst" badge and the hint "Das kommt in einer späteren Version. Bis dahin löschen wir dein Konto und deine Daten auf Anfrage.", plus a "Schreib uns" `mailto:` link when an operator email is set. Deleting accounts is planned, not built.
+- The role row, "Meine Familien" and "Ausstehende Einladungen" left the profile.
+- Familien (`FamiliesPanel.tsx`): groups "Eigene Familien" (with "<n> von 5") and "Mit mir geteilt"; each row has a drag grip (admins reorder, "Zum Umsortieren ziehen"), the name, a marker "aktuell" and an accent edge for the current family, "<n> Personen · <m> Generationen", a chip with the role or "Einladung offen" (class `acct-chip-ok`) when the person has not accepted the invitation into that family; in the tree the row also has the eye toggle and the family-card pencil.
+- Below the lists, "Von dir eingeladen": the invitations the person sent (`GET /me/invitations`), each "<email> · <Familie>", "als <Rolle> · eingeladen am <Datum>" and a status chip.
+- The footer is fixed at the bottom of the sheet: "Neue Familie" and "GEDCOM importieren", both disabled at five own trees ("Du besitzt bereits 5 Familien; lösche eine, bevor du eine neue anlegst."), a round ⓘ button (`aria-expanded`) that toggles a short text on what GEDCOM is and what the importer does (new family, counts toward the limit, .ged up to about 5 MB read as UTF-8, up to 100 people, no photos or card positions), and the limit note.
+- On the landing page, choosing a family only makes it the current one (stored as `ftree.lastTree`, `ui/app/lastTree.ts`) and the prompt changes; "Weiter zum Baum" opens it. "Neue Familie" there leads to `/start?create=1`, which opens the new-family form in the tree.
+
+## Sheet
+
+- `ui/app/Sheet.tsx` and `sheet.css`: the one surface for Profil, Familien and the relation legend; it renders in `document.body` through a portal, so the header's stacking context and the dock never cover it.
+- `place="card"`: a centred glass card (at most 580px wide) over a veil, between the header (76px from the top) and the dock zone (128px from the bottom).
+- `place="corner"`: a narrow panel bottom right (340px), above the dock zone between 701 and 1100px.
+- Below 700px every sheet is a bottom sheet with a grip and three heights: peek 30dvh, half 52dvh, full `100dvh - 48px` (`ui/app/sheetSnap.ts`, checked by `sheetSnap.check.mjs`). A tap on the grip steps through them, a drag rests at the nearest, and one pulled far down closes the sheet. While a sheet is open `<html data-sheet-open>` hides the dock on phones.
+- Escape, the × and the veil close it.
+- Z scale (tokens, `--z-*`): `--z-hud` 4, `--z-chrome` 6, `--z-panel` 7, `--z-sheet` 30; components take their layer from these instead of literals (`tokens.check.mjs` checks the copy in `ui/`).
 
 ## Family card
 
@@ -122,8 +139,9 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Relation legend (`tron` only)
 
-- A glass board bottom right, folded by default, titled "Beziehungen"; it can be pinned, unfolded and closed ("Legende schließen").
-- One row per line style and glyph, with the texts from `legend` in `ui/app/i18n.ts`.
+- Folded, a small glass chip "⚭ Beziehungen" bottom right, above the dock on phones and between 701 and 1100px.
+- Unfolded, a corner `Sheet` (see "Sheet") with a one-column list, one row per line style and glyph, with the texts from `legend` in `ui/app/i18n.ts`; on phones a bottom sheet at half height while the dock steps aside.
+- × and Escape fold it; an eye-off button hides it (the Evolution panel's "Legende der Beziehungen" brings it back). Pinning and dragging are gone.
 
 ## Person panel (right)
 
@@ -191,12 +209,12 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 ## Landing (signed out, `/home`)
 
-- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a night sky turning deep blue toward a glowing horizon at 50 % of the height, a faint mountain ridge, a perspective floor grid that fades toward the viewer and slowly runs toward them, and a beam of light rising from the horizon that branches like a circuit into glowing nodes, drawn once on load and then pulsing; `ui/app/home/TronHorizon.tsx` and `ui/app/home/landing.css`, still without motion under `prefers-reduced-motion`), header with wordmark on the left and, on the right, the "Animation" toggle (TRON only), theme and language segments; there is no navigation.
+- Scene background (`3d`: the still `ui/app/home/landing.jpg`; `tron`: a night sky turning deep blue toward a glowing horizon at 50 % of the height, a faint mountain ridge, a perspective floor grid that fades toward the viewer and slowly runs toward them, and a beam of light rising from the horizon that branches like a circuit into glowing nodes, drawn once on load and then pulsing; `ui/app/home/TronHorizon.tsx` and `ui/app/home/landing.css`, still without motion under `prefers-reduced-motion`), header with wordmark on the left and, on the right, the "Animation" toggle (TRON only), theme and language segments, then the burger menu (see "Burger menu"); signed in, the header also shows the centred `<user>:<family>` prompt (a click opens the families board), on phones (up to 560px) wordmark, controls and burger share one row with the prompt centred below.
 - Signed out, a thin glass strip at the very top reads "Geschlossene Testphase · Zugang nur mit Einladung" in `--font-mono` and `--accent` (`/home` and `/home/how`).
-- Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither the test-phase strip nor a name shows. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt."
+- Who is signed in comes from a quiet `/me` probe, without the permissions provider; while it runs, neither the test-phase strip nor a name shows and the burger is disabled. Signed in, a small line under the main button reads "Angemeldet als <Name>" (display name, else email); signed out, it reads "Noch keine Einladung? Frag jemanden aus deiner Familie, der ftree schon nutzt."
 - Centre: title "Deine Familie. Ein Baum, der mit euch wächst." on one line on desktop (it may reach over the tree up to the middle of the trunk; in `tron` with a `--glow` text shadow), below it the chip "Privat · nur für eure Familie" (in `tron` in `--font-mono`), then one sentence, "Anmelden" ("Weiter zum Baum" when signed in) and "So funktioniert's"; in TRON with animations on, the headline flickers once softly in scanlines every 8 s; the GitHub link sits in the legal line.
 - 3D and TRON share one hero position: the headline's bottom sits at the golden ratio of the viewport height (61.8 %), everything else hangs below it.
-- The three steps and the example family are not on the landing page; "So funktioniert's" opens `/home/how`.
+- The landing page has no other navigation; the three steps and the example family are not on it; "So funktioniert's" opens `/home/how`.
 
 ## How it works (`/home/how`)
 
@@ -227,9 +245,9 @@ These literals predate the Horizont tokens or bypass them; they are debt for the
 
 - TRON scene: background `#05070a`, grid cells `#0b4f5c` and sections `#00e5ff` (`ui/app/Scene.tsx`, `GridFloor`) instead of `--bg` and `--accent`.
 - TRON blood-relative lines, glyphs and stubs: `#ffb347`, `#ffe9cc` (`ui/app/SimpleTree.tsx`, `ui/app/globals.css`), a second accent besides cyan.
-- Relation legend: `#e6fdff`, `#00e5ff`, `rgba(5,8,12,.85)` (`ui/app/globals.css`).
+- Relation legend glyph and stub samples: `#e6fdff`, `#00e5ff` (`.relation-legend-glyph`, `.relation-legend-stub` in `ui/app/globals.css`); the legend's container uses the sheet and glass tokens.
 - Landing: `rgba(72,229,255,…)` and `rgba(11,15,16,…)` repeat token values as literals (`ui/app/home/landing.css`).
 - Pre-Horizont palette in boards, person panel, forms and presence: `#fff`, `rgba(255,255,255,.04–.25)`, `rgba(127,214,255,…)`, `#18202b`, `#a6e3ff`, `#24384b` (`ui/app/globals.css`, `ui/app/share.css`, `ui/app/live/*.css`).
 - Legal pages: their own gradient `#24364a → #0a0f16` (`ui/app/legal.css`).
 - 3D scene, scrolls and Evolution panel: sky, meadow, bark and papyrus colours in `ui/app/Scene.tsx`, `Meadow.tsx`, `Tree.tsx`, `cardTextures.ts`, `HangingCard.tsx`; these belong to the scene, not to the UI.
-- Token-pure today: `ui/app/dock.css`, `header.css`, `slots.css`, `tour.css`, `welcome.css`.
+- Token-pure today: `ui/app/dock.css`, `header.css`, `sheet.css`, `slots.css`, `tour.css`, `welcome.css`.

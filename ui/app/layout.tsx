@@ -8,7 +8,7 @@ import LegalLinks from './LegalLinks';
 // the scene takes over with `.riding-in` and removes the style once the camera has arrived, and the timeout frees the
 // page if it never does. A style of its own, as React owns `<html>`'s attributes; here in the root layout, as React
 // never renders it again on the client, where a `<script>` would not run.
-const RIDE_PENDING = `try{if(Date.now()-Number(sessionStorage.getItem('ftree.ride'))<15000){var s=document.createElement('style');s.id='ride-pending';s.textContent='.app-header,.dock-root,.app-version,.relation-legend,.presence-bar,.presence-hint,.admin-view-banner{visibility:hidden}';document.head.appendChild(s);setTimeout(function(){s.remove()},6000)}}catch(e){}`;
+const RIDE_PENDING = `try{if(Date.now()-Number(sessionStorage.getItem('ftree.ride'))<15000){var s=document.createElement('style');s.id='ride-pending';s.textContent='.app-header,.dock-root,.app-version,.legend-chip,.relation-legend,.presence-bar,.presence-hint,.admin-view-banner{visibility:hidden}';document.head.appendChild(s);setTimeout(function(){s.remove()},6000)}}catch(e){}`;
 
 export const metadata: Metadata = {
   title: 'ftree',

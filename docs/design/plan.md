@@ -62,6 +62,12 @@ These stood in the design before but are not in `ui/`; they stay ideas until a P
   - The landing headline flickers softly every 8 s.
   - Signed out, the main button is "Anmelden" under a test-phase line, the header has no second "Anmelden"; new copy ("Deine Familie. Ein Baum, der mit euch wächst.", "Weiter zum Baum").
   - The burger menu has "Startseite", and the wordmark's tooltip says "Zur Startseite".
+- [~] One PR, `feat(ui): add the burger menu to the landing page` (2026-11-12), preview in [dummy/menus.html](dummy/menus.html):
+  - Burger menu on `/home` (signed in: Profil, Familien, Abmelden; signed out: Anmelden) and the `user:family` prompt in the signed-in landing header.
+  - New shared `Sheet` (centred card, corner panel, bottom sheet below 700px with three heights) rendered in the document body; z-index scale tokens.
+  - Profil as a larger card with a disabled "Account löschen" ("Demnächst"); Familien board with "Eigene Familien", "Mit mir geteilt", "Einladung offen" and "Von dir eingeladen".
+  - Relation legend as chip and corner or bottom sheet.
+  - On the landing page, choosing a family makes it the current one ("Weiter zum Baum" opens it).
 - Planned, only when the landing goes public: Access bypass (ftree-infra), privacy policy for visitors without an account (§1 names only the invited test group, §2 only users), and a check whether a public page needs an Impressum.
 
 ## Order

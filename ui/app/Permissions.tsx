@@ -115,6 +115,16 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
   );
 }
 
+// The landing page knows the person from its own quiet probe (`home/signedIn.ts`); this hands it to the boards it opens,
+// without the provider's fetch watcher, auth banner, and acceptance card (the landing page shows its own).
+export function KnownMe({ me, onMe, children }: { me: Me | null | undefined; onMe: (me: Me) => void; children: ReactNode }) {
+  return (
+    <MeContext value={me}>
+      <SetMeContext value={onMe}>{children}</SetMeContext>
+    </MeContext>
+  );
+}
+
 export const useSetMe = () => useContext(SetMeContext);
 
 export const useMe = () => useContext(MeContext) ?? null;
