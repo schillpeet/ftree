@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.40.1](https://github.com/schillpeet/ftree/compare/v0.40.0...v0.40.1) (2026-11-12)
+
+
+### Dependencies
+
+* **bff:** bump org.openapi.generator from 7.26.0 to 7.27.0 in /bff ([#332](https://github.com/schillpeet/ftree/issues/332)) ([43f50a3](https://github.com/schillpeet/ftree/commit/43f50a31bdfb8589137796824bad68726065c7dc))
+* **repo:** bump pnpm/action-setup from 6.1.0 to 6.1.1 ([#334](https://github.com/schillpeet/ftree/issues/334)) ([c4d7c9c](https://github.com/schillpeet/ftree/commit/c4d7c9cdd14f56351e1758235732ffe32e320e3f))
+* **repo:** bump swaggerapi/swagger-ui from v5.34.0 to v5.34.1 ([#335](https://github.com/schillpeet/ftree/issues/335)) ([be4f928](https://github.com/schillpeet/ftree/commit/be4f9283b80b09c207234cf067f6a9ad9da3789c))
+* **repo:** bump the codeql-action group with 3 updates ([#333](https://github.com/schillpeet/ftree/issues/333)) ([0889e1f](https://github.com/schillpeet/ftree/commit/0889e1f229a83757e05b84f9815efc0e27fef76d))
+* **ui:** bump @types/node from 26.6.5 to 26.6.6 in /ui ([#337](https://github.com/schillpeet/ftree/issues/337)) ([1774c1b](https://github.com/schillpeet/ftree/commit/1774c1b037b930bc0448a4783a9c092e0fa93a0f))
+* **ui:** bump eslint-config-next from 16.4.3 to 16.4.4 in /ui ([#338](https://github.com/schillpeet/ftree/issues/338)) ([11905ac](https://github.com/schillpeet/ftree/commit/11905ac132b4f431a761cb00b86f42b865e5dacc))
+* **ui:** bump next from 16.4.3 to 16.4.5 in /ui ([#339](https://github.com/schillpeet/ftree/issues/339)) ([df01fcc](https://github.com/schillpeet/ftree/commit/df01fcca9690544d263515bee45ce659fa23a068))
+* **ui:** bump orval from 8.45.0 to 8.47.0 in /ui ([#336](https://github.com/schillpeet/ftree/issues/336)) ([08ee826](https://github.com/schillpeet/ftree/commit/08ee8267bc80912efc9f88153e31e8a501fa89cc))
+* **ui:** bump three and @types/three in /ui ([#340](https://github.com/schillpeet/ftree/issues/340)) ([49df0d0](https://github.com/schillpeet/ftree/commit/49df0d0a2fcb64ab1beb71ed9f3aed144afa88f1))
+
 ## [0.40.0](https://github.com/schillpeet/ftree/compare/v0.39.0...v0.40.0) (2026-11-05)
 
 
