@@ -32,6 +32,7 @@ Binary-Artifacts and SAST score 10 only when other workflows have finished for t
 On a push to `main` Scorecard starts in the same second as CI, CodeQL (about four minutes) and the Gradle wrapper check, and counts the commit as unscanned or the wrapper as unvalidated while they still run.
 The weekly run starts long after the last merge, so it sees the finished runs; CodeQL stays optional for merging.
 After a manual run right after a merge, both checks may drop to 9 until the next weekly run.
+Binary-Artifacts also needs `actions: read` on the Scorecard job to list the `gradle-wrapper.yml` runs; the job's own `permissions` replace the workflow's `read-all`, so without it the jar stayed flagged even when its validation had passed.
 
 ## Ignored advisories
 
