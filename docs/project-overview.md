@@ -753,6 +753,7 @@ After release-please has updated the release PR, `release-please.yml` runs `.git
 The GitHub release notes are taken from the release PR body, so they show the same single line.
 Merging the release PR updates `CHANGELOG.md` and creates the tag and GitHub release.
 Each published release triggers `.github/workflows/readme-preview.yml`, which starts the stack with the fictional demo family from `docs/preview/demo.ged` and attaches a `preview.png` screenshot to the release; the README embeds the latest release's preview, and the workflow can be run manually for an existing tag.
+The preview workflow accepts the open legal documents for its dev user through `POST /me/legal-acceptances` before it imports the demo family, because the BFF refuses every other call and the UI shows the acceptance card until then.
 Release PRs are titled `chore(repo): release X.Y.Z` (`pull-request-title-pattern`) so they pass the PR-title check, and are created with the fine-grained personal access token in the `RELEASE_PLEASE_TOKEN` secret (this repository only; Contents and Pull requests read/write), because PRs opened with `GITHUB_TOKEN` do not trigger workflows and their required checks would never run.
 
 Pull requests are squash-merged, the only merge method, so the PR title (with the PR number GitHub appends) becomes the commit message release-please sees for that PR; the title is an accurate, lowercase Conventional Commit such as `feat(ui): add family visibility toggle`.

@@ -49,9 +49,20 @@ jobs:
           pnpm --dir ui install --frozen-lockfile
           pnpm --dir ui build
           nohup pnpm --dir ui start > .local/ui.log 2>&1 &
-          for url in http://localhost:8080/families http://localhost:3000; do
+          # GET /me answers even while legal documents are open; /families answers 403 until they are accepted.
+          for url in http://localhost:8080/me http://localhost:3000; do
             timeout 300 bash -c "until curl -sf $url > /dev/null; do sleep 2; done"
           done
+
+      # Every other call answers 403 LEGAL_ACCEPTANCE_REQUIRED, and the UI shows the acceptance card, until dev@localhost
+      # has accepted what GET /me lists as pending.
+      - name: Accept legal documents
+        run: |
+          body=$(curl -sf http://localhost:8080/me |
+            jq -c '{documents: [.pendingLegal[] | {kind, version}], language: "de"}')
+          if [[ $(jq '.documents | length' <<< "$body") -gt 0 ]]; then
+            curl -sf -X POST -H 'Content-Type: application/json' -d "$body" http://localhost:8080/me/legal-acceptances > /dev/null
+          fi
 
       # The UI opens the "default" family first; replace the empty one with the demo family.
       - name: Import demo family
