@@ -14,7 +14,11 @@ permissions: read-all
 jobs:
   analysis:
     runs-on: ubuntu-latest
+    # Job permissions replace the top-level read-all instead of adding to it, so the read rights Scorecard needs are
+    # listed here: without actions: read it cannot see the gradle-wrapper.yml runs and flags the wrapper jar.
     permissions:
+      contents: read
+      actions: read # find the successful Gradle wrapper validation for Binary-Artifacts
       security-events: write # upload to code scanning
       id-token: write # publish the results for the badge
     steps:
