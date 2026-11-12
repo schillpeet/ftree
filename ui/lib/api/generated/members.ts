@@ -1202,56 +1202,42 @@ export type EditConflictResponse = Problem;
 export type InternalErrorResponse = Problem;
 
 export type GetLegalDocumentParams = {
-/**
- * @minimum 1
- */
-version?: number;
+  /** @minimum 1 */
+  version?: number;
 };
 
 export type GetAdminAuditParams = {
-/**
- * How many entries at most; 50 by default.
- * @minimum 1
- * @maximum 100
- */
-limit?: number;
-/**
- * Only entries older than the entry with this id, that is the `next` of the previous page.
- * @minimum 1
- */
-before?: number;
-/**
- * Only entries made by or about this person (`id` in `AuditPerson`).
- */
-userId?: string;
-/**
- * Only entries about this tree.
- */
-familyId?: string;
-/**
- * Only entries of this action, for example `family.trashed`.
- * @maxLength 60
- */
-action?: string;
-/**
- * Only entries of this category.
- */
-category?: AuditCategory;
-/**
- * Only entries at or after this time.
- */
-from?: string;
-/**
- * Only entries before this time.
- */
-to?: string;
+  /**
+   * How many entries at most; 50 by default.
+   * @minimum 1
+   * @maximum 100
+   */
+  limit?: number;
+  /**
+   * Only entries older than the entry with this id, that is the `next` of the previous page.
+   * @minimum 1
+   */
+  before?: number;
+  /** Only entries made by or about this person (`id` in `AuditPerson`). */
+  userId?: string;
+  /** Only entries about this tree. */
+  familyId?: string;
+  /**
+   * Only entries of this action, for example `family.trashed`.
+   * @maxLength 60
+   */
+  action?: string;
+  /** Only entries of this category. */
+  category?: AuditCategory;
+  /** Only entries at or after this time. */
+  from?: string;
+  /** Only entries before this time. */
+  to?: string;
 };
 
 export type StreamFamilyEventsParams = {
-/**
- * A random id the browser tab chooses once, the same it sends to `PUT /families/{familyId}/presence`.
- */
-clientId: ClientId;
+  /** A random id the browser tab chooses once, the same it sends to `PUT /families/{familyId}/presence`. */
+  clientId: ClientId;
 };
 
 export type getMeResponse200 = {
