@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.41.0](https://github.com/schillpeet/ftree/compare/v0.40.1...v0.41.0) (2026-11-12)
+
+
+### Features
+
+* **ui:** add the burger menu to the landing page ([#344](https://github.com/schillpeet/ftree/issues/344)) ([7ac5c9e](https://github.com/schillpeet/ftree/commit/7ac5c9eb4d186647695adda5735ac9d7a19aeac5))
+* **ui:** gather families and sent invitations on the families board ([#344](https://github.com/schillpeet/ftree/issues/344)) ([7ac5c9e](https://github.com/schillpeet/ftree/commit/7ac5c9eb4d186647695adda5735ac9d7a19aeac5))
+* **ui:** show the profile as a larger card with account deletion announced ([#344](https://github.com/schillpeet/ftree/issues/344)) ([7ac5c9e](https://github.com/schillpeet/ftree/commit/7ac5c9eb4d186647695adda5735ac9d7a19aeac5))
+
+
+### Bug Fixes
+
+* **ui:** keep boards and the relation legend clear of the dock ([#344](https://github.com/schillpeet/ftree/issues/344)) ([7ac5c9e](https://github.com/schillpeet/ftree/commit/7ac5c9eb4d186647695adda5735ac9d7a19aeac5))
+
 ## [0.40.1](https://github.com/schillpeet/ftree/compare/v0.40.0...v0.40.1) (2026-11-12)
 
 
