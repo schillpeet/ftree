@@ -23,8 +23,9 @@ import { coreFamilyOf, lineageOf } from './relatives';
 import { displayName } from './names';
 import { useTokenPaint } from './tokenColor';
 import SimpleTree from './SimpleTree';
-import TwinedTree, { TWINED_SLOT_ANGLE, buildTwinedTree } from './TwinedTree';
-import { twinedPlan } from './twinedLayout';
+import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
+import { growthOrder } from './twinedGrowth';
+import { twinedPlan, type TwinedPlan } from './twinedLayout';
 import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onLocationChange, useSunLocation } from './sunLocation';
 import { onStorage, useLanguage, useT } from './i18n';
@@ -691,6 +692,8 @@ function Scrolls({
   return (
     <>
       {members.map((member) => {
+        // A growing tiered tree has no place yet for a member whose strand is still growing.
+        if (!positions.has(member.id)) return null;
         const card = {
           member,
           label: displayName(member, members, t.placeholder.role),
@@ -845,11 +848,26 @@ export default function Scene({
   const tree = useMemo(() => buildTree(7), []);
   // The tiered tree grows a tier per generation and a strand or twig per member, so it changes with the family.
   const tierPlan = JSON.stringify(twinedPlan(members, generations(members), TWINED_SLOT_ANGLE));
-  const tieredTree = useMemo(() => buildTwinedTree(JSON.parse(tierPlan), VIEW_FRONT), [tierPlan]);
+  const tierTarget = useMemo(() => JSON.parse(tierPlan) as TwinedPlan, [tierPlan]);
+  // The tree grows towards the plan and reports where cards hang once a growth step has settled.
+  const [tieredPins, setTieredPins] = useState<Map<string, Point>>(() => new Map());
   const tieredLayout = useMemo(
-    () => new Map([...tieredTree.pins].map(([id, [x, y, z]]) => [id, cardTop([x, TREE_BASE + y, z])])),
-    [tieredTree],
+    () => new Map([...tieredPins].map(([id, [x, y, z]]) => [id, cardTop([x, TREE_BASE + y, z])])),
+    [tieredPins],
   );
+  // "Replay growth": the family's plans member by member in growth order; it ends with the family or
+  // the appearance it was started in.
+  const [growthReplay, setGrowthReplay] = useState<{ familyId: string | null; steps: TwinedPlan[] } | null>(null);
+  const replay = growthReplay && growthReplay.familyId === familyId && appearance === 'organicExperimental' ? growthReplay.steps : null;
+  const endReplay = useCallback(() => setGrowthReplay(null), []);
+  const replayGrowth = () => {
+    const order = growthOrder(members);
+    const steps = order.map((_, k) => {
+      const part = order.slice(0, k + 1);
+      return twinedPlan(part, generations(part), TWINED_SLOT_ANGLE);
+    });
+    setGrowthReplay({ familyId, steps });
+  };
   // Pins follow the crown scale; only points with room for a card above the ground qualify.
   const pins = useMemo(
     () =>
@@ -977,7 +995,16 @@ export default function Scene({
             {organic ? (
               <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
             ) : (
-              <TwinedTree tree={tieredTree} position={[0, TREE_BASE, 0]} />
+              <TwinedTree
+                key={familyId ?? ''}
+                target={tierTarget}
+                replay={replay}
+                animate
+                front={VIEW_FRONT}
+                position={[0, TREE_BASE, 0]}
+                onPins={setTieredPins}
+                onReplayEnd={endReplay}
+              />
             )}
             <Scrolls
               familyId={familyId}
@@ -1042,6 +1069,14 @@ export default function Scene({
                   ))}
                 </select>
               </label>
+              <button
+                className="debug-button"
+                type="button"
+                disabled={appearance !== 'organicExperimental' || !members.length}
+                onClick={() => (replay ? setGrowthReplay(null) : replayGrowth())}
+              >
+                {replay ? t.tools.stopGrowth : t.tools.replayGrowth}
+              </button>
             </section>
             <section>
               <h2>{t.tools.view}</h2>

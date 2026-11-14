@@ -109,6 +109,9 @@ Everyone with a partner or children brings a strand of their own that grows from
 A childless person without a partner whose parents are in the tree is a twig that grows out of the parents' braid instead (`ui/app/twinedLayout.ts`).
 Where a braid ends it bends out of the trunk and carries its cards, so the trunk is thickest at the ground and thins towards the top, and a new generation adds a tier at the bottom and makes the tree taller.
 Every family keeps its own wedge around the trunk, parents right above their children, centred on the front; when the wedges do not fit around the trunk, the cards move further out.
+The tiered tree grows when the family changes (`ui/app/twinedGrowth.ts`): over 2.5 seconds new strands grow from the ground and twigs out of their parents' braid, the tree rises when a generation is added, and cards move to their new places once the step has settled.
+With reduced motion preferred, or when another family is opened, the tree shows its new shape at once.
+The Evolution panel's "Ansichts-Labor" has "Wachstum abspielen" for the tiered tree, which replays the open family member by member, eldest first and each partner right after their partner, until "Stopp", another family, or another appearance ends it.
 The tiered tree is rebuilt when the family changes; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
