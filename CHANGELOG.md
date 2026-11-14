@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.42.0](https://github.com/schillpeet/ftree/compare/v0.41.0...v0.42.0) (2026-11-14)
+
+
+### Features
+
+* **ui:** grow the tiered tree ([#355](https://github.com/schillpeet/ftree/issues/355)) ([ce6e201](https://github.com/schillpeet/ftree/commit/ce6e2011d42a4e8ad102deabf36f54801eb5cd75))
+* **ui:** rebuild the tiered tree as twined trunks ([#354](https://github.com/schillpeet/ftree/issues/354)) ([be16d94](https://github.com/schillpeet/ftree/commit/be16d942fb8a99e539d08633913608618a9367ec))
+
+
+### Dependencies
+
+* **bff:** bump gradle-wrapper from 9.8.2 to 9.9.0 in /bff ([#347](https://github.com/schillpeet/ftree/issues/347)) ([a4fae28](https://github.com/schillpeet/ftree/commit/a4fae28746d854949b43b1a0c7e3de42c5d754b0))
+* **repo:** bump actions/setup-java from 6.1.0 to 6.2.0 ([#349](https://github.com/schillpeet/ftree/issues/349)) ([7695b84](https://github.com/schillpeet/ftree/commit/7695b84257376ce10d774ec180bc8bd46afc46c8))
+* **repo:** bump the codeql-action group with 3 updates ([#346](https://github.com/schillpeet/ftree/issues/346)) ([8a231a3](https://github.com/schillpeet/ftree/commit/8a231a3108e8c02b7e797d606d0dee85627d0e90))
+* **ui:** bump eslint-config-next from 16.4.4 to 16.4.6 in /ui ([#353](https://github.com/schillpeet/ftree/issues/353)) ([73ddf5c](https://github.com/schillpeet/ftree/commit/73ddf5c976843eb43303963ac670d589066f44e5))
+* **ui:** bump next from 16.4.5 to 16.4.6 in /ui ([#352](https://github.com/schillpeet/ftree/issues/352)) ([93ee7c1](https://github.com/schillpeet/ftree/commit/93ee7c1dde87bff736dd982bf4562d60357c07ab))
+
 ## [0.41.0](https://github.com/schillpeet/ftree/compare/v0.40.1...v0.41.0) (2026-11-12)
 
 
