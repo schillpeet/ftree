@@ -104,11 +104,12 @@ A sibling with several partners has all of them on the outer side, in the profil
 A deceased person's name is preceded by †.
 `ui/app/experimental/verify.ts` checks drawings in the tests, not at runtime: right angles, no overlaps, no crossings but on recorded bridges, no four-way points, and a read-back of the parents and partners from the drawing itself.
 CI runs this check on a fixture shaped like a real five-generation family (synthetic people) and on 500 random families (`ui/app/experimental/families.check.mjs`).
-The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TieredTree.tsx`) that grows one tier of level branches per generation, parents a tier above their children, so no branch hangs in front of a card.
-Each card hangs under its own twig with leaves only on top and at the tip, and each tier reaches further out than the one above.
-Every family gets its own wedge around the trunk (`ui/app/tieredLayout.ts`): a person and their partners hang in the middle of it, and their children's branch leaves the trunk right below them, so parents always hang directly above their children.
-The family is centred on the front of the tree; when the wedges do not fit around the trunk, all tiers reach further out.
-The tiered tree is rebuilt when the family's generations change; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
+The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TwinedTree.tsx`) with one tier per generation, the eldest at the top, kept as plain tubes without leaves or texture for now.
+Everyone with a partner or children brings a strand of their own that grows from the ground up to their tier, and a couple's strands wind around each other; a second partner on the same tier makes a braid of three.
+A childless person without a partner whose parents are in the tree is a twig that grows out of the parents' braid instead (`ui/app/twinedLayout.ts`).
+Where a braid ends it bends out of the trunk and carries its cards, so the trunk is thickest at the ground and thins towards the top, and a new generation adds a tier at the bottom and makes the tree taller.
+Every family keeps its own wedge around the trunk, parents right above their children, centred on the front; when the wedges do not fit around the trunk, the cards move further out.
+The tiered tree is rebuilt when the family changes; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
 Below 520 px the footer line wraps, so every link stays reachable on a phone.
