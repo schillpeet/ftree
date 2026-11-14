@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.42.0](https://github.com/schillpeet/ftree/compare/v0.41.0...v0.42.0) (2026-11-14)
+
+
+### Features
+
+* **ui:** grow the tiered tree ([#355](https://github.com/schillpeet/ftree/issues/355)) ([ce6e201](https://github.com/schillpeet/ftree/commit/ce6e2011d42a4e8ad102deabf36f54801eb5cd75))
+* **ui:** rebuild the tiered tree as twined trunks ([#354](https://github.com/schillpeet/ftree/issues/354)) ([be16d94](https://github.com/schillpeet/ftree/commit/be16d942fb8a99e539d08633913608618a9367ec))
+
+
+### Dependencies
+
+* update dependencies with dependabot ([#346](https://github.com/schillpeet/ftree/issues/346), [#347](https://github.com/schillpeet/ftree/issues/347), [#349](https://github.com/schillpeet/ftree/issues/349), [#352](https://github.com/schillpeet/ftree/issues/352), [#353](https://github.com/schillpeet/ftree/issues/353))
+
 ## [0.41.0](https://github.com/schillpeet/ftree/compare/v0.40.1...v0.41.0) (2026-11-12)
 
 
