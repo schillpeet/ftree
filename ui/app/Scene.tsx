@@ -23,8 +23,8 @@ import { coreFamilyOf, lineageOf } from './relatives';
 import { displayName } from './names';
 import { useTokenPaint } from './tokenColor';
 import SimpleTree from './SimpleTree';
-import TieredTree, { TIERED_OPTIONS, buildTieredTree } from './TieredTree';
-import { tieredPlan } from './tieredLayout';
+import TwinedTree, { TWINED_SLOT_ANGLE, buildTwinedTree } from './TwinedTree';
+import { twinedPlan } from './twinedLayout';
 import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onLocationChange, useSunLocation } from './sunLocation';
 import { onStorage, useLanguage, useT } from './i18n';
@@ -843,9 +843,9 @@ export default function Scene({
     window.dispatchEvent(new StorageEvent('storage', { key: CARD_STYLE_KEY }));
   };
   const tree = useMemo(() => buildTree(7), []);
-  // The tiered tree grows a tier per generation and a twig per card, so it changes with the family.
-  const tierPlan = JSON.stringify(tieredPlan(members, generations(members), TIERED_OPTIONS));
-  const tieredTree = useMemo(() => buildTieredTree(7, JSON.parse(tierPlan), VIEW_FRONT), [tierPlan]);
+  // The tiered tree grows a tier per generation and a strand or twig per member, so it changes with the family.
+  const tierPlan = JSON.stringify(twinedPlan(members, generations(members), TWINED_SLOT_ANGLE));
+  const tieredTree = useMemo(() => buildTwinedTree(JSON.parse(tierPlan), VIEW_FRONT), [tierPlan]);
   const tieredLayout = useMemo(
     () => new Map([...tieredTree.pins].map(([id, [x, y, z]]) => [id, cardTop([x, TREE_BASE + y, z])])),
     [tieredTree],
@@ -977,7 +977,7 @@ export default function Scene({
             {organic ? (
               <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
             ) : (
-              <TieredTree tree={tieredTree} position={[0, TREE_BASE, 0]} />
+              <TwinedTree tree={tieredTree} position={[0, TREE_BASE, 0]} />
             )}
             <Scrolls
               familyId={familyId}
