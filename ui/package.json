@@ -25,7 +25,7 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.187.0",
     "eslint": "^9",
-    "eslint-config-next": "16.4.4",
+    "eslint-config-next": "16.4.6",
     "fast-check": "^4.10.2",
     "orval": "^8.47.0",
     "typescript": "^6"
