@@ -14,7 +14,7 @@
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.2",
     "html-to-image": "^1.11.13",
-    "next": "16.4.5",
+    "next": "16.4.6",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "three": "^0.187.0"
@@ -25,7 +25,7 @@
     "@types/react-dom": "^19",
     "@types/three": "^0.187.0",
     "eslint": "^9",
-    "eslint-config-next": "16.4.4",
+    "eslint-config-next": "16.4.6",
     "fast-check": "^4.10.2",
     "orval": "^8.47.0",
     "typescript": "^6"
