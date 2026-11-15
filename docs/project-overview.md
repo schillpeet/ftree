@@ -104,11 +104,14 @@ A sibling with several partners has all of them on the outer side, in the profil
 A deceased person's name is preceded by †.
 `ui/app/experimental/verify.ts` checks drawings in the tests, not at runtime: right angles, no overlaps, no crossings but on recorded bridges, no four-way points, and a read-back of the parents and partners from the drawing itself.
 CI runs this check on a fixture shaped like a real five-generation family (synthetic people) and on 500 random families (`ui/app/experimental/families.check.mjs`).
-The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TwinedTree.tsx`) with one tier per generation, the eldest at the top, kept as plain tubes without leaves or texture for now.
+The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TwinedTree.tsx`) with one tier per generation, the eldest at the top, drawn as an old tree without leaves.
+Its bark is baked in Blender into three tiling textures (`ui/app/bark/`), and where a plate of bark has come off the wood shows gold; the Blender setup lives in `docs/design/blender/`.
 Everyone with a partner or children brings a strand of their own that grows from the ground up to their tier, and a couple's strands wind around each other; a second partner on the same tier makes a braid of three.
 A childless person without a partner whose parents are in the tree is a twig that grows out of the parents' braid instead (`ui/app/twinedLayout.ts`).
-Where a braid ends it bends out of the trunk and carries its cards, so the trunk is thickest at the ground and thins towards the top, and a new generation adds a tier at the bottom and makes the tree taller.
-Every family keeps its own wedge around the trunk, parents right above their children, centred on the front; when the wedges do not fit around the trunk, the cards move further out.
+A couple leaves the trunk on a limb of its own that forks to its two cards (`ui/app/twinedForm.ts`), so the trunk is thickest at the ground and thins towards the top, and a new generation adds a tier at the bottom and makes the tree taller.
+All wood rises: a couple with single children leaves the trunk lower, reaches out below their cards so their twigs can grow out of the limb, and then climbs to its fork.
+Wood without cards makes the tree full: strands that wind around the eldest couple's leader and leave as crown branches, shoots on the limbs, and a fine shoot beyond a couple's card; each takes its shape from its own name, so it stays as it is while the family changes.
+Every family keeps its own wedge around the trunk with air on either side, parents right above their children, centred on the front; when the wedges do not fit around the trunk, the cards move further out.
 The tiered tree grows when the family changes (`ui/app/twinedGrowth.ts`): over 2.5 seconds new strands grow from the ground and twigs out of their parents' braid, the tree rises when a generation is added, and cards move to their new places once the step has settled.
 With reduced motion preferred, or when another family is opened, the tree shows its new shape at once.
 The Evolution panel's "Ansichts-Labor" has "Wachstum abspielen" for the tiered tree, which replays the open family member by member, eldest first and each partner right after their partner, until "Stopp", another family, or another appearance ends it.

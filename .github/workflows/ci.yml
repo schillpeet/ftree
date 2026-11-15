@@ -117,6 +117,9 @@ jobs:
       - run: node app/pins.check.mjs
       - run: node app/arrange.check.mjs
       - run: node app/generations.check.mjs
+      - run: node app/twinedLayout.check.mjs
+      - run: node app/twinedGrowth.check.mjs
+      - run: node app/twinedForm.check.mjs
       - run: node app/cardTextures.check.mjs
       - run: node app/nameSearch.check.mjs
       - run: node app/names.check.mjs

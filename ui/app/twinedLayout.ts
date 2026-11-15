@@ -16,8 +16,11 @@ export type TwinedPlan = { depth: number; braids: Braid[]; twigs: Twig[]; cards:
 const FULL = Math.PI * 2;
 // The front stays free so the trunk shows: the cards part there by this many slots. The family sits
 // a quarter slot left of the front first, so no card is ever right on it and each card knows its side.
-const FRONT_GAP = 2;
+const FRONT_GAP = 4;
 const BIAS = -0.25;
+// A family with children keeps this many slots of air on either side of its wedge, so parents and
+// children read as one group and the next family as another.
+const FAMILY_GAP = 0.5;
 
 // `gen` comes from `generations()`; `slotAngle` is the angle one card needs. If the family does not
 // fit around the trunk, every slot shrinks.
@@ -61,9 +64,10 @@ export function twinedPlan(people: Person[], gen: Map<string, number>, slotAngle
     }
   }
 
-  // A unit's wedge, in slots: room for its own cards and, below them, its children's wedges.
+  // A unit's wedge, in slots: room for its own cards and, below them, its children's wedges, with
+  // air around a family.
   const kids = (u: string[]) => childrenOf.get(u) ?? [];
-  const width = (u: string[]): number => Math.max(u.length, kids(u).reduce((s, c) => s + width(c), 0));
+  const width = (u: string[]): number => Math.max(u.length, kids(u).reduce((s, c) => s + width(c), 0)) + (kids(u).length ? 2 * FAMILY_GAP : 0);
   const eldest = (u: string[]) => [...u].sort(byAge)[0];
   const sortedRoots = [...roots].sort((a, b) => byAge(eldest(a), eldest(b)));
   const total = sortedRoots.reduce((s, u) => s + width(u), 0);

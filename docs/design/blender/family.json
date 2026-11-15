@@ -1,0 +1,15 @@
+{
+ "id": "grosse-familie",
+ "ids": ["Georg", "Gerda"],
+ "children": [
+  {"ids": ["Sven", "Sonja"], "children": [
+   {"ids": ["Kurt", "Karin"], "children": [{"ids": ["Kind1"]}, {"ids": ["Kind2"]}]},
+   {"ids": ["Lena"]}
+  ]},
+  {"ids": ["Paul", "Petra"], "children": [
+   {"ids": ["Max", "Mia"], "children": [{"ids": ["Kind3"]}, {"ids": ["Kind4"]}]},
+   {"ids": ["Nils"]}
+  ]},
+  {"ids": ["Udo"]}
+ ]
+}
