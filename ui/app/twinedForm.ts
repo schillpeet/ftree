@@ -1,0 +1,480 @@
+// The shape of the twined tiered tree (direction "Tiers" from the Blender look-dev in
+// docs/design/blender): an old tree whose wood only rises. Every strand starts as a root on the hill
+// and winds up the trunk with its partner. A couple leaves the trunk on a limb of its own, lower for
+// every younger generation: it reaches out low, lets the couple's single children peel off as twigs
+// and climbs to the fork that carries the two cards. Wood without cards makes the tree full: strands
+// around the eldest couple's leader that leave as crown branches, shoots on the limbs and a fine
+// shoot beyond each card. Pure, so `twinedForm.check.mjs` can test it without a scene.
+import { BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Quaternion, Vector3 } from 'three';
+import { CARD, CARD_GAP, type Point } from './pins.ts';
+import type { GrowingPlan } from './twinedGrowth';
+import type { Braid, TwinedPlan, Twig } from './twinedLayout';
+
+const TIER_GAP = CARD.height + CARD_GAP + 1.2;
+// The lowest tier leaves room for a card and a piece of trunk above the hilltop.
+const LOWEST = CARD.height + 4.7;
+// The angle one card needs is measured at this radius; limbs reach further (see `radiusOf`).
+const CARD_RADIUS = 10;
+// A couple leaves the trunk this far below its tier, and this far if single children hang below it:
+// then the limb starts under their cards, so their twigs can grow out of it and still rise.
+const RISE = 5.2;
+const RISE_LOW = 8.9;
+// Limbs of one generation do not all leave at the same height.
+const STAGGER = 0.8;
+// Younger braids stand around the eldest at this distance; a strand winds around its braid's axis
+// at WIND times its thickness, one full turn per TURN of length. The whole trunk turns slowly
+// (TWIST per unit of height), and a limb leaves a little before the direction it heads for (SWING).
+const RING = 1.38;
+const WIND = 0.68;
+const TURN = 5.5;
+const TWIST = (3 * Math.PI) / 180;
+const TWIST_AT = 10;
+const SWING = 0.4;
+// A strand is this thick at the ground and THIN of it where its card hangs. Limbs sway (SWAY) and
+// the wood swells and thins a little along its way (KNOTS).
+const STRAND = 0.68;
+const THIN = 0.46;
+const SWAY = 0.4;
+const KNOTS = 0.07;
+const TWIG = 0.24;
+// Below this height a strand is a root: [distance out, height above the ground, thickness].
+const FLARE = 2.6;
+const ROOT = [[8, -0.9, 0.08], [6.2, -0.25, 0.34], [4.5, 0.1, 0.6], [2.8, 0.4, 0.9], [1.5, 1.0, 1.22], [0.5, 1.85, 1.15]];
+// Crown branches: how many, how far from the front they stay (radians), how thick they start and
+// how far from the leader's axis they wind up the trunk.
+const CROWN = 8;
+const CROWN_FREE = 1.25;
+const CROWN_THICK = 0.4;
+const WRAP = 0.85;
+// Free wood in (share of its reach, share of its rise): a crown branch, a shoot, a side shoot.
+const CROWN_SHAPE = [[0, 0], [0.06, 0.5], [0.5, 0.95], [1, 1]];
+const SHOOT_SHAPE = [[0, 0], [0.3, 0.5], [0.62, 0.86], [1, 1]];
+const SIDE_SHAPE = [[0, 0], [0.35, 0.3], [0.7, 0.7], [1, 1]];
+const UP = new Vector3(0, 1, 0);
+const FULL = Math.PI * 2;
+// The bark texture repeats every 2 * FULL texture units along the wood (see docs/design/blender).
+const BARK_REPEAT = 2 * FULL;
+
+// The angle one card needs at the card radius; the plan shrinks it for big families.
+export const TWINED_SLOT_ANGLE = 2 * Math.asin((CARD.width + CARD_GAP) / (2 * CARD_RADIUS));
+
+// A piece of wood. `along` (a vertex attribute) runs from where it starts (0) to its tip (1), so it
+// can be drawn only part of the way while it grows; it grows together with member `follows`.
+// `tint` is its brightness. Free wood has an id that starts with "free:".
+export type Piece = { id: string; follows: string; geometry: BufferGeometry; tint: number };
+
+const smooth = (x: number) => {
+  const t = Math.min(1, Math.max(0, x));
+  return t * t * (3 - 2 * t);
+};
+const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+// The shortest turn from one angle to another.
+const turnTo = (from: number, to: number) => ((((to - from) % FULL) + FULL + Math.PI) % FULL) - Math.PI;
+// A Bezier curve through any number of control points.
+const bezier = (p: number[][], t: number): number[] => {
+  let q = p;
+  while (q.length > 1) q = q.slice(1).map((b, i) => [mix(q[i][0], b[0], t), mix(q[i][1], b[1], t)]);
+  return q[0];
+};
+// The eldest couple's fork in (distance from the axis, height): up the trunk first, then out.
+const bough = (r: number, y: number, out: number, up: number) => [[r, y], [r + 0.05 * out, y + 0.7 * up], [r + 0.55 * out, y + 1.02 * up], [r + out, y + up]];
+// A limb: an elbow out of the trunk, a long low reach, then the climb to the fork.
+const limbOf = (r: number, y: number, out: number, up: number) => [[r, y], [r, y + 1.8], [r + 0.45 * out, y + 0.9], [r + 0.72 * out, y + 0.72 * up], [r + out, y + up]];
+// The meadow's hill around the tree, relative to the hilltop.
+const ground = (r: number) => -7 * (1 - Math.exp((-r * r) / 1800));
+const key = (ids: string[]) => ids.join('\n');
+
+// Chance that only depends on a name (mulberry32 seeded with an FNV-1a hash), so a piece keeps its
+// shape when the family around it changes. The Blender script uses the same generator.
+export function seeded(text: string) {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
+  let s = h >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// Two normals per point that do not spin around the line (parallel transport).
+function frames(points: Vector3[]) {
+  const out: [Vector3, Vector3][] = [];
+  const tangent = new Vector3();
+  const before = new Vector3();
+  const normal = new Vector3(1, 0, 0);
+  const q = new Quaternion();
+  points.forEach((_, i) => {
+    tangent.subVectors(points[Math.min(i + 1, points.length - 1)], points[Math.max(i - 1, 0)]).normalize();
+    if (i) normal.applyQuaternion(q.setFromUnitVectors(before, tangent));
+    else if (Math.abs(tangent.x) > 0.9) normal.set(0, 1, 0);
+    normal.addScaledVector(tangent, -normal.dot(tangent)).normalize();
+    out.push([normal.clone(), new Vector3().crossVectors(tangent, normal)]);
+    before.copy(tangent);
+  });
+  return out;
+}
+
+// A round tube through `points` with a radius per point. uv.x counts bark repeats along its length
+// (thin wood has finer bark), uv.y runs once around; `along` runs from 0 to 1. Every piece starts
+// somewhere else in the bark (`name`), so no two show the same patches.
+function sweep(name: string, points: Vector3[], radii: number[], radial: number) {
+  const n = points.length;
+  const ring = radial + 1;
+  const position = new Float32Array(n * ring * 3);
+  const normal = new Float32Array(n * ring * 3);
+  const uv = new Float32Array(n * ring * 2);
+  const along = new Float32Array(n * ring);
+  const length = [0];
+  for (let i = 1; i < n; i++) length.push(length[i - 1] + points[i].distanceTo(points[i - 1]));
+  const scale = Math.min(0.9, Math.max(0.4, 0.45 * Math.sqrt(0.5 / Math.max(0.05, Math.max(...radii))))) / BARK_REPEAT;
+  const frame = frames(points);
+  const chance = seeded(`bark${name}`);
+  const shift = [chance(), chance()];
+  const v = new Vector3();
+  for (let i = 0; i < n; i++)
+    for (let j = 0; j <= radial; j++) {
+      const a = (j / radial) * FULL;
+      const k = i * ring + j;
+      v.copy(frame[i][0]).multiplyScalar(Math.cos(a)).addScaledVector(frame[i][1], Math.sin(a));
+      normal.set([v.x, v.y, v.z], k * 3);
+      position.set([points[i].x + v.x * radii[i], points[i].y + v.y * radii[i], points[i].z + v.z * radii[i]], k * 3);
+      uv.set([shift[0] + length[i] * scale, shift[1] + j / radial], k * 2);
+      along[k] = length[i] / length[n - 1];
+    }
+  const index: number[] = [];
+  for (let i = 0; i < n - 1; i++)
+    for (let j = 0; j < radial; j++) {
+      const a = i * ring + j;
+      index.push(a, a + 1, a + ring, a + ring, a + 1, a + ring + 1);
+    }
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(position, 3));
+  g.setAttribute('normal', new Float32BufferAttribute(normal, 3));
+  g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
+  g.setAttribute('along', new Float32BufferAttribute(along, 1));
+  g.setIndex(index);
+  return g;
+}
+
+// `plan` comes from `twinedPlan` with TWINED_SLOT_ANGLE (or from `blendPlans` while growing, with a
+// fractional depth); angle 0 faces `front`. Returns a piece per strand, twig and free branch and the
+// point each member's card hangs from, relative to the tree base.
+export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number) {
+  const pieces: Piece[] = [];
+  const pins = new Map<string, Point>();
+  const at = (r: number, a: number, y: number) => new Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
+  const tierY = (t: number) => LOWEST + (plan.depth - 1 - t) * TIER_GAP;
+  const cardAngle = new Map(plan.cards.map((c) => [c.id, c.angle]));
+  const grown = 'grown' in plan ? plan.grown : null;
+  const grownOf = (id: string) => grown?.get(id) ?? 1;
+
+  // How far the limbs of a tier reach: a dome, widest a little below the middle of the tree and
+  // wider for deeper families; a crowded tier pushes its cards further out.
+  const widest = 13.4 + 0.75 * (Math.min(plan.depth, 4) - 1);
+  const radii = new Map<number, number>();
+  const radiusOf = (tier: number) => {
+    if (!radii.has(tier)) {
+      const row = plan.cards.filter((c) => c.tier === tier).map((c) => c.angle).sort((a, b) => a - b);
+      let gap = TWINED_SLOT_ANGLE;
+      for (let i = 1; i < row.length; i++) gap = Math.min(gap, row[i] - row[i - 1]);
+      const crowded = (CARD.width + CARD_GAP) / (2 * Math.sin(Math.max(gap, 0.01) / 2));
+      const height = plan.depth > 1 ? Math.max(-0.5, (plan.depth - 1 - tier) / (plan.depth - 1)) : 1;
+      radii.set(tier, Math.max(crowded, widest * (1 - 1.26 * (height - 0.36) ** 2)));
+    }
+    return radii.get(tier)!;
+  };
+
+  // Where a braid leaves the trunk. A couple with twigs sinks to the low start while its first twig grows.
+  const twigsOf = new Map<string, Twig[]>();
+  for (const t of plan.twigs) twigsOf.set(key(t.from), [...(twigsOf.get(key(t.from)) ?? []), t]);
+  const eldest = (b: Braid) => b.offset <= 0;
+  const leaveOf = (b: Braid) => {
+    if (eldest(b)) return tierY(b.tier) - RISE;
+    const low = Math.max(0, ...(twigsOf.get(key(b.ids)) ?? []).map((t) => grownOf(t.id)));
+    return Math.max(FLARE + 1.5, tierY(b.tier) - mix(RISE, RISE_LOW, low) - STAGGER * seeded(b.ids[0])());
+  };
+
+  // Where each younger braid stands around the eldest: evenly spaced, in the order in which they
+  // leave, turned so that each stands close to where it leaves. While a new braid grows in, the
+  // others glide from their old places to the new ones.
+  const places = (braids: Braid[]) => {
+    const outer = braids.filter((b) => !eldest(b)).map((b) => ({ b, want: b.angle - SWING - TWIST * (leaveOf(b) - TWIST_AT) }));
+    outer.sort((x, y) => x.want - y.want);
+    const n = outer.length;
+    const off = Math.atan2(
+      outer.reduce((s, o, k) => s + Math.sin(o.want - (k * FULL) / n), 0),
+      outer.reduce((s, o, k) => s + Math.cos(o.want - (k * FULL) / n), 0),
+    );
+    return new Map(outer.map((o, k) => [o.b, off + (k * FULL) / n]));
+  };
+  const settled = grown ? plan.braids.filter((b) => b.ids.some((id) => (grown.get(id) ?? 1) >= 1)) : plan.braids;
+  const arrived = grown ? Math.min(1, ...grown.values()) : 1;
+  const now = places(plan.braids);
+  const before = settled.length < plan.braids.length ? places(settled) : now;
+  const ring = Math.max(RING, (mix(before.size, now.size, arrived) * 1.9) / FULL);
+
+  // A braid's axis up the trunk and along its limb; `along` is -1 in the trunk and 0 to 1 on the limb.
+  type Limb = { axis: Vector3[]; along: number[]; run: number[]; axisAt: (y: number) => Vector3 };
+  const limbs = new Map<string, Limb>();
+  // Where a strand's card hangs: the strand up to there, for the shoot that runs on.
+  const ends: { id: string; tier: number; points: Vector3[]; angle: number }[] = [];
+  plan.braids.forEach((braid, index) => {
+    const top = tierY(braid.tier);
+    const first = eldest(braid);
+    const leave = leaveOf(braid);
+    const reachHere = radiusOf(braid.tier);
+    const to = now.get(braid) ?? braid.angle;
+    const old = before.get(braid);
+    const home = old === undefined ? to : old + turnTo(old, to) * arrived;
+    const rho = first ? 0 : ring * smooth(braid.offset / 0.5);
+    const axisAt = (y: number) => at(rho, front + home + TWIST * (y - TWIST_AT), y);
+
+    const axis: Vector3[] = [];
+    const along: number[] = [];
+    for (let y = FLARE; y < leave - 1e-6; y += 0.3) {
+      axis.push(axisAt(y));
+      along.push(-1);
+    }
+    const a0 = home + TWIST * (leave - TWIST_AT);
+    const curve = (first ? bough : limbOf)(rho, leave, reachHere - rho, top - leave);
+    const steps = first ? 24 : 40;
+    const limb: Vector3[] = [];
+    for (let k = 0; k <= steps; k++) {
+      const [r, y] = bezier(curve, k / steps);
+      limb.push(at(r, front + a0 + turnTo(a0, braid.angle) * smooth(k / steps / (first ? 0.6 : 0.75)), y));
+    }
+    if (!first) {
+      // The limb sways a little, not at the trunk and not at the cards.
+      const side = frames(limb);
+      const chance = seeded(`sway${braid.ids[0]}`);
+      const phase = [chance() * FULL, chance() * FULL];
+      let far = 0;
+      const moved = limb.map((p, k) => {
+        if (k) far += p.distanceTo(limb[k - 1]);
+        const s = k / steps;
+        const sway = SWAY * smooth(s / 0.3) * smooth((1 - s) / 0.25);
+        return p.clone().addScaledVector(side[k][0], sway * Math.sin(0.8 * far + phase[0])).addScaledVector(side[k][1], sway * Math.sin(1.25 * far + phase[1]));
+      });
+      limb.splice(0, limb.length, ...moved);
+    }
+    limb.forEach((p, k) => {
+      axis.push(p);
+      along.push(k / steps);
+    });
+    const frame = frames(axis);
+    const run = [FLARE];
+    for (let k = 1; k < axis.length; k++) run.push(run[k - 1] + axis[k].distanceTo(axis[k - 1]));
+    const total = run[run.length - 1] - FLARE;
+    limbs.set(key(braid.ids), { axis, along, run, axisAt });
+
+    const n = braid.ids.length;
+    // Partners wind around each other up the trunk and for the first part of the limb, then part.
+    const fork = first ? 0.3 : 0.55;
+    const forkOver = first ? 0.35 : 0.3;
+    braid.ids.forEach((id, i) => {
+      const a = cardAngle.get(id)!;
+      const apart = turnTo(braid.angle, a);
+      const knot = seeded(`knot${id}`)() * FULL;
+      const points: Vector3[] = [];
+      const thick: number[] = [];
+      axis.forEach((p, k) => {
+        const t = along[k];
+        const swell = 1 + KNOTS * (0.6 * Math.sin(1.7 * run[k] + knot) + 0.4 * Math.sin(4.1 * run[k] + 2 * knot));
+        const size = STRAND * mix(1, THIN, ((run[k] - FLARE) / total) ** 1.15) * swell;
+        const turn = (FULL * i) / n + (FULL * run[k]) / TURN;
+        const wind = (n > 1 ? WIND : WIND * 0.15) * size * (t < 0 ? 1 : 1 - smooth((t - fork) / forkOver));
+        const point = p.clone().addScaledVector(frame[k][0], wind * Math.cos(turn)).addScaledVector(frame[k][1], wind * Math.sin(turn));
+        if (t > fork) point.applyAxisAngle(UP, -apart * smooth((t - fork) / (1 - fork)));
+        points.push(point);
+        thick.push(size);
+      });
+      const end = thick[thick.length - 1];
+      ends.push({ id, tier: braid.tier, points: points.slice(-6), angle: front + a });
+      // Beyond the card the strand runs out long and fine and turns up.
+      for (let k = 1; k <= 8; k++) {
+        points.push(at(reachHere + 3.2 * (k / 8), front + a, top + 2.5 * (k / 8) ** 1.7));
+        thick.push(end * mix(0.9, 0.1, k / 8));
+      }
+      // The root: out over the hill and into the ground, a little wavy.
+      const foot = points[0];
+      const r0 = Math.hypot(foot.x, foot.z);
+      const footAngle = Math.atan2(foot.z, foot.x);
+      const rootCurve = new CatmullRomCurve3([
+        ...ROOT.map(([out, lift]) => at(r0 + out, footAngle + 0.1 * Math.sin(out * 0.8 + index * 2.4 + i) * smooth(out / 2), ground(r0 + out) + lift)),
+        points[0],
+        points[2],
+      ]);
+      const root: Vector3[] = [];
+      const rootThick: number[] = [];
+      for (let k = 0; k < ROOT.length * 4; k++) {
+        const u = k / 4;
+        root.push(rootCurve.getPoint(u / (ROOT.length + 1)));
+        const next = u + 1 < ROOT.length ? ROOT[Math.floor(u) + 1][2] : 1;
+        rootThick.push(thick[0] * mix(ROOT[Math.floor(u)][2], next, u % 1));
+      }
+      pieces.push({ id, follows: id, geometry: sweep(id, [...root, ...points], [...rootThick, ...thick], 9), tint: 1 + (i % 2 ? -0.07 : 0.07) + 0.02 * braid.tier });
+      const pin = at(reachHere, front + a, top);
+      pins.set(id, [pin.x, pin.y - end, pin.z]);
+    });
+  });
+
+  // Twigs start inside their parents' braid and follow it for a moment. Out of the eldest couple's
+  // leader a twig sweeps up and out; out of a limb it peels off the low part and reaches out below
+  // the parents' cards.
+  for (const twig of plan.twigs) {
+    const parent = plan.braids.find((b) => key(b.ids) === key(twig.from));
+    const limb = limbs.get(key(twig.from));
+    if (!parent || !limb) continue;
+    const top = tierY(twig.tier);
+    const reachHere = radiusOf(twig.tier);
+    const points: Vector3[] = [];
+    const thick: number[] = [];
+    if (eldest(parent)) {
+      const leave = Math.max(FLARE + 0.5, top - 3.6);
+      for (let k = 0; k < 4; k++) {
+        points.push(limb.axisAt(leave - 1.6 + 0.4 * k));
+        thick.push(TWIG * mix(0.3, 1, k / 4));
+      }
+      const start = limb.axisAt(leave);
+      const r0 = Math.hypot(start.x, start.z);
+      const a0 = Math.atan2(start.z, start.x);
+      const curve = bough(r0, leave, reachHere - r0, top - leave);
+      for (let k = 0; k <= 24; k++) {
+        const [r, y] = bezier(curve, k / 24);
+        points.push(at(r, a0 + turnTo(a0, front + twig.angle) * smooth(k / 24 / 0.6), y));
+        thick.push(TWIG * mix(1, 0.42, k / 24));
+      }
+    } else {
+      const rank = twigsOf.get(key(twig.from))!.indexOf(twig);
+      let i0 = limb.along.findIndex((s) => s >= 0.3);
+      limb.along.forEach((s, i) => {
+        if (s >= 0.2 && limb.axis[i].y <= top - 1) i0 = i;
+      });
+      i0 = Math.max(5, i0 - 2 * rank);
+      const start = limb.axis[i0];
+      const r0 = Math.hypot(start.x, start.z);
+      const a0 = Math.atan2(start.z, start.x);
+      // A long reach is sturdier.
+      const size = 0.2 + 0.012 * (reachHere - r0);
+      for (let k = 5; k > 0; k--) {
+        points.push(limb.axis[i0 - k].clone());
+        thick.push(size * mix(0.3, 1, (5 - k) / 5));
+      }
+      const curve = [[r0, start.y], [r0 + 0.4 * (reachHere - r0), start.y + 0.1 * (top - start.y)], [reachHere - 0.3 * (reachHere - r0), top - 0.35], [reachHere, top]];
+      for (let k = 0; k <= 24; k++) {
+        const [r, y] = bezier(curve, k / 24);
+        points.push(at(r, a0 + turnTo(a0, front + twig.angle) * smooth(k / 24 / 0.75), y));
+        thick.push(size * mix(1, 0.42, k / 24));
+      }
+    }
+    const end = thick[thick.length - 1];
+    for (let k = 1; k <= 6; k++) {
+      points.push(at(reachHere + 1.5 * (k / 6), front + twig.angle, top + 0.7 * (k / 6) ** 1.8));
+      thick.push(end * mix(0.8, 0.15, k / 6));
+    }
+    pieces.push({ id: twig.id, follows: twig.id, geometry: sweep(twig.id, points, thick, 6), tint: 1.1 });
+    const pin = at(reachHere, front + twig.angle, top);
+    pins.set(twig.id, [pin.x, pin.y - end, pin.z]);
+  }
+
+  // Free wood carries no card and always grows up and out, while cards only hang below the wood.
+  // `lead` is its way inside the wood it grows out of; `subs` says how many side branches each
+  // level has. Its chance comes from its own name, so it stays as it is when the family changes.
+  const free = (
+    id: string,
+    follows: string,
+    lead: Vector3[],
+    size: number,
+    heading: number,
+    reach: number,
+    rise: number,
+    shape: number[][],
+    bend: number,
+    wobble: number,
+    subs: number[],
+    chance: () => number,
+  ) => {
+    const start = lead[lead.length - 1];
+    const points: Vector3[] = [];
+    const thick: number[] = [];
+    const n = Math.max(8, Math.floor((reach + rise) / 0.45));
+    const phase = chance() * FULL;
+    let x = start.x;
+    let z = start.z;
+    let gone = 0;
+    for (let k = 1; k <= n; k++) {
+      const s = k / n;
+      const [out, up] = bezier(shape, s);
+      const a = heading + bend * s;
+      x += Math.cos(a) * (out - gone) * reach;
+      z += Math.sin(a) * (out - gone) * reach;
+      gone = out;
+      const w = wobble * Math.sin(phase + 5 * s) * s;
+      points.push(new Vector3(x - Math.sin(a) * w, start.y + up * rise, z + Math.cos(a) * w));
+      thick.push(size * mix(1, 0.16, s ** 0.9));
+    }
+    const leadThick = lead.map((_, i) => size * mix(0.3, 1, smooth(i / Math.min(10, Math.max(1, lead.length - 1)))));
+    pieces.push({ id, follows, geometry: sweep(id, [...lead, ...points], [...leadThick, ...thick], 5), tint: 1.05 });
+    for (let j = 0; j < (subs[0] ?? 0); j++) {
+      const k0 = Math.floor(points.length * mix(0.35, 0.7, chance()));
+      const side = chance() < 0.5 ? 1 : -1;
+      const share = mix(0.42, 0.6, chance());
+      const turn = heading + (bend * k0) / points.length + side * mix(0.5, 0.95, chance());
+      free(`${id}.${j + 1}`, follows, points.slice(Math.max(0, k0 - 5), k0 + 1), size * 0.55, turn, reach * share, rise * share, SHOOT_SHAPE, side * 0.3, wobble * 0.5, subs.slice(1), chance);
+    }
+  };
+
+  // The crown: strands wind up the trunk around the eldest couple's leader, so the trunk stays a
+  // trunk above the limbs, and leave it as branches on every side but the front.
+  const founders = plan.braids.find(eldest);
+  const leader = founders && limbs.get(key(founders.ids));
+  if (founders && leader) {
+    const trunk = leader.along.filter((s) => s < 0).length;
+    // A young tree has a small crown.
+    const scale = Math.min(1, Math.max(0.35, (trunk * 0.3) / 20));
+    for (let j = 0; j < CROWN; j++) {
+      const chance = seeded(`${key(founders.ids)}|crown${j}`);
+      const a = front + CROWN_FREE + ((j + 0.5 + 0.5 * (chance() - 0.5)) / CROWN) * (FULL - 2 * CROWN_FREE);
+      const i0 = Math.max(1, Math.min(leader.axis.length - 1, Math.floor(mix(0.5, 0.97, chance()) * trunk)));
+      const i1 = Math.max(0, Math.min(i0 - 12, Math.floor(0.25 * trunk)));
+      const lead: Vector3[] = [];
+      for (let i = i1; i <= i0; i++) {
+        const turn = a + 0.45 * (leader.run[i] - leader.run[i0]);
+        const out = WRAP * smooth((i - i1) / 10);
+        lead.push(leader.axis[i].clone().add(new Vector3(Math.cos(turn) * out, 0, Math.sin(turn) * out)));
+      }
+      const length = mix(8, 12, chance()) * scale;
+      free(`free:crown${j}`, founders.ids[0], lead, CROWN_THICK * mix(0.6, 1, scale), a - 0.2, 0.8 * length, 0.72 * length, CROWN_SHAPE, 0.4, 0.5 * scale, [2, 1], chance);
+    }
+  }
+  // Shoots on the limbs, away from the fork: up where nothing hangs above, sideways under another limb.
+  for (const braid of plan.braids) {
+    const limb = limbs.get(key(braid.ids));
+    if (eldest(braid) || !limb) continue;
+    const spots = limb.along.flatMap((s, i) => (s >= 0.3 && s <= 0.6 ? [i] : []));
+    const up = braid.tier <= 1;
+    const count = up ? 3 : 2;
+    for (let j = 0; j < count; j++) {
+      const chance = seeded(`${braid.ids[0]}|shoot${j}`);
+      const i0 = spots[Math.floor(((j + mix(0.2, 0.8, chance())) / count) * spots.length)];
+      const way = limb.axis[i0 + 2].clone().sub(limb.axis[i0 - 2]);
+      const length = mix(2.6, 4.6, chance());
+      const side = (j + braid.tier) % 2 ? 1 : -1;
+      const turn = Math.atan2(way.z, way.x) + side * (up ? mix(0.5, 1, chance()) : mix(0.9, 1.3, chance()));
+      free(`free:${braid.ids[0]}:shoot${j}`, braid.ids[0], limb.axis.slice(i0 - 5, i0 + 1), 0.14, turn, (up ? 0.5 : 0.9) * length, (up ? 0.85 : 0.35) * length, up ? SHOOT_SHAPE : SIDE_SHAPE, side * 0.3, 0.25, length > 3.8 ? [1] : [], chance);
+    }
+  }
+  // Where a couple's card hangs the wood runs on into a fine shoot, unless a card hangs right above.
+  for (const end of ends) {
+    if (end.tier > 0 && radiusOf(end.tier) < radiusOf(end.tier - 1)) continue;
+    const chance = seeded(`${end.id}|tip`);
+    const side = chance() < 0.5 ? 1 : -1;
+    const length = mix(2, 3.4, chance());
+    free(`free:${end.id}:tip`, end.id, end.points, 0.11, end.angle + side * mix(0.4, 0.9, chance()), 0.75 * length, 0.6 * length, SHOOT_SHAPE, side * 0.3, 0.2, [], chance);
+  }
+
+  return { pieces, pins };
+}

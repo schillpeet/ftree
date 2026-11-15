@@ -54,3 +54,6 @@ next-env.d.ts
 
 # examples
 examples/
+
+# blender scenes are rebuilt from docs/design/blender/tree.py
+docs/design/blender/*.blend*

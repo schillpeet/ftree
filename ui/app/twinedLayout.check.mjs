@@ -146,7 +146,32 @@ const spaced = (p, slot) => {
   const p = plan([person('mum', [], [], '1930'), ...kids]);
   const row = p.cards.filter((c) => c.tier === 1).map((c) => c.angle);
   assert.ok(Math.max(...row) - Math.min(...row) < Math.PI * 2);
-  spaced(p, (Math.PI * 2) / 32);
+  // 30 cards, the air around the family (1 slot) and the free front (4 slots).
+  spaced(p, (Math.PI * 2) / 35);
+}
+
+// Families are groups: partners hang a slot apart, the next family starts two slots further on.
+{
+  const family = [person('gp', [], ['gm'], '1930'), person('gm', [], ['gp'], '1931')];
+  for (const [i, c] of ['a', 'b', 'c'].entries()) {
+    family.push(person(c, ['gp', 'gm'], [`${c}2`], `196${i}`), person(`${c}2`, [], [c], `197${i}`), person(`${c}kid`, [c, `${c}2`], [], `199${i}`));
+  }
+  const p = plan(family);
+  const row = p.cards.filter((c) => c.tier === 1).sort((x, y) => x.angle - y.angle);
+  const between = [];
+  const sameSide = (x, y) => Math.sign(x.angle) === Math.sign(y.angle);
+  for (let i = 1; i < row.length; i++) {
+    // The free front parts whoever hangs across it.
+    if (!sameSide(row[i], row[i - 1])) continue;
+    const gap = row[i].angle - row[i - 1].angle;
+    if (row[i].id[0] === row[i - 1].id[0]) close(gap, SLOT);
+    else between.push(gap);
+  }
+  close(Math.min(...between), 2 * SLOT);
+  // A child hangs right below the middle of its parents.
+  const below = ['a', 'b', 'c'].filter((c) => sameSide(card(p, c), card(p, `${c}2`)));
+  assert.ok(below.length >= 2);
+  for (const c of below) close(card(p, `${c}kid`).angle, (card(p, c).angle + card(p, `${c}2`).angle) / 2);
 }
 
 // The front stays free so the trunk can be seen: no card hangs within three quarters of a slot of
