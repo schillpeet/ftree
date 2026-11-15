@@ -12,14 +12,7 @@
 
 ### Dependencies
 
-* **bff:** bump gradle-wrapper from 9.8.2 to 9.9.0 in /bff ([#347](https://github.com/schillpeet/ftree/issues/347)) ([a4fae28](https://github.com/schillpeet/ftree/commit/a4fae28746d854949b43b1a0c7e3de42c5d754b0))
-* **repo:** bump @stoplight/spectral-cli from 6.17.0 to 6.17.1 in /api ([#351](https://github.com/schillpeet/ftree/issues/351)) ([233ec88](https://github.com/schillpeet/ftree/commit/233ec88d4f1b8c1d25850059f58bde982ef8d710))
-* **repo:** bump actions/setup-java from 6.1.0 to 6.2.0 ([#349](https://github.com/schillpeet/ftree/issues/349)) ([7695b84](https://github.com/schillpeet/ftree/commit/7695b84257376ce10d774ec180bc8bd46afc46c8))
-* **repo:** bump docker/login-action from 4.7.0 to 4.8.0 ([#350](https://github.com/schillpeet/ftree/issues/350)) ([8e4feba](https://github.com/schillpeet/ftree/commit/8e4febaf043e76b3e4fa126212c12caeea7b9bc5))
-* **repo:** bump postgres from 17.11 to 17.11 ([#348](https://github.com/schillpeet/ftree/issues/348)) ([68b0d81](https://github.com/schillpeet/ftree/commit/68b0d814e499127bef7199898daa14f74cf2ef5b))
-* **repo:** bump the codeql-action group with 3 updates ([#346](https://github.com/schillpeet/ftree/issues/346)) ([8a231a3](https://github.com/schillpeet/ftree/commit/8a231a3108e8c02b7e797d606d0dee85627d0e90))
-* **ui:** bump eslint-config-next from 16.4.4 to 16.4.6 in /ui ([#353](https://github.com/schillpeet/ftree/issues/353)) ([73ddf5c](https://github.com/schillpeet/ftree/commit/73ddf5c976843eb43303963ac670d589066f44e5))
-* **ui:** bump next from 16.4.5 to 16.4.6 in /ui ([#352](https://github.com/schillpeet/ftree/issues/352)) ([93ee7c1](https://github.com/schillpeet/ftree/commit/93ee7c1dde87bff736dd982bf4562d60357c07ab))
+* update dependencies with dependabot ([#346](https://github.com/schillpeet/ftree/issues/346), [#347](https://github.com/schillpeet/ftree/issues/347), [#348](https://github.com/schillpeet/ftree/issues/348), [#349](https://github.com/schillpeet/ftree/issues/349), [#350](https://github.com/schillpeet/ftree/issues/350), [#351](https://github.com/schillpeet/ftree/issues/351), [#352](https://github.com/schillpeet/ftree/issues/352), [#353](https://github.com/schillpeet/ftree/issues/353))
 
 ## [0.41.0](https://github.com/schillpeet/ftree/compare/v0.40.1...v0.41.0) (2026-11-12)
 
