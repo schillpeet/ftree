@@ -19,7 +19,7 @@ import ProfilePanel from './ProfilePanel';
 import type { FamilyCardMode } from './FamilyCard';
 import Header from './Header';
 import MemberSearch from './MemberSearch';
-import MembersControls from './MembersControls';
+import MembersControls, { type AddRequest } from './MembersControls';
 import { AddedToast, type AddedExtra } from './QuickAdd';
 import ShareDialog from './ShareDialog';
 import Scene, { type Focus } from './Scene';
@@ -66,8 +66,8 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
   const [isEvolutionOpen, setIsEvolutionOpen] = useState(false);
   const [panel, setPanel] = useState<DashboardPanel | null>(null);
   const [familyCard, setFamilyCard] = useState<FamilyCardMode | null>(null);
-  // A new object per "Add member" in the menu.
-  const [addRequest, setAddRequest] = useState<object | null>(null);
+  // A new object per "Add member" in the menu, or per "Add myself" in the empty tree.
+  const [addRequest, setAddRequest] = useState<AddRequest | null>(null);
   // A new object per click on the pencil beside a card.
   const [editRequest, setEditRequest] = useState<Focus>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -273,12 +273,18 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
 
   const closeEvolution = useCallback(() => setIsEvolutionOpen(false), []);
 
-  function addMember() {
+  function addMember(self = false) {
     stopFollowing();
     setIsMenuOpen(false);
     setPanel(null);
     setIsSearchOpen(false);
-    setAddRequest({});
+    setAddRequest(self ? { self: true } : {});
+  }
+
+  // The user added themself to the open tree: keep the family with its new `selfMemberId`, and fly to their card.
+  function selfLinked(family: FamilySummary, memberId: string) {
+    setFamilies((current) => current?.map((item) => (item.id === family.id ? family : item)) ?? current);
+    setPlantedMemberId(memberId);
   }
 
   function addFamily(family: FamilySummary, card: FamilyCardMode | null = null) {
@@ -465,7 +471,10 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           onImport={() => {
             setPanel('families');
           }}
-          onAddPerson={addMember}
+          onAddPerson={() => addMember()}
+          // Only while the user is nobody in this tree yet; an admin without a membership learns on saving that the
+          // link is not possible, since the summary does not tell admins' memberships apart.
+          onAddSelf={activeFamily && !activeFamily.selfMemberId ? () => addMember(true) : undefined}
         />
       )}
       {tour.active && activeFamily && members && !emptyTree && <IntroTour step={tour.step} onNext={tour.next} onSkip={tour.skip} />}
@@ -477,7 +486,7 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
           hasFamily={!!activeFamily}
           locked={invitationOpen}
           hasSelection={!!shownId}
-          onPerson={addMember}
+          onPerson={() => addMember()}
           onSearch={() => setIsSearchOpen((open) => !open)}
           onInvite={() => {
             setIsMenuOpen(false);
@@ -525,6 +534,8 @@ export default function FamilyTree({ operatorEmail }: { operatorEmail?: string }
         onSelect={(id) => setFocus({ id })}
         onShownChange={onShownChange}
         onFamiliesChanged={() => void loadFamilies()}
+        onSelfLinked={selfLinked}
+        onOpenProfile={() => setPanel('profile')}
       />
       {panel === 'profile' && (
         <ProfilePanel

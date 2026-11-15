@@ -101,11 +101,11 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 
 - The card shape follows the theme; size, position, and behaviour do not.
 - `3d`: papyrus scroll (`.scroll` in `ui/app/globals.css`: rod, torn sheet, curl), about 104px wide in the overview, with initials or photo, name, and years.
-  - Signed-in person: small "DU" badge in `--accent` on the rod; selected scroll gets a soft `--glow` halo.
+  - Signed-in person: small "DU" badge in `--accent` on the rod and a lasting, weaker `--accent` halo (an accent drop shadow on the papyrus scroll), which fades less than other cards while someone is selected; selected scroll gets a soft `--glow` halo.
 - `tron`: round pill in the chip look (`.simple-name` in `ui/app/globals.css`, markup in `ui/app/SimpleTree.tsx`), `--size-person-pill` high and at most 132px wide, `--radius-pill`, `--node` background, 1px `--accent` edge, glass blur, `--font-ui` (mono in GRID) 500 12px with 0.04em tracking.
   - Content: a 30px ring in `--avatar` with the initials on `--hover`, the first name in capitals, and the years at 10px (no role line).
   - Lineage: a 14px glow; selected: 12 % larger, a `--line-core` (white) edge, a face mixed with 20 % `--accent`, filled initials, and a 26px glow; dimmed: edge and ring in `--avatar-dim`, grey at 30 % opacity.
-  - Signed-in person: a 1.5px `--line-on` ring, a 14px glow and the "DU" badge.
+  - Signed-in person: a 2px `--accent` edge with a 3px ring of 30 % `--accent`, an 18px glow and the "DU" badge; dimmed it keeps the accent edge at 70 % opacity.
 - Density M: 3D cards add "geb. …" and the dates of birth and death instead of the years; GRID pills keep their size with three tight lines (full name, "geb. …", date of birth or years). No card shows the note.
 - Placeholder (a nameless person): never "Unbekannt"; the role ("Elternteil", "Partner:in", "Kind", "Person") in italics, "?" in a dashed ring, and in GRID a dashed `--avatar-dim` edge with `--muted` text; the profile adds "noch nicht eingetragen" and, for editors, "Eintragen".
 - Both: a spotlight on the selection: the person and everyone their panel lists stay lit, every other card is dimmed (grey, `opacity .35` on scrolls, `.3` on pills); without a selection a highlighted lineage dims the rest the same way; a presence dot shows when someone else views or edits the person.
@@ -158,6 +158,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 - Data: Vorname, Nachname, Geburtsname (behind "Geburtsname hinzufügen"), Geboren am / in, Verstorben am / in, photo, Notiz.
 - Relations: Eltern, Partner, Kinder, Geschwister, Halbgeschwister, each with a name search and "Neue Person „…“ hinzufügen"; partners carry a status (zusammen, verheiratet, getrennt, geschieden, verwitwet) with dates, parents a kind (leiblich, adoptiert, Stief, Pflege).
 - The footer "Verwerfen" / "Person speichern" appears once something changed; deleting, removing a photo, and discarding use native confirms.
+- "Dich hinzufügen" (adding yourself): the same form, prefilled with the user's own display name, below an account block bordered and tinted in `--accent` with "DAS BIST DU", avatar, name, email, the verified chip, "Profil öffnen", and the note that the email stays in the account.
 
 ## Conflict dialog
 
@@ -204,6 +205,7 @@ The click dummy in [dummy/](dummy/) shows the same components in their journeys.
 ## Empty and error states
 
 - Empty tree: "Dieser Baum ist noch leer" with "Erste Person hinzufügen" (editors), or a line that people appear once someone adds them.
+- While the user is nobody in that tree yet, the card stacks a filled `--primary` pill "Mich hinzufügen" (`--size-dock-primary` high) above the glass button "Andere Person hinzufügen".
 - Unknown or forbidden tree: "Baum nicht gefunden", "Diesen Baum gibt es nicht, oder du hast keinen Zugriff darauf.", "Zurück zu deinem Baum".
 - Auth notice: a closable glass banner with "Neu laden" when the role forbids something or the sign-in expired.
 

@@ -467,6 +467,16 @@ const en = {
     noPeopleHint: 'Add the first person, for example yourself; parents, partners and children are linked in their profile afterwards.',
     noPeopleShared: 'As soon as someone adds people, they appear here.',
     addFirst: 'Add the first person',
+    addSelf: 'Add myself',
+    addOther: 'Add someone else',
+  },
+  self: {
+    title: 'Add yourself',
+    eyebrow: 'This is you',
+    emailNote: 'Your email stays in your account and does not appear in the tree.',
+    openProfile: 'Open profile',
+    linkFailed: 'You were added, but not linked to your account. Save again to link.',
+    noMembership: 'You were added, but without a membership of your own in this tree you cannot be linked to your account.',
   },
   welcome: {
     label: 'Welcome',
@@ -1366,6 +1376,16 @@ const de: typeof en = {
     noPeopleHint: 'Füge die erste Person hinzu, zum Beispiel dich selbst; Eltern, Partner und Kinder verknüpfst du danach in ihrem Profil.',
     noPeopleShared: 'Sobald jemand Personen hinzufügt, erscheinen sie hier.',
     addFirst: 'Erste Person hinzufügen',
+    addSelf: 'Mich hinzufügen',
+    addOther: 'Andere Person hinzufügen',
+  },
+  self: {
+    title: 'Dich hinzufügen',
+    eyebrow: 'Das bist du',
+    emailNote: 'Deine E-Mail bleibt in deinem Konto und erscheint nicht im Baum.',
+    openProfile: 'Profil öffnen',
+    linkFailed: 'Du wurdest angelegt, aber nicht mit deinem Konto verknüpft. Speichere noch einmal, um es zu verknüpfen.',
+    noMembership: 'Du wurdest angelegt, kannst ohne eigene Mitgliedschaft in diesem Baum aber nicht mit deinem Konto verknüpft werden.',
   },
   welcome: {
     label: 'Willkommen',
