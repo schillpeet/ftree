@@ -144,6 +144,7 @@ jobs:
       - run: node app/home/chipName.check.mjs
       - run: node app/slots.check.mjs
       - run: node app/welcomed.check.mjs
+      - run: node app/selfMember.check.mjs
       - run: node app/admin/adminData.check.mjs
       - run: node app/live/presence.check.mjs
       - run: node app/live/liveEvents.check.mjs

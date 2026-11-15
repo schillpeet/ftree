@@ -1,7 +1,7 @@
 'use client';
 
 import { useT } from './i18n';
-import { PlusIcon, UploadIcon, UserPlusIcon } from './icons';
+import { PlusIcon, UploadIcon, UserIcon, UserPlusIcon } from './icons';
 import { useCan } from './Permissions';
 import './treeRoute.css';
 
@@ -12,12 +12,15 @@ export default function EmptyTree({
   onCreate,
   onImport,
   onAddPerson,
+  onAddSelf,
 }: {
   kind: 'noTree' | 'noPeople';
   onCreate: () => void;
   // Opens the families board, where the GEDCOM import lives.
   onImport: () => void;
   onAddPerson: () => void;
+  // Set while the caller is nobody in the open tree yet: "Add myself" comes first, filled, so they rather pick that.
+  onAddSelf?: () => void;
 }) {
   const t = useT();
   const canCreate = useCan('family.create');
@@ -46,6 +49,17 @@ export default function EmptyTree({
               <button type="button" className="glass glass-button" onClick={onImport}>
                 <UploadIcon />
                 {t.families.import}
+              </button>
+            </>
+          ) : onAddSelf ? (
+            <>
+              <button type="button" className="empty-tree-primary" onClick={onAddSelf}>
+                <UserIcon />
+                {t.emptyTree.addSelf}
+              </button>
+              <button type="button" className="glass glass-button" onClick={onAddPerson}>
+                <UserPlusIcon />
+                {t.emptyTree.addOther}
               </button>
             </>
           ) : (

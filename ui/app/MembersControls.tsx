@@ -7,6 +7,7 @@ import {
   deleteFamilyMemberPhoto,
   getFamilyMembers,
   getGetFamilyMemberPhotoUrl,
+  setSelfMember,
   updateFamilyMember,
   updateFamilyMemberRelatives,
   uploadFamilyMemberPhoto,
@@ -19,7 +20,7 @@ import { isEditConflict, withVersion } from './conflict';
 import { useT } from './i18n';
 import { onLiveEvent } from './live/liveBus';
 import PresenceHint from './live/PresenceHint';
-import { useCan } from './Permissions';
+import { useCan, useMe } from './Permissions';
 import { initialsOf, nameOf } from './names';
 import { MembersProvider } from './placeholders';
 import { dateProblem } from './partnerships';
@@ -30,6 +31,11 @@ import RelativesFields, { NEW_PLACEHOLDER, withNewPlaceholder, type Relation } f
 import { EMPTY_FORM, MemberHero, MemberLifeFields, NewMemberPanel, toForm, toJpeg, toRequest, usePhotoPreview, type MemberForm } from './MemberFields';
 import type { Focus } from './Scene';
 import FamilyCard, { type FamilyCardMode } from './FamilyCard';
+import SelfAccount from './SelfAccount';
+import { selfNameOf } from './selfMember';
+
+// A request to open the form for a new person; `self` opens it as the user themself, linked to their account on save.
+export type AddRequest = { self?: boolean };
 
 // Waits this long for more events before the members are loaded again.
 const LIVE_REFETCH_MS = 300;
@@ -69,6 +75,8 @@ export default function MembersControls({
   onSelect,
   onShownChange,
   onFamiliesChanged,
+  onSelfLinked,
+  onOpenProfile,
 }: {
   familyId: string | null;
   family: FamilySummary | undefined;
@@ -80,16 +88,20 @@ export default function MembersControls({
   setMembers: Dispatch<SetStateAction<Member[] | null>>;
   // Member whose profile was requested from their scroll in the scene.
   profile: Focus;
-  // A new object per "Add member" in the menu, which opens the form for a new person.
-  addRequest: object | null;
+  // A new object per "Add member" in the menu, which opens the form for a new person (or the user themself).
+  addRequest: AddRequest | null;
   // Member whose edit form was requested from the pencil beside their card; a new object per click.
   editRequest: Focus;
   onSelect: (id: string) => void;
   // The person whose panel is open (viewed or edited), or null, and whether the form edits them.
   onShownChange: (id: string | null, editing: boolean) => void;
   onFamiliesChanged: () => void;
+  // The user added themself and is now linked to that person; the family carries the new `selfMemberId`.
+  onSelfLinked?: (family: FamilySummary, memberId: string) => void;
+  onOpenProfile?: () => void;
 }) {
   const t = useT();
+  const me = useMe();
   const canEdit = useCan('member.edit');
   const canDelete = useCan('member.delete');
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -99,6 +111,8 @@ export default function MembersControls({
   const [conflict, setConflict] = useState(false);
   const [form, setForm] = useState<MemberForm>(EMPTY_FORM);
   const [editing, setEditing] = useState<Member | null>(null);
+  // The form adds the user themself: it shows their account, and saving links the person to it.
+  const [isSelf, setIsSelf] = useState(false);
   // Picked image, uploaded once the member is saved.
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [formKey, setFormKey] = useState(0);
@@ -174,9 +188,9 @@ export default function MembersControls({
     };
   }, [familyId, setMembers]);
 
-  const onAddRequest = useEffectEvent(() => openForm());
+  const onAddRequest = useEffectEvent((request: AddRequest) => openForm(null, !!request.self));
   useEffect(() => {
-    if (addRequest) onAddRequest();
+    if (addRequest) onAddRequest(addRequest);
   }, [addRequest]);
 
   // Only a new pencil click opens the edit form; checked in render below, once openForm can run.
@@ -244,14 +258,18 @@ export default function MembersControls({
     }
   }
 
-  function openForm(member: Member | null = null) {
+  function openForm(member: Member | null = null, self = false) {
     if (!familyId || !canEdit) return;
-    // Keep an unsaved create draft, but never carry an edited member's values into a new person.
+    // Keep an unsaved create draft, but never carry an edited member's values into a new person; adding yourself
+    // always starts from your own name, and leaves no draft behind for the next new person.
     if (member) {
       setForm(toForm(member));
-    } else if (editing) {
+    } else if (self) {
+      setForm({ ...EMPTY_FORM, ...selfNameOf(me) });
+    } else if (editing || isSelf) {
       setForm({ ...EMPTY_FORM });
     }
+    setIsSelf(!member && self);
     setEditing(member);
     setPhotoFile(null);
     relatives.current = null;
@@ -266,8 +284,9 @@ export default function MembersControls({
 
   const initialForm = editing && toForm(editing);
   const formChanged = !!initialForm && (Object.keys(initialForm) as (keyof MemberForm)[]).some((key) => form[key] !== initialForm[key]);
-  // A new person can always be saved; an edited one only once something differs.
-  const isDirty = !editing || formChanged || !!photoFile || relativesChanged;
+  // A new person can always be saved, and so can the user added but not linked yet; an edited one only once something
+  // differs.
+  const isDirty = !editing || isSelf || formChanged || !!photoFile || relativesChanged;
 
   // Closes the form (Escape, ×, Discard): the create draft is kept anyway, edits are only discarded on confirmation,
   // and an edited person is shown again.
@@ -389,7 +408,25 @@ export default function MembersControls({
       );
       // Relatives change other members too, so the whole family is reloaded.
       if (relate && !relativesError) void reloadMembers();
+      const link = isSelf ? await linkSelf(member.id) : 'linked';
+      // After the link, so the reloaded families already carry it.
       onFamiliesChanged();
+      if (link === 'failed') {
+        // The person exists, so saving again updates them and tries the link once more, never creating a second one.
+        setEditing(member);
+        setForm(toForm(member));
+        setPhotoFile(null);
+        setFormError(t.self.linkFailed);
+        return;
+      }
+      if (link === 'noMembership') {
+        setIsSelf(false);
+        setEditing(member);
+        setForm(toForm(member));
+        setPhotoFile(null);
+        setFormError(t.self.noMembership);
+        return;
+      }
       if (photoFailed || relativesError) {
         // The person exists now, so saving again must update them instead of creating a duplicate.
         // The relatives fields keep their selection, so a failed save can be retried.
@@ -400,6 +437,7 @@ export default function MembersControls({
         return;
       }
       setIsFormOpen(false);
+      setIsSelf(false);
       setProfileId(member.id);
       setTrail([]);
       onSelect(member.id);
@@ -409,6 +447,22 @@ export default function MembersControls({
       setFormError(t.members.unreachable);
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  // Makes the saved person the user (`PUT /families/{id}/self`). An admin without a membership in the tree cannot be
+  // linked (400); the person then stays an ordinary one.
+  async function linkSelf(memberId: string): Promise<'linked' | 'noMembership' | 'failed'> {
+    if (!familyId) return 'failed';
+    try {
+      const response = await setSelfMember(familyId, { memberId });
+      if (response.status === 200) {
+        onSelfLinked?.(response.data, memberId);
+        return 'linked';
+      }
+      return response.status === 400 ? 'noMembership' : 'failed';
+    } catch {
+      return 'failed';
     }
   }
 
@@ -473,13 +527,13 @@ export default function MembersControls({
         <PanelShell
           // One panel per opened form, so focus starts in the first field again.
           key={`form-${formKey}`}
-          label={editing ? t.members.edit : t.members.add}
+          label={editing ? t.members.edit : isSelf ? t.self.title : t.members.add}
           closeLabel={t.members.closeForm}
           onClose={dismissForm}
           {...panelPosition}
           // Editing a person in the tree: the form opens on the left, so their card stays in view on the right.
           {...(editing ? { offset: CENTRE } : {})}
-          className={`person-panel-form${editing ? ' person-panel-left' : ''}${newRelative ? ' person-panel-origin' : ''}`}
+          className={`person-panel-form${editing ? ' person-panel-left' : ''}${isSelf ? ' person-panel-self' : ''}${newRelative ? ' person-panel-origin' : ''}`}
           onDelete={
             editing && canDelete
               ? async () => {
@@ -489,6 +543,7 @@ export default function MembersControls({
           }
         >
           <form className="person-form" onSubmit={submitMember}>
+            {isSelf && <SelfAccount onOpenProfile={onOpenProfile} />}
             <MemberHero
               form={form}
               onChange={updateForm}

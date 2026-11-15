@@ -277,17 +277,24 @@ function GlowOrbs({ width, rope, seed, evening }: { width: number; rope: number;
 
 // Multiplies a dimmed card's colours: much darker and greyer, like the faded scrolls, so the selection stands out.
 const DIMMED = '#4a4744';
-const shade = (dimmed?: boolean) => (dimmed ? { color: DIMMED } : {});
+// The user's own card fades much less, so they always find themselves, even while someone else's family is lit.
+const DIMMED_SELF = '#9a948c';
+const shade = (dimmed?: boolean, isSelf = false) => (dimmed ? { color: isSelf ? DIMMED_SELF : DIMMED } : {});
+// How much of a card's glow stays while it is dimmed.
+const fadedGlow = (dimmed?: boolean, isSelf = false) => (dimmed ? (isSelf ? 0.8 : 0.5) : 1);
 
-// A soft halo in the theme's glow behind the selected card's sheet (local position and size).
-function Halo({ position, width, height }: { position: Point; width: number; height: number }) {
-  const glow = useTokenPaint('--glow');
+// A soft halo in the theme's glow behind the selected card's sheet (local position and size); the user's own card
+// keeps a weaker one in the accent all the time, so it stands out without looking selected.
+function Halo({ position, width, height, self = false }: { position: Point; width: number; height: number; self?: boolean }) {
+  const glow = useTokenPaint(self ? '--accent' : '--glow');
+  // The texture fades fast towards its edge, so the self halo is wider to reach out past the sheet in front of it.
+  const scale: [number, number, number] = self ? [width * 2.8, height * 2.1, 1] : [width * 1.8, height * 1.5, 1];
   return (
-    <sprite position={position} scale={[width * 1.8, height * 1.5, 1]}>
+    <sprite position={position} scale={scale}>
       <spriteMaterial
         map={glowTexture()}
         color={glow.color}
-        opacity={glow.opacity}
+        opacity={self ? glow.opacity * 0.75 : glow.opacity}
         transparent
         blending={AdditiveBlending}
         depthWrite={false}
@@ -328,12 +335,13 @@ export function ScrollCard({ member, label, familyId, position, onOpen, onDrag, 
   const ref = useHanging(position, mode === 'label' ? 'face-camera' : 'sway', seed);
   const face = useCardTexture(member, label, familyId, SCROLL.width * PX, SCROLL.height * PX, drawScroll);
   const surface = plainTextures().papyrus;
-  const glow = (mode === 'label' ? 0.45 : 0.08 + 0.42 * evening) * (dimmed ? 0.5 : 1);
+  const glow = (mode === 'label' ? 0.45 : 0.08 + 0.42 * evening) * fadedGlow(dimmed, isSelf);
   const { width, height, rope } = SCROLL;
   const sheetY = -rope - height / 2 - 0.02;
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
+      {isSelf && <Halo position={[0, sheetY, -0.35]} width={width} height={height} self />}
       {selected && <Halo position={[0, sheetY, -0.3]} width={width} height={height} />}
       <CardPresence memberId={member.id} position={[width / 2, -rope - 0.2, 0.15]} />
       {isSelf && <CardSelf position={[0, -rope + 0.22, 0.12]} />}
@@ -350,14 +358,14 @@ export function ScrollCard({ member, label, familyId, position, onOpen, onDrag, 
         </mesh>
       ))}
       <mesh geometry={FRONT_SHEET} position={[0, sheetY, 0]} castShadow receiveShadow>
-        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed)} />
+        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed, isSelf)} />
       </mesh>
       <mesh geometry={BACK_SHEET} position={[0, sheetY, 0]} rotation={[0, Math.PI, 0]} castShadow receiveShadow>
-        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed)} />
+        <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed, isSelf)} />
       </mesh>
       <mesh position={[0, -rope - height - 0.06, -0.1]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
         <cylinderGeometry args={[0.12, 0.12, width + 0.02, 16]} />
-        <meshStandardMaterial map={surface} emissiveMap={surface} emissive="#ffffff" emissiveIntensity={glow * 0.6} roughness={0.95} {...shade(dimmed)} />
+        <meshStandardMaterial map={surface} emissiveMap={surface} emissive="#ffffff" emissiveIntensity={glow * 0.6} roughness={0.95} {...shade(dimmed, isSelf)} />
       </mesh>
     </group>
   );
@@ -376,6 +384,7 @@ export function SignCard({ member, label, familyId, position, onOpen, onDrag, se
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
+      {isSelf && <Halo position={[0, -rope - height / 2, -0.35]} width={width} height={height} self />}
       {selected && <Halo position={[0, -rope - height / 2, -0.3]} width={width} height={height} />}
       <CardPresence memberId={member.id} position={[width / 2, -rope, depth]} />
       {isSelf && <CardSelf position={[0, -rope + 0.2, depth]} />}
@@ -390,9 +399,9 @@ export function SignCard({ member, label, familyId, position, onOpen, onDrag, se
             map={map}
             emissiveMap={map}
             emissive="#ffffff"
-            emissiveIntensity={(map === face ? 0.3 + 0.25 * evening : 0.15 + 0.15 * evening) * (dimmed ? 0.5 : 1)}
+            emissiveIntensity={(map === face ? 0.3 + 0.25 * evening : 0.15 + 0.15 * evening) * fadedGlow(dimmed, isSelf)}
             roughness={0.85}
-            {...shade(dimmed)}
+            {...shade(dimmed, isSelf)}
           />
         ))}
       </mesh>

@@ -41,6 +41,43 @@
   gap: 8px;
 }
 
+/* "Add myself" above "Add someone else": the filled primary of the welcome card, so it is the obvious choice. */
+.empty-tree-actions:has(.empty-tree-primary) {
+  flex-direction: column;
+  align-items: stretch;
+  justify-self: stretch;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.empty-tree-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--size-dock-primary);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  box-shadow: var(--primary-glow);
+  color: var(--primary-ink);
+  cursor: pointer;
+  font: 600 16px/1 var(--font-ui);
+}
+
+.empty-tree-primary:hover {
+  filter: brightness(1.06);
+}
+
+.empty-tree-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.empty-tree-actions:has(.empty-tree-primary) .glass-button {
+  justify-content: center;
+}
+
 /* Steps aside while the menu, a board, or a person or family card is open, so the flows it starts stay unobstructed. */
 body:has(.dashboard-nav, .person-panel) .empty-tree {
   display: none;

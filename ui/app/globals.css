@@ -534,6 +534,20 @@ textarea {
   filter: drop-shadow(0 6px 8px rgba(40, 24, 8, 0.45)) grayscale(1);
 }
 
+/* The user's own scroll always glows in the accent, and fades much less while someone else's family is lit. */
+.scroll[data-self] {
+  filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 14px var(--glow));
+}
+
+.scroll[data-self].is-selected {
+  filter: drop-shadow(0 0 3px var(--accent)) drop-shadow(0 0 10px var(--glow)) drop-shadow(0 0 2px var(--line-on));
+}
+
+.scroll[data-self].is-dimmed {
+  opacity: 0.75;
+  filter: drop-shadow(0 0 3px var(--accent)) grayscale(0.5);
+}
+
 .debug-clock {
   display: grid;
   grid-template-columns: 96px minmax(0, 1fr);
@@ -1428,7 +1442,8 @@ a.dashboard-nav-item {
   outline-offset: 2px;
 }
 
-/* The signed-in user's own card: "DU" badge on the scroll's rod; in the experimental view a ring and glow instead. */
+/* The signed-in user's own card: a "DU" badge on the scroll's rod, and in every view a lasting accent glow (on 3D
+   cards a halo in the scene) that fades less than the other cards while someone is selected. */
 .self-badge {
   position: absolute;
   z-index: 2;
@@ -1444,9 +1459,17 @@ a.dashboard-nav-item {
 }
 
 .simple-name[data-self] {
+  border-width: 2px;
   box-shadow:
-    0 0 0 1.5px var(--line-on),
-    0 0 14px var(--glow);
+    0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent),
+    0 0 18px var(--glow);
+}
+
+/* The own pill stays findable while someone else's family is lit. */
+.simple-name[data-self].is-dimmed {
+  border-color: var(--accent);
+  opacity: 0.7;
+  filter: grayscale(0.4);
 }
 
 .self-badge-floating {
@@ -2007,6 +2030,82 @@ button.person-chip-main:hover {
 .person-form {
   display: grid;
   gap: 16px;
+}
+
+/* "Add yourself": the signed-in account above the form, in the accent, so the form reads as the user's own card. */
+.self-account {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: var(--radius-control);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--glow) 40%, transparent);
+}
+
+.self-account-eyebrow {
+  color: var(--accent);
+  font: 700 11px/1.2 var(--font-ui);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.self-account-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.self-account .self-account-avatar {
+  width: 48px;
+  height: 48px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+  font-size: 20px;
+}
+
+.self-account-text {
+  display: grid;
+  flex: 1 1 160px;
+  gap: 2px;
+  min-width: 0;
+}
+
+.self-account-text strong {
+  overflow: hidden;
+  font-size: 15px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.self-account-mail {
+  overflow: hidden;
+  opacity: 0.8;
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.self-account .account-chips {
+  margin-top: 4px;
+}
+
+.self-account-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.self-account-profile .icon {
+  width: 14px;
+  height: 14px;
+}
+
+.self-account-note {
+  margin: 0;
+  opacity: 0.7;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 /* Portrait photo and name fields as one centred block, the photo about as tall as the fields. */
