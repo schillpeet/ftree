@@ -167,3 +167,20 @@ const tree = buildTwinedTree(plan(three), 0);
     }
   }
 }
+
+// Parallax needs a tangent per vertex: along the wood (+U), at right angles to the normal, w = -1 so
+// three's bitangent cross(normal, tangent) * w points around the wood (+V).
+{
+  const tree = buildTwinedTree(plan(three), 0, 'fam-1');
+  for (const p of tree.pieces) {
+    const t = p.geometry.attributes.tangent;
+    const n = p.geometry.attributes.normal;
+    assert.ok(t && t.itemSize === 4 && t.count === n.count, `${p.id}: tangent`);
+    for (let i = 0; i < t.count; i++) {
+      const [x, y, z, w] = [t.getX(i), t.getY(i), t.getZ(i), t.getW(i)];
+      assert.ok([x, y, z].every(Number.isFinite) && w === -1, `${p.id}: tangent ${i}`);
+      assert.ok(Math.abs(Math.hypot(x, y, z) - 1) < 1e-3, `${p.id}: tangent length`);
+      assert.ok(Math.abs(x * n.getX(i) + y * n.getY(i) + z * n.getZ(i)) < 1e-3, `${p.id}: tangent not at right angles`);
+    }
+  }
+}

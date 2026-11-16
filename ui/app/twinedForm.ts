@@ -167,7 +167,8 @@ function frames(points: Vector3[]) {
 }
 
 // A round tube through `points` with a radius per point and at least `radial` sides (see `sidesFor`).
-// uv.x counts bark tiles along its length, uv.y a whole number of tiles around (`tilesAround`); `along` runs from 0 to 1, or across `span`.
+// uv.x counts bark tiles along its length, uv.y a whole number of tiles around (`tilesAround`); the
+// tangent runs along the wood (+U) with w = -1, so three's bitangent runs around it (+V); `along` runs from 0 to 1, or across `span`.
 // Every piece starts somewhere else in the bark (`name`), so no two show the same patches.
 // `along` counts from point `origin` both ways, so a strand's root grows out while its wood grows up.
 type Tube = { name: string; points: Vector3[]; radii: number[]; radial: number; origin?: number; span?: [number, number] };
@@ -186,8 +187,10 @@ function sweepAll(tubes: Tube[]) {
   const normal = new Float32Array(vertices * 3);
   const uv = new Float32Array(vertices * 2);
   const along = new Float32Array(vertices);
+  const tangent = new Float32Array(vertices * 4);
   const index = vertices > 65535 ? new Uint32Array(indices) : new Uint16Array(indices);
   const v = new Vector3();
+  const axis = new Vector3();
   let v0 = 0;
   let i0 = 0;
   tubes.forEach(({ name, points, radii, origin = 0, span = [0, 1] }, t) => {
@@ -203,6 +206,8 @@ function sweepAll(tubes: Tube[]) {
     const shift = [chance(), chance()];
     for (let i = 0; i < n; i++) {
       const grow = mix(span[0], span[1], Math.abs(length[i] - length[origin]) / reach);
+      // The frame's two vectors are at right angles to the wood, so their cross product runs along it.
+      axis.crossVectors(frame[i][0], frame[i][1]).normalize();
       for (let j = 0; j <= radial; j++) {
         const a = (j / radial) * FULL;
         const k = v0 + i * ring + j;
@@ -216,6 +221,10 @@ function sweepAll(tubes: Tube[]) {
         uv[k * 2] = shift[0] + length[i] / TILE_ALONG;
         uv[k * 2 + 1] = shift[1] + (j / radial) * around;
         along[k] = grow;
+        tangent[k * 4] = axis.x;
+        tangent[k * 4 + 1] = axis.y;
+        tangent[k * 4 + 2] = axis.z;
+        tangent[k * 4 + 3] = -1;
       }
     }
     for (let i = 0; i < n - 1; i++)
@@ -235,6 +244,7 @@ function sweepAll(tubes: Tube[]) {
   g.setAttribute('normal', new Float32BufferAttribute(normal, 3));
   g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
   g.setAttribute('along', new Float32BufferAttribute(along, 1));
+  g.setAttribute('tangent', new Float32BufferAttribute(tangent, 4));
   g.setIndex(new BufferAttribute(index, 1));
   return g;
 }

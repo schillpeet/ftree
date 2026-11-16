@@ -6,6 +6,7 @@ import { Color, DoubleSide, Group, Mesh, MeshStandardMaterial, RepeatWrapping, S
 import barkColor from './bark/bark-color.jpg';
 import barkData from './bark/bark-data.jpg';
 import barkNormal from './bark/bark-normal.jpg';
+import { type BarkUniforms, patchBark } from './barkShader';
 import type { Point } from './pins';
 import { buildTwinedTree } from './twinedForm';
 import { blendPlans, type GrowingPlan } from './twinedGrowth';
@@ -24,6 +25,8 @@ const SEED_SECONDS = 0.9;
 const seedFrom = new Vector3();
 // The baked bark is dark; this lifts it into the scene's light, a little warm.
 const BARK_TINT = new Color(3.0, 2.72, 2.4);
+// How deep the furrows lie below the ridges, in metres (parallax, see barkShader.ts).
+const BARK_DEPTH = 0.15;
 
 // The bark is baked in Blender (docs/design/blender) into tiling textures, one tile per TILE_ALONG ×
 // TILE_AROUND metres (twinedForm.ts): colour, relief, and data with ambient occlusion in red,
@@ -48,6 +51,7 @@ const EMPTY: TwinedPlan = { depth: 0, braids: [], twigs: [], cards: [] };
 const same = (a: TwinedPlan, b: TwinedPlan) => JSON.stringify(a) === JSON.stringify(b);
 
 // Bark that is drawn only up to `grown` along each piece (see `Piece`); the clipped tube stays open.
+// Its furrows have depth close up (`patchBark`).
 function growingBark() {
   const { color, normal, data } = bark();
   const material = new MeshStandardMaterial({
@@ -61,14 +65,9 @@ function growingBark() {
     metalness: 0,
     side: DoubleSide,
   });
-  const grown = { value: 1 };
-  material.userData.grown = grown;
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uGrown = grown;
-    shader.vertexShader = `attribute float along;\nvarying float vAlong;\n${shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvAlong = along;')}`;
-    shader.fragmentShader = `uniform float uGrown;\nvarying float vAlong;\n${shader.fragmentShader
-      .replace('void main() {', 'void main() {\nif (vAlong > uGrown) discard;')}`;
-  };
+  const uniforms: BarkUniforms = { uGrown: { value: 1 }, uDepth: { value: BARK_DEPTH } };
+  material.userData.grown = uniforms.uGrown;
+  material.onBeforeCompile = (shader) => patchBark(shader, uniforms);
   return material;
 }
 
