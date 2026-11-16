@@ -70,7 +70,7 @@ const tree = buildTwinedTree(plan(three), 0);
   const alonePlan = plan([person('me')]);
   const alone = buildTwinedTree(alonePlan, 0, 'family');
   const bases = Array.from({ length: 7 }, (_, j) => `free:base${j}`);
-  assert.deepEqual(rooted(alone), ['me', ...bases]);
+  assert.deepEqual(rooted(alone), ['me', 'free:roots:me', 'free:collar', ...bases]);
   assert.ok(alone.pins.get('me')[1] > 14, `${alone.pins.get('me')[1]}`);
   assert.equal(rooted(tree).filter((id) => id.startsWith('free:base')).length, 7);
   for (const born of ['1900', '2100']) {
@@ -82,6 +82,19 @@ const tree = buildTwinedTree(plan(three), 0);
   }
   // Another family stands on other roots.
   assert.notDeepEqual(Array.from(points(piece(buildTwinedTree(alonePlan, 0, 'other'), 'free:base0')).array), Array.from(points(piece(alone, 'free:base0')).array));
+}
+
+// Every person, a twig too, brings a root that creeps out over the hill, and it keeps its shape
+// when someone joins without making the trunk thicker. Around a thicker trunk roots reach further.
+{
+  const fine = (t, id) => spots(piece(t, `free:roots:${id}`)).filter((s) => Math.hypot(s[0], s[2]) > 2.5);
+  for (const m of three) assert.ok(fine(tree, m.id).length > 0, m.id);
+  const more = buildTwinedTree(plan([...three, person('uncle', ['grandpa', 'grandma'], [], '1964')]), 0);
+  for (const m of three) assert.deepEqual(fine(more, m.id), fine(tree, m.id), m.id);
+  assert.ok(fine(more, 'uncle').length > 0);
+  const reach = (t) => Math.max(...t.pieces.flatMap((p) => spots(p).filter((s) => s[1] < 1.5).map((s) => Math.hypot(s[0], s[2]))));
+  const couples = Array.from({ length: 6 }, (_, k) => [person(`c${k}`, ['grandpa', 'grandma'], [`p${k}`]), person(`p${k}`, [], [`c${k}`])]).flat();
+  assert.ok(reach(buildTwinedTree(plan([...three, ...couples]), 0)) > reach(tree) + 3);
 }
 
 // The same family gives the same tree, point for point.

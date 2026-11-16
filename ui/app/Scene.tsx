@@ -493,6 +493,7 @@ function Scrolls({
   spacing,
   evening,
   layout,
+  follow,
   controlsRef,
   panel,
   onOpen,
@@ -518,6 +519,8 @@ function Scrolls({
   evening: number;
   // Fixed card positions (the tiered tree); pins and stored placements are then ignored.
   layout?: Map<string, Point>;
+  // Where a member's card hangs right now while the tiered tree grows, so it rides along with its branch.
+  follow?: (id: string) => Point | undefined;
   controlsRef: RefObject<CameraControls | null>;
   // Where the person panel is open, so the focused card moves into the free part of the screen.
   panel: PanelSide;
@@ -703,6 +706,7 @@ function Scrolls({
           onDrag: onPlace && showPins && spacing == null ? (event: { clientX: number; clientY: number }) => startDrag(member.id, event) : undefined,
           selected: member.id === selectedId,
           dimmed: lit != null && !lit.has(member.id),
+          follow: follow && (() => follow(member.id)),
         };
         if (cardStyle === 'papyrus') return <Scroll key={member.id} {...card} isSelf={member.id === selfId} />;
         if (cardStyle === 'sign') return <SignCard key={member.id} {...card} evening={evening} isSelf={member.id === selfId} />;
@@ -855,6 +859,15 @@ export default function Scene({
     () => new Map([...tieredPins].map(([id, [x, y, z]]) => [id, cardTop([x, TREE_BASE + y, z])])),
     [tieredPins],
   );
+  // The same, every frame while the tree grows; read by the cards themselves, so React does not re-render.
+  const liveTiered = useRef(new Map<string, Point>());
+  const setLiveTiered = useCallback((pins: Map<string, Point>) => {
+    liveTiered.current = pins;
+  }, []);
+  const followTiered = useCallback((id: string) => {
+    const pin = liveTiered.current.get(id);
+    return pin && cardTop([pin[0], TREE_BASE + pin[1], pin[2]]);
+  }, []);
   // "Replay growth": the family's plans member by member in growth order; it ends with the family or
   // the appearance it was started in.
   const [growthReplay, setGrowthReplay] = useState<{ familyId: string | null; steps: TwinedPlan[] } | null>(null);
@@ -1003,6 +1016,7 @@ export default function Scene({
                 front={VIEW_FRONT}
                 name={familyId ?? ''}
                 position={[0, TREE_BASE, 0]}
+                onLive={setLiveTiered}
                 onPins={setTieredPins}
                 onReplayEnd={endReplay}
               />
@@ -1021,6 +1035,7 @@ export default function Scene({
               spacing={organic && bundle ? spacing : null}
               evening={eveningFactor}
               layout={organic ? undefined : tieredLayout}
+              follow={organic ? undefined : followTiered}
               controlsRef={controlsRef}
               panel={panel}
               onOpen={onOpen}

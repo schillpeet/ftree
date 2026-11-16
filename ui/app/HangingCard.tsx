@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useRef } from 'react';
+import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { AdditiveBlending, CanvasTexture, Group, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { AdditiveBlending, CanvasTexture, Group, type Mesh, type MeshStandardMaterial, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { Member } from '../lib/api/generated/members';
 import { drawScroll, drawSign, papyrus, seedOf, wood, type CardText } from './cardTextures';
 import { formatDate, photoSrc } from './MembersControls';
@@ -33,6 +33,8 @@ type CardProps = {
   // The selected person's card glows softly; outside a highlighted lineage a card fades.
   selected?: boolean;
   dimmed?: boolean;
+  // Where the card hangs right now, if its branch is still moving (the growing tiered tree).
+  follow?: () => Point | undefined;
 };
 
 // Canvas pixels per world unit of card surface.
@@ -125,13 +127,15 @@ function Rope({ from, to }: { from: Point; to: Point }) {
 
 // 'sway': faces away from the trunk and swings gently around its pin, like something really
 // hanging there. 'face-camera': turns around the vertical axis to the viewer, for legibility.
-function useHanging(position: Point, motion: 'sway' | 'face-camera', seed: number) {
+function useHanging(position: Point, motion: 'sway' | 'face-camera', seed: number, follow?: () => Point | undefined) {
   const ref = useRef<Group>(null);
   const phase = seed % 628 / 100;
   useFrame(({ camera, clock }) => {
     const group = ref.current;
     if (!group) return;
-    const [x, , z] = position;
+    const now = follow?.();
+    if (now) group.position.set(...now);
+    const [x, , z] = now ?? position;
     if (motion === 'face-camera') {
       group.rotation.set(0, Math.atan2(camera.position.x - x, camera.position.z - z), 0);
       return;
@@ -328,16 +332,59 @@ function CardSelf({ position }: { position: Point }) {
   );
 }
 
+// A scroll arrives rolled up under its rod and then unrolls: the roll drops while the sheet shows from
+// the top down, the writing at its true size. It plays once when the card appears, so a new member's
+// scroll opens only once its branch has grown; with reduced motion it is open at once.
+const APPEAR_SECONDS = 0.3;
+const UNROLL_DELAY = 0.45;
+const UNROLL_SECONDS = 0.9;
+function useUnroll(height: number, rope: number, card: RefObject<Group | null>) {
+  const frontRef = useRef<Mesh>(null);
+  const backRef = useRef<Mesh>(null);
+  const rollRef = useRef<Mesh>(null);
+  const start = useRef<number | null>(null);
+  const done = useRef(false);
+  useFrame(({ clock }) => {
+    const front = frontRef.current;
+    const back = backRef.current;
+    const roll = rollRef.current;
+    if (done.current || !front || !back || !roll) return;
+    start.current ??= window.matchMedia('(prefers-reduced-motion: reduce)').matches ? -Infinity : clock.elapsedTime;
+    const since = clock.elapsedTime - start.current;
+    // The rolled scroll grows in from its pin before it unrolls, instead of popping up.
+    const appear = Math.min(1, since / APPEAR_SECONDS);
+    card.current?.scale.setScalar(Math.max(0.001, appear * appear * (3 - 2 * appear)));
+    const t = Math.min(1, Math.max(0, (since - UNROLL_DELAY) / UNROLL_SECONDS));
+    // It falls fast and settles with a small bounce.
+    const open = Math.max(0.001, 1 - (1 - t) ** 3 + 0.06 * Math.sin(Math.PI * t) * (1 - t));
+    for (const sheet of [front, back]) {
+      sheet.scale.y = open;
+      sheet.position.y = -rope - (height * open) / 2 - 0.02;
+    }
+    // Both sheets share the card's texture, which only this card uses.
+    const face = (front.material as MeshStandardMaterial).map!;
+    face.repeat.y = Math.min(1, open);
+    face.offset.y = 1 - face.repeat.y;
+    // Rolled up, the paper makes a thicker roll.
+    const thick = 1.9 - 0.9 * Math.min(1, open);
+    roll.scale.set(thick, 1, thick);
+    roll.position.y = -rope - height * open - 0.06 - (thick - 1) * 0.12;
+    done.current = t >= 1;
+  });
+  return { frontRef, backRef, rollRef };
+}
+
 // Papyrus scroll with a rod on top and a rolled-up bottom edge, written on both sides. 'label'
 // turns to the camera and glows a little, so it stays readable against the low sun.
-export function ScrollCard({ member, label, familyId, position, onOpen, onDrag, selected, dimmed, mode, evening, isSelf = false }: CardProps & { mode: 'scroll' | 'label'; evening: number; isSelf?: boolean }) {
+export function ScrollCard({ member, label, familyId, position, onOpen, onDrag, selected, dimmed, follow, mode, evening, isSelf = false }: CardProps & { mode: 'scroll' | 'label'; evening: number; isSelf?: boolean }) {
   const seed = seedOf(member.id);
-  const ref = useHanging(position, mode === 'label' ? 'face-camera' : 'sway', seed);
+  const ref = useHanging(position, mode === 'label' ? 'face-camera' : 'sway', seed, follow);
   const face = useCardTexture(member, label, familyId, SCROLL.width * PX, SCROLL.height * PX, drawScroll);
   const surface = plainTextures().papyrus;
   const glow = (mode === 'label' ? 0.45 : 0.08 + 0.42 * evening) * fadedGlow(dimmed, isSelf);
   const { width, height, rope } = SCROLL;
   const sheetY = -rope - height / 2 - 0.02;
+  const { frontRef, backRef, rollRef } = useUnroll(height, rope, ref);
   return (
     <group ref={ref} position={position} {...pointerHandlers({ onOpen, onDrag })}>
       <GlowOrbs width={width} rope={rope} seed={seed} evening={evening} />
@@ -357,13 +404,13 @@ export function ScrollCard({ member, label, familyId, position, onOpen, onDrag, 
           <meshStandardMaterial color="#4f2c12" roughness={0.5} />
         </mesh>
       ))}
-      <mesh geometry={FRONT_SHEET} position={[0, sheetY, 0]} castShadow receiveShadow>
+      <mesh ref={frontRef} geometry={FRONT_SHEET} position={[0, sheetY, 0]} castShadow receiveShadow>
         <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed, isSelf)} />
       </mesh>
-      <mesh geometry={BACK_SHEET} position={[0, sheetY, 0]} rotation={[0, Math.PI, 0]} castShadow receiveShadow>
+      <mesh ref={backRef} geometry={BACK_SHEET} position={[0, sheetY, 0]} rotation={[0, Math.PI, 0]} castShadow receiveShadow>
         <meshStandardMaterial map={face} emissiveMap={face} emissive="#ffffff" emissiveIntensity={glow} roughness={0.95} {...shade(dimmed, isSelf)} />
       </mesh>
-      <mesh position={[0, -rope - height - 0.06, -0.1]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
+      <mesh ref={rollRef} position={[0, -rope - height - 0.06, -0.1]} rotation={[0, 0, Math.PI / 2]} castShadow receiveShadow>
         <cylinderGeometry args={[0.12, 0.12, width + 0.02, 16]} />
         <meshStandardMaterial map={surface} emissiveMap={surface} emissive="#ffffff" emissiveIntensity={glow * 0.6} roughness={0.95} {...shade(dimmed, isSelf)} />
       </mesh>
@@ -373,9 +420,9 @@ export function ScrollCard({ member, label, familyId, position, onOpen, onDrag, 
 
 // Wooden board with burnt-in name and dates, the photo in a medallion beside them; written on
 // both sides like the scroll.
-export function SignCard({ member, label, familyId, position, onOpen, onDrag, selected, dimmed, evening, isSelf = false }: CardProps & { evening: number; isSelf?: boolean }) {
+export function SignCard({ member, label, familyId, position, onOpen, onDrag, selected, dimmed, follow, evening, isSelf = false }: CardProps & { evening: number; isSelf?: boolean }) {
   const seed = seedOf(member.id);
-  const ref = useHanging(position, 'sway', seed);
+  const ref = useHanging(position, 'sway', seed, follow);
   const face = useCardTexture(member, label, familyId, SIGN.width * PX, SIGN.height * PX, drawSign);
   const surface = plainTextures().wood;
   const { width, height, depth, rope } = SIGN;

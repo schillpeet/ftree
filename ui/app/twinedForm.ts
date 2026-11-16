@@ -5,7 +5,7 @@
 // and climbs to the fork that carries the two cards. Wood without cards makes the tree full: strands
 // around the eldest couple's leader that leave as crown branches, shoots on the limbs and a fine
 // shoot beyond each card. Pure, so `twinedForm.check.mjs` can test it without a scene.
-import { BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Quaternion, Vector3 } from 'three';
+import { BufferAttribute, BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Quaternion, Vector3 } from 'three';
 import { CARD, CARD_GAP, type Point } from './pins.ts';
 import type { GrowingPlan } from './twinedGrowth';
 import type { Braid, TwinedPlan, Twig } from './twinedLayout';
@@ -52,8 +52,43 @@ const WRAP = 0.85;
 const BASE_ROOTS = 7;
 const BASE_THICK = 0.42;
 const BASE_LEAVE = [4.5, 9.5];
-// Free wood in (share of its reach, share of its rise): a crown branch, a shoot, a side shoot.
-const CROWN_SHAPE = [[0, 0], [0.06, 0.5], [0.5, 0.95], [1, 1]];
+// At the ground the base strands stand this many times as far out, so the trunk has a broad foot.
+const FOOT = 1.4;
+// Every person brings a root that leaves the trunk's foot and creeps far over the hill: thick
+// (a few), medium (more) or fine (most), sized to the trunk. Thick roots carry medium ones and medium
+// ones fine ones. Per kind: thickness and reach (times the foot's radius), and its round segments.
+const ROOT_SIZE = [0.42, 0.22, 0.1];
+const ROOT_REACH = [8, 5, 3];
+const ROOT_SIDES = [8, 6, 4];
+// A person's roots only change when the trunk's foot does, but the tree is rebuilt every frame while it
+// grows: keep the last ones per person with the foot they fit.
+const rootCache = new Map<string, { footR: number; roots: BufferGeometry }>();
+// Likewise every piece keeps its geometry object as long as what it is built from stays the same, so
+// while the tree grows only the wood that moves is rebuilt, and the scene re-uploads only that.
+const pieceCache = new Map<string, { hash: number; geometry: BufferGeometry }>();
+const hashOf = (points: Vector3[], radii: number[], salt: number) => {
+  let h = 2166136261 ^ salt;
+  const add = (v: number) => {
+    h = Math.imul(h ^ Math.round(v * 1e4), 16777619);
+  };
+  for (const p of points) {
+    add(p.x);
+    add(p.y);
+    add(p.z);
+  }
+  for (const r of radii) add(r);
+  return h;
+};
+const reuse = (name: string, hash: number, build: () => BufferGeometry) => {
+  const cached = pieceCache.get(name);
+  if (cached?.hash === hash) return cached.geometry;
+  if (pieceCache.size > 5000) pieceCache.clear();
+  const geometry = build();
+  pieceCache.set(name, { hash, geometry });
+  return geometry;
+};
+// Free wood in (share of its reach, share of its rise): a branch or shoot that rises out at a slant
+// (straight up first would read as a horn), and a side shoot.
 const SHOOT_SHAPE = [[0, 0], [0.3, 0.5], [0.62, 0.86], [1, 1]];
 const SIDE_SHAPE = [[0, 0], [0.35, 0.3], [0.7, 0.7], [1, 1]];
 const UP = new Vector3(0, 1, 0);
@@ -124,47 +159,76 @@ function frames(points: Vector3[]) {
 }
 
 // A round tube through `points` with a radius per point. uv.x counts bark repeats along its length
-// (thin wood has finer bark), uv.y runs once around; `along` runs from 0 to 1. Every piece starts
-// somewhere else in the bark (`name`), so no two show the same patches.
+// (thin wood has finer bark), uv.y runs once around; `along` runs from 0 to 1, or across `span`.
+// Every piece starts somewhere else in the bark (`name`), so no two show the same patches.
 // `along` counts from point `origin` both ways, so a strand's root grows out while its wood grows up.
-function sweep(name: string, points: Vector3[], radii: number[], radial: number, origin = 0) {
-  const n = points.length;
-  const ring = radial + 1;
-  const position = new Float32Array(n * ring * 3);
-  const normal = new Float32Array(n * ring * 3);
-  const uv = new Float32Array(n * ring * 2);
-  const along = new Float32Array(n * ring);
-  const length = [0];
-  for (let i = 1; i < n; i++) length.push(length[i - 1] + points[i].distanceTo(points[i - 1]));
-  const scale = Math.min(0.9, Math.max(0.4, 0.45 * Math.sqrt(0.5 / Math.max(0.05, Math.max(...radii))))) / BARK_REPEAT;
-  const frame = frames(points);
-  const chance = seeded(`bark${name}`);
-  const shift = [chance(), chance()];
+type Tube = { name: string; points: Vector3[]; radii: number[]; radial: number; origin?: number; span?: [number, number] };
+
+// Several tubes in one geometry, written straight into one set of buffers: the tree is rebuilt every
+// frame while it grows, so this avoids merging and short-lived arrays.
+function sweepAll(tubes: Tube[]) {
+  let vertices = 0;
+  let indices = 0;
+  for (const t of tubes) {
+    vertices += t.points.length * (t.radial + 1);
+    indices += (t.points.length - 1) * t.radial * 6;
+  }
+  const position = new Float32Array(vertices * 3);
+  const normal = new Float32Array(vertices * 3);
+  const uv = new Float32Array(vertices * 2);
+  const along = new Float32Array(vertices);
+  const index = vertices > 65535 ? new Uint32Array(indices) : new Uint16Array(indices);
   const v = new Vector3();
-  for (let i = 0; i < n; i++)
-    for (let j = 0; j <= radial; j++) {
-      const a = (j / radial) * FULL;
-      const k = i * ring + j;
-      v.copy(frame[i][0]).multiplyScalar(Math.cos(a)).addScaledVector(frame[i][1], Math.sin(a));
-      normal.set([v.x, v.y, v.z], k * 3);
-      position.set([points[i].x + v.x * radii[i], points[i].y + v.y * radii[i], points[i].z + v.z * radii[i]], k * 3);
-      uv.set([shift[0] + length[i] * scale, shift[1] + j / radial], k * 2);
-      along[k] = Math.abs(length[i] - length[origin]) / Math.max(length[origin], length[n - 1] - length[origin]);
+  let v0 = 0;
+  let i0 = 0;
+  for (const { name, points, radii, radial, origin = 0, span = [0, 1] } of tubes) {
+    const n = points.length;
+    const ring = radial + 1;
+    const length = [0];
+    for (let i = 1; i < n; i++) length.push(length[i - 1] + points[i].distanceTo(points[i - 1]));
+    const reach = Math.max(length[origin], length[n - 1] - length[origin]);
+    const scale = Math.min(0.9, Math.max(0.4, 0.45 * Math.sqrt(0.5 / Math.max(0.05, Math.max(...radii))))) / BARK_REPEAT;
+    const frame = frames(points);
+    const chance = seeded(`bark${name}`);
+    const shift = [chance(), chance()];
+    for (let i = 0; i < n; i++) {
+      const grow = mix(span[0], span[1], Math.abs(length[i] - length[origin]) / reach);
+      for (let j = 0; j <= radial; j++) {
+        const a = (j / radial) * FULL;
+        const k = v0 + i * ring + j;
+        v.copy(frame[i][0]).multiplyScalar(Math.cos(a)).addScaledVector(frame[i][1], Math.sin(a));
+        normal[k * 3] = v.x;
+        normal[k * 3 + 1] = v.y;
+        normal[k * 3 + 2] = v.z;
+        position[k * 3] = points[i].x + v.x * radii[i];
+        position[k * 3 + 1] = points[i].y + v.y * radii[i];
+        position[k * 3 + 2] = points[i].z + v.z * radii[i];
+        uv[k * 2] = shift[0] + length[i] * scale;
+        uv[k * 2 + 1] = shift[1] + j / radial;
+        along[k] = grow;
+      }
     }
-  const index: number[] = [];
-  for (let i = 0; i < n - 1; i++)
-    for (let j = 0; j < radial; j++) {
-      const a = i * ring + j;
-      index.push(a, a + 1, a + ring, a + ring, a + 1, a + ring + 1);
-    }
+    for (let i = 0; i < n - 1; i++)
+      for (let j = 0; j < radial; j++) {
+        const a = v0 + i * ring + j;
+        index[i0++] = a;
+        index[i0++] = a + 1;
+        index[i0++] = a + ring;
+        index[i0++] = a + ring;
+        index[i0++] = a + 1;
+        index[i0++] = a + ring + 1;
+      }
+    v0 += n * ring;
+  }
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(position, 3));
   g.setAttribute('normal', new Float32BufferAttribute(normal, 3));
   g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
   g.setAttribute('along', new Float32BufferAttribute(along, 1));
-  g.setIndex(index);
+  g.setIndex(new BufferAttribute(index, 1));
   return g;
 }
+const sweep = (name: string, points: Vector3[], radii: number[], radial: number, origin = 0) => sweepAll([{ name, points, radii, radial, origin }]);
 
 // `plan` comes from `twinedPlan` with TWINED_SLOT_ANGLE (or from `blendPlans` while growing, with a
 // fractional depth); angle 0 faces `front`. `name` (the family's id) shapes the base trunk, so it
@@ -198,7 +262,40 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
     }
     return { root, thick };
   };
-
+  // Wood ends in a fan of three fine twigs reaching out, not in a single point: one geometry with
+  // the wood itself. The wood grows in the first 85 % of the time, the twigs from where the wood
+  // reaches its tip to the end.
+  const tipped = (name: string, points: Vector3[], radii: number[], radial: number, origin = 0) =>
+    reuse(name, hashOf(points, radii, radial * 7919 + origin * 31), () => {
+    const n = points.length;
+    let before = 0;
+    let after = 0;
+    for (let i = 1; i < n; i++) {
+      const d = points[i].distanceTo(points[i - 1]);
+      if (i <= origin) before += d;
+      else after += d;
+    }
+    const reached = (0.85 * after) / Math.max(before, after);
+    const tip = points[n - 1];
+    const way = tip.clone().sub(points[Math.max(0, n - 3)]).setY(0);
+    if (way.lengthSq() < 1e-6) way.set(Math.cos(front), 0, Math.sin(front));
+    way.normalize();
+    const r = radii[n - 1];
+    const length = Math.min(1.6, Math.max(0.4, 12 * r));
+    const chance = seeded(`fan${name}`);
+    const fans = [-0.6, 0, 0.6].map((turn, f): Tube => {
+      const dir = way.clone().applyAxisAngle(UP, turn + 0.4 * (chance() - 0.5));
+      const lift = mix(-0.15, 0.3, chance());
+      const twig: Vector3[] = [];
+      const thin: number[] = [];
+      for (let k = 0; k <= 3; k++) {
+        twig.push(tip.clone().addScaledVector(dir, length * (k / 3)).setY(tip.y + length * lift * (k / 3) ** 1.5));
+        thin.push(r * mix(0.8, 0.2, k / 3));
+      }
+      return { name: `${name}.fan${f}`, points: twig, radii: thin, radial: 3, span: [reached, 1] };
+    });
+    return sweepAll([{ name, points, radii, radial, origin, span: [0, 0.85] }, ...fans]);
+  });
   // How far the limbs of a tier reach: a dome, widest a little below the middle of the tree and
   // wider for deeper families; a crowded tier pushes its cards further out.
   const widest = 13.4 + 0.75 * (Math.min(plan.depth, 4) - 1);
@@ -243,6 +340,47 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
   const now = places(plan.braids);
   const before = settled.length < plan.braids.length ? places(settled) : now;
   const ring = Math.max(RING, (mix(before.size, now.size, arrived) * 1.9) / FULL);
+  // The foot: younger braids stand around the eldest's axis, the base strands wind around them.
+  const around = WRAP + Math.max(0, ...plan.braids.filter((b) => !eldest(b)).map((b) => ring * smooth(b.offset / 0.5)));
+  const footR = around + STRAND;
+
+  // A person's roots: one leaves the foot a little above the hill, bends down onto it and creeps far
+  // out, its tip sinking in; side roots peel off it and grow once it has reached them. Kind, direction
+  // and shape only depend on the person, the size on the trunk, so roots thicken as the tree grows.
+  const rootsOf = (id: string) => {
+    const cached = rootCache.get(id);
+    // A trunk that thickens a little keeps its roots; they follow once it is 6 % thicker or thinner.
+    if (cached && Math.abs(cached.footR - footR) < 0.06 * footR) return cached.roots;
+    const chance = seeded(`${id}|roots`);
+    const pick = chance();
+    const roots: Tube[] = [];
+    const creep = (name: string, kind: number, a: number, turn: number, r0: number, rise: number, from: number) => {
+      const size = ROOT_SIZE[kind] * Math.sqrt(footR) * mix(0.8, 1.2, chance());
+      const length = ROOT_REACH[kind] * footR ** 0.8 * mix(0.75, 1.25, chance());
+      const wave = chance() * FULL;
+      const steps = 18;
+      const angleAt = (s: number) => a + turn * smooth(s / 0.5) + 0.18 * s * Math.sin(wave + 2.2 * s);
+      const points: Vector3[] = [];
+      const thick: number[] = [];
+      for (let k = 0; k <= steps; k++) {
+        const s = k / steps;
+        const r = r0 + length * s;
+        const w = size * mix(1, 0.08, s ** 0.7);
+        points.push(at(r, angleAt(s), ground(r) + rise * (1 - smooth(s / 0.18)) + (0.3 * w + 0.12) * (1 - smooth((s - 0.8) / 0.2)) - 0.6 * w * smooth((s - 0.85) / 0.15)));
+        thick.push(w);
+      }
+      roots.push({ name, points, radii: thick, radial: ROOT_SIDES[kind], span: [from, 1] });
+      const sides = kind < 2 ? 3 - kind : 0;
+      for (let j = 0; j < sides; j++) {
+        const s = mix(0.2, 0.65, (j + chance()) / sides);
+        creep(`${name}.${j}`, kind + 1, angleAt(s), (j % 2 ? 1 : -1) * mix(0.35, 0.8, chance()), r0 + length * s, 0, mix(from, 1, s));
+      }
+    };
+    creep(`${id}.root`, pick < 0.18 ? 0 : pick < 0.55 ? 1 : 2, chance() * FULL, 0, 0.55 * footR, 0.6 + 1.5 * ROOT_SIZE[0] * Math.sqrt(footR), 0);
+    const merged = sweepAll(roots);
+    rootCache.set(id, { footR, roots: merged });
+    return merged;
+  };
 
   // A braid's axis up the trunk and along its limb; `along` is -1 in the trunk and 0 to 1 on the limb.
   type Limb = { axis: Vector3[]; along: number[]; run: number[]; axisAt: (y: number) => Vector3 };
@@ -321,13 +459,14 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
       });
       const end = thick[thick.length - 1];
       ends.push({ id, tier: braid.tier, points: points.slice(-6), angle: front + a });
-      // Beyond the card the strand runs out long and fine and turns up.
+      // Beyond the card the strand runs out a little further, barely rising, into its fan.
       for (let k = 1; k <= 8; k++) {
-        points.push(at(reachHere + 3.2 * (k / 8), front + a, top + 2.5 * (k / 8) ** 1.7));
-        thick.push(end * mix(0.9, 0.1, k / 8));
+        points.push(at(reachHere + 2.4 * (k / 8), front + a, top + 0.5 * (k / 8) ** 1.7));
+        thick.push(end * mix(0.9, 0.3, k / 8));
       }
       const root = rootOf(points, thick[0], index * 2.4 + i);
-      pieces.push({ id, follows: id, geometry: sweep(id, [...root.root, ...points], [...root.thick, ...thick], 9, root.root.length), tint: 1 + (i % 2 ? -0.07 : 0.07) + 0.02 * braid.tier });
+      pieces.push({ id, follows: id, geometry: tipped(id, [...root.root, ...points], [...root.thick, ...thick], 9, root.root.length), tint: 1 + (i % 2 ? -0.07 : 0.07) + 0.02 * braid.tier });
+      pieces.push({ id: `free:roots:${id}`, follows: id, geometry: rootsOf(id), tint: 1 });
       const pin = at(reachHere, front + a, top);
       pins.set(id, [pin.x, pin.y - end, pin.z]);
     });
@@ -384,10 +523,11 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
     }
     const end = thick[thick.length - 1];
     for (let k = 1; k <= 6; k++) {
-      points.push(at(reachHere + 1.5 * (k / 6), front + twig.angle, top + 0.7 * (k / 6) ** 1.8));
+      points.push(at(reachHere + 1.5 * (k / 6), front + twig.angle, top + 0.4 * (k / 6) ** 1.8));
       thick.push(end * mix(0.8, 0.15, k / 6));
     }
-    pieces.push({ id: twig.id, follows: twig.id, geometry: sweep(twig.id, points, thick, 6), tint: 1.1 });
+    pieces.push({ id: twig.id, follows: twig.id, geometry: tipped(twig.id, points, thick, 6), tint: 1.1 });
+    pieces.push({ id: `free:roots:${twig.id}`, follows: twig.id, geometry: rootsOf(twig.id), tint: 1 });
     const pin = at(reachHere, front + twig.angle, top);
     pins.set(twig.id, [pin.x, pin.y - end, pin.z]);
   }
@@ -429,10 +569,10 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
       gone = out;
       const w = wobble * Math.sin(phase + 5 * s) * s;
       points.push(new Vector3(x - Math.sin(a) * w, start.y + up * rise, z + Math.cos(a) * w));
-      thick.push(size * mix(1, 0.16, s ** 0.9));
+      thick.push(size * mix(1, 0.3, s ** 0.9));
     }
     leadThick ??= lead.map((_, i) => size * mix(0.3, 1, smooth(i / Math.min(10, Math.max(1, lead.length - 1)))));
-    pieces.push({ id, follows, geometry: sweep(id, [...lead, ...points], [...leadThick, ...thick], origin ? 8 : 5, origin), tint: 1.05 });
+    pieces.push({ id, follows, geometry: tipped(id, [...lead, ...points], [...leadThick, ...thick], origin ? 8 : 5, origin), tint: 1.05 });
     for (let j = 0; j < (subs[0] ?? 0); j++) {
       const k0 = Math.floor(points.length * mix(0.35, 0.7, chance()));
       const side = chance() < 0.5 ? 1 : -1;
@@ -462,14 +602,24 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
         lead.push(leader.axis[i].clone().add(new Vector3(Math.cos(turn) * out, 0, Math.sin(turn) * out)));
       }
       const length = mix(8, 12, chance()) * scale;
-      free(`free:crown${j}`, founders.ids[0], lead, CROWN_THICK * mix(0.6, 1, scale), a - 0.2, 0.8 * length, 0.72 * length, CROWN_SHAPE, 0.4, 0.5 * scale, [2, 1], chance);
+      free(`free:crown${j}`, founders.ids[0], lead, CROWN_THICK * mix(0.6, 1, scale), a - 0.2, 1.0 * length, 0.45 * length, SHOOT_SHAPE, 0.4, 0.5 * scale, [2, 1], chance);
     }
     // The base trunk: each strand stands on its root at its own place around the foot, winds up around
     // the leader and everyone else's braid and leaves low as a branch on every side but the front.
     // shortcut: its branches may cross a younger couple's limb at the back; check once deep families look crowded.
     // It grows with whoever has grown furthest, so it only grows once, with the first person.
     const anchor = plan.braids.flatMap((b) => b.ids).reduce((a, b) => (grownOf(b) > grownOf(a) ? b : a), founders.ids[0]);
-    const around = WRAP + Math.max(0, ...plan.braids.filter((b) => !eldest(b)).map((b) => ring * smooth(b.offset / 0.5)));
+    // The root collar: a solid core inside the strands that flares out at the hill, so the foot is
+    // never hollow, and closes below where the first limb leaves.
+    const top = Math.max(FLARE + 1, Math.min(...plan.braids.map(leaveOf)) - 0.8);
+    const core = Math.max(0.45, around - 0.35);
+    const spine: Vector3[] = [];
+    const girth: number[] = [];
+    for (let y = -1.2; y <= top + 1e-6; y += 0.3) {
+      spine.push(new Vector3(0, y, 0));
+      girth.push(core * (1 + 0.9 * Math.exp(-Math.max(0, y) / (0.6 + 0.3 * core))) * Math.sqrt(smooth((top - y) / 1.5)));
+    }
+    pieces.push({ id: 'free:collar', follows: anchor, geometry: reuse(`free:collar|${name}`, hashOf(spine, girth, 16), () => sweep('free:collar', spine, girth, 16)), tint: 0.95 });
     for (let j = 0; j < BASE_ROOTS && trunk > 4; j++) {
       const chance = seeded(`${name}|base${j}`);
       const want = front + ((j + 0.5 + 0.6 * (chance() - 0.5)) / BASE_ROOTS) * FULL;
@@ -483,12 +633,13 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
       const leadThick: number[] = [];
       for (let i = 0; i <= i0; i++) {
         const turn = foot + spin * (i / i0);
-        lead.push(leader.axis[i].clone().add(new Vector3(Math.cos(turn) * around, 0, Math.sin(turn) * around)));
+        const out = around * mix(FOOT, 1, smooth(i / 6));
+        lead.push(leader.axis[i].clone().add(new Vector3(Math.cos(turn) * out, 0, Math.sin(turn) * out)));
         leadThick.push(size * mix(1, 0.7, i / i0));
       }
       const root = rootOf(lead, size, j * 1.7, mix(0.7, 1.2, chance()));
       const length = mix(4, 7, chance());
-      free(`free:base${j}`, anchor, [...root.root, ...lead], 0.7 * size, end - 0.2, 0.8 * length, 0.7 * length, CROWN_SHAPE, 0.4, 0.4, [1], chance, [...root.thick, ...leadThick], root.root.length);
+      free(`free:base${j}`, anchor, [...root.root, ...lead], 0.7 * size, end - 0.2, 0.8 * length, 0.6 * length, SHOOT_SHAPE, 0.4, 0.4, [1], chance, [...root.thick, ...leadThick], root.root.length);
     }
   }
   // Shoots on the limbs, away from the fork: up where nothing hangs above, sideways under another limb.
@@ -505,7 +656,7 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
       const length = mix(2.6, 4.6, chance());
       const side = (j + braid.tier) % 2 ? 1 : -1;
       const turn = Math.atan2(way.z, way.x) + side * (up ? mix(0.5, 1, chance()) : mix(0.9, 1.3, chance()));
-      free(`free:${braid.ids[0]}:shoot${j}`, braid.ids[0], limb.axis.slice(i0 - 5, i0 + 1), 0.14, turn, (up ? 0.5 : 0.9) * length, (up ? 0.85 : 0.35) * length, up ? SHOOT_SHAPE : SIDE_SHAPE, side * 0.3, 0.25, length > 3.8 ? [1] : [], chance);
+      free(`free:${braid.ids[0]}:shoot${j}`, braid.ids[0], limb.axis.slice(i0 - 5, i0 + 1), 0.14, turn, (up ? 0.65 : 0.9) * length, (up ? 0.6 : 0.3) * length, up ? SHOOT_SHAPE : SIDE_SHAPE, side * 0.3, 0.25, length > 3.8 ? [1] : [], chance);
     }
   }
   // Where a couple's card hangs the wood runs on into a fine shoot, unless a card hangs right above.
@@ -514,7 +665,7 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
     const chance = seeded(`${end.id}|tip`);
     const side = chance() < 0.5 ? 1 : -1;
     const length = mix(2, 3.4, chance());
-    free(`free:${end.id}:tip`, end.id, end.points, 0.11, end.angle + side * mix(0.4, 0.9, chance()), 0.75 * length, 0.6 * length, SHOOT_SHAPE, side * 0.3, 0.2, [], chance);
+    free(`free:${end.id}:tip`, end.id, end.points, 0.11, end.angle + side * mix(0.4, 0.9, chance()), 0.85 * length, 0.35 * length, SHOOT_SHAPE, side * 0.3, 0.2, [], chance);
   }
 
   return { pieces, pins };

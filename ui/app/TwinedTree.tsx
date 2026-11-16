@@ -2,7 +2,7 @@
 
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
-import { DoubleSide, Group, Mesh, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, type Texture, TextureLoader, Vector2, Vector3 } from 'three';
+import { Color, DoubleSide, Group, Mesh, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, type Texture, TextureLoader, Vector2, Vector3 } from 'three';
 import barkColor from './bark/bark-color.jpg';
 import barkGold from './bark/bark-gold.jpg';
 import barkNormal from './bark/bark-normal.jpg';
@@ -22,8 +22,8 @@ export const GROW_SECONDS = 2.5;
 // Before the first person's strand grows, a gold seed falls onto the hill (in seconds), then sinks in.
 const SEED_SECONDS = 0.9;
 const seedFrom = new Vector3();
-// The baked bark is dark; this lifts it into the scene's light.
-const BRIGHT = 1.7;
+// The baked bark is dark; this lifts it into the scene's light as a warm, old brown.
+const BARK_TINT = new Color(3.1, 2.5, 1.9);
 
 // The bark is baked in Blender (docs/design/blender) into three tiling textures: colour, relief, and
 // one that marks the gold (red and blue) and how rough the surface is (green).
@@ -43,11 +43,12 @@ function bark() {
 }
 
 const EMPTY: TwinedPlan = { depth: 0, braids: [], twigs: [], cards: [] };
+
 const same = (a: TwinedPlan, b: TwinedPlan) => JSON.stringify(a) === JSON.stringify(b);
 
 // Bark that is drawn only up to `grown` along each piece (see `Piece`); the clipped tube stays open.
-// Where the bark is gone the wood is gold: half metal, so it still shows without reflections, and
-// it glows a little.
+// Where the bark is gone the wood is gold: a little metal, so it shows without reflections and
+// stays quiet next to the warm bark, and it glows only faintly.
 function growingBark() {
   const { color, normal, gold } = bark();
   const material = new MeshStandardMaterial({
@@ -57,7 +58,7 @@ function growingBark() {
     roughnessMap: gold,
     metalnessMap: gold,
     roughness: 1,
-    metalness: 0.55,
+    metalness: 0.3,
     side: DoubleSide,
   });
   const grown = { value: 1 };
@@ -67,7 +68,7 @@ function growingBark() {
     shader.vertexShader = `attribute float along;\nvarying float vAlong;\n${shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvAlong = along;')}`;
     shader.fragmentShader = `uniform float uGrown;\nvarying float vAlong;\n${shader.fragmentShader
       .replace('void main() {', 'void main() {\nif (vAlong > uGrown) discard;')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, 0.42, 0.06) * texture2D(metalnessMap, vMetalnessMapUv).b * 0.3;')}`;
+      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, 0.42, 0.06) * texture2D(metalnessMap, vMetalnessMapUv).b * 0.1;')}`;
   };
   return material;
 }
@@ -83,6 +84,7 @@ export default function TwinedTree({
   front,
   name,
   position,
+  onLive,
   onPins,
   onReplayEnd,
 }: {
@@ -93,12 +95,14 @@ export default function TwinedTree({
   // The family's id, which shapes the base trunk.
   name: string;
   position: Point;
+  // Where the cards hang right now, every frame while the tree grows, so they can ride along.
+  onLive?: (pins: Map<string, Point>) => void;
   onPins: (pins: Map<string, Point>) => void;
   onReplayEnd: () => void;
 }) {
   const group = useRef<Group>(null);
   const seed = useRef<Mesh>(null);
-  const callbacks = useRef({ onPins, onReplayEnd });
+  const callbacks = useRef({ onPins, onReplayEnd, onLive });
   const state = useRef({
     shown: null as TwinedPlan | null,
     queue: [] as TwinedPlan[],
@@ -107,8 +111,8 @@ export default function TwinedTree({
     meshes: new Map<string, Mesh>(),
   });
   useEffect(() => {
-    callbacks.current = { onPins, onReplayEnd };
-  }, [onPins, onReplayEnd]);
+    callbacks.current = { onPins, onReplayEnd, onLive };
+  }, [onPins, onReplayEnd, onLive]);
 
   // Shows `plan`: one mesh per piece, reused by member id, grown as far as the plan says.
   const draw = (plan: TwinedPlan | GrowingPlan) => {
@@ -129,17 +133,19 @@ export default function TwinedTree({
         mesh.receiveShadow = true;
         meshes.set(p.id, mesh);
         group.current?.add(mesh);
-      } else {
+      } else if (mesh.geometry !== p.geometry) {
+        // A piece that did not move keeps its geometry (see `buildTwinedTree`), so only moved wood is uploaded.
         mesh.geometry.dispose();
         mesh.geometry = p.geometry;
       }
       const material = mesh.material as MeshStandardMaterial;
-      material.color.setScalar(BRIGHT * p.tint);
+      material.color.copy(BARK_TINT).multiplyScalar(p.tint);
       const grown = 'grown' in plan ? (plan.grown.get(p.follows) ?? 1) : 1;
       material.userData.grown.value = grown;
       // The depth pass would cast the whole strand; shadows come once it has grown.
       mesh.castShadow = grown >= 1;
     }
+    callbacks.current.onLive?.(pins);
     return pins;
   };
 
