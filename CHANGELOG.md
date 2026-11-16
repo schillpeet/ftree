@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.43.0](https://github.com/schillpeet/ftree/compare/v0.42.0...v0.43.0) (2026-11-16)
+
+
+### Features
+
+* **ui:** add yourself to an empty tree ([#358](https://github.com/schillpeet/ftree/issues/358)) ([c3e925b](https://github.com/schillpeet/ftree/commit/c3e925bdf65c3ebc5472bfc05a0657a9962cb240))
+* **ui:** grow a base trunk from a seed ([#360](https://github.com/schillpeet/ftree/issues/360)) ([6fade87](https://github.com/schillpeet/ftree/commit/6fade879923f50e4964648dbcbcbeae5c99254d2))
+* **ui:** make the tiered tree an old giant ([#361](https://github.com/schillpeet/ftree/issues/361)) ([610aa11](https://github.com/schillpeet/ftree/commit/610aa111052c081e99182f2bbfedc1010a4c03c2))
+
 ## [0.42.0](https://github.com/schillpeet/ftree/compare/v0.41.0...v0.42.0) (2026-11-15)
 
 
