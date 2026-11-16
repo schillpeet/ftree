@@ -47,8 +47,7 @@ const EMPTY: TwinedPlan = { depth: 0, braids: [], twigs: [], cards: [] };
 const same = (a: TwinedPlan, b: TwinedPlan) => JSON.stringify(a) === JSON.stringify(b);
 
 // Bark that is drawn only up to `grown` along each piece (see `Piece`); the clipped tube stays open.
-// Where the bark is gone the wood is gold: a little metal, so it shows without reflections and
-// stays quiet next to the warm bark, and it glows only faintly.
+// Where the bark is gone the wood is gold: metal that reflects the sky's environment, and glows only faintly.
 function growingBark() {
   const { color, normal, gold } = bark();
   const material = new MeshStandardMaterial({
@@ -58,7 +57,7 @@ function growingBark() {
     roughnessMap: gold,
     metalnessMap: gold,
     roughness: 1,
-    metalness: 0.3,
+    metalness: 1,
     side: DoubleSide,
   });
   const grown = { value: 1 };

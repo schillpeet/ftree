@@ -44,4 +44,3 @@ The textures tile: one repeat covers `TAU * RU` texture units along the wood and
 
 - Card angles: Blender lays the family out itself (`layout()` in `tree.py`), the app uses `ui/app/twinedLayout.ts`. Both keep families together with air between them, but the app centres the family on the front.
 - Free branches: Blender draws all chance from one sequence seeded with the family id. The app seeds every free branch with its own name, so it keeps its shape while the family grows, and it has no filler limbs yet.
-- Gold: Blender shows real reflections. The app has no environment map, so the gold is half metal and glows a little instead.

@@ -2,11 +2,12 @@
 
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { Billboard, CameraControls, Grid, Line, Sky, Stars } from '@react-three/drei';
+import { Billboard, CameraControls, Environment, Grid, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, BackSide, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance, type Appearance } from './appearance';
 import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
+import { Overlay, PostEffects, useGlowGain, usePostEffects, useStartTier } from './PostProcessing';
 import { arrangePins, relationDistance } from './arrange';
 import { generationBounds, generations, layerPins } from './generations';
 import Meadow, { height } from './Meadow';
@@ -26,7 +27,7 @@ import SimpleTree from './SimpleTree';
 import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
 import { growthOrder } from './twinedGrowth';
 import { twinedPlan, type TwinedPlan } from './twinedLayout';
-import { daylight, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
 import { onLocationChange, useSunLocation } from './sunLocation';
 import { onStorage, useLanguage, useT } from './i18n';
 import { useCan } from './Permissions';
@@ -47,6 +48,12 @@ const MOONLIGHT = new Color('#9fb4ff');
 const MIN_LIGHT_ALTITUDE = (8 * Math.PI) / 180;
 const LIGHT_DISTANCE = 120;
 const TWILIGHT_GLOW = 0.3;
+// The visible sky, and the copy of it that lights reflections and the scene's ambient fill.
+const SKY = { turbidity: 10, rayleigh: 3, mieCoefficient: 0.006, mieDirectionalG: 0.9 };
+// The moon passes through the post effects' tone mapping; this keeps it as bright as it was drawn untouched.
+const MOON_GAIN = 1.5;
+// The sky cube is brighter than the light it should give; this scales it to a fill next to the sun.
+const ENVIRONMENT = 0.18;
 const SHADOW = {
   'shadow-camera-left': -60,
   'shadow-camera-right': 60,
@@ -419,16 +426,31 @@ function DebugClock({ minutes, onMinutes }: { minutes: number; onMinutes: (value
 const formatTime = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
+// The sky's light for reflections and ambient fill: a small cube rendered again only when the sun has moved half a
+// degree (`cubeKey`), always into the same cube, so no GPU textures pile up while the day goes by.
+function SkyEnvironment({ cubeKey, sun, intensity }: { cubeKey: string; sun: [number, number, number]; intensity: number }) {
+  const [cube, setCube] = useState(() => ({ key: cubeKey, intensity, sky: <Sky sunPosition={sun} {...SKY} /> }));
+  // A new sky element is what makes the environment render its cube again.
+  if (cube.key !== cubeKey) setCube({ key: cubeKey, intensity, sky: <Sky sunPosition={sun} {...SKY} /> });
+  return (
+    <Environment resolution={64} frames={1} background={false} environmentIntensity={cube.intensity}>
+      {cube.sky}
+    </Environment>
+  );
+}
+
 // Sun, moon, stars, and light for the given moment at the given location. The moon simply
 // stands opposite the sun, lower, and is always full.
 function DaySky({ date, location }: { date: Date; location: Location }) {
   const stars = useRef<Points>(null);
   const [moonMap] = useState(moonTexture);
   const [haloMap] = useState(haloTexture);
+  const moonGain = useGlowGain(MOON_GAIN);
   const { altitude, azimuth } = sunPosition(date, location);
   // The sky shader's own sunlight ends ~2° below the horizon; raising its sun during twilight
   // keeps the afterglow (and dawn) through civil twilight instead of minutes.
-  const sun = sunDirection(altitude < 0 ? altitude * TWILIGHT_GLOW : altitude, azimuth, SOUTH);
+  const skyAltitude = altitude < 0 ? altitude * TWILIGHT_GLOW : altitude;
+  const sun = sunDirection(skyAltitude, azimuth, SOUTH);
   const day = daylight(altitude);
   const high = highSun(altitude);
   const mix = (key: keyof typeof NIGHT) => NIGHT[key].clone().lerp(DUSK[key], day).lerp(NOON[key], high);
@@ -442,21 +464,23 @@ function DaySky({ date, location }: { date: Date; location: Location }) {
 
   return (
     <>
-      <Sky sunPosition={sun} turbidity={10} rayleigh={3} mieCoefficient={0.006} mieDirectionalG={0.9} />
+      <Sky sunPosition={sun} {...SKY} />
+      <SkyEnvironment cubeKey={environmentKey(skyAltitude, azimuth)} sun={sun} intensity={ENVIRONMENT * environmentIntensity(altitude)} />
       <Stars ref={stars} radius={3000} depth={500} count={STARS} factor={110} speed={0} fade />
       {altitude < 0.1 && (
         <Billboard position={moon.map((v) => v * MOON_DISTANCE) as [number, number, number]}>
           <mesh geometry={HALO_GEOMETRY} position-z={-5}>
-            <meshBasicMaterial map={haloMap} transparent blending={AdditiveBlending} depthWrite={false} fog={false} toneMapped={false} />
+            <meshBasicMaterial map={haloMap} color={[moonGain, moonGain, moonGain]} transparent blending={AdditiveBlending} depthWrite={false} fog={false} toneMapped={false} />
           </mesh>
           <mesh geometry={MOON_GEOMETRY}>
-            <meshBasicMaterial map={moonMap} transparent depthWrite={false} fog={false} toneMapped={false} />
+            <meshBasicMaterial map={moonMap} color={[moonGain, moonGain, moonGain]} transparent depthWrite={false} fog={false} toneMapped={false} />
           </mesh>
         </Billboard>
       )}
       {/* Exponential haze: the meadow fades gradually toward the horizon instead of ending in a band. */}
-      <fogExp2 attach="fog" args={[DUSK.haze, 0.0009]} color={mix('haze')} />
-      <hemisphereLight color={mix('sky')} groundColor={mix('ground')} intensity={0.8 + 0.6 * day} />
+      <fogExp2 attach="fog" args={[DUSK.haze, 0.0016]} color={mix('haze')} />
+      {/* By day the environment fills from the sky; at night this carries the moon's fill. */}
+      <hemisphereLight color={mix('sky')} groundColor={mix('ground')} intensity={0.5 - 0.3 * day} />
       <directionalLight
         position={lightFrom(altitude, azimuth)}
         color={SUN_LOW.clone().lerp(SUN_HIGH, high)}
@@ -486,6 +510,7 @@ function Scrolls({
   pins,
   showPins,
   showLines,
+  overlayLines,
   focusId,
   selectedId,
   selfId,
@@ -506,6 +531,8 @@ function Scrolls({
   pins: Point[];
   showPins: boolean;
   showLines: boolean;
+  // Whether the lines are drawn after the post effects, so occlusion, bloom, tone mapping and vignette leave their colours alone.
+  overlayLines: boolean;
   // Whose lineage stands out (lines lit, everyone else dimmed), or null.
   focusId: string | null;
   // The person whose panel is open: their card gets a halo.
@@ -692,6 +719,19 @@ function Scrolls({
   // drei's Html loses its content if its target changes after mount, so wait until the
   // canvas has connected its event source (the element Html attaches to).
   if (!events.connected) return null;
+  const relationLines = (
+    <>
+      {showLines && lines.dim.length > 0 && (
+        <Line points={lines.dim} segments color={lineDim.color} opacity={lineDim.opacity} transparent lineWidth={LINE_WIDTH} {...ON_TOP} />
+      )}
+      {showLines && lines.lit.length > 0 && (
+        <>
+          <Line points={lines.lit} segments color={glow.color} opacity={glow.opacity} transparent lineWidth={GLOW_WIDTH} {...ON_TOP} renderOrder={2} />
+          <Line points={lines.lit} segments color={lineOn.color} opacity={lineOn.opacity} transparent lineWidth={LINE_WIDTH} {...ON_TOP} renderOrder={3} />
+        </>
+      )}
+    </>
+  );
   return (
     <>
       {members.map((member) => {
@@ -719,15 +759,7 @@ function Scrolls({
           </mesh>
         ))}
       {slots && positions.has(slots.memberId) && slots.render(positions.get(slots.memberId)!, 8)}
-      {showLines && lines.dim.length > 0 && (
-        <Line points={lines.dim} segments color={lineDim.color} opacity={lineDim.opacity} transparent lineWidth={LINE_WIDTH} {...ON_TOP} />
-      )}
-      {showLines && lines.lit.length > 0 && (
-        <>
-          <Line points={lines.lit} segments color={glow.color} opacity={glow.opacity} transparent lineWidth={GLOW_WIDTH} {...ON_TOP} renderOrder={2} />
-          <Line points={lines.lit} segments color={lineOn.color} opacity={lineOn.opacity} transparent lineWidth={LINE_WIDTH} {...ON_TOP} renderOrder={3} />
-        </>
-      )}
+      {overlayLines ? <Overlay>{relationLines}</Overlay> : relationLines}
     </>
   );
 }
@@ -785,6 +817,10 @@ export default function Scene({
   const experimental = appearance === 'experimental';
   const bloodId = showLines && highlightBlood && experimental ? highlight : null;
   const organic = appearance === 'organic';
+  // The post effects belong to the 3D appearances; TRON keeps its own look.
+  const [postOn, setPostOn] = usePostEffects();
+  const post = postOn && !experimental;
+  const postStart = useStartTier();
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
@@ -989,12 +1025,14 @@ export default function Scene({
     <>
       <Canvas
         shadows="percentage"
-        // Lower exposure keeps the bright sky shader from washing out to white; lights compensate.
+        // Lower exposure keeps the bright sky shader from washing out to white; the composer's tone mapping reads it too.
         gl={{ toneMappingExposure: 0.6, preserveDrawingBuffer: true }}
         camera={{ position: CAMERA_START, fov: FOV, far: 10000 }}
         // The theme's background until the first frame, instead of a white page while the scene loads.
         style={{ position: 'fixed', inset: 0, background: 'var(--bg)' }}
       >
+        {/* The composer turns the renderer's ACES off while it runs and applies the same at its end. */}
+        {post && <PostEffects start={postStart} />}
         {experimental ? (
           <>
             <GridFloor />
@@ -1028,6 +1066,7 @@ export default function Scene({
               pins={organic ? pins : []}
               showPins={organic && showPins}
               showLines={showLines}
+              overlayLines={post}
               focusId={focusId}
               selectedId={highlight}
               selfId={selfId}
@@ -1093,6 +1132,10 @@ export default function Scene({
               >
                 {replay ? t.tools.stopGrowth : t.tools.replayGrowth}
               </button>
+              <label className="debug-check" title={experimental ? t.tools.disabled : undefined}>
+                <input type="checkbox" checked={postOn} disabled={experimental} onChange={(event) => setPostOn(event.target.checked)} />
+                {t.tools.postEffects}
+              </label>
             </section>
             <section>
               <h2>{t.tools.view}</h2>

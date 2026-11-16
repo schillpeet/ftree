@@ -13,7 +13,7 @@ const LEGEND_KEY = 'ftree.showLegend';
 const LEGEND_FOLDED_KEY = 'ftree.legendFolded';
 
 // The server render has no localStorage and starts with `fallback`, as does a browser that never chose.
-function useStoredSwitch(key: string, fallback = true) {
+export function useStoredSwitch(key: string, fallback = true) {
   const saved = useSyncExternalStore(onStorage, () => localStorage.getItem(key), () => null);
   const value = saved == null ? fallback : saved === 'true';
   const setValue = (next: boolean) => {

@@ -126,6 +126,7 @@ While the tree grows, the cards ride along with their branches every frame inste
 A scroll card arrives rolled up under its rod and unrolls once it appears, so a new member's scroll opens only when its branch has grown; with reduced motion it is open at once.
 With reduced motion preferred, or when another family is opened, the tree shows its new shape at once.
 The Evolution panel's "Ansichts-Labor" has "Wachstum abspielen" for the tiered tree, which replays the open family member by member, eldest first and each partner right after their partner, until "Stopp", another family, or another appearance ends it.
+The "Ansichts-Labor" section has a "Nachbearbeitung" checkbox, on by default and remembered per browser (`ftree.post`), that switches the post effects off to compare; it is disabled in GRID.
 The tiered tree is rebuilt when the family changes; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
@@ -157,6 +158,12 @@ Sun and sky light, haze, and sky colors follow the sun's altitude, with the afte
 The time updates every minute.
 The "Zeit" section of the Evolution panel has "Uhrzeit vorschauen", which shows a 24-hour dial (midnight at the top) whose hand can be dragged or moved with the arrow keys in 15-minute steps to preview any time of today.
 As evening falls, small warm-white light orbs rise above the hanging scrolls and boards, glowing brighter and larger as the sun sinks to civil twilight; a "Leuchtkugeln" checkbox in the debug panel (on by default) switches them off.
+In the 3D appearances a small copy of the sky is rendered into an environment cube whenever the sun has moved half a degree, so metal reflects the sky and surfaces get sky light from above; at night it fades to a low level.
+The tiered tree's gold is full metal now that the scene has an environment to reflect.
+The 3D appearances draw through post effects (`ui/app/PostProcessing.tsx`): ambient occlusion, bloom on highlights, ACES tone mapping at the scene's exposure of 0.6, and a vignette; GRID draws as before.
+While the post effects run, the light orbs, the card halos and the moon are drawn brighter so they keep their look through the tone mapping and get a soft halo from the bloom.
+Relation lines are drawn after the post effects, so they keep their exact token colours.
+Coarse pointers start without ambient occlusion and multisampling, and any device drops them while the frame rate is low and takes them back when it recovers, up to three changes per visit.
 
 ### Tree and roots
 

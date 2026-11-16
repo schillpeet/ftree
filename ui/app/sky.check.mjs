@@ -1,10 +1,11 @@
 // Run with `node app/sky.check.mjs`: the sun stands where it should over Berlin, and daylight and
 // stars fade monotonically through twilight.
 import assert from 'node:assert/strict';
-import { daylight, evening, starlight, sunDirection, sunPosition } from './sky.ts';
+import { daylight, environmentIntensity, environmentKey, evening, starlight, sunDirection, sunPosition } from './sky.ts';
 
 const berlin = { latitude: 52.52, longitude: 13.4 };
 const deg = (r) => (r * 180) / Math.PI;
+const rad = (d) => (d * Math.PI) / 180;
 const at = (iso) => sunPosition(new Date(iso), berlin);
 
 // Midsummer noon (13:00 CEST = 11:00 UTC): high in the south.
@@ -38,4 +39,11 @@ assert.equal(starlight(-0.3), 1);
 assert.equal(starlight(0), 0);
 assert.equal(evening(0.3), 0);
 assert.equal(evening(-0.2), 1);
+// The environment cube dims to a low night level and is re-rendered only per half degree.
+assert.equal(environmentIntensity(rad(30)), 1);
+assert.ok(Math.abs(environmentIntensity(rad(-20)) - 0.12) < 1e-9);
+for (let d = -10; d < 10; d++) assert.ok(environmentIntensity(rad(d + 1)) >= environmentIntensity(rad(d)));
+assert.equal(environmentKey(rad(10.1), rad(40.1)), environmentKey(rad(10.2), rad(40.2)));
+assert.notEqual(environmentKey(rad(10.0), rad(40)), environmentKey(rad(10.6), rad(40)));
+assert.notEqual(environmentKey(rad(10), rad(40.0)), environmentKey(rad(10), rad(40.6)));
 console.log('sky ok');

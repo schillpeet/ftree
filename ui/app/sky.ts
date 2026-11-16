@@ -49,3 +49,9 @@ export const highSun = (altitude: number) => smoothstep(0, 30 * RAD, altitude);
 // 0 by day, 1 once the sun sinks to the end of civil twilight: the evening fades in as the light
 // drops, when the little glow orbs above the cards light up.
 export const evening = (altitude: number) => 1 - smoothstep(-6 * RAD, 12 * RAD, altitude);
+// Share of the sky's light that reaches reflections and ambient light: a low level at night, full by day.
+const NIGHT_ENVIRONMENT = 0.12;
+export const environmentIntensity = (altitude: number) => NIGHT_ENVIRONMENT + (1 - NIGHT_ENVIRONMENT) * daylight(altitude);
+// Changes whenever the sun has moved half a degree: the environment cube is re-rendered then.
+export const environmentKey = (altitude: number, azimuth: number) =>
+  `${Math.round(altitude / RAD / 0.5) * 0.5}:${Math.round(azimuth / RAD / 0.5) * 0.5}`;
