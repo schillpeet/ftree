@@ -51,6 +51,8 @@ varying float vAlong;
 varying float vScar;
 varying vec3 vBarkPos;
 vec2 scarGrad;
+// Whether a scar's rim or bed can be near at all; elsewhere the height is the bark's alone.
+bool scarNear;
 
 // How much of the scar is here (0 bark, 1 gold), its rim, and the raw mask.
 float scarAt(vec2 uv, out float rim, out float mask) {
@@ -61,6 +63,7 @@ float scarAt(vec2 uv, out float rim, out float mask) {
 }
 
 float heightAt(vec2 uv) {
+  if (!scarNear) return texture2D(aoMap, uv).b;
   float rim, mask;
   float inside = scarAt(uv, rim, mask);
   float bark = texture2D(aoMap, uv).b + uRim * rim;
@@ -117,6 +120,7 @@ const MAIN = /* glsl */ `
   mat2 uvJ = mat2(dFdx(vMapUv), dFdy(vMapUv));
   float uvDet = determinant(uvJ);
   scarGrad = abs(uvDet) > 1e-12 ? inverse(transpose(uvJ)) * vec2(dFdx(vScar), dFdy(vScar)) : vec2(0.0);
+  scarNear = vScar > uScarEdge - 0.3;
   if (vAlong > uGrown) discard;
   vec2 barkUv = parallaxUv(vMapUv);
   float scarRim, scarMask;

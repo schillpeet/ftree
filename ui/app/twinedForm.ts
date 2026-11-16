@@ -93,7 +93,6 @@ const SHOOT_SHAPE = [[0, 0], [0.3, 0.5], [0.62, 0.86], [1, 1]];
 const SIDE_SHAPE = [[0, 0], [0.35, 0.3], [0.7, 0.7], [1, 1]];
 const UP = new Vector3(0, 1, 0);
 const FULL = Math.PI * 2;
-// The bark texture repeats every 2 * FULL texture units along the wood (see docs/design/blender).
 // Bark is tiled in metres: one tile of the baked bark covers TILE_AROUND metres around the wood and
 // TILE_ALONG along it, the same in docs/design/blender/tree.py. Every tube gets a whole number of
 // tiles around, so there is no seam and plates are about the same size on thick and thin wood.
@@ -152,7 +151,7 @@ export function scarsFor(name: string, baseStrands: number): Scar[] {
 // A scar on a person's strand, or none: chance from the family and the person, so it stays with them.
 function personScar(name: string, id: string, trunk: number): PlacedScar | null {
   const chance = seeded(`${name}|scar|${id}`);
-  if (chance() >= PERSON_SCARS || trunk < 4) return null;
+  if (chance() >= PERSON_SCARS || !(trunk >= 4)) return null;
   return { at: mix(3, 0.9 * trunk, chance()), facing: mix(-0.6, 0.6, chance()), height: mix(0.8, 2.2, chance()), width: mix(0.3, 0.6, chance()), outward: true };
 }
 // A scar placed on its tube: `facing` is the world direction it faces (radians around the y axis), or
@@ -214,7 +213,8 @@ function frames(points: Vector3[]) {
 
 // A round tube through `points` with a radius per point and at least `radial` sides (see `sidesFor`).
 // uv.x counts bark tiles along its length, uv.y a whole number of tiles around (`tilesAround`); the
-// tangent runs along the wood (+U) with w = -1, so three's bitangent runs around it (+V); `along` runs from 0 to 1, or across `span`.
+// tangent runs along the wood (+U) with w = -1, so three's bitangent runs around it (+V); `along` runs
+// from 0 to 1, or across `span`; `scar` marks the scars on it (see `PlacedScar`).
 // Every piece starts somewhere else in the bark (`name`), so no two show the same patches.
 // `along` counts from point `origin` both ways, so a strand's root grows out while its wood grows up.
 type Tube = { name: string; points: Vector3[]; radii: number[]; radial: number; origin?: number; span?: [number, number]; scars?: PlacedScar[] };
@@ -339,12 +339,13 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
     }
     return { root, thick };
   };
+  // Scars placed on person strands, the base trunk and the collar (see `scarsFor`), by piece id; they
+  // salt the piece's hash, so a piece is rebuilt when its scars change.
+  const placed = new Map<string, PlacedScar[]>();
+  const scarSalt = (id: string) => (placed.get(id) ?? []).reduce((h, sc) => h + Math.round(sc.at * 97 + sc.facing * 89 + sc.height * 83), 0);
   // Wood ends in a fan of three fine twigs reaching out, not in a single point: one geometry with
   // the wood itself. The wood grows in the first 85 % of the time, the twigs from where the wood
   // reaches its tip to the end.
-  // Scars placed on the base trunk and the collar (see `scarsFor`), by piece id.
-  const placed = new Map<string, PlacedScar[]>();
-  const scarSalt = (id: string) => (placed.get(id) ?? []).reduce((h, sc) => h + Math.round(sc.at * 97 + sc.facing * 89 + sc.height * 83), 0);
   const tipped = (name: string, points: Vector3[], radii: number[], radial: number, origin = 0) =>
     reuse(name, hashOf(points, radii, radial * 7919 + origin * 31 + scarSalt(name)), () => {
     const n = points.length;

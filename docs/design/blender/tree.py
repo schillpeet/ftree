@@ -265,7 +265,7 @@ def flat(name, color, rough=0.8):
 TILE_AROUND = 1.0  # metres of bark per tile around the wood, the same as in ui/app/twinedForm.ts
 TILE_ALONG = 4.0  # metres of bark per tile along the wood
 PLATES = 8.0  # bark plates per metre around the wood (about 12 cm wide)
-STRETCH = 0.13  # plates are this many times as wide as long (about 1 m long) along the wood as they are wide (about 60 cm long)
+STRETCH = 0.13  # the long noise squeezes the wood's length by this, so its features are about 1 m long along the wood as they are wide (about 60 cm long)
 GOLD = (1.0, 0.42, 0.06)
 
 
