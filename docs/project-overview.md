@@ -606,6 +606,7 @@ A tab that neither opens a stream nor sends presence for 60 seconds leaves; clie
 Every 20 seconds each stream gets a heartbeat comment, which keeps proxies from closing it and finds streams whose browser has gone; a stream whose user lost `tree.view` in the family ends then.
 The stream answers with `Cache-Control: no-cache, no-transform`, because without `no-transform` the UI's `/api` rewrite gzips it and holds every event until the stream ends (checked with Next 16.4.2 in `next dev` and the standalone build).
 Whether Cloudflare Access and cloudflared deliver the events without delay is not verified yet; if not, a cloudflared ingress rule can route `/api/families/*/events` straight to the BFF.
+An open stream holds no database connection: `spring.jpa.open-in-view` is off, because with it each stream kept the connection of its opening checks for up to 30 minutes and about ten open trees used up the 10-connection pool, after which every request failed until the BFF restarted.
 Presence and the open streams live in the BFF's memory (`PresenceRegistry`, `TreeEventBroadcaster`), so they work only while the BFF runs as a single replica; with more replicas the events would have to go through PostgreSQL `LISTEN/NOTIFY`.
 `PresenceDirectory.all()` lists everyone present across families for a later admin overview.
 In dev mode the cookie `ftree-dev-email` signs the request in as that email instead of `app.auth.dev-email`, so two browser profiles can be two people locally; cloudflare mode ignores it.
