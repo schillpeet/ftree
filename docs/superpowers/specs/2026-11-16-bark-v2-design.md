@@ -122,6 +122,10 @@ Each stage gets one commit on this branch once the user has seen it; one pull re
 - A tile is 1.0 m around and 4.0 m along: with shorter tiles only two plates fit along, and the seamless 4D mapping smeared them.
 - The bark is long ridges between furrows (a triangle wave around the wood, bent by noise, with bridges and a few breaks across) instead of stretched Voronoi plates, which ended in smears and read as scales; ridges are about 12 cm wide.
 
+- More gold than "sparing" (the user, 2026-11-16, after seeing stage 4): veins fill whole furrows in patches over the trunk and limbs and glow a little in the gold's own colour, so they show from the normal views; person strands carry a scar of their own about every third time (seeded from the family and the person, so it stays with them); and one base strand is bared all around along the trunk.
+- Scars are 0.8 to 2.2 m tall and sit 1.5 to 9 m up the base strands, so they show from the closest camera, about 25 m away; parallax fades between 30 and 80 m and the furrows lie 15 cm deep for the same reason.
+- Scars and veins exist only in the app; the Blender look-dev tree shows pure bark.
+
 ## Acceptance
 
 - Screenshots, close-up of the trunk and the whole tree, at noon and at night, before and after; the user approves the look.

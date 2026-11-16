@@ -184,3 +184,37 @@ const tree = buildTwinedTree(plan(three), 0);
     }
   }
 }
+
+// Scars: 3 to 5 on the base trunk and one bared base strand, only from the family id; person strands
+// may carry one of their own. They stay where they are when someone joins.
+{
+  const { scarsFor } = await import('./twinedForm.ts');
+  const s = scarsFor('fam-1', 7);
+  const small = s.filter((x) => !x.bared);
+  assert.ok(small.length >= 3 && small.length <= 5, `${small.length} scars`);
+  assert.equal(s.filter((x) => x.bared).length, 1);
+  assert.deepEqual(scarsFor('fam-1', 7), s);
+  assert.notDeepEqual(scarsFor('fam-2', 7), s);
+  assert.ok(s.every((x) => /^free:(base\d|collar)$/.test(x.strand)));
+  assert.ok(scarsFor('fam-1', 0).every((x) => x.strand === 'free:collar' && !x.bared));
+  const scarred = (tree) =>
+    tree.pieces.filter((p) => Array.from(p.geometry.attributes.scar.array).some((v) => v >= 0.5)).map((p) => p.id).sort();
+  const tree = buildTwinedTree(plan(three), 0, 'fam-1');
+  const people = new Set(three.map((p) => p.id));
+  for (const p of tree.pieces) {
+    const values = Array.from(p.geometry.attributes.scar.array);
+    assert.ok(values.every((v) => Number.isFinite(v) && v >= 0 && v <= 1), `${p.id}: scar out of range`);
+    if (!s.some((x) => x.strand === p.id) && !people.has(p.id)) assert.ok(values.every((v) => v === 0), `${p.id}: scar where none is`);
+  }
+  const before = scarred(tree);
+  for (const id of new Set(s.map((x) => x.strand))) assert.ok(before.includes(id), `${id} has no scar`);
+  const more = [...three, person('baby', ['kid'], [], '2020')];
+  const after = scarred(buildTwinedTree(plan(more), 0, 'fam-1'));
+  assert.ok(before.every((id) => after.includes(id)), 'a scar went away when someone joined');
+  // A bared strand is gold all around along the trunk.
+  const bared = tree.pieces.find((p) => p.id === s.find((x) => x.bared).strand).geometry.attributes.scar;
+  assert.ok(Array.from(bared.array).filter((v) => v > 0.9).length > 50);
+  // Even one person stands on the base trunk, so their tree has its scars there.
+  const alone = buildTwinedTree(plan([person('solo')]), 0, 'fam-1');
+  for (const id of new Set(s.map((x) => x.strand))) assert.ok(scarred(alone).includes(id), `solo: ${id} has no scar`);
+}

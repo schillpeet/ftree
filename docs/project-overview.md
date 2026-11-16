@@ -105,7 +105,7 @@ A deceased person's name is preceded by †.
 `ui/app/experimental/verify.ts` checks drawings in the tests, not at runtime: right angles, no overlaps, no crossings but on recorded bridges, no four-way points, and a read-back of the parents and partners from the drawing itself.
 CI runs this check on a fixture shaped like a real five-generation family (synthetic people) and on 500 random families (`ui/app/experimental/families.check.mjs`).
 The appearance board also offers an experimental organic tree: a tiered tree (`ui/app/TwinedTree.tsx`) with one tier per generation, the eldest at the top, drawn as an old tree without leaves.
-Its bark is baked in Blender into three tiling textures (`ui/app/bark/`), and where a plate of bark has come off the wood shows gold; the Blender setup lives in `docs/design/blender/`.
+Its bark is baked in Blender into tiling textures (`ui/app/bark/`), and in a few scars the bark has come off and gold heartwood shows; the Blender setup lives in `docs/design/blender/`.
 Everyone with a partner or children brings a strand of their own that grows from the ground up to their tier, and a couple's strands wind around each other; a second partner on the same tier makes a braid of three.
 A childless person without a partner whose parents are in the tree is a twig that grows out of the parents' braid instead (`ui/app/twinedLayout.ts`).
 A couple leaves the trunk on a limb of its own that forks to its two cards (`ui/app/twinedForm.ts`), so the trunk is thickest at the ground and thins towards the top, and a new generation adds a tier at the bottom and makes the tree taller.
@@ -113,7 +113,13 @@ All wood rises: a couple with single children leaves the trunk lower, reaches ou
 Wood without cards makes the tree full: strands that wind around the eldest couple's leader and leave as crown branches, shoots on the limbs, and a fine shoot beyond a couple's card; each takes its shape from its own name, so it stays as it is while the family changes.
 Even one person stands on a base trunk of eight roots: seven strands without cards grow from roots of their own around the eldest couple's leader, wind up around the whole trunk and leave it low as branches, which lifts every tier about a card's height above the hilltop.
 The roots of all strands grow out from the foot of the tree while the wood grows up.
-The bark is tinted a warm, light brown and its gold only glows faintly, so the tree looks old rather than dark.
+The bark is tinted a light grey-brown and its gold only glows faintly, so the tree looks old rather than dark.
+Thick wood has more sides (about 64 per metre of radius, at most 32), so the trunk's silhouette is round.
+The bark is tiled in metres, one tile 1 m around and 4 m along the wood, with a whole number of tiles around every tube, so there is no seam and ridges are about 12 cm wide on thick and thin wood alike.
+The bark is long ridges between deep furrows that wander, split and join, with small flakes, a few breaks across and some lichen, and its height map gives the furrows about 15 cm of depth close up (parallax, `ui/app/barkShader.ts`), fading out from 30 m away.
+Three to five scars sit on the base trunk, placed from the family id so they stay where they are when people join (`scarsFor` in `ui/app/twinedForm.ts`): the gold heartwood lies sunk below the bark with a raised callus rim around it.
+One base strand is bared all around along the trunk, and about every third person's strand carries a scar of its own that stays with them.
+Gold veins fill the furrows around the scars and in patches over the trunk and limbs, and the gold glows faintly in its own colour.
 No wood ends in a single point: every branch, shoot and strand ends in a small fan of three fine twigs that reach out, and the crown branches spread wide and rise only a little.
 The base strands stand a little further apart at the ground, so the trunk has a broad foot.
 A solid root collar fills the foot inside the strands and flares out onto the hill, so the trunk is never hollow at the ground.

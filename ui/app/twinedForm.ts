@@ -117,6 +117,52 @@ const smooth = (x: number) => {
   return t * t * (3 - 2 * t);
 };
 const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+
+// Scars: places where the bark has come off and the gold heartwood shows, sunk below the bark with a
+// raised rim. A few sit on the base trunk (or on the collar when there is none or too little of it)
+// and only depend on the family id, and one base strand is bared all around along the trunk; so they
+// stay where they are when people join. `at` is metres along the strand from its foot, `turn` turns
+// the scar away from facing straight out (radians; for the collar, away from the front), `height` and
+// `width` are its size in metres; a `bared` strand ignores them. Person strands get scars of their own
+// (`personScar`).
+export type Scar = { strand: string; at: number; turn: number; height: number; width: number; bared?: boolean };
+// The share of person strands that carry a scar.
+const PERSON_SCARS = 0.35;
+export function scarsFor(name: string, baseStrands: number): Scar[] {
+  const chance = seeded(`${name}|scars`);
+  const count = 3 + Math.floor(chance() * 3);
+  const order = Array.from({ length: baseStrands }, (_, j) => j);
+  for (let i = order.length - 1; i > 0; i--) {
+    const k = Math.floor(chance() * (i + 1));
+    [order[i], order[k]] = [order[k], order[i]];
+  }
+  const scars = Array.from({ length: count }, (_, i): Scar => {
+    const base = i < order.length;
+    return {
+      strand: base ? `free:base${order[i]}` : 'free:collar',
+      at: base ? mix(1.5, 9, chance()) : mix(0.6, 1.8, chance()),
+      turn: base ? mix(-0.5, 0.5, chance()) : mix(-2.2, 2.2, chance()),
+      height: mix(0.8, 2.2, chance()),
+      width: mix(0.3, 0.7, chance()),
+    };
+  });
+  if (baseStrands) scars.push({ strand: `free:base${Math.floor(chance() * baseStrands)}`, at: 0, turn: 0, height: 0, width: 0, bared: true });
+  return scars;
+}
+// A scar on a person's strand, or none: chance from the family and the person, so it stays with them.
+function personScar(name: string, id: string, trunk: number): PlacedScar | null {
+  const chance = seeded(`${name}|scar|${id}`);
+  if (chance() >= PERSON_SCARS || trunk < 4) return null;
+  return { at: mix(3, 0.9 * trunk, chance()), facing: mix(-0.6, 0.6, chance()), height: mix(0.8, 2.2, chance()), width: mix(0.3, 0.6, chance()), outward: true };
+}
+// A scar placed on its tube: `facing` is the world direction it faces (radians around the y axis), or
+// with `outward`, how far it turns from facing out from the tree's axis where it is.
+type PlacedScar = { at: number; facing: number; height: number; width: number; outward?: boolean };
+// The `scar` attribute is 1 at a scar's centre and falls to 0 at SCAR_BAND times its ellipse, so the
+// shader can draw veins running out of it; the scar's edge is where the attribute is 1 - 1 / SCAR_BAND.
+const SCAR_BAND = 3.5;
+export const SCAR_EDGE = 1 - 1 / SCAR_BAND;
+const wrapAngle = (a: number) => a - FULL * Math.round(a / FULL);
 // The shortest turn from one angle to another.
 const turnTo = (from: number, to: number) => ((((to - from) % FULL) + FULL + Math.PI) % FULL) - Math.PI;
 // A Bezier curve through any number of control points.
@@ -171,7 +217,7 @@ function frames(points: Vector3[]) {
 // tangent runs along the wood (+U) with w = -1, so three's bitangent runs around it (+V); `along` runs from 0 to 1, or across `span`.
 // Every piece starts somewhere else in the bark (`name`), so no two show the same patches.
 // `along` counts from point `origin` both ways, so a strand's root grows out while its wood grows up.
-type Tube = { name: string; points: Vector3[]; radii: number[]; radial: number; origin?: number; span?: [number, number] };
+type Tube = { name: string; points: Vector3[]; radii: number[]; radial: number; origin?: number; span?: [number, number]; scars?: PlacedScar[] };
 
 // Several tubes in one geometry, written straight into one set of buffers: the tree is rebuilt every
 // frame while it grows, so this avoids merging and short-lived arrays.
@@ -188,12 +234,13 @@ function sweepAll(tubes: Tube[]) {
   const uv = new Float32Array(vertices * 2);
   const along = new Float32Array(vertices);
   const tangent = new Float32Array(vertices * 4);
+  const scar = new Float32Array(vertices);
   const index = vertices > 65535 ? new Uint32Array(indices) : new Uint16Array(indices);
   const v = new Vector3();
   const axis = new Vector3();
   let v0 = 0;
   let i0 = 0;
-  tubes.forEach(({ name, points, radii, origin = 0, span = [0, 1] }, t) => {
+  tubes.forEach(({ name, points, radii, origin = 0, span = [0, 1], scars = [] }, t) => {
     const radial = sides[t];
     const around = tilesAround(radii);
     const n = points.length;
@@ -225,6 +272,14 @@ function sweepAll(tubes: Tube[]) {
         tangent[k * 4 + 1] = axis.y;
         tangent[k * 4 + 2] = axis.z;
         tangent[k * 4 + 3] = -1;
+        let mark = 0;
+        for (const sc of scars) {
+          const up = (length[i] - length[origin] - sc.at) / (sc.height / 2);
+          const facing = sc.outward ? Math.atan2(points[i].z, points[i].x) + sc.facing : sc.facing;
+          const across = (wrapAngle(Math.atan2(v.z, v.x) - facing) * radii[i]) / (sc.width / 2);
+          mark = Math.max(mark, 1 - Math.hypot(up, across) / SCAR_BAND);
+        }
+        scar[k] = mark;
       }
     }
     for (let i = 0; i < n - 1; i++)
@@ -245,10 +300,12 @@ function sweepAll(tubes: Tube[]) {
   g.setAttribute('uv', new Float32BufferAttribute(uv, 2));
   g.setAttribute('along', new Float32BufferAttribute(along, 1));
   g.setAttribute('tangent', new Float32BufferAttribute(tangent, 4));
+  g.setAttribute('scar', new Float32BufferAttribute(scar, 1));
   g.setIndex(new BufferAttribute(index, 1));
   return g;
 }
-const sweep = (name: string, points: Vector3[], radii: number[], radial: number, origin = 0) => sweepAll([{ name, points, radii, radial, origin }]);
+const sweep = (name: string, points: Vector3[], radii: number[], radial: number, origin = 0, scars: PlacedScar[] = []) =>
+  sweepAll([{ name, points, radii, radial, origin, scars }]);
 
 // `plan` comes from `twinedPlan` with TWINED_SLOT_ANGLE (or from `blendPlans` while growing, with a
 // fractional depth); angle 0 faces `front`. `name` (the family's id) shapes the base trunk, so it
@@ -285,8 +342,11 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
   // Wood ends in a fan of three fine twigs reaching out, not in a single point: one geometry with
   // the wood itself. The wood grows in the first 85 % of the time, the twigs from where the wood
   // reaches its tip to the end.
+  // Scars placed on the base trunk and the collar (see `scarsFor`), by piece id.
+  const placed = new Map<string, PlacedScar[]>();
+  const scarSalt = (id: string) => (placed.get(id) ?? []).reduce((h, sc) => h + Math.round(sc.at * 97 + sc.facing * 89 + sc.height * 83), 0);
   const tipped = (name: string, points: Vector3[], radii: number[], radial: number, origin = 0) =>
-    reuse(name, hashOf(points, radii, radial * 7919 + origin * 31), () => {
+    reuse(name, hashOf(points, radii, radial * 7919 + origin * 31 + scarSalt(name)), () => {
     const n = points.length;
     let before = 0;
     let after = 0;
@@ -314,7 +374,7 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
       }
       return { name: `${name}.fan${f}`, points: twig, radii: thin, radial: 3, span: [reached, 1] };
     });
-    return sweepAll([{ name, points, radii, radial, origin, span: [0, 0.85] }, ...fans]);
+    return sweepAll([{ name, points, radii, radial, origin, span: [0, 0.85], scars: placed.get(name) }, ...fans]);
   });
   // How far the limbs of a tier reach: a dome, widest a little below the middle of the tree and
   // wider for deeper families; a crowded tier pushes its cards further out.
@@ -485,6 +545,8 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
         thick.push(end * mix(0.9, 0.3, k / 8));
       }
       const root = rootOf(points, thick[0], index * 2.4 + i);
+      const scar = personScar(name, id, run[along.findLastIndex((t) => t < 0)] - FLARE);
+      if (scar) placed.set(id, [scar]);
       pieces.push({ id, follows: id, geometry: tipped(id, [...root.root, ...points], [...root.thick, ...thick], 9, root.root.length), tint: 1 + (i % 2 ? -0.07 : 0.07) + 0.02 * braid.tier });
       pieces.push({ id: `free:roots:${id}`, follows: id, geometry: rootsOf(id), tint: 1 });
       const pin = at(reachHere, front + a, top);
@@ -633,13 +695,23 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
     // never hollow, and closes below where the first limb leaves.
     const top = Math.max(FLARE + 1, Math.min(...plan.braids.map(leaveOf)) - 0.8);
     const core = Math.max(0.45, around - 0.35);
+    const scars = scarsFor(name, trunk > 4 ? BASE_ROOTS : 0);
+    // The collar starts below the ground, its scars' `at` counts from the hilltop.
+    const spineFrom = -1.2;
+    // Turns a direction away from the back, so no scar faces straight away from the front.
+    const away = (a: number) => {
+      const off = wrapAngle(a - front - Math.PI);
+      return Math.abs(off) < 0.6 ? front + Math.PI + Math.sign(off || 1) * 0.6 : a;
+    };
+    for (const sc of scars.filter((x) => x.strand === 'free:collar'))
+      placed.set('free:collar', [...(placed.get('free:collar') ?? []), { at: sc.at - spineFrom, facing: away(front + sc.turn), height: sc.height, width: sc.width }]);
     const spine: Vector3[] = [];
     const girth: number[] = [];
-    for (let y = -1.2; y <= top + 1e-6; y += 0.3) {
+    for (let y = spineFrom; y <= top + 1e-6; y += 0.3) {
       spine.push(new Vector3(0, y, 0));
       girth.push(core * (1 + 0.9 * Math.exp(-Math.max(0, y) / (0.6 + 0.3 * core))) * Math.sqrt(smooth((top - y) / 1.5)));
     }
-    pieces.push({ id: 'free:collar', follows: anchor, geometry: reuse(`free:collar|${name}`, hashOf(spine, girth, 16), () => sweep('free:collar', spine, girth, 16)), tint: 0.95 });
+    pieces.push({ id: 'free:collar', follows: anchor, geometry: reuse(`free:collar|${name}`, hashOf(spine, girth, 16 + scarSalt('free:collar')), () => sweep('free:collar', spine, girth, 16, 0, placed.get('free:collar'))), tint: 0.95 });
     for (let j = 0; j < BASE_ROOTS && trunk > 4; j++) {
       const chance = seeded(`${name}|base${j}`);
       const want = front + ((j + 0.5 + 0.6 * (chance() - 0.5)) / BASE_ROOTS) * FULL;
@@ -656,6 +728,16 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
         const out = around * mix(FOOT, 1, smooth(i / 6));
         lead.push(leader.axis[i].clone().add(new Vector3(Math.cos(turn) * out, 0, Math.sin(turn) * out)));
         leadThick.push(size * mix(1, 0.7, i / i0));
+      }
+      for (const sc of scars.filter((x) => x.strand === `free:base${j}`)) {
+        // The scar faces out from the trunk where the strand winds past at its height; a bared strand
+        // is gold all around from its foot to where it leaves the trunk.
+        const lead = i0 * 0.3;
+        const at = Math.min(sc.at, 0.9 * lead);
+        const place = sc.bared
+          ? { at: lead / 2, facing: 0, height: lead, width: 1e3 }
+          : { at, facing: away(foot + spin * Math.min(1, at / lead) + sc.turn), height: sc.height, width: sc.width };
+        placed.set(sc.strand, [...(placed.get(sc.strand) ?? []), place]);
       }
       const root = rootOf(lead, size, j * 1.7, mix(0.7, 1.2, chance()));
       const length = mix(4, 7, chance());
