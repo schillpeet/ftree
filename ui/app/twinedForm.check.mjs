@@ -139,3 +139,82 @@ const tree = buildTwinedTree(plan(three), 0);
     assert.equal(growing.pins.size, three.length);
   }
 }
+
+// Bark v2: thick wood has more sides, and the bark is tiled in metres with a whole number of tiles
+// around every tube, so there is no seam and plates are the same size on thick and thin wood.
+{
+  const { sidesFor, tilesAround, TILE_AROUND, TILE_ALONG } = await import('./twinedForm.ts');
+  assert.equal(sidesFor(0.42, 9), 27);
+  assert.equal(sidesFor(0.03, 6), 6);
+  assert.equal(sidesFor(1, 9), 32);
+  assert.equal(tilesAround([0.01, 0.005]), 1);
+  assert.equal(tilesAround([0.4, 0.4]), Math.round((2 * Math.PI * 0.4) / TILE_AROUND));
+  const blender = (await import('node:fs')).readFileSync(new URL('../../docs/design/blender/tree.py', import.meta.url), 'utf8');
+  assert.equal(Number(/^TILE_AROUND = ([\d.]+)/m.exec(blender)?.[1]), TILE_AROUND);
+  assert.equal(Number(/^TILE_ALONG = ([\d.]+)/m.exec(blender)?.[1]), TILE_ALONG);
+  const tree = buildTwinedTree(plan(three), 0, 'fam-1');
+  for (const p of tree.pieces) {
+    const uv = p.geometry.attributes.uv;
+    const pos = p.geometry.attributes.position;
+    // A ring is a run of vertices with the same uv.x; its first and last vertex sit at the same place.
+    let start = 0;
+    for (let i = 1; i <= uv.count; i++) {
+      if (i < uv.count && uv.getX(i) === uv.getX(start)) continue;
+      const span = uv.getY(i - 1) - uv.getY(start);
+      assert.ok(Math.abs(span - Math.round(span)) < 1e-4 && Math.round(span) >= 1, `${p.id}: seam (${span})`);
+      assert.ok(Math.abs(pos.getX(i - 1) - pos.getX(start)) < 1e-4, `${p.id}: ring not closed`);
+      start = i;
+    }
+  }
+}
+
+// Parallax needs a tangent per vertex: along the wood (+U), at right angles to the normal, w = -1 so
+// three's bitangent cross(normal, tangent) * w points around the wood (+V).
+{
+  const tree = buildTwinedTree(plan(three), 0, 'fam-1');
+  for (const p of tree.pieces) {
+    const t = p.geometry.attributes.tangent;
+    const n = p.geometry.attributes.normal;
+    assert.ok(t && t.itemSize === 4 && t.count === n.count, `${p.id}: tangent`);
+    for (let i = 0; i < t.count; i++) {
+      const [x, y, z, w] = [t.getX(i), t.getY(i), t.getZ(i), t.getW(i)];
+      assert.ok([x, y, z].every(Number.isFinite) && w === -1, `${p.id}: tangent ${i}`);
+      assert.ok(Math.abs(Math.hypot(x, y, z) - 1) < 1e-3, `${p.id}: tangent length`);
+      assert.ok(Math.abs(x * n.getX(i) + y * n.getY(i) + z * n.getZ(i)) < 1e-3, `${p.id}: tangent not at right angles`);
+    }
+  }
+}
+
+// Scars: 3 to 5 on the base trunk and one bared base strand, only from the family id; person strands
+// may carry one of their own. They stay where they are when someone joins.
+{
+  const { scarsFor } = await import('./twinedForm.ts');
+  const s = scarsFor('fam-1', 7);
+  const small = s.filter((x) => !x.bared);
+  assert.ok(small.length >= 3 && small.length <= 5, `${small.length} scars`);
+  assert.equal(s.filter((x) => x.bared).length, 1);
+  assert.deepEqual(scarsFor('fam-1', 7), s);
+  assert.notDeepEqual(scarsFor('fam-2', 7), s);
+  assert.ok(s.every((x) => /^free:(base\d|collar)$/.test(x.strand)));
+  assert.ok(scarsFor('fam-1', 0).every((x) => x.strand === 'free:collar' && !x.bared));
+  const scarred = (tree) =>
+    tree.pieces.filter((p) => Array.from(p.geometry.attributes.scar.array).some((v) => v >= 0.5)).map((p) => p.id).sort();
+  const tree = buildTwinedTree(plan(three), 0, 'fam-1');
+  const people = new Set(three.map((p) => p.id));
+  for (const p of tree.pieces) {
+    const values = Array.from(p.geometry.attributes.scar.array);
+    assert.ok(values.every((v) => Number.isFinite(v) && v >= 0 && v <= 1), `${p.id}: scar out of range`);
+    if (!s.some((x) => x.strand === p.id) && !people.has(p.id)) assert.ok(values.every((v) => v === 0), `${p.id}: scar where none is`);
+  }
+  const before = scarred(tree);
+  for (const id of new Set(s.map((x) => x.strand))) assert.ok(before.includes(id), `${id} has no scar`);
+  const more = [...three, person('baby', ['kid'], [], '2020')];
+  const after = scarred(buildTwinedTree(plan(more), 0, 'fam-1'));
+  assert.ok(before.every((id) => after.includes(id)), 'a scar went away when someone joined');
+  // A bared strand is gold all around along the trunk.
+  const bared = tree.pieces.find((p) => p.id === s.find((x) => x.bared).strand).geometry.attributes.scar;
+  assert.ok(Array.from(bared.array).filter((v) => v > 0.9).length > 50);
+  // Even one person stands on the base trunk, so their tree has its scars there.
+  const alone = buildTwinedTree(plan([person('solo')]), 0, 'fam-1');
+  for (const id of new Set(s.map((x) => x.strand))) assert.ok(scarred(alone).includes(id), `solo: ${id} has no scar`);
+}

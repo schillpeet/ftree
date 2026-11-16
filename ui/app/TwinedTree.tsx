@@ -4,10 +4,13 @@ import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
 import { Color, DoubleSide, Group, Mesh, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, type Texture, TextureLoader, Vector2, Vector3 } from 'three';
 import barkColor from './bark/bark-color.jpg';
-import barkGold from './bark/bark-gold.jpg';
+import barkData from './bark/bark-data.jpg';
 import barkNormal from './bark/bark-normal.jpg';
+import goldColor from './bark/gold-color.jpg';
+import goldData from './bark/gold-data.jpg';
+import { type BarkUniforms, patchBark } from './barkShader';
 import type { Point } from './pins';
-import { buildTwinedTree } from './twinedForm';
+import { buildTwinedTree, SCAR_EDGE } from './twinedForm';
 import { blendPlans, type GrowingPlan } from './twinedGrowth';
 import type { TwinedPlan } from './twinedLayout';
 
@@ -22,12 +25,20 @@ export const GROW_SECONDS = 2.5;
 // Before the first person's strand grows, a gold seed falls onto the hill (in seconds), then sinks in.
 const SEED_SECONDS = 0.9;
 const seedFrom = new Vector3();
-// The baked bark is dark; this lifts it into the scene's light as a warm, old brown.
-const BARK_TINT = new Color(3.1, 2.5, 1.9);
+// The baked bark is dark; this lifts it into the scene's light, a little warm.
+const BARK_TINT = new Color(3.0, 2.72, 2.4);
+// How deep the furrows lie below the ridges, in metres (parallax, see barkShader.ts).
+const BARK_DEPTH = 0.15;
+// Scars (see barkShader.ts), in units of BARK_DEPTH: how high the callus rim rises above the ridges and
+// how deep the gold lies below the furrows; and how strong the gold veins are (0 = none).
+const SCAR_RIM = 0.4;
+const SCAR_SINK = 0.8;
+const GOLD_VEINS = 1;
 
-// The bark is baked in Blender (docs/design/blender) into three tiling textures: colour, relief, and
-// one that marks the gold (red and blue) and how rough the surface is (green).
-let barkMaps: { color: Texture; normal: Texture; gold: Texture } | null = null;
+// The bark is baked in Blender (docs/design/blender) into tiling textures, one tile per TILE_ALONG ×
+// TILE_AROUND metres (twinedForm.ts): colour, relief, and data with ambient occlusion in red,
+// roughness in green and height in blue; and the same for the gold heartwood under it.
+let barkMaps: { color: Texture; normal: Texture; data: Texture; goldColor: Texture; goldData: Texture } | null = null;
 function bark() {
   if (!barkMaps) {
     const load = (src: string) => {
@@ -36,8 +47,8 @@ function bark() {
       texture.anisotropy = 8;
       return texture;
     };
-    barkMaps = { color: load(barkColor.src), normal: load(barkNormal.src), gold: load(barkGold.src) };
-    barkMaps.color.colorSpace = SRGBColorSpace;
+    barkMaps = { color: load(barkColor.src), normal: load(barkNormal.src), data: load(barkData.src), goldColor: load(goldColor.src), goldData: load(goldData.src) };
+    barkMaps.color.colorSpace = barkMaps.goldColor.colorSpace = SRGBColorSpace;
   }
   return barkMaps;
 }
@@ -47,28 +58,32 @@ const EMPTY: TwinedPlan = { depth: 0, braids: [], twigs: [], cards: [] };
 const same = (a: TwinedPlan, b: TwinedPlan) => JSON.stringify(a) === JSON.stringify(b);
 
 // Bark that is drawn only up to `grown` along each piece (see `Piece`); the clipped tube stays open.
-// Where the bark is gone the wood is gold: metal that reflects the sky's environment, and glows only faintly.
+// Its furrows have depth close up, and a few scars show gold heartwood (`patchBark`).
 function growingBark() {
-  const { color, normal, gold } = bark();
+  const { color, normal, data, goldColor, goldData } = bark();
   const material = new MeshStandardMaterial({
     map: color,
     normalMap: normal,
     normalScale: new Vector2(1.3, 1.3),
-    roughnessMap: gold,
-    metalnessMap: gold,
+    aoMap: data,
+    aoMapIntensity: 1,
+    roughnessMap: data,
     roughness: 1,
-    metalness: 1,
+    metalness: 0,
     side: DoubleSide,
   });
-  const grown = { value: 1 };
-  material.userData.grown = grown;
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uGrown = grown;
-    shader.vertexShader = `attribute float along;\nvarying float vAlong;\n${shader.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\nvAlong = along;')}`;
-    shader.fragmentShader = `uniform float uGrown;\nvarying float vAlong;\n${shader.fragmentShader
-      .replace('void main() {', 'void main() {\nif (vAlong > uGrown) discard;')
-      .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += vec3(1.0, 0.42, 0.06) * texture2D(metalnessMap, vMetalnessMapUv).b * 0.1;')}`;
+  const uniforms: BarkUniforms = {
+    uGrown: { value: 1 },
+    uDepth: { value: BARK_DEPTH },
+    uScarEdge: { value: SCAR_EDGE },
+    uRim: { value: SCAR_RIM },
+    uSink: { value: SCAR_SINK },
+    uVeins: { value: GOLD_VEINS },
+    uGoldColor: { value: goldColor },
+    uGoldData: { value: goldData },
   };
+  material.userData.grown = uniforms.uGrown;
+  material.onBeforeCompile = (shader) => patchBark(shader, uniforms);
   return material;
 }
 
