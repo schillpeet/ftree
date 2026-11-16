@@ -261,6 +261,8 @@ def flat(name, color, rough=0.8):
     return m
 
 
+TILE_AROUND = 0.5  # metres of bark per tile around the wood, the same as in ui/app/twinedForm.ts
+TILE_ALONG = 1.2  # metres of bark per tile along the wood
 RU = 2.0  # the bark repeats every TAU * RU texture units along the wood and once around it
 GOLD = (1.0, 0.42, 0.06)
 

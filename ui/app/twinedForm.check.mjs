@@ -139,3 +139,31 @@ const tree = buildTwinedTree(plan(three), 0);
     assert.equal(growing.pins.size, three.length);
   }
 }
+
+// Bark v2: thick wood has more sides, and the bark is tiled in metres with a whole number of tiles
+// around every tube, so there is no seam and plates are the same size on thick and thin wood.
+{
+  const { sidesFor, tilesAround, TILE_AROUND, TILE_ALONG } = await import('./twinedForm.ts');
+  assert.equal(sidesFor(0.42, 9), 27);
+  assert.equal(sidesFor(0.03, 6), 6);
+  assert.equal(sidesFor(1, 9), 32);
+  assert.equal(tilesAround([0.01, 0.005]), 1);
+  assert.equal(tilesAround([0.4, 0.4]), Math.round((2 * Math.PI * 0.4) / TILE_AROUND));
+  const blender = (await import('node:fs')).readFileSync(new URL('../../docs/design/blender/tree.py', import.meta.url), 'utf8');
+  assert.equal(Number(/^TILE_AROUND = ([\d.]+)/m.exec(blender)?.[1]), TILE_AROUND);
+  assert.equal(Number(/^TILE_ALONG = ([\d.]+)/m.exec(blender)?.[1]), TILE_ALONG);
+  const tree = buildTwinedTree(plan(three), 0, 'fam-1');
+  for (const p of tree.pieces) {
+    const uv = p.geometry.attributes.uv;
+    const pos = p.geometry.attributes.position;
+    // A ring is a run of vertices with the same uv.x; its first and last vertex sit at the same place.
+    let start = 0;
+    for (let i = 1; i <= uv.count; i++) {
+      if (i < uv.count && uv.getX(i) === uv.getX(start)) continue;
+      const span = uv.getY(i - 1) - uv.getY(start);
+      assert.ok(Math.abs(span - Math.round(span)) < 1e-4 && Math.round(span) >= 1, `${p.id}: seam (${span})`);
+      assert.ok(Math.abs(pos.getX(i - 1) - pos.getX(start)) < 1e-4, `${p.id}: ring not closed`);
+      start = i;
+    }
+  }
+}

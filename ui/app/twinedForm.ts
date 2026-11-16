@@ -94,7 +94,15 @@ const SIDE_SHAPE = [[0, 0], [0.35, 0.3], [0.7, 0.7], [1, 1]];
 const UP = new Vector3(0, 1, 0);
 const FULL = Math.PI * 2;
 // The bark texture repeats every 2 * FULL texture units along the wood (see docs/design/blender).
-const BARK_REPEAT = 2 * FULL;
+// Bark is tiled in metres: one tile of the baked bark covers TILE_AROUND metres around the wood and
+// TILE_ALONG along it, the same in docs/design/blender/tree.py. Every tube gets a whole number of
+// tiles around, so there is no seam and plates are about the same size on thick and thin wood.
+export const TILE_AROUND = 0.5;
+export const TILE_ALONG = 1.2;
+// Thick wood gets more sides, so its silhouette is round: about 64 per metre of radius, never fewer
+// than the kind's own minimum and never more than 32.
+export const sidesFor = (maxRadius: number, min: number) => Math.min(32, Math.max(min, Math.round(maxRadius * 64)));
+export const tilesAround = (radii: number[]) => Math.max(1, Math.round((FULL * radii.reduce((a, r) => a + r, 0)) / radii.length / TILE_AROUND));
 
 // The angle one card needs at the card radius; the plan shrinks it for big families.
 export const TWINED_SLOT_ANGLE = 2 * Math.asin((CARD.width + CARD_GAP) / (2 * CARD_RADIUS));
@@ -158,8 +166,8 @@ function frames(points: Vector3[]) {
   return out;
 }
 
-// A round tube through `points` with a radius per point. uv.x counts bark repeats along its length
-// (thin wood has finer bark), uv.y runs once around; `along` runs from 0 to 1, or across `span`.
+// A round tube through `points` with a radius per point and at least `radial` sides (see `sidesFor`).
+// uv.x counts bark tiles along its length, uv.y a whole number of tiles around (`tilesAround`); `along` runs from 0 to 1, or across `span`.
 // Every piece starts somewhere else in the bark (`name`), so no two show the same patches.
 // `along` counts from point `origin` both ways, so a strand's root grows out while its wood grows up.
 type Tube = { name: string; points: Vector3[]; radii: number[]; radial: number; origin?: number; span?: [number, number] };
@@ -169,10 +177,11 @@ type Tube = { name: string; points: Vector3[]; radii: number[]; radial: number; 
 function sweepAll(tubes: Tube[]) {
   let vertices = 0;
   let indices = 0;
-  for (const t of tubes) {
-    vertices += t.points.length * (t.radial + 1);
-    indices += (t.points.length - 1) * t.radial * 6;
-  }
+  const sides = tubes.map((t) => sidesFor(Math.max(...t.radii), t.radial));
+  tubes.forEach((t, k) => {
+    vertices += t.points.length * (sides[k] + 1);
+    indices += (t.points.length - 1) * sides[k] * 6;
+  });
   const position = new Float32Array(vertices * 3);
   const normal = new Float32Array(vertices * 3);
   const uv = new Float32Array(vertices * 2);
@@ -181,13 +190,14 @@ function sweepAll(tubes: Tube[]) {
   const v = new Vector3();
   let v0 = 0;
   let i0 = 0;
-  for (const { name, points, radii, radial, origin = 0, span = [0, 1] } of tubes) {
+  tubes.forEach(({ name, points, radii, origin = 0, span = [0, 1] }, t) => {
+    const radial = sides[t];
+    const around = tilesAround(radii);
     const n = points.length;
     const ring = radial + 1;
     const length = [0];
     for (let i = 1; i < n; i++) length.push(length[i - 1] + points[i].distanceTo(points[i - 1]));
     const reach = Math.max(length[origin], length[n - 1] - length[origin]);
-    const scale = Math.min(0.9, Math.max(0.4, 0.45 * Math.sqrt(0.5 / Math.max(0.05, Math.max(...radii))))) / BARK_REPEAT;
     const frame = frames(points);
     const chance = seeded(`bark${name}`);
     const shift = [chance(), chance()];
@@ -203,8 +213,8 @@ function sweepAll(tubes: Tube[]) {
         position[k * 3] = points[i].x + v.x * radii[i];
         position[k * 3 + 1] = points[i].y + v.y * radii[i];
         position[k * 3 + 2] = points[i].z + v.z * radii[i];
-        uv[k * 2] = shift[0] + length[i] * scale;
-        uv[k * 2 + 1] = shift[1] + j / radial;
+        uv[k * 2] = shift[0] + length[i] / TILE_ALONG;
+        uv[k * 2 + 1] = shift[1] + (j / radial) * around;
         along[k] = grow;
       }
     }
@@ -219,7 +229,7 @@ function sweepAll(tubes: Tube[]) {
         index[i0++] = a + ring + 1;
       }
     v0 += n * ring;
-  }
+  });
   const g = new BufferGeometry();
   g.setAttribute('position', new Float32BufferAttribute(position, 3));
   g.setAttribute('normal', new Float32BufferAttribute(normal, 3));
