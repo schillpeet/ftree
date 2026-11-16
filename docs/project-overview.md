@@ -111,8 +111,11 @@ A childless person without a partner whose parents are in the tree is a twig tha
 A couple leaves the trunk on a limb of its own that forks to its two cards (`ui/app/twinedForm.ts`), so the trunk is thickest at the ground and thins towards the top, and a new generation adds a tier at the bottom and makes the tree taller.
 All wood rises: a couple with single children leaves the trunk lower, reaches out below their cards so their twigs can grow out of the limb, and then climbs to its fork.
 Wood without cards makes the tree full: strands that wind around the eldest couple's leader and leave as crown branches, shoots on the limbs, and a fine shoot beyond a couple's card; each takes its shape from its own name, so it stays as it is while the family changes.
+Even one person stands on a base trunk of eight roots: seven strands without cards grow from roots of their own around the eldest couple's leader, wind up around the whole trunk and leave it low as branches, which lifts every tier about a card's height above the hilltop.
+The roots of all strands grow out from the foot of the tree while the wood grows up.
 Every family keeps its own wedge around the trunk with air on either side, parents right above their children, centred on the front; when the wedges do not fit around the trunk, the cards move further out.
 The tiered tree grows when the family changes (`ui/app/twinedGrowth.ts`): over 2.5 seconds new strands grow from the ground and twigs out of their parents' braid, the tree rises when a generation is added, and cards move to their new places once the step has settled.
+Before the first person's strand grows, a small gold seed falls onto the hill and sinks in; an empty family shows only the meadow.
 With reduced motion preferred, or when another family is opened, the tree shows its new shape at once.
 The Evolution panel's "Ansichts-Labor" has "Wachstum abspielen" for the tiered tree, which replays the open family member by member, eldest first and each partner right after their partner, until "Stopp", another family, or another appearance ends it.
 The tiered tree is rebuilt when the family changes; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.
