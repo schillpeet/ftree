@@ -48,11 +48,12 @@ const tree = buildTwinedTree(plan(three), 0);
     if (!ids.has(p.id)) assert.ok(p.id.startsWith('free:'), p.id);
   }
   assert.ok(tree.pieces.some((p) => p.id.startsWith('free:crown')));
-  // Every piece can grow: `along` runs from 0 at its start to 1 at its tip, and no number is broken.
+  // Every piece can grow: `along` runs from 0 where it starts (a strand's foot, so its root grows out)
+  // to 1 at its farthest end, and no number is broken.
   for (const p of tree.pieces) {
-    const along = p.geometry.attributes.along;
-    assert.equal(along.getX(0), 0);
-    assert.equal(along.getX(along.count - 1), 1);
+    const along = Array.from(p.geometry.attributes.along.array);
+    assert.equal(Math.min(...along), 0, p.id);
+    assert.equal(Math.max(...along), 1, p.id);
     assert.ok(Array.from(points(p).array).every(Number.isFinite), p.id);
     assert.ok(Array.from(p.geometry.attributes.uv.array).every(Number.isFinite), p.id);
   }
@@ -60,6 +61,27 @@ const tree = buildTwinedTree(plan(three), 0);
   for (const id of ['grandpa', 'mum']) assert.ok(Math.min(...spots(piece(tree, id)).map((s) => s[1])) < 0);
   assert.ok(tree.pins.get('grandpa')[1] > tree.pins.get('mum')[1] + 5);
   assert.ok(tree.pins.get('mum')[1] > tree.pins.get('kid')[1] + 5);
+}
+
+// Even one person stands on a base trunk of eight roots, and on the same ones once a partner joins,
+// older or younger; while the partner grows in, the base trunk stays grown.
+{
+  const rooted = (t) => t.pieces.filter((p) => spots(p).some((s) => s[1] < 0)).map((p) => p.id);
+  const alonePlan = plan([person('me')]);
+  const alone = buildTwinedTree(alonePlan, 0, 'family');
+  const bases = Array.from({ length: 7 }, (_, j) => `free:base${j}`);
+  assert.deepEqual(rooted(alone), ['me', ...bases]);
+  assert.ok(alone.pins.get('me')[1] > 14, `${alone.pins.get('me')[1]}`);
+  assert.equal(rooted(tree).filter((id) => id.startsWith('free:base')).length, 7);
+  for (const born of ['1900', '2100']) {
+    const pairPlan = plan([person('me', [], ['you'], '2000'), person('you', [], ['me'], born)]);
+    const pair = buildTwinedTree(pairPlan, 0, 'family');
+    for (const id of bases) assert.deepEqual(Array.from(points(piece(pair, id)).array), Array.from(points(piece(alone, id)).array), `${id} ${born}`);
+    const growing = blendPlans(alonePlan, pairPlan, 0.5);
+    assert.equal(growing.grown.get(piece(buildTwinedTree(growing, 0, 'family'), 'free:base0').follows), 1, born);
+  }
+  // Another family stands on other roots.
+  assert.notDeepEqual(Array.from(points(piece(buildTwinedTree(alonePlan, 0, 'other'), 'free:base0')).array), Array.from(points(piece(alone, 'free:base0')).array));
 }
 
 // The same family gives the same tree, point for point.

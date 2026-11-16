@@ -1001,6 +1001,7 @@ export default function Scene({
                 replay={replay}
                 animate
                 front={VIEW_FRONT}
+                name={familyId ?? ''}
                 position={[0, TREE_BASE, 0]}
                 onPins={setTieredPins}
                 onReplayEnd={endReplay}

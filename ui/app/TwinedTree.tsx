@@ -2,7 +2,7 @@
 
 import { useFrame } from '@react-three/fiber';
 import { useEffect, useRef } from 'react';
-import { DoubleSide, Group, Mesh, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, type Texture, TextureLoader, Vector2 } from 'three';
+import { DoubleSide, Group, Mesh, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, type Texture, TextureLoader, Vector2, Vector3 } from 'three';
 import barkColor from './bark/bark-color.jpg';
 import barkGold from './bark/bark-gold.jpg';
 import barkNormal from './bark/bark-normal.jpg';
@@ -19,6 +19,9 @@ export { TWINED_SLOT_ANGLE } from './twinedForm';
 
 // One growth step, in seconds.
 export const GROW_SECONDS = 2.5;
+// Before the first person's strand grows, a gold seed falls onto the hill (in seconds), then sinks in.
+const SEED_SECONDS = 0.9;
+const seedFrom = new Vector3();
 // The baked bark is dark; this lifts it into the scene's light.
 const BRIGHT = 1.7;
 
@@ -78,6 +81,7 @@ export default function TwinedTree({
   replay,
   animate,
   front,
+  name,
   position,
   onPins,
   onReplayEnd,
@@ -86,11 +90,14 @@ export default function TwinedTree({
   replay: TwinedPlan[] | null;
   animate: boolean;
   front: number;
+  // The family's id, which shapes the base trunk.
+  name: string;
   position: Point;
   onPins: (pins: Map<string, Point>) => void;
   onReplayEnd: () => void;
 }) {
   const group = useRef<Group>(null);
+  const seed = useRef<Mesh>(null);
   const callbacks = useRef({ onPins, onReplayEnd });
   const state = useRef({
     shown: null as TwinedPlan | null,
@@ -105,7 +112,7 @@ export default function TwinedTree({
 
   // Shows `plan`: one mesh per piece, reused by member id, grown as far as the plan says.
   const draw = (plan: TwinedPlan | GrowingPlan) => {
-    const { pieces, pins } = buildTwinedTree(plan, front);
+    const { pieces, pins } = buildTwinedTree(plan, front, name);
     const meshes = state.current.meshes;
     const ids = new Set(pieces.map((p) => p.id));
     for (const [id, mesh] of meshes)
@@ -159,7 +166,7 @@ export default function TwinedTree({
       s.replaying = false;
       s.queue = [target];
     }
-    // `draw` only depends on `front`, which never changes.
+    // `draw` only depends on `front` and `name`, which never change (a new family remounts it).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, replay, animate]);
 
@@ -181,6 +188,7 @@ export default function TwinedTree({
       if (s.shown && !same(to, s.shown)) s.step = { from: s.shown, to, start: null };
     }
     if (!s.step) {
+      if (seed.current) seed.current.visible = false;
       if (s.replaying) {
         s.replaying = false;
         callbacks.current.onReplayEnd();
@@ -189,7 +197,19 @@ export default function TwinedTree({
     }
     const step = s.step;
     step.start ??= clock.elapsedTime;
-    const t = Math.min(1, (clock.elapsedTime - step.start) / GROW_SECONDS);
+    const fall = step.from.braids.length ? 0 : SEED_SECONDS;
+    const since = clock.elapsedTime - step.start;
+    const t = Math.min(1, Math.max(0, since - fall) / GROW_SECONDS);
+    if (seed.current) {
+      const f = since / SEED_SECONDS;
+      seed.current.visible = fall > 0 && f < 1.5;
+      // An arc down to the foot of the tree, then it sinks into the hill while the roots grow out.
+      // It comes from the front, a little to the side, so the viewer sees it fly in.
+      seedFrom.set(Math.cos(front + 0.9) * 11, 16, Math.sin(front + 0.9) * 11);
+      seed.current.position.copy(seedFrom).multiplyScalar(1 - Math.min(1, f) ** 2);
+      seed.current.position.y += 3 * Math.sin(Math.PI * Math.min(1, f)) - 0.5 * Math.max(0, f - 1);
+      seed.current.scale.setScalar(1 - Math.max(0, f - 1) * 2);
+    }
     const pins = draw(blendPlans(step.from, step.to, t));
     if (t >= 1) {
       s.shown = step.to;
@@ -198,5 +218,12 @@ export default function TwinedTree({
     }
   });
 
-  return <group ref={group} position={position} />;
+  return (
+    <group ref={group} position={position}>
+      <mesh ref={seed} visible={false} scale={0}>
+        <sphereGeometry args={[0.35, 16, 12]} />
+        <meshStandardMaterial color="#c9a24a" metalness={0.8} roughness={0.35} emissive="#ff6b10" emissiveIntensity={0.3} />
+      </mesh>
+    </group>
+  );
 }
