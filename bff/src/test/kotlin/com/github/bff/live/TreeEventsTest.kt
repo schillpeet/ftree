@@ -8,6 +8,7 @@ import com.github.bff.auth.Role
 import com.github.bff.member.FamilyEntity
 import com.github.bff.member.FamilyRepository
 import com.github.bff.member.TrashService
+import com.zaxxer.hikari.HikariDataSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
@@ -21,6 +22,7 @@ import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
 import org.springframework.test.web.servlet.put
 import java.util.UUID
+import javax.sql.DataSource
 import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -52,6 +54,9 @@ class TreeEventsTest {
 
     @Autowired
     private lateinit var memberships: Memberships
+
+    @Autowired
+    private lateinit var dataSource: DataSource
 
     private lateinit var visible: UUID
     private lateinit var hidden: UUID
@@ -201,5 +206,19 @@ class TreeEventsTest {
         }.andExpect { status { isOk() } }
 
         assertEquals(Event("family-changed", """{"familyId":"$family","by":"admin@example.com"}"""), admin.events().last())
+    }
+
+    // An open stream must not hold a database connection, or a few more open tabs than the pool has connections would
+    // starve every other request until the streams end.
+    @Test
+    fun `open streams hold no database connection`() {
+        val pool = dataSource.unwrap(HikariDataSource::class.java)
+        val before = pool.hikariPoolMXBean.activeConnections
+
+        repeat(pool.maximumPoolSize + 2) { stream(visible, "editor@example.com", clientId = "tab-$it") }
+
+        assertEquals(before, pool.hikariPoolMXBean.activeConnections, "connections held by open streams")
+        mockMvc.get("/families/$visible/members") { header(CLOUDFLARE_ACCESS_JWT_HEADER, token(email = "editor@example.com")) }
+            .andExpect { status { isOk() } }
     }
 }
