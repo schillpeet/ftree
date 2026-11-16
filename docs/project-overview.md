@@ -113,9 +113,17 @@ All wood rises: a couple with single children leaves the trunk lower, reaches ou
 Wood without cards makes the tree full: strands that wind around the eldest couple's leader and leave as crown branches, shoots on the limbs, and a fine shoot beyond a couple's card; each takes its shape from its own name, so it stays as it is while the family changes.
 Even one person stands on a base trunk of eight roots: seven strands without cards grow from roots of their own around the eldest couple's leader, wind up around the whole trunk and leave it low as branches, which lifts every tier about a card's height above the hilltop.
 The roots of all strands grow out from the foot of the tree while the wood grows up.
+The bark is tinted a warm, light brown and its gold only glows faintly, so the tree looks old rather than dark.
+No wood ends in a single point: every branch, shoot and strand ends in a small fan of three fine twigs that reach out, and the crown branches spread wide and rise only a little.
+The base strands stand a little further apart at the ground, so the trunk has a broad foot.
+A solid root collar fills the foot inside the strands and flares out onto the hill, so the trunk is never hollow at the ground.
+Every person brings a root that leaves the foot of the trunk, bends down onto the hill and creeps far out, its tip sinking in: a few are thick and carry medium side roots, more are medium and carry fine ones, most are fine.
+Roots are sized to the trunk, so they get thicker and reach further as the family grows; their kind, direction and shape only depend on the person.
 Every family keeps its own wedge around the trunk with air on either side, parents right above their children, centred on the front; when the wedges do not fit around the trunk, the cards move further out.
 The tiered tree grows when the family changes (`ui/app/twinedGrowth.ts`): over 2.5 seconds new strands grow from the ground and twigs out of their parents' braid, the tree rises when a generation is added, and cards move to their new places once the step has settled.
 Before the first person's strand grows, a small gold seed falls onto the hill and sinks in; an empty family shows only the meadow.
+While the tree grows, the cards ride along with their branches every frame instead of jumping to their new places when a step has settled.
+A scroll card arrives rolled up under its rod and unrolls once it appears, so a new member's scroll opens only when its branch has grown; with reduced motion it is open at once.
 With reduced motion preferred, or when another family is opened, the tree shows its new shape at once.
 The Evolution panel's "Ansichts-Labor" has "Wachstum abspielen" for the tiered tree, which replays the open family member by member, eldest first and each partner right after their partner, until "Stopp", another family, or another appearance ends it.
 The tiered tree is rebuilt when the family changes; cards cannot be dragged there, stored pins are ignored but kept, and pins, crown size and bundling are greyed out.

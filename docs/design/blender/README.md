@@ -19,7 +19,7 @@ This folder holds that setup, so the look can be changed where it is quick to ju
 
 | In Blender | In the app |
 | --- | --- |
-| The form rule (`build("E")`) | `ui/app/twinedForm.ts`, written again in TypeScript. This file is what the app runs; `tree.py` is where a change is tried first. The base trunk of eight roots and the higher tiers exist only in the app so far. |
+| The form rule (`build("E")`) | `ui/app/twinedForm.ts`, written again in TypeScript. This file is what the app runs; `tree.py` is where a change is tried first. The base trunk of eight roots, the higher tiers, the fans at the tips, the root collar, the roots and the warm bark tint exist only in the app so far, so Blender renders look darker than the app. |
 | The bark (`bark_graph`), baked by `bake()` | `ui/app/bark/bark-color.jpg`, `bark-normal.jpg`, `bark-gold.jpg`, loaded by `ui/app/TwinedTree.tsx`. |
 | Light, sky, hill | Nothing. The app has its own scene (`ui/app/Scene.tsx`); the Blender light only imitates it. |
 
