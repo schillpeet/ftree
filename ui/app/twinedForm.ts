@@ -97,8 +97,8 @@ const FULL = Math.PI * 2;
 // Bark is tiled in metres: one tile of the baked bark covers TILE_AROUND metres around the wood and
 // TILE_ALONG along it, the same in docs/design/blender/tree.py. Every tube gets a whole number of
 // tiles around, so there is no seam and plates are about the same size on thick and thin wood.
-export const TILE_AROUND = 0.5;
-export const TILE_ALONG = 1.2;
+export const TILE_AROUND = 1.0;
+export const TILE_ALONG = 4.0;
 // Thick wood gets more sides, so its silhouette is round: about 64 per metre of radius, never fewer
 // than the kind's own minimum and never more than 32.
 export const sidesFor = (maxRadius: number, min: number) => Math.min(32, Math.max(min, Math.round(maxRadius * 64)));

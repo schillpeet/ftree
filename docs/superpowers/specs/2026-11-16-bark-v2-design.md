@@ -117,6 +117,11 @@ For the gold's place, gold inside the tiling bark (rarer and deeper than today) 
 
 Each stage gets one commit on this branch once the user has seen it; one pull request at the end.
 
+## Changes while building (2026-11-16)
+
+- A tile is 1.0 m around and 4.0 m along: with shorter tiles only two plates fit along, and the seamless 4D mapping smeared them.
+- The bark is long ridges between furrows (a triangle wave around the wood, bent by noise, with bridges and a few breaks across) instead of stretched Voronoi plates, which ended in smears and read as scales; ridges are about 12 cm wide.
+
 ## Acceptance
 
 - Screenshots, close-up of the trunk and the whole tree, at noon and at night, before and after; the user approves the look.

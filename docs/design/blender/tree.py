@@ -14,7 +14,7 @@
 # - Card angles come from a tidy-tree layout: a family is narrow, the gaps between families are wide.
 # - Free branches (no card) are seeded from the family id. They only ever grow up and out of the upper
 #   side of the wood, cards only ever hang below it.
-# - Bark: plates with furrows, and gold where a plate has come off (bark_graph).
+# - Bark: long plates with furrows, tiled in metres (bark_graph); gold heartwood below it (gold_graph).
 import bpy, bmesh, json, math
 from mathutils import Vector, Matrix
 
@@ -225,9 +225,10 @@ def wood(c, name, pts, mat, t0=0.0, who=""):
     """One growing piece. t0 is the path length from the ground to where this piece starts."""
     pts = resample(pts)
     length = sum((pts[k][0] - pts[k - 1][0]).length for k in range(1, len(pts)))
-    o = strand(c, name, pts, mat)
     thick = max(p[1] for p in pts)
-    o["bark_len"] = length * min(0.9, max(0.4, 0.45 * (0.5 / max(thick, 0.05)) ** 0.5))
+    o = strand(c, name, pts, mat, res=max(1, round(sides_for(thick, 9) / 4) - 1))
+    o["bark_len"] = length / TILE_ALONG
+    o["bark_n"] = tiles_around(sum(p[1] for p in pts) / len(pts))
     o["grow_t0"], o["grow_len"], o["who"] = t0, length, who
     return o
 
@@ -261,18 +262,24 @@ def flat(name, color, rough=0.8):
     return m
 
 
-TILE_AROUND = 0.5  # metres of bark per tile around the wood, the same as in ui/app/twinedForm.ts
-TILE_ALONG = 1.2  # metres of bark per tile along the wood
-RU = 2.0  # the bark repeats every TAU * RU texture units along the wood and once around it
+TILE_AROUND = 1.0  # metres of bark per tile around the wood, the same as in ui/app/twinedForm.ts
+TILE_ALONG = 4.0  # metres of bark per tile along the wood
+PLATES = 8.0  # bark plates per metre around the wood (about 12 cm wide)
+STRETCH = 0.13  # plates are this many times as wide as long (about 1 m long) along the wood as they are wide (about 60 cm long)
 GOLD = (1.0, 0.42, 0.06)
 
 
-def bark_graph(nt, along, around):
-    """Old bark with gold underneath, as shader nodes. `along` is the path length in texture units,
-    `around` runs 0..1 around the wood. The surface is wrapped onto a torus in 4D, so the pattern has
-    no seam and tiles in both directions: the same graph is baked into the textures for the app.
-    The bark is made of plates (Voronoi cells) with deep furrows between them. Some plates have
-    fallen off as a whole and show the golden wood, and gold runs in the furrows next to them."""
+def sides_for(r, low):
+    """The app's side rule (`sidesFor` in twinedForm.ts): about 64 sides per metre of radius, at most 32."""
+    return min(32, max(low, round(r * 64)))
+
+
+def tiles_around(r):
+    return max(1, round(TAU * r / TILE_AROUND))
+
+
+def nodes(nt):
+    """Small helpers that add shader nodes to `nt`."""
     link = nt.links.new
 
     def N(kind, **kw):
@@ -327,55 +334,122 @@ def bark_graph(nt, along, around):
         link(w, n.inputs["W"])
         return n
 
-    ang, ua = math_("MULTIPLY", around, TAU), math_("DIVIDE", along, RU)
-    vec = N("ShaderNodeCombineXYZ")
-    link(math_("COSINE", ang), vec.inputs[0])
-    link(math_("SINE", ang), vec.inputs[1])
-    link(math_("MULTIPLY", math_("COSINE", ua), RU), vec.inputs[2])
-    w = math_("MULTIPLY", math_("SINE", ua), RU)
-    _, warp = noise(vec.outputs[0], w, 1.2, 3)
-    w1 = N("ShaderNodeVectorMath", operation="SUBTRACT")
-    link(warp, w1.inputs[0])
-    w1.inputs[1].default_value = (0.5, 0.5, 0.5)
-    w2 = N("ShaderNodeVectorMath", operation="SCALE")
-    link(w1.outputs[0], w2.inputs[0])
-    w2.inputs["Scale"].default_value = 0.6
-    w3 = N("ShaderNodeVectorMath", operation="ADD")
-    link(vec.outputs[0], w3.inputs[0])
-    link(w2.outputs[0], w3.inputs[1])
-    p = w3.outputs[0]
+    def torus(along, around, stretch):
+        """`along` and `around` count tiles. Each runs around a circle in 4D whose circumference is the
+        tile's size in plates (around) or in plates times `stretch` (along), so noise of scale 1 has
+        about one feature per plate, the pattern has no seam, and it tiles in both directions."""
+        ra, rl = TILE_AROUND * PLATES / TAU, TILE_ALONG * PLATES * stretch / TAU
+        ang, ua = math_("MULTIPLY", around, TAU), math_("MULTIPLY", along, TAU)
+        vec = N("ShaderNodeCombineXYZ")
+        link(math_("MULTIPLY", math_("COSINE", ang), ra), vec.inputs[0])
+        link(math_("MULTIPLY", math_("SINE", ang), ra), vec.inputs[1])
+        link(math_("MULTIPLY", math_("COSINE", ua), rl), vec.inputs[2])
+        return vec.outputs[0], math_("MULTIPLY", math_("SINE", ua), rl)
 
-    edge = voronoi(p, w, 1.5, "DISTANCE_TO_EDGE").outputs["Distance"]  # distance to the plate's rim
-    cellv = voronoi(p, w, 1.5, "F1")
-    plate, _ = noise(cellv.outputs["Position"], cellv.outputs["W"], 0.55, 1)  # one value per plate
-    cross = ramp(voronoi(p, w, 4.0, "DISTANCE_TO_EDGE").outputs["Distance"], [(0.0, 0.6), (0.1, 1.0)])  # small cracks across
-    fine, _ = noise(p, w, 6.0, 8, 0.65)
-    grain, _ = noise(p, w, 9.0, 3)
-    big, _ = noise(p, w, 0.25, 2)
-    moss, _ = noise(p, w, 1.3, 4)
-    ridge = ramp(edge, [(0.01, 0.0), (0.22, 1.0)])  # 0 in the furrow, 1 on the plate
-    relief = math_("MULTIPLY", math_("MULTIPLY", ridge, cross), math_("MULTIPLY_ADD", fine, 0.4, 0.8))
+    def add(a, b, scale=1.0, minus=(0, 0, 0)):
+        s1 = N("ShaderNodeVectorMath", operation="SUBTRACT")
+        link(b, s1.inputs[0])
+        s1.inputs[1].default_value = minus
+        s2 = N("ShaderNodeVectorMath", operation="SCALE")
+        link(s1.outputs[0], s2.inputs[0])
+        s2.inputs["Scale"].default_value = scale
+        s3 = N("ShaderNodeVectorMath", operation="ADD")
+        link(a, s3.inputs[0])
+        link(s2.outputs[0], s3.inputs[1])
+        return s3.outputs[0]
 
-    gone = ramp(plate, [(0.63, 0.0), (0.645, 1.0)], "LINEAR")  # this plate has fallen off
-    vein = math_("MULTIPLY", ramp(plate, [(0.56, 0.0), (0.63, 1.0)]), math_("SUBTRACT", 1.0, ramp(edge, [(0.0, 0.0), (0.03, 1.0)])))
-    gold = math_("MAXIMUM", gone, math_("MULTIPLY", vein, 0.8))
+    return dict(N=N, math_=math_, ramp=ramp, mix=mix, noise=noise, voronoi=voronoi, torus=torus, add=add)
 
-    wood = ramp(relief, [(0.0, (0.010, 0.007, 0.005)), (0.25, (0.05, 0.036, 0.026)), (0.6, (0.115, 0.09, 0.068)),
-                         (1.0, (0.21, 0.18, 0.145))], "LINEAR")
-    wood = mix(ramp(big, [(0.4, 0.0), (0.7, 0.5)]), wood, (0.19, 0.19, 0.18), True)  # weathered grey in places
-    wood = mix(math_("MULTIPLY", ramp(moss, [(0.62, 0.0), (0.72, 0.55)]), ridge), wood, (0.13, 0.16, 0.07), True)  # lichen on the plates
-    metal = mix(grain, (0.42, 0.2, 0.02), (0.95, 0.6, 0.14), True)
-    metal = mix(ramp(edge, [(0.0, 0.0), (0.12, 1.0)]), (0.2, 0.09, 0.01), metal, True)  # darker towards the rim of each plate's bed
+
+def bark_graph(nt, along, around):
+    """Old bark without gold, as shader nodes. `along` and `around` count bark tiles (TILE_ALONG and
+    TILE_AROUND metres), so the plates are the same size on thick and thin wood; the same graph is
+    baked into the tiling textures for the app. The bark is made of long plates (Voronoi cells
+    stretched along the wood) with deep furrows between them, small cracks across, grey weathering
+    and lichen. Returns colour, roughness, height (0 in the furrow) and ambient occlusion."""
+    h = nodes(nt)
+    math_, ramp, mix, noise, voronoi = h["math_"], h["ramp"], h["mix"], h["noise"], h["voronoi"]
+    c, wc = h["torus"](along, around, 0.45)  # a little stretched: breaks across the ridges
+    q, wq = h["torus"](along, around, 1.0)  # round: wandering, patches of weathering and lichen
+    p, w = h["torus"](along, around, STRETCH)  # long: detail along the wood
+    # Ridges run along the wood: a triangle wave around it with PLATES * TILE_AROUND ridges per tile,
+    # bent by noise so they wander, split and join. `around` counts tiles, so the wave tiles too.
+    bend, _ = noise(q, wq, 0.22, 2, 0.45)  # slow: ridges lean and wander
+    wander, _ = noise(p, w, 0.5, 1)  # quicker, along the wood: ridges split and join
+    u = math_("MULTIPLY_ADD", around, PLATES * TILE_AROUND, math_("MULTIPLY_ADD", bend, 3.0, -1.5))
+    u = math_("ADD", u, math_("MULTIPLY_ADD", wander, 1.0, -0.5))
+    jag, _ = noise(p, w, 2.5, 3, 0.6)  # small kinks: bark tears, it does not flow
+    u = math_("ADD", u, math_("MULTIPLY_ADD", jag, 0.45, -0.225))
+    tri = math_("SUBTRACT", 1.0, math_("ABSOLUTE", math_("MULTIPLY_ADD", math_("FRACT", u), 2.0, -1.0)))  # 0 in the furrow, 1 on the ridge
+    bridge, _ = noise(c, wc, 0.9, 2)  # here and there a furrow is shallow and two ridges join
+    tri = math_("MAXIMUM", tri, math_("MULTIPLY", ramp(bridge, [(0.6, 0.0), (0.72, 1.0)]), 0.75))
+    width, _ = noise(c, wc, 0.6, 1)  # furrows are wide in places and narrow in others
+    tri = math_("MULTIPLY_ADD", width, 0.5, math_("SUBTRACT", tri, 0.25))
+    ridge = ramp(tri, [(0.08, 0.0), (0.5, 1.0)], "EASE")
+    breaks, _ = noise(q, wq, 0.4, 2)
+    crack = mix(ramp(breaks, [(0.5, 0.0), (0.62, 1.0)]), 1.0,
+                ramp(voronoi(c, wc, 0.7, "DISTANCE_TO_EDGE").outputs["Distance"], [(0.0, 0.4), (0.05, 1.0)], "LINEAR"))  # only some breaks
+    fibre, _ = noise(h["torus"](along, around, 0.25)[0], w, 4.0, 6, 0.6)
+    lift, _ = noise(c, wc, 0.5, 2)
+    knob, _ = noise(p, w, 1.5, 4, 0.6)  # the ridge tops are uneven
+    big, _ = noise(q, wq, 0.12, 2)
+    moss, _ = noise(q, wq, 0.6, 4)
+    grit, _ = noise(q, wq, 9.0, 6, 0.7)  # fine roughness everywhere
+    # Flakes: the surface of a ridge peels in small scales, each a little higher or lower than the next,
+    # with a fine crack around it.
+    f, wf = h["torus"](along, around, 0.3)
+    _, fw = noise(f, wf, 2.0, 2)
+    f = h["add"](f, fw, 0.5, (0.5, 0.5, 0.5))  # ragged, not a honeycomb
+    flake = voronoi(f, wf, 2.2, "F1")
+    step, _ = noise(flake.outputs["Position"], flake.outputs["W"], 1.7, 0)
+    seam = ramp(voronoi(f, wf, 2.2, "DISTANCE_TO_EDGE").outputs["Distance"], [(0.0, 0.82), (0.025, 1.0)], "LINEAR")
+    scale = math_("MULTIPLY", math_("MULTIPLY_ADD", step, 0.3, 0.7), seam)
+    top = math_("MULTIPLY", math_("MULTIPLY_ADD", lift, 0.3, 0.7), math_("MULTIPLY_ADD", knob, 0.5, 0.75))
+    surface = math_("MULTIPLY", math_("MULTIPLY", top, scale), math_("MULTIPLY_ADD", fibre, 0.25, 0.88))
+    relief = math_("MULTIPLY", math_("MULTIPLY", ridge, crack), surface)
+    relief = math_("MULTIPLY_ADD", grit, 0.12, math_("SUBTRACT", relief, 0.06))
+    relief = math_("MAXIMUM", relief, 0.0)
+
+    # Colour: nearly black at the bottom of a furrow, reddish brown on its walls, grey-brown on the
+    # ridges, weathered grey on their edges, a little lichen; every scale its own shade.
+    wood = ramp(relief, [(0.0, (0.022, 0.016, 0.012)), (0.12, (0.045, 0.029, 0.019)), (0.35, (0.085, 0.055, 0.036)),
+                         (0.6, (0.11, 0.09, 0.072)), (0.85, (0.15, 0.135, 0.118)), (1.0, (0.19, 0.18, 0.165))], "LINEAR")
+    wood = mix(math_("MULTIPLY", ramp(step, [(0.2, 0.0), (0.8, 0.5)]), ridge), wood, (0.07, 0.055, 0.042), True)
+    wood = mix(math_("MULTIPLY", ramp(fibre, [(0.45, 0.0), (0.75, 0.4)]), ridge), wood, (0.06, 0.045, 0.034), True)  # streaks along
+    wood = mix(math_("MULTIPLY", ramp(big, [(0.45, 0.0), (0.72, 0.6)]), ridge), wood, (0.2, 0.2, 0.19), True)  # weathered grey
+    wood = mix(math_("MULTIPLY", ramp(moss, [(0.62, 0.0), (0.74, 0.6)]), ridge), wood, (0.12, 0.14, 0.085), True)  # grey-green lichen
+    wood = mix(math_("MULTIPLY", ramp(grit, [(0.4, 0.0), (0.7, 0.35)]), ridge), wood, (0.05, 0.04, 0.032), True)  # speckles
     return dict(
-        color=mix(gold, wood, metal, True), gold=gold,
-        rough=mix(gold, 0.92, math_("MULTIPLY_ADD", grain, 0.25, 0.18)),
-        height=mix(gone, relief, math_("MULTIPLY_ADD", grain, 0.15, -0.4)),
+        color=wood,
+        rough=math_("MULTIPLY_ADD", grit, 0.1, 0.86),
+        height=relief,
+        ao=ramp(relief, [(0.0, 0.12), (0.3, 0.65), (0.6, 1.0)]),
     )
 
 
-def bark(along=0, glow=0.1):
+def gold_graph(nt, along, around):
+    """The golden heartwood under the bark, in the same tiles: metal with fine grain along the wood.
+    Returns colour, roughness, height and ambient occlusion like `bark_graph`."""
+    h = nodes(nt)
+    math_, ramp, mix, noise = h["math_"], h["ramp"], h["mix"], h["noise"]
+    p, w = h["torus"](along, around, 0.04)  # very long: fibres along the wood
+    q, wq = h["torus"](along, around, 1.0)
+    grain, _ = noise(p, w, 3.0, 6, 0.6)
+    ring, _ = noise(q, wq, 0.5, 2)
+    fibre = ramp(grain, [(0.35, 0.0), (0.65, 1.0)])
+    metal = mix(fibre, (0.42, 0.2, 0.02), (0.95, 0.6, 0.14), True)
+    metal = mix(ramp(ring, [(0.3, 0.0), (0.7, 1.0)]), (0.55, 0.3, 0.05), metal, True)
+    return dict(
+        color=metal,
+        rough=math_("MULTIPLY_ADD", fibre, -0.18, 0.4),
+        height=math_("MULTIPLY_ADD", fibre, 0.3, 0.5),
+        ao=ramp(fibre, [(0.0, 0.8), (1.0, 1.0)]),
+    )
+
+
+def bark(along=0):
     """The bark on a bevelled curve. `along` says which UV axis runs along the strand (see uv_along);
-    the object property `bark_len` is the strand's length in texture units."""
+    the object properties `bark_len` (the strand's length in tiles) and `bark_n` (tiles around) scale it."""
     m = bpy.data.materials.get("Bark_06") or bpy.data.materials.new("Bark_06")
     nt = node_tree(m)
     nt.nodes.clear()
@@ -384,25 +458,23 @@ def bark(along=0, glow=0.1):
     nt.links.new(b.outputs[0], out.inputs[0])
     uv = nt.nodes.new("ShaderNodeSeparateXYZ")
     nt.links.new(nt.nodes.new("ShaderNodeTexCoord").outputs["UV"], uv.inputs[0])
-    att = nt.nodes.new("ShaderNodeAttribute")
-    att.attribute_type, att.attribute_name = "OBJECT", "bark_len"
-    mul = nt.nodes.new("ShaderNodeMath")
-    mul.operation = "MULTIPLY"
-    nt.links.new(uv.outputs[along], mul.inputs[0])
-    nt.links.new(att.outputs[2], mul.inputs[1])
-    g = bark_graph(nt, mul.outputs[0], uv.outputs[1 - along])
+
+    def scaled(axis, prop):
+        att = nt.nodes.new("ShaderNodeAttribute")
+        att.attribute_type, att.attribute_name = "OBJECT", prop
+        mul = nt.nodes.new("ShaderNodeMath")
+        mul.operation = "MULTIPLY"
+        nt.links.new(uv.outputs[axis], mul.inputs[0])
+        nt.links.new(att.outputs[2], mul.inputs[1])
+        return mul.outputs[0]
+
+    g = bark_graph(nt, scaled(along, "bark_len"), scaled(1 - along, "bark_n"))
     nt.links.new(g["color"], b.inputs["Base Color"])
-    nt.links.new(g["gold"], b.inputs["Metallic"])
     nt.links.new(g["rough"], b.inputs["Roughness"])
-    b.inputs["Emission Color"].default_value = (*GOLD, 1)
-    em = nt.nodes.new("ShaderNodeMath")
-    em.operation = "MULTIPLY"
-    nt.links.new(g["gold"], em.inputs[0])
-    em.inputs[1].default_value = glow
-    nt.links.new(em.outputs[0], b.inputs["Emission Strength"])
+    b.inputs["Metallic"].default_value = 0.0
     bump = nt.nodes.new("ShaderNodeBump")
     bump.inputs["Strength"].default_value = 1.0
-    bump.inputs["Distance"].default_value = 0.4
+    bump.inputs["Distance"].default_value = 0.04
     nt.links.new(g["height"], bump.inputs["Height"])
     nt.links.new(bump.outputs[0], b.inputs["Normal"])
     if "Specular IOR Level" in b.inputs:
@@ -410,11 +482,12 @@ def bark(along=0, glow=0.1):
     return m
 
 
-def bake(out, width=2048, height=1024, relief=6.0):
-    """Bake the bark into tileable textures for the app (Cycles, a few seconds):
-    bark-color.jpg (sRGB), bark-normal.jpg (tangent space, +Y up) and bark-gold.jpg (R and B = gold,
-    G = roughness, so it serves as metalnessMap and roughnessMap). One texture covers TAU * RU texture
-    units along the wood (U) and once around it (V)."""
+def bake(out, width=4096, height=1024, relief=24.0):
+    """Bake bark and gold into tiling textures for the app (Cycles, a few seconds). One texture is one
+    tile: TILE_ALONG metres along the wood (U, the image's width) and TILE_AROUND around it (V).
+    bark-color.jpg and gold-color.jpg (sRGB), bark-normal.jpg (tangent space, +Y up), and
+    bark-data.jpg and gold-data.jpg with ambient occlusion in R, roughness in G and height in B, so
+    three.js reads R as aoMap and G as roughnessMap; the shader reads the height."""
     import numpy as np
     sc = bpy.context.scene
     me = bpy.data.meshes.new("Bark_bake")
@@ -429,11 +502,7 @@ def bake(out, width=2048, height=1024, relief=6.0):
     nt.nodes.clear()
     uv = nt.nodes.new("ShaderNodeSeparateXYZ")
     nt.links.new(nt.nodes.new("ShaderNodeTexCoord").outputs["UV"], uv.inputs[0])
-    mul = nt.nodes.new("ShaderNodeMath")
-    mul.operation = "MULTIPLY"
-    nt.links.new(uv.outputs[0], mul.inputs[0])
-    mul.inputs[1].default_value = TAU * RU
-    g = bark_graph(nt, mul.outputs[0], uv.outputs[1])
+    graphs = dict(bark=bark_graph(nt, uv.outputs[0], uv.outputs[1]), gold=gold_graph(nt, uv.outputs[0], uv.outputs[1]))
     em = nt.nodes.new("ShaderNodeEmission")
     nt.links.new(em.outputs[0], nt.nodes.new("ShaderNodeOutputMaterial").inputs[0])
     img = bpy.data.images.new("Bark_bake", width, height, float_buffer=True, is_data=True)
@@ -447,12 +516,13 @@ def bake(out, width=2048, height=1024, relief=6.0):
     got = {}
     try:
         with bpy.context.temp_override(active_object=ob, object=ob, selected_objects=[ob], selected_editable_objects=[ob]):
-            for key in ("color", "gold", "rough", "height"):
-                for l in list(em.inputs[0].links):
-                    nt.links.remove(l)
-                nt.links.new(g[key], em.inputs[0])
-                bpy.ops.object.bake(type="EMIT", margin=0, use_clear=True)
-                got[key] = np.array(img.pixels[:], dtype=np.float32).reshape(height, width, 4)[:, :, :3].copy()
+            for kind, g in graphs.items():
+                for key in ("color", "rough", "height", "ao"):
+                    for l in list(em.inputs[0].links):
+                        nt.links.remove(l)
+                    nt.links.new(g[key], em.inputs[0])
+                    bpy.ops.object.bake(type="EMIT", margin=0, use_clear=True)
+                    got[kind + key] = np.array(img.pixels[:], dtype=np.float32).reshape(height, width, 4)[:, :, :3].copy()
     finally:
         sc.render.engine = engine
         bpy.data.objects.remove(ob)
@@ -472,16 +542,20 @@ def bake(out, width=2048, height=1024, relief=6.0):
         im.save(quality=90)
         bpy.data.images.remove(im)
 
-    hgt = got["height"][:, :, 0]
+    def data(kind):
+        return np.stack([got[kind + "ao"][:, :, 0], got[kind + "rough"][:, :, 0], got[kind + "height"][:, :, 0]], axis=2)
+
+    hgt = got["barkheight"][:, :, 0]
     dx = (np.roll(hgt, -1, axis=1) - np.roll(hgt, 1, axis=1)) * 0.5 * relief  # wraps, so the normal map tiles too
     dy = (np.roll(hgt, -1, axis=0) - np.roll(hgt, 1, axis=0)) * 0.5 * relief
     n = np.stack([-dx, -dy, np.ones_like(hgt)], axis=2)
     n /= np.linalg.norm(n, axis=2, keepdims=True)
-    save("bark-color", got["color"], True)
+    save("bark-color", got["barkcolor"], True)
     save("bark-normal", n * 0.5 + 0.5, False)
-    gold, rough = got["gold"][:, :, 0], got["rough"][:, :, 0]
-    save("bark-gold", np.stack([gold, rough, gold], axis=2), False, width // 2, height // 2)
-    return dict(gold_share=round(float((gold > 0.5).mean()), 3), height=(round(float(hgt.min()), 2), round(float(hgt.max()), 2)))
+    save("bark-data", data("bark"), False, width // 2, height // 2)
+    save("gold-color", got["goldcolor"], True, width // 2, height // 2)
+    save("gold-data", data("gold"), False, width // 2, height // 2)
+    return dict(height=(round(float(hgt.min()), 2), round(float(hgt.max()), 2)), furrow=round(float((hgt < 0.15).mean()), 3))
 
 
 def uv_along(ob):
