@@ -3,7 +3,7 @@
 import { type RefObject, useEffect, useMemo, useRef } from 'react';
 import { Html } from '@react-three/drei';
 import { useFrame, type ThreeEvent } from '@react-three/fiber';
-import { AdditiveBlending, CanvasTexture, Group, type Mesh, type MeshStandardMaterial, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from 'three';
+import { AdditiveBlending, CanvasTexture, Color, Group, type Mesh, type MeshStandardMaterial, PlaneGeometry, Quaternion, SRGBColorSpace, Vector3 } from 'three';
 import type { Member } from '../lib/api/generated/members';
 import { drawScroll, drawSign, papyrus, seedOf, wood, type CardText } from './cardTextures';
 import { formatDate, photoSrc } from './MembersControls';
@@ -16,6 +16,7 @@ import type { Point } from './pins';
 import { seededRandom } from './random';
 import { CLICK_TOLERANCE } from './Scroll';
 import { useTokenPaint } from './tokenColor';
+import { useGlowGain } from './PostProcessing';
 
 // Member cards as real 3D objects hanging from their pin on two ropes: lit by the sun, casting
 // shadows, and hidden behind leaves. Both must fit the card footprint `CARD` in pins.ts.
@@ -222,11 +223,16 @@ function orbLayout(width: number, rope: number, seed: number) {
   ];
 }
 
+// The warm white of a firefly's core.
+const ORB_LIGHT = new Color('#fff6e0');
+
 // One little firefly: a bright core and an additive halo, bobbing and pulsing in place. Its size
 // and brightness follow `evening`, so it rises and lights up as the sun sinks.
 function GlowOrb({ position, radius, phase, evening }: { position: Point; radius: number; phase: number; evening: number }) {
   const ref = useRef<Group>(null);
   const halo = glowTexture();
+  const gain = useGlowGain();
+  const light = useMemo(() => ORB_LIGHT.clone().multiplyScalar(gain), [gain]);
   const scale = radius * (0.25 + 0.75 * evening);
   useFrame(({ clock }) => {
     const group = ref.current;
@@ -243,6 +249,7 @@ function GlowOrb({ position, radius, phase, evening }: { position: Point; radius
       <sprite scale={[4, 4, 1]} renderOrder={1}>
         <spriteMaterial
           map={halo}
+          color={[gain, gain, gain]}
           transparent
           opacity={evening}
           blending={AdditiveBlending}
@@ -254,7 +261,7 @@ function GlowOrb({ position, radius, phase, evening }: { position: Point; radius
       <mesh>
         <sphereGeometry args={[1, 16, 12]} />
         <meshBasicMaterial
-          color="#fff6e0"
+          color={light}
           transparent
           opacity={evening}
           blending={AdditiveBlending}
@@ -291,13 +298,15 @@ const fadedGlow = (dimmed?: boolean, isSelf = false) => (dimmed ? (isSelf ? 0.8 
 // keeps a weaker one in the accent all the time, so it stands out without looking selected.
 function Halo({ position, width, height, self = false }: { position: Point; width: number; height: number; self?: boolean }) {
   const glow = useTokenPaint(self ? '--accent' : '--glow');
+  const gain = useGlowGain();
+  const light = useMemo(() => new Color(glow.color).multiplyScalar(gain), [glow.color, gain]);
   // The texture fades fast towards its edge, so the self halo is wider to reach out past the sheet in front of it.
   const scale: [number, number, number] = self ? [width * 2.8, height * 2.1, 1] : [width * 1.8, height * 1.5, 1];
   return (
     <sprite position={position} scale={scale}>
       <spriteMaterial
         map={glowTexture()}
-        color={glow.color}
+        color={light}
         opacity={self ? glow.opacity * 0.75 : glow.opacity}
         transparent
         blending={AdditiveBlending}
