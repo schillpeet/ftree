@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Environment, Grid, Line, Sky, Stars } from '@react-three/drei';
-import { AdditiveBlending, BackSide, Box3, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type Points } from 'three';
+import { AdditiveBlending, BackSide, Box3, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type PointLight, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance, type Appearance } from './appearance';
 import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
@@ -32,7 +32,7 @@ import { crownTop } from './twinedForm';
 import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
 import { growthOrder } from './twinedGrowth';
 import { twinedPlan, type TwinedPlan } from './twinedLayout';
-import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, GOLD_GLOW, highSun, nightGlow, nightSky, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, GOLD_GLOW, highSun, nightGlow, nightSky, starlight, sunDirection, sunPosition, TRUNK_LIGHT, type Location } from './sky';
 import { GLOW } from './barkShader';
 import NightDome, { HORIZON } from './NightDome';
 import { onLocationChange, useSunLocation } from './sunLocation';
@@ -568,6 +568,20 @@ function GoldGlow({ night }: { night: number }) {
     GLOW.uTime.value = clock.elapsedTime;
   });
   return null;
+}
+
+// The gold's warm light on the ground around the trunk's foot, from inside the trunk 1.5 m above the hilltop, without
+// shadows. It stays mounted by day at intensity 0, since a light that appears at dusk would recompile every material.
+// It swells and fades with the gold's breath at that height (barkShader.ts).
+const TRUNK_LIGHT_HEIGHT = TREE_BASE + 1.5;
+function TrunkLight({ night }: { night: number }) {
+  const light = useRef<PointLight>(null);
+  useFrame(({ clock }) => {
+    if (!light.current) return;
+    const phase = clock.elapsedTime / GOLD_GLOW.period - TRUNK_LIGHT_HEIGHT / GOLD_GLOW.climb;
+    light.current.intensity = night * TRUNK_LIGHT.strength * (1 + night * GOLD_GLOW.breath * Math.sin(2 * Math.PI * phase));
+  });
+  return <pointLight ref={light} position={[0, TRUNK_LIGHT_HEIGHT, 0]} color={TRUNK_LIGHT.color} distance={TRUNK_LIGHT.range} decay={2} intensity={0} />;
 }
 
 type Drag = { id: string; position: Point; target: Drop };
@@ -1163,6 +1177,7 @@ export default function Scene({
             )}
             {tiered && <ForestRing radius={ring} top={top * RING_HEIGHT} heightAt={heightAt} />}
             {tiered && <GoldGlow night={nightGlow(altitude)} />}
+            {tiered && <TrunkLight night={nightGlow(altitude)} />}
             {organic ? (
               <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
             ) : (

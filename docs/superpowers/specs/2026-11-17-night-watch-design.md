@@ -209,7 +209,10 @@ Each stage gets one commit on `feat/ui-let-the-tiered-tree-keep-night-watch` onc
 - Gold glow picked (2026-11-17): V1 "Zielbild", strength 4.
 - Breathing: ±12 % (the visions' value) and ±35 % could not be seen, because the bright gold sits in the tone mapping's shoulder, where swings are compressed; the user picked ±60 % every 7 s as a wave that climbs the trunk, 20 m per breath; it breathes only at night.
 - Gold by day, a deviation from "only metal": without any glow the metal gold vanished against the light at noon (it reflects only the faint sky), taking back the gold the user asked for in part 2; the lab offered "only metal" and "faint glow as before", and the builder's proposal "as before" (0.3, today's value) was taken; at night the glow rises from it to 4.
-- The frame rate could not be measured in stages 1 and 2: the in-app browser pane was hidden and drew about one frame per second; the dome is one extra draw call (and one more in the environment cube when it is rendered again).
+- Trunk light picked (2026-11-17): V2 "Weit und schwach" (`#ffa850`, 25 m); it breathes with the gold, as the spec's call says (the user did not ask to change it).
+- The first strengths were about a third of image D's lit ground (`#291b10` on screen where image D shows `#7c5729`), so all three variants were raised before the pick; the chosen light is 1200 cd.
+- The light sits inside the trunk, so the bark itself gets none of it; only ground, roots, grass, rocks and low cards do.
+- The frame rate could not be measured in stages 1 to 3: the in-app browser pane was hidden and drew about one frame per second; the dome is one extra draw call (and one more in the environment cube when it is rendered again).
 
 ## Left to the builder
 

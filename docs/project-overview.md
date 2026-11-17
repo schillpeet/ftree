@@ -181,6 +181,7 @@ In the 3D appearances a small copy of the sky is rendered into an environment cu
 The tiered tree's gold is full metal now that the scene has an environment to reflect.
 The tiered tree's gold glows faintly by day, so it still shows against the light, and from sunset it brightens fourteenfold until the end of civil twilight (`GOLD_GLOW` in `ui/app/sky.ts`).
 At night the gold breathes: its glow swells and fades by 60 % every 7 seconds in a wave that climbs the trunk.
+At night a faint warm light from the trunk's foot lies over the whole hilltop, about 25 m around, lighting the ground, the roots and the rocks without shadows, and breathes with the gold (`TRUNK_LIGHT` in `ui/app/sky.ts`).
 The 3D appearances draw through post effects (`ui/app/PostProcessing.tsx`): ambient occlusion, bloom on highlights, ACES tone mapping at the scene's exposure of 0.6, and a vignette; GRID draws as before.
 While the post effects run, the light orbs, the card halos and the moon are drawn brighter so they keep their look through the tone mapping and get a soft halo from the bloom.
 Relation lines are drawn after the post effects, so they keep their exact token colours.

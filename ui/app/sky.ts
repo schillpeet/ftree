@@ -56,6 +56,9 @@ export const nightGlow = (altitude: number) => smoothstep(0, -6 * RAD, altitude)
 // night 4, breathing ±60 % once every 7 s (less is lost in the tone mapping's shoulder and cannot be seen), as a wave
 // that climbs the trunk `climb` metres per breath.
 export const GOLD_GLOW = { day: 0.3, night: 4, breath: 0.6, period: 7, climb: 20 };
+// The gold's warm light around the trunk's foot (chosen 2026-11-17, "weit und schwach"): a faint warmth over the whole
+// hilltop, reaching 25 m; strength in candela.
+export const TRUNK_LIGHT = { color: '#ffa850', range: 25, strength: 1200 };
 // The night sky over the clearing (chosen 2026-11-17, "Zielbild", from image D): zenith and horizon as the screen shows
 // them, and the sun's altitudes between which the night dome fades in, after the afterglow of civil twilight.
 export const NIGHT_SKY = { zenith: '#162238', horizon: '#1d2c43', from: -3 * RAD, to: -12 * RAD };
