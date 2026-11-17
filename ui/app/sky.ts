@@ -81,7 +81,9 @@ export function moonPosition(
   highest: number,
   centre = 0,
 ) {
-  const opposite = Math.atan2(-Math.sin(sun.azimuth), -Math.cos(sun.azimuth));
+  // Opposite the sun, measured so that it passes 0 at the deepest point of the night: there the sun stands due north on
+  // the northern hemisphere, due south on the southern one.
+  const opposite = latitude >= 0 ? Math.atan2(-Math.sin(sun.azimuth), -Math.cos(sun.azimuth)) : -sun.azimuth;
   const lowest = Math.abs(latitude + sun.declination) - Math.PI / 2;
   const altitude = lowest < 0 ? (highest * Math.sin(-sun.altitude)) / Math.sin(-lowest) : -Math.PI / 2;
   return { altitude, azimuth: centre + span * opposite };

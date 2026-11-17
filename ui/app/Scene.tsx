@@ -487,8 +487,9 @@ function DaySky({
 }) {
   const stars = useRef<Points>(null);
   const [moonMap] = useState(moonTexture);
-  const [photoMoonMap] = useState(photoMoonTexture);
-  const [aureoleMap] = useState(aureoleTexture);
+  // Only the night watch loads the photo moon.
+  const photoMoonMap = useMemo(() => (night ? photoMoonTexture() : null), [night]);
+  const aureoleMap = useMemo(() => (night ? aureoleTexture() : null), [night]);
   const [haloMap] = useState(haloTexture);
   const moonGain = useGlowGain(MOON_GAIN);
   const { altitude, azimuth, declination } = sunPosition(date, location);
@@ -590,6 +591,8 @@ function GoldGlow({ night }: { night: number }) {
 function MoonEdge({ strength, moon }: { strength: number; moon: [number, number, number] }) {
   useFrame(({ camera }) => {
     MOON_EDGE.uMoonEdge.value = strength;
+    // The camera's inverse matrix is only refreshed while rendering; this frame's view is needed now.
+    camera.updateMatrixWorld();
     MOON_EDGE.uMoonView.value.set(...moon).transformDirection(camera.matrixWorldInverse);
   });
   return null;

@@ -64,8 +64,9 @@ const moonDay = (startIso, location) =>
     const sun = sunPosition(new Date(Date.parse(startIso) + i * 600000), location);
     return { sun, moon: moonPosition(sun, rad(location.latitude), MOON.span, MOON.highest, MOON.centre) };
   });
-for (const start of ['2026-11-17T12:00:00Z', '2026-06-21T12:00:00Z']) {
-  const day = moonDay(start, berlin);
+const sydney = { latitude: -33.9, longitude: 151.2 };
+for (const [start, location] of [['2026-11-17T12:00:00Z', berlin], ['2026-06-21T12:00:00Z', berlin], ['2026-11-17T02:00:00Z', sydney], ['2026-06-21T02:00:00Z', sydney]]) {
+  const day = moonDay(start, location);
   const night = day.filter(({ sun }) => sun.altitude < rad(-6));
   for (const { moon } of night) assert.ok(Math.abs(moon.azimuth - MOON.centre) <= MOON.span * Math.PI + 1e-9, `${start} azimuth ${deg(moon.azimuth)}`);
   for (let i = 1; i < night.length; i++) assert.ok(Math.abs(night[i].moon.azimuth - night[i - 1].moon.azimuth) < rad(3), `${start} jump`);
