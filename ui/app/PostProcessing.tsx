@@ -3,9 +3,9 @@
 import { useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { createPortal, useFrame } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
-import { Bloom, EffectComposer, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing';
+import { Bloom, EffectComposer, GodRays, N8AO, ToneMapping, Vignette } from '@react-three/postprocessing';
 import { ToneMappingMode } from 'postprocessing';
-import { HalfFloatType, Scene } from 'three';
+import { HalfFloatType, Scene, type Mesh } from 'three';
 import { useAppearance } from './appearance';
 import { useStoredSwitch } from './lines';
 import { POST_KEY, startTier, type PostTier } from './postEffects';
@@ -47,8 +47,9 @@ export function useStartTier(): PostTier {
 }
 
 // Ambient occlusion, bloom, tone mapping and a vignette for the 3D appearances. A falling frame rate steps down to medium,
-// a recovered one back to where this device started.
-export function PostEffects({ start }: { start: PostTier }) {
+// a recovered one back to where this device started. With a `sun` disc in the scene, light shafts fall from it through
+// whatever stands in front of it (the clearing, docs/superpowers/specs/2026-11-17-clearing-design.md).
+export function PostEffects({ start, sun = null }: { start: PostTier; sun?: Mesh | null }) {
   const [declined, setDeclined] = useState(false);
   const changes = useRef(0);
   const tier = declined ? 'medium' : start;
@@ -66,6 +67,7 @@ export function PostEffects({ start }: { start: PostTier }) {
         {tier === 'high' && <N8AO halfRes aoRadius={2} intensity={2} />}
         {/* Only bright HDR highlights bloom: the light orbs, the card halos, and a small halo around the sun. */}
         <Bloom mipmapBlur luminanceThreshold={3} luminanceSmoothing={0.5} intensity={0.5} radius={0.4} />
+        {sun ? <GodRays sun={sun} samples={80} density={0.97} decay={0.96} weight={0.9} exposure={1.2} clampMax={1} blur /> : <></>}
         {/* The same ACES the renderer uses without the composer: the bark, leaves and cards were tuned under it. */}
         <ToneMapping mode={ToneMappingMode.ACES_FILMIC} />
         <Vignette offset={0.3} darkness={0.45} />
