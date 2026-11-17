@@ -146,7 +146,7 @@ Lab, two selects and a slider for the moon light's strength (1 to 4):
 
 Screenshots for stage 4 at two night moments: early night (sun about 18° below the horizon, the moon low on the left) and the deepest point of the night (the moon behind the tree).
 
-### Stage 5: fireflies
+### Stage 5: fireflies (set aside, see "Changes while building")
 
 - One instanced mesh of small camera-facing glow quads with the light orbs' glow texture (`HangingCard.tsx`), additive, no depth write, no fog.
 - They hover 0.2 to 2 m above the ground on slow wandering paths moved in the vertex shader, never on the trunk, more of them near the hill's foot and the forest's edge; they fade in with `nightGlow`.
@@ -216,6 +216,8 @@ Each stage gets one commit on `feat/ui-let-the-tiered-tree-keep-night-watch` onc
 - Moon edge and light: the builder's proposal "Kante" (edge 0.4) and today's strength 1.5 were taken; close up the warm trunk light outshines the edge at the trunk's foot, higher up it shows as a faint cool line on the left contours.
 - Moon look (the user, 2026-11-17, a step beyond the spec, which kept the painted moon): a new painted texture (white highlands, smooth seas) looked less real than today's at every size and brightness and was dropped; the user then chose NASA's rendering of the real full moon (Scientific Visualization Studio, "Moon Phase and Libration, 2026", frame 7157 = 26 October 2026 04:00 UT, 730 × 730 JPEG, public domain, downloaded with the user's consent) as the disc's texture, at the painted moon's size (6 × real) and brightness. Its face is turned as the real moon stood that night (celestial north up).
 - The photo's disc is cut 5 px inside its edge (the frame's black bled into the outermost pixels as a dark fringe) and feathered over its outer 3 %; a tight glow around the disc (`aureoleTexture`) bridges the step from the bright disc to the faint wide halo, so the moon sits in the sky instead of on it.
+- Fireflies set aside (the user, 2026-11-17): the lab showed all three variants and both light modes as specified (an instanced swarm with the light orbs' glow texture, seeded spots from `fireflySpots` in `clearing.ts`, half at the hill's foot and a quarter at the forest's edge, drifting about 0.3 m/s, fading in with `nightGlow`); the builder proposed "Zielbild", glimmering; the user chose to leave fireflies out for now. The code was removed uncommitted; the plan's Task 5 still describes how to build them.
+- Whole-branch review (2026-11-17): on the southern hemisphere the moon's azimuth wrapped at the deepest point of the night (the sun stands due south there) and jumped by 72°; `moonPosition` now measures from the sun's own azimuth there, checked for Sydney. The photo moon is loaded only for the night watch, and the moon edge uses this frame's camera. Accepted as they are: the night dome's shader compiles once when it first shows at dusk (a single small shader), and switching between the Stufenbaum and another appearance adds or removes the trunk light, so lit materials recompile once then; neither happens with the time of day.
 - The frame rate could not be measured in stages 1 to 4: the in-app browser pane was hidden and drew about one frame per second; the dome is one extra draw call (and one more in the environment cube when it is rendered again).
 
 ## Left to the builder

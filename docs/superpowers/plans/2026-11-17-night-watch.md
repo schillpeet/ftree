@@ -132,7 +132,10 @@ assert.ok(Math.abs(breathing(7 / 4, 0.12, 7) - 1.12) < 1e-9);
 - [ ] **Step 6: Screenshots** per path and edge at early night (sun about 18° below, the moon low on the left) and at the deepest point of the night, plus the close view and a card; send, ask for the pick.
 - [ ] **Step 7: After the pick:** constants `MOON = { span, highest, light, edge }` in `sky.ts`, controls go, overview lines (the moon's line in "Sky and time of day" gets a new line for the Stufenbaum), staged diff, commit after approval: `feat(ui): set the moon behind the tiered tree`.
 
-### Task 5: Fireflies (stage 5)
+### Task 5: Fireflies (stage 5) – set aside
+
+Set aside by the user on 2026-11-17 after seeing the lab: built as below with all three variants and both light modes, shown on localhost, then removed uncommitted; nothing of it is on the branch.
+To pick it up later, build this task as written; the spec's "Changes while building" records what the lab showed.
 
 **Files:**
 - Create: `ui/app/Fireflies.tsx`
