@@ -108,3 +108,37 @@ export function grassBlades(count: number, radius: number): [number, number][] {
     return [Math.cos(a) * r, Math.sin(a) * r];
   });
 }
+
+// The rocks (chosen 2026-11-17, "Gruppe" at 2.5 times the first drafts' size): one cluster of boulders on the hill's
+// flank and two single ones further out, big enough to read as boulders next to the tree's roots.
+export type Rock = { x: number; z: number; size: number; shape: 0 | 1 | 2 | 3; turn: number; squash: number };
+
+// Rocks stay out of the roots and out of the start view's line to the trunk (`front`, radians), so they never hide it.
+export function rocks(front: number): Rock[] {
+  const rand = seededRandom(14);
+  const placed: Rock[] = [];
+  const clear = (x: number, z: number, size: number) => {
+    const along = x * Math.cos(front) + z * Math.sin(front);
+    const across = Math.abs(-x * Math.sin(front) + z * Math.cos(front));
+    return Math.hypot(x, z) >= 9 + size / 2 && (along < 0 || across >= 3 + size);
+  };
+  // A rock of `size` at `r` metres around a random angle, or around (cx, cz) within `spread`.
+  const place = (size: number, r: [number, number], around?: [number, number, number]) => {
+    for (let tries = 0; tries < 200; tries++) {
+      const a = rand() * Math.PI * 2;
+      const d = around ? around[2] * Math.sqrt(rand()) : r[0] + rand() * (r[1] - r[0]);
+      const [x, z] = around ? [around[0] + Math.cos(a) * d, around[1] + Math.sin(a) * d] : [Math.cos(a) * d, Math.sin(a) * d];
+      if (!clear(x, z, size)) continue;
+      const shape = Math.floor(rand() * 4) as Rock['shape'];
+      placed.push({ x, z, size, shape, turn: rand() * Math.PI * 2, squash: 0.5 + rand() * 0.3 });
+      return [x, z] as [number, number];
+    }
+    return null;
+  };
+  const between = (a: number, b: number) => a + rand() * (b - a);
+  const centre = place(between(2.25, 3), [HILL.foot * 0.6, HILL.foot * 1.2]);
+  const count = 4 + Math.floor(rand() * 3);
+  for (let i = 0; centre && i < count; i++) place(between(0.75, 2.5), [0, 0], [centre[0], centre[1], 8]);
+  for (let i = 0; i < 2; i++) place(between(1.25, 2.75), [14, 45]);
+  return placed;
+}

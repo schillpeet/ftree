@@ -56,3 +56,20 @@ assert.ok(GRASS.min > 0 && GRASS.min < GRASS.max && GRASS.wind >= 0);
   // The inner half of the radius is a quarter of the area but holds more than a third of the blades.
   assert.ok(blades.filter(([x, z]) => Math.hypot(x, z) < 40).length > 2000 / 3);
 }
+
+// Rocks: one group and two single, the same on every load, clear of the roots and of the start view's line to the trunk.
+import { rocks } from './clearing.ts';
+{
+  const front = Math.atan2(40, 32);
+  const all = rocks(front);
+  assert.deepEqual(rocks(front), all);
+  assert.ok(all.length >= 7 && all.length <= 9, `count ${all.length}`);
+  for (const r of all) {
+    assert.ok(r.size >= 0.75 && r.size <= 3, `size ${r.size}`);
+    assert.ok(Math.hypot(r.x, r.z) >= 9 + r.size / 2, 'in the roots');
+    const along = r.x * Math.cos(front) + r.z * Math.sin(front);
+    const across = Math.abs(-r.x * Math.sin(front) + r.z * Math.cos(front));
+    assert.ok(along < 0 || across >= 3 + r.size, 'in front');
+    assert.ok([0, 1, 2, 3].includes(r.shape));
+  }
+}

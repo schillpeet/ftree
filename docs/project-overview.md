@@ -137,6 +137,7 @@ The tiered tree is rebuilt when the family changes; cards cannot be dragged ther
 The tiered tree stands in a forest clearing of its own (`ui/app/clearing.ts`), while the organic tree keeps today's meadow.
 Its hill is a flat dome 2.5 m high that eases out over 35 m, and the tree's roots lie on it.
 Olive grey-green grass, 0.4 to 0.7 m high, covers the clearing out to the forest and bends in a light wind (`ui/app/ClearingGround.tsx`); coarse pointers get half the blades.
+A group of angular dark blue-grey boulders, 0.75 to 3 m and mossy on top, lies on the hill's flank with two single ones further out (`ui/app/Rocks.tsx`), never in the roots or between the start view and the trunk.
 A deep forest of tall slim conifers rings the clearing (`ui/app/ForestRing.tsx`): eight rows of camera-facing billboards, 70 % as high as the tree, for now silhouettes drawn in code until a baked atlas replaces them.
 The ring follows the tree's height, so zoomed fully out the camera still sees the whole tree from inside the clearing; the camera cannot leave the ring, by zooming or by panning.
 "Vorne" shows the whole tiered tree from the height of its middle.

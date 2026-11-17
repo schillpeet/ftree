@@ -12,6 +12,7 @@ import { arrangePins, relationDistance } from './arrange';
 import { generationBounds, generations, layerPins } from './generations';
 import ClearingGround from './ClearingGround';
 import { cameraLimit, fitDistance, groundAt, HAZE, hillAt, MEADOW_HAZE, RING_HEIGHT, ringRadius } from './clearing';
+import Rocks from './Rocks';
 import ForestRing from './ForestRing';
 import Meadow, { height } from './Meadow';
 import RelationLegend from './RelationLegend';
@@ -1077,7 +1078,10 @@ export default function Scene({
           <>
             <DaySky date={date} location={location} haze={tiered ? HAZE : undefined} />
             {tiered ? (
-              <ClearingGround heightAt={heightAt} radius={ring} tier={postStart} />
+              <>
+                <ClearingGround heightAt={heightAt} radius={ring} tier={postStart} />
+                <Rocks front={VIEW_FRONT} heightAt={heightAt} />
+              </>
             ) : (
               <Meadow heightAt={heightAt} />
             )}

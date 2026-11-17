@@ -175,6 +175,7 @@ Each stage gets one commit on this branch once the user has picked; no pull requ
 - Camera room 1.6× and the deep forest of 8 rows were picked (2026-11-17); committed as the first stage.
 - The clearing's own ground is `ui/app/ClearingGround.tsx` (not `Clearing.tsx`, which would collide with `clearing.ts` on case-insensitive file systems); it reuses the meadow's ground mesh (`groundGeometry` in `Meadow.tsx`) and grows grass out to the ring.
 - Grass blades: 160 000 at tier high, 80 000 at medium, times the lab's density, placed denser near the tree; in the in-app browser the start view ran at about 47, 44 and 38 frames per second at density 0.5, 1 and 1.5.
+- Rocks picked (2026-11-17): the group layout at 2.5 times the first drafts' sizes (0.75 to 3 m), dark blue-grey, moss at half (the builder's recommendation, not asked), angular: each rock is cut along six seeded planes and shaded flat; 1 to 1.5 m rocks read as pebbles next to the tree's roots.
 - Grass picked (2026-11-17): "Zielbild" olive, density 1.5 (240 000 blades at high, 120 000 at medium), wind 0.4 × the variant's (a tip bends 0.12 m per metre at a full gust); the start view then ran at 45 to 52 frames per second in the in-app browser.
 
 - The creeping roots are cached per person while the tree grows; the cache now also remembers the hill, so a hill switch in the lab moves them too.
