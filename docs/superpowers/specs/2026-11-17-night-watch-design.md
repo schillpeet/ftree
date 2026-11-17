@@ -203,7 +203,10 @@ Each stage gets one commit on `feat/ui-let-the-tiered-tree-keep-night-watch` onc
 
 ## Changes while building
 
-(none yet)
+- Night sky picked (2026-11-17): V1 "Zielbild" (`#162238` at the top of the start view, `#1d2c43` above the forest), fading in between 3° and 12° of sun below the horizon; `NIGHT_SKY` in `sky.ts`.
+- The dome's colours are not tuned by hand: `domeColor` in `NightDome.tsx` undoes the ACES tone mapping exactly (output matrix, curve, input matrix), so the stated screen colours land within a few steps per channel (measured `#152135` and `#1c2b41`).
+- The hemisphere light's night colours stay as they were: with the haze in the dome's horizon colour the ring already reads dark blue (`#0c1421` on screen), not black.
+- The frame rate could not be measured in this stage: the in-app browser pane was hidden and drew about one frame per second; the dome is one extra draw call (and one more in the environment cube when it is rendered again).
 
 ## Left to the builder
 

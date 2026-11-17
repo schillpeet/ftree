@@ -49,6 +49,14 @@ export const highSun = (altitude: number) => smoothstep(0, 30 * RAD, altitude);
 // 0 by day, 1 once the sun sinks to the end of civil twilight: the evening fades in as the light
 // drops, when the little glow orbs above the cards light up.
 export const evening = (altitude: number) => 1 - smoothstep(-6 * RAD, 12 * RAD, altitude);
+// The night watch over the tiered tree (docs/superpowers/specs/2026-11-17-night-watch-design.md).
+// 0 while the sun is up, 1 from 6° below the horizon: how strongly the night's own lights show.
+export const nightGlow = (altitude: number) => smoothstep(0, -6 * RAD, altitude);
+// The night sky over the clearing (chosen 2026-11-17, "Zielbild", from image D): zenith and horizon as the screen shows
+// them, and the sun's altitudes between which the night dome fades in, after the afterglow of civil twilight.
+export const NIGHT_SKY = { zenith: '#162238', horizon: '#1d2c43', from: -3 * RAD, to: -12 * RAD };
+// How much of the night dome shows: none during the afterglow (above `from`), all of it at night (below `to`).
+export const nightSky = (altitude: number, from = NIGHT_SKY.from, to = NIGHT_SKY.to) => smoothstep(from, to, altitude);
 // Share of the sky's light that reaches reflections and ambient light: a low level at night, full by day.
 const NIGHT_ENVIRONMENT = 0.12;
 export const environmentIntensity = (altitude: number) => NIGHT_ENVIRONMENT + (1 - NIGHT_ENVIRONMENT) * daylight(altitude);

@@ -145,6 +145,8 @@ The ring follows the tree's height, so zoomed fully out the camera still sees th
 The clearing's haze is denser than the meadow's (a tree 50 m away stays 95 % clear), so the forest fades with distance while the tree stays clear.
 By day the clearing's haze leans toward a cool blue-grey, so the forest fades into blue instead of brown.
 While the post effects run and the sun is up, light shafts fall from it through the crown and the forest (`GodRays` in `ui/app/PostProcessing.tsx`, from a sun disc in `ui/app/Scene.tsx`).
+At night the clearing's sky is a deep navy, a little lighter toward the horizon as in the concept image "Nachtwache" (`ui/app/NightDome.tsx`): a dome over the day sky fades in between 3° and 12° of sun below the horizon, after the afterglow, and the gold reflects it.
+At night the clearing's haze takes the night sky's horizon colour, so the forest stands as dark blue silhouettes and melts into the sky with distance.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
 Below 520 px the footer line wraps, so every link stays reachable on a phone.

@@ -1,7 +1,7 @@
 // Run with `node app/sky.check.mjs`: the sun stands where it should over Berlin, and daylight and
 // stars fade monotonically through twilight.
 import assert from 'node:assert/strict';
-import { daylight, environmentIntensity, environmentKey, evening, starlight, sunDirection, sunPosition } from './sky.ts';
+import { daylight, environmentIntensity, environmentKey, evening, nightGlow, nightSky, starlight, sunDirection, sunPosition } from './sky.ts';
 
 const berlin = { latitude: 52.52, longitude: 13.4 };
 const deg = (r) => (r * 180) / Math.PI;
@@ -47,3 +47,12 @@ assert.equal(environmentKey(rad(10.1), rad(40.1)), environmentKey(rad(10.2), rad
 assert.notEqual(environmentKey(rad(10.0), rad(40)), environmentKey(rad(10.6), rad(40)));
 assert.notEqual(environmentKey(rad(10), rad(40.0)), environmentKey(rad(10), rad(40.6)));
 console.log('sky ok');
+
+// The night watch: the night's lights are off while the sun is up and full from 6° below; the night dome waits for
+// the afterglow to pass.
+for (let a = -20; a < 20; a++) assert.ok(nightGlow(rad(a + 1)) <= nightGlow(rad(a)) && nightSky(rad(a + 1)) <= nightSky(rad(a)));
+for (const a of [0, 0.01, 5, 30, 60]) assert.equal(nightGlow(rad(a)), 0);
+for (const a of [-6, -7, -40]) assert.equal(nightGlow(rad(a)), 1);
+assert.equal(nightSky(rad(-2)), 0);
+assert.equal(nightSky(rad(-12)), 1);
+assert.ok(nightSky(rad(-5), rad(-4), rad(-10)) > 0);

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Environment, Grid, Line, Sky, Stars } from '@react-three/drei';
 import { AdditiveBlending, BackSide, Box3, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type Points } from 'three';
@@ -32,7 +32,8 @@ import { crownTop } from './twinedForm';
 import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
 import { growthOrder } from './twinedGrowth';
 import { twinedPlan, type TwinedPlan } from './twinedLayout';
-import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, highSun, nightSky, starlight, sunDirection, sunPosition, type Location } from './sky';
+import NightDome, { HORIZON } from './NightDome';
 import { onLocationChange, useSunLocation } from './sunLocation';
 import { onStorage, useLanguage, useT } from './i18n';
 import { useCan } from './Permissions';
@@ -46,6 +47,8 @@ import Tree, { buildTree } from './Tree';
 const NIGHT = { sky: new Color('#4a5f96'), ground: new Color('#1c1a2c'), haze: new Color('#1a2238') };
 const DUSK = { sky: new Color('#f0a888'), ground: new Color('#3a2c3c'), haze: new Color('#c9916e') };
 const NOON = { sky: new Color('#d8e6f5'), ground: new Color('#3c3a30'), haze: new Color('#bcbfc2') };
+// The clearing's night (night watch): its haze is the night dome's horizon, so the forest melts into the sky.
+const NIGHT_WATCH = { ...NIGHT, haze: HORIZON };
 const SUN_LOW = new Color('#ffa870');
 const SUN_HIGH = new Color('#fff2dc');
 const MOONLIGHT = new Color('#9fb4ff');
@@ -439,11 +442,18 @@ const formatTime = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
 // The sky's light for reflections and ambient fill: a small cube rendered again only when the sun has moved half a
-// degree (`cubeKey`), always into the same cube, so no GPU textures pile up while the day goes by.
-function SkyEnvironment({ cubeKey, sun, intensity }: { cubeKey: string; sun: [number, number, number]; intensity: number }) {
-  const [cube, setCube] = useState(() => ({ key: cubeKey, intensity, sky: <Sky sunPosition={sun} {...SKY} /> }));
+// degree (`cubeKey`), always into the same cube, so no GPU textures pile up while the day goes by. `children` (the night
+// dome) are drawn into it with the sky; whatever changes them belongs in the key.
+function SkyEnvironment({ cubeKey, sun, intensity, children }: { cubeKey: string; sun: [number, number, number]; intensity: number; children?: ReactNode }) {
+  const sky = () => (
+    <>
+      <Sky sunPosition={sun} {...SKY} />
+      {children}
+    </>
+  );
+  const [cube, setCube] = useState(() => ({ key: cubeKey, intensity, sky: sky() }));
   // A new sky element is what makes the environment render its cube again.
-  if (cube.key !== cubeKey) setCube({ key: cubeKey, intensity, sky: <Sky sunPosition={sun} {...SKY} /> });
+  if (cube.key !== cubeKey) setCube({ key: cubeKey, intensity, sky: sky() });
   return (
     <Environment resolution={64} frames={1} background={false} environmentIntensity={cube.intensity}>
       {cube.sky}
@@ -455,18 +465,21 @@ function SkyEnvironment({ cubeKey, sun, intensity }: { cubeKey: string; sun: [nu
 // stands opposite the sun, lower, and is always full.
 // `haze` is the fog's density and `tint` a colour its daytime colour leans toward; the clearing sets its own (clearing.ts).
 // `onSun` receives a disc standing where the sun is, while it is up, for the light shafts (PostProcessing.tsx).
+// `night` brings the night watch's dark blue night (NightDome.tsx), and the haze melts into its horizon; only the clearing sets it.
 function DaySky({
   date,
   location,
   haze = MEADOW_HAZE,
   tint = null,
   onSun,
+  night,
 }: {
   date: Date;
   location: Location;
   haze?: number;
   tint?: string | null;
   onSun?: (sun: Mesh | null) => void;
+  night?: boolean;
 }) {
   const stars = useRef<Points>(null);
   const [moonMap] = useState(moonTexture);
@@ -479,20 +492,30 @@ function DaySky({
   const sun = sunDirection(skyAltitude, azimuth, SOUTH);
   const day = daylight(altitude);
   const high = highSun(altitude);
-  const mix = (key: keyof typeof NIGHT) => NIGHT[key].clone().lerp(DUSK[key], day).lerp(NOON[key], high);
+  const nightColors = night ? NIGHT_WATCH : NIGHT;
+  const mix = (key: keyof typeof NIGHT) => nightColors[key].clone().lerp(DUSK[key], day).lerp(NOON[key], high);
+  const dark = night ? nightSky(altitude) : 0;
   const tintColor = useMemo(() => (tint ? new Color(tint) : null), [tint]);
   // Sun and moon light cross-fade through twilight, never from flatter than MIN_LIGHT_ALTITUDE.
   const lightFrom = (alt: number, az: number) =>
     sunDirection(Math.max(MIN_LIGHT_ALTITUDE, alt), az, SOUTH).map((v) => v * LIGHT_DISTANCE) as [number, number, number];
   const moon = sunDirection(Math.asin(MOON_FLATTEN * Math.sin(-altitude)), azimuth + Math.PI, SOUTH);
   const starCount = Math.round(STARS * starlight(altitude));
+  const dome = night && <NightDome opacity={dark} moon={moon} />;
 
   useLayoutEffect(() => stars.current?.geometry.setDrawRange(0, starCount), [starCount]);
 
   return (
     <>
       <Sky sunPosition={sun} {...SKY} />
-      <SkyEnvironment cubeKey={environmentKey(skyAltitude, azimuth)} sun={sun} intensity={ENVIRONMENT * environmentIntensity(altitude)} />
+      {dome}
+      <SkyEnvironment
+        cubeKey={`${environmentKey(skyAltitude, azimuth)}${night ? `:${Math.round(dark * 20)}` : ''}`}
+        sun={sun}
+        intensity={ENVIRONMENT * environmentIntensity(altitude)}
+      >
+        {dome}
+      </SkyEnvironment>
       <Stars ref={stars} radius={3000} depth={500} count={STARS} factor={110} speed={0} fade />
       {altitude < 0.1 && (
         <Billboard position={moon.map((v) => v * MOON_DISTANCE) as [number, number, number]}>
@@ -1110,7 +1133,14 @@ export default function Scene({
           </>
         ) : (
           <>
-            <DaySky date={date} location={location} haze={tiered ? HAZE : undefined} tint={tiered ? HAZE_TINT : null} onSun={tiered ? setSunDisc : undefined} />
+            <DaySky
+              date={date}
+              location={location}
+              haze={tiered ? HAZE : undefined}
+              tint={tiered ? HAZE_TINT : null}
+              onSun={tiered ? setSunDisc : undefined}
+              night={tiered}
+            />
             {tiered ? (
               <>
                 <ClearingGround heightAt={heightAt} radius={ring} tier={postStart} />
