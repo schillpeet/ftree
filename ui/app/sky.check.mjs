@@ -1,7 +1,7 @@
 // Run with `node app/sky.check.mjs`: the sun stands where it should over Berlin, and daylight and
 // stars fade monotonically through twilight.
 import assert from 'node:assert/strict';
-import { daylight, environmentIntensity, environmentKey, evening, starlight, sunDirection, sunPosition } from './sky.ts';
+import { daylight, environmentIntensity, environmentKey, evening, MOON, moonPosition, nightGlow, nightSky, starlight, sunDirection, sunPosition } from './sky.ts';
 
 const berlin = { latitude: 52.52, longitude: 13.4 };
 const deg = (r) => (r * 180) / Math.PI;
@@ -47,3 +47,42 @@ assert.equal(environmentKey(rad(10.1), rad(40.1)), environmentKey(rad(10.2), rad
 assert.notEqual(environmentKey(rad(10.0), rad(40)), environmentKey(rad(10.6), rad(40)));
 assert.notEqual(environmentKey(rad(10), rad(40.0)), environmentKey(rad(10), rad(40.6)));
 console.log('sky ok');
+
+// The night watch: the night's lights are off while the sun is up and full from 6° below; the night dome waits for
+// the afterglow to pass.
+for (let a = -20; a < 20; a++) assert.ok(nightGlow(rad(a + 1)) <= nightGlow(rad(a)) && nightSky(rad(a + 1)) <= nightSky(rad(a)));
+for (const a of [0, 0.01, 5, 30, 60]) assert.equal(nightGlow(rad(a)), 0);
+for (const a of [-6, -7, -40]) assert.equal(nightGlow(rad(a)), 1);
+assert.equal(nightSky(rad(-2)), 0);
+assert.equal(nightSky(rad(-12)), 1);
+assert.ok(nightSky(rad(-5), rad(-4), rad(-10)) > 0);
+
+// The night watch's moon stays in the sky behind the tree all night: within its span around its centre, moving
+// smoothly, coming from the left (east, negative) in the evening and going right in the morning, every night as high.
+const moonDay = (startIso, location) =>
+  Array.from({ length: 144 }, (_, i) => {
+    const sun = sunPosition(new Date(Date.parse(startIso) + i * 600000), location);
+    return { sun, moon: moonPosition(sun, rad(location.latitude), MOON.span, MOON.highest, MOON.centre) };
+  });
+const sydney = { latitude: -33.9, longitude: 151.2 };
+for (const [start, location] of [['2026-11-17T12:00:00Z', berlin], ['2026-06-21T12:00:00Z', berlin], ['2026-11-17T02:00:00Z', sydney], ['2026-06-21T02:00:00Z', sydney]]) {
+  const day = moonDay(start, location);
+  const night = day.filter(({ sun }) => sun.altitude < rad(-6));
+  for (const { moon } of night) assert.ok(Math.abs(moon.azimuth - MOON.centre) <= MOON.span * Math.PI + 1e-9, `${start} azimuth ${deg(moon.azimuth)}`);
+  for (let i = 1; i < night.length; i++) assert.ok(Math.abs(night[i].moon.azimuth - night[i - 1].moon.azimuth) < rad(3), `${start} jump`);
+  const peak = night.reduce((best, s, i) => (s.moon.altitude > night[best].moon.altitude ? i : best), 0);
+  assert.ok(Math.abs(night[peak].moon.altitude - MOON.highest) < rad(0.5), `${start} peak ${deg(night[peak].moon.altitude)}`);
+  assert.ok(night.slice(0, Math.max(0, peak - 3)).every(({ moon }) => moon.azimuth < MOON.centre), `${start} evening on the left`);
+  assert.ok(night.slice(peak + 3).every(({ moon }) => moon.azimuth > MOON.centre), `${start} morning on the right`);
+  for (const { sun, moon } of day) if (sun.altitude > 0) assert.ok(moon.altitude <= 0);
+}
+const tromso = { latitude: 69.65, longitude: 18.96 };
+// Midnight sun: the sun never sets, so there is no moon and no night glow.
+for (const { sun, moon } of moonDay('2026-06-21T00:00:00Z', tromso)) {
+  assert.ok(!Number.isNaN(moon.altitude) && !Number.isNaN(moon.azimuth) && moon.altitude <= 0);
+  assert.equal(nightGlow(sun.altitude), 0);
+}
+// Polar night: the sun never rises, so the gold glows all day, fully at midnight.
+const polar = moonDay('2026-12-21T00:00:00Z', tromso);
+assert.ok(polar.every(({ sun }) => nightGlow(sun.altitude) > 0));
+assert.equal(nightGlow(polar[0].sun.altitude), 1);

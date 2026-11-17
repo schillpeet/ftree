@@ -1,9 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
+import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type ReactNode, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Environment, Grid, Line, Sky, Stars } from '@react-three/drei';
-import { AdditiveBlending, BackSide, Box3, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type Points } from 'three';
+import { AdditiveBlending, BackSide, Box3, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type PointLight, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance, type Appearance } from './appearance';
 import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
@@ -19,7 +19,7 @@ import RelationLegend from './RelationLegend';
 import { frameCard, type PanelSide } from './cardFrame';
 import { CARD, CARD_GAP, PIN_RADIUS, assignPins, cardTop, dropTarget, pickPins, type Drop, type Point } from './pins';
 import { ScrollCard, SignCard } from './HangingCard';
-import { haloTexture, moonTexture } from './moon';
+import { aureoleTexture, haloTexture, moonTexture, photoMoonTexture } from './moon';
 import RelativeSlots, { type SlotMount } from './RelativeSlots';
 import type { AddedExtra } from './QuickAdd';
 import Scroll, { CLICK_TOLERANCE } from './Scroll';
@@ -32,7 +32,9 @@ import { crownTop } from './twinedForm';
 import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
 import { growthOrder } from './twinedGrowth';
 import { twinedPlan, type TwinedPlan } from './twinedLayout';
-import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, highSun, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, GOLD_GLOW, highSun, MOON, moonPosition, nightGlow, nightSky, starlight, sunDirection, sunPosition, TRUNK_LIGHT, type Location } from './sky';
+import { GLOW, MOON_EDGE } from './barkShader';
+import NightDome, { HORIZON } from './NightDome';
 import { onLocationChange, useSunLocation } from './sunLocation';
 import { onStorage, useLanguage, useT } from './i18n';
 import { useCan } from './Permissions';
@@ -46,6 +48,8 @@ import Tree, { buildTree } from './Tree';
 const NIGHT = { sky: new Color('#4a5f96'), ground: new Color('#1c1a2c'), haze: new Color('#1a2238') };
 const DUSK = { sky: new Color('#f0a888'), ground: new Color('#3a2c3c'), haze: new Color('#c9916e') };
 const NOON = { sky: new Color('#d8e6f5'), ground: new Color('#3c3a30'), haze: new Color('#bcbfc2') };
+// The clearing's night (night watch): its haze is the night dome's horizon, so the forest melts into the sky.
+const NIGHT_WATCH = { ...NIGHT, haze: HORIZON };
 const SUN_LOW = new Color('#ffa870');
 const SUN_HIGH = new Color('#fff2dc');
 const MOONLIGHT = new Color('#9fb4ff');
@@ -77,6 +81,8 @@ const MOON_FLATTEN = 0.35;
 // A full moon looks flat anyway: a disc facing the viewer, about four times its real size.
 const MOON_GEOMETRY = new CircleGeometry(70, 64);
 const HALO_GEOMETRY = new CircleGeometry(260, 32);
+// The night watch's moon, a photo, also gets a tight glow around its disc (moon.ts, `aureoleTexture`).
+const AUREOLE_GEOMETRY = new CircleGeometry(70 / 0.6, 48);
 const STARS = 4000;
 const TREE_BASE = height(0, 0);
 const CAMERA_START: [number, number, number] = [32, TREE_BASE + 8, 40];
@@ -439,11 +445,18 @@ const formatTime = (minutes: number) =>
   `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 
 // The sky's light for reflections and ambient fill: a small cube rendered again only when the sun has moved half a
-// degree (`cubeKey`), always into the same cube, so no GPU textures pile up while the day goes by.
-function SkyEnvironment({ cubeKey, sun, intensity }: { cubeKey: string; sun: [number, number, number]; intensity: number }) {
-  const [cube, setCube] = useState(() => ({ key: cubeKey, intensity, sky: <Sky sunPosition={sun} {...SKY} /> }));
+// degree (`cubeKey`), always into the same cube, so no GPU textures pile up while the day goes by. `children` (the night
+// dome) are drawn into it with the sky; whatever changes them belongs in the key.
+function SkyEnvironment({ cubeKey, sun, intensity, children }: { cubeKey: string; sun: [number, number, number]; intensity: number; children?: ReactNode }) {
+  const sky = () => (
+    <>
+      <Sky sunPosition={sun} {...SKY} />
+      {children}
+    </>
+  );
+  const [cube, setCube] = useState(() => ({ key: cubeKey, intensity, sky: sky() }));
   // A new sky element is what makes the environment render its cube again.
-  if (cube.key !== cubeKey) setCube({ key: cubeKey, intensity, sky: <Sky sunPosition={sun} {...SKY} /> });
+  if (cube.key !== cubeKey) setCube({ key: cubeKey, intensity, sky: sky() });
   return (
     <Environment resolution={64} frames={1} background={false} environmentIntensity={cube.intensity}>
       {cube.sky}
@@ -455,52 +468,79 @@ function SkyEnvironment({ cubeKey, sun, intensity }: { cubeKey: string; sun: [nu
 // stands opposite the sun, lower, and is always full.
 // `haze` is the fog's density and `tint` a colour its daytime colour leans toward; the clearing sets its own (clearing.ts).
 // `onSun` receives a disc standing where the sun is, while it is up, for the light shafts (PostProcessing.tsx).
+// `night` brings the night watch (only the clearing sets it): a dark blue night (NightDome.tsx) whose horizon the haze
+// melts into, and the moon as a photo beside the tree's crown (sky.ts, `moonPosition`).
 function DaySky({
   date,
   location,
   haze = MEADOW_HAZE,
   tint = null,
   onSun,
+  night,
 }: {
   date: Date;
   location: Location;
   haze?: number;
   tint?: string | null;
   onSun?: (sun: Mesh | null) => void;
+  night?: boolean;
 }) {
   const stars = useRef<Points>(null);
   const [moonMap] = useState(moonTexture);
+  // Only the night watch loads the photo moon.
+  const photoMoonMap = useMemo(() => (night ? photoMoonTexture() : null), [night]);
+  const aureoleMap = useMemo(() => (night ? aureoleTexture() : null), [night]);
   const [haloMap] = useState(haloTexture);
   const moonGain = useGlowGain(MOON_GAIN);
-  const { altitude, azimuth } = sunPosition(date, location);
+  const { altitude, azimuth, declination } = sunPosition(date, location);
   // The sky shader's own sunlight ends ~2° below the horizon; raising its sun during twilight
   // keeps the afterglow (and dawn) through civil twilight instead of minutes.
   const skyAltitude = altitude < 0 ? altitude * TWILIGHT_GLOW : altitude;
   const sun = sunDirection(skyAltitude, azimuth, SOUTH);
   const day = daylight(altitude);
   const high = highSun(altitude);
-  const mix = (key: keyof typeof NIGHT) => NIGHT[key].clone().lerp(DUSK[key], day).lerp(NOON[key], high);
+  const nightColors = night ? NIGHT_WATCH : NIGHT;
+  const mix = (key: keyof typeof NIGHT) => nightColors[key].clone().lerp(DUSK[key], day).lerp(NOON[key], high);
+  const dark = night ? nightSky(altitude) : 0;
   const tintColor = useMemo(() => (tint ? new Color(tint) : null), [tint]);
   // Sun and moon light cross-fade through twilight, never from flatter than MIN_LIGHT_ALTITUDE.
   const lightFrom = (alt: number, az: number) =>
     sunDirection(Math.max(MIN_LIGHT_ALTITUDE, alt), az, SOUTH).map((v) => v * LIGHT_DISTANCE) as [number, number, number];
-  const moon = sunDirection(Math.asin(MOON_FLATTEN * Math.sin(-altitude)), azimuth + Math.PI, SOUTH);
+  // The night watch's moon stands behind the tree (sky.ts); elsewhere it stands opposite the sun.
+  const watch = night ? moonPosition({ altitude, azimuth, declination }, (location.latitude * Math.PI) / 180, MOON.span, MOON.highest, MOON.centre) : null;
+  const moon = watch
+    ? sunDirection(watch.altitude, watch.azimuth, SOUTH)
+    : sunDirection(Math.asin(MOON_FLATTEN * Math.sin(-altitude)), azimuth + Math.PI, SOUTH);
   const starCount = Math.round(STARS * starlight(altitude));
+  const dome = night && <NightDome opacity={dark} moon={moon} />;
 
   useLayoutEffect(() => stars.current?.geometry.setDrawRange(0, starCount), [starCount]);
 
   return (
     <>
       <Sky sunPosition={sun} {...SKY} />
-      <SkyEnvironment cubeKey={environmentKey(skyAltitude, azimuth)} sun={sun} intensity={ENVIRONMENT * environmentIntensity(altitude)} />
+      {watch && <MoonEdge strength={MOON.edge * (1 - day)} moon={moon} />}
+      {dome}
+      <SkyEnvironment
+        cubeKey={`${environmentKey(skyAltitude, azimuth)}${night ? `:${Math.round(dark * 20)}` : ''}`}
+        sun={sun}
+        intensity={ENVIRONMENT * environmentIntensity(altitude)}
+      >
+        {dome}
+      </SkyEnvironment>
       <Stars ref={stars} radius={3000} depth={500} count={STARS} factor={110} speed={0} fade />
       {altitude < 0.1 && (
         <Billboard position={moon.map((v) => v * MOON_DISTANCE) as [number, number, number]}>
           <mesh geometry={HALO_GEOMETRY} position-z={-5}>
             <meshBasicMaterial map={haloMap} color={[moonGain, moonGain, moonGain]} transparent blending={AdditiveBlending} depthWrite={false} fog={false} toneMapped={false} />
           </mesh>
+          {night && (
+            <mesh geometry={AUREOLE_GEOMETRY} position-z={-2}>
+              <meshBasicMaterial map={aureoleMap} color={[moonGain, moonGain, moonGain]} transparent blending={AdditiveBlending} depthWrite={false} fog={false} toneMapped={false} />
+            </mesh>
+          )}
           <mesh geometry={MOON_GEOMETRY}>
-            <meshBasicMaterial map={moonMap} color={[moonGain, moonGain, moonGain]} transparent depthWrite={false} fog={false} toneMapped={false} />
+            <meshBasicMaterial map={night ? photoMoonMap : moonMap} color={[moonGain, moonGain, moonGain]} transparent depthWrite={false} fog={false} toneMapped={false} />
           </mesh>
         </Billboard>
       )}
@@ -524,15 +564,52 @@ function DaySky({
         {...SHADOW}
       />
       <directionalLight
-        position={lightFrom(-altitude, azimuth + Math.PI)}
+        position={watch ? lightFrom(watch.altitude, watch.azimuth) : lightFrom(-altitude, azimuth + Math.PI)}
         color={MOONLIGHT}
-        intensity={1.5 * (1 - day)}
+        intensity={(watch ? MOON.light : 1.5) * (1 - day)}
         castShadow
         shadow-mapSize={[1024, 1024]}
         {...SHADOW}
       />
     </>
   );
+}
+
+// Feeds the tiered tree's gold its glow every frame (`GLOW` in barkShader.ts): faint by day, rising through civil
+// twilight to its night strength, and breathing only at night.
+function GoldGlow({ night }: { night: number }) {
+  useFrame(({ clock }) => {
+    GLOW.uGlow.value = Math.max(GOLD_GLOW.day, night * GOLD_GLOW.night);
+    GLOW.uBreathAmp.value = night * GOLD_GLOW.breath;
+    GLOW.uTime.value = clock.elapsedTime;
+  });
+  return null;
+}
+
+// Feeds the bark the moon's cool edge every frame (`MOON_EDGE` in barkShader.ts), with the moon's direction in the
+// camera's view.
+function MoonEdge({ strength, moon }: { strength: number; moon: [number, number, number] }) {
+  useFrame(({ camera }) => {
+    MOON_EDGE.uMoonEdge.value = strength;
+    // The camera's inverse matrix is only refreshed while rendering; this frame's view is needed now.
+    camera.updateMatrixWorld();
+    MOON_EDGE.uMoonView.value.set(...moon).transformDirection(camera.matrixWorldInverse);
+  });
+  return null;
+}
+
+// The gold's warm light on the ground around the trunk's foot, from inside the trunk 1.5 m above the hilltop, without
+// shadows. It stays mounted by day at intensity 0, since a light that appears at dusk would recompile every material.
+// It swells and fades with the gold's breath at that height (barkShader.ts).
+const TRUNK_LIGHT_HEIGHT = TREE_BASE + 1.5;
+function TrunkLight({ night }: { night: number }) {
+  const light = useRef<PointLight>(null);
+  useFrame(({ clock }) => {
+    if (!light.current) return;
+    const phase = clock.elapsedTime / GOLD_GLOW.period - TRUNK_LIGHT_HEIGHT / GOLD_GLOW.climb;
+    light.current.intensity = night * TRUNK_LIGHT.strength * (1 + night * GOLD_GLOW.breath * Math.sin(2 * Math.PI * phase));
+  });
+  return <pointLight ref={light} position={[0, TRUNK_LIGHT_HEIGHT, 0]} color={TRUNK_LIGHT.color} distance={TRUNK_LIGHT.range} decay={2} intensity={0} />;
 }
 
 type Drag = { id: string; position: Point; target: Drop };
@@ -1110,7 +1187,14 @@ export default function Scene({
           </>
         ) : (
           <>
-            <DaySky date={date} location={location} haze={tiered ? HAZE : undefined} tint={tiered ? HAZE_TINT : null} onSun={tiered ? setSunDisc : undefined} />
+            <DaySky
+              date={date}
+              location={location}
+              haze={tiered ? HAZE : undefined}
+              tint={tiered ? HAZE_TINT : null}
+              onSun={tiered ? setSunDisc : undefined}
+              night={tiered}
+            />
             {tiered ? (
               <>
                 <ClearingGround heightAt={heightAt} radius={ring} tier={postStart} />
@@ -1120,6 +1204,8 @@ export default function Scene({
               <Meadow heightAt={heightAt} />
             )}
             {tiered && <ForestRing radius={ring} top={top * RING_HEIGHT} heightAt={heightAt} />}
+            {tiered && <GoldGlow night={nightGlow(altitude)} />}
+            {tiered && <TrunkLight night={nightGlow(altitude)} />}
             {organic ? (
               <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
             ) : (

@@ -145,6 +145,8 @@ The ring follows the tree's height, so zoomed fully out the camera still sees th
 The clearing's haze is denser than the meadow's (a tree 50 m away stays 95 % clear), so the forest fades with distance while the tree stays clear.
 By day the clearing's haze leans toward a cool blue-grey, so the forest fades into blue instead of brown.
 While the post effects run and the sun is up, light shafts fall from it through the crown and the forest (`GodRays` in `ui/app/PostProcessing.tsx`, from a sun disc in `ui/app/Scene.tsx`).
+At night the clearing's sky is a deep navy, a little lighter toward the horizon as in the concept image "Nachtwache" (`ui/app/NightDome.tsx`): a dome over the day sky fades in between 3° and 12° of sun below the horizon, after the afterglow, and the gold reflects it.
+At night the clearing's haze takes the night sky's horizon colour, so the forest stands as dark blue silhouettes and melts into the sky with distance.
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
 Below 520 px the footer line wraps, so every link stays reachable on a phone.
@@ -172,11 +174,16 @@ Switching it on raises the browser's prompt and sets the sun for that position a
 Only the switch is remembered per browser in `localStorage` (`ftree.location`), never the position, which stays in the page's memory and is never sent anywhere; a later visit reads the position only if the browser already allows it without asking, else the toggle is off.
 South lies straight ahead from the start view.
 Sun and sky light, haze, and sky colors follow the sun's altitude, with the afterglow stretched through civil twilight; at night a full moon (a camera-facing disc with a painted texture of maria, craters, and ray craters, plus a soft halo) stands opposite the sun (its arc flattened to about 20° so it stays in view) and lights the scene bluish, and stars come out one by one as the sun sinks to 14° below the horizon.
+Over the tiered tree's clearing the moon keeps to the sky beside the crown (`MOON` and `moonPosition` in `ui/app/sky.ts`): it still moves with the time of day, rising over the forest on the left in the evening and drifting toward the trunk by morning, at most 14° high, and its light comes from where its disc stands, so it edges the tree from behind; the bark's edges toward it light up a little.
+That moon shows NASA's rendering of the full moon of 26 October 2026 from Lunar Reconnaissance Orbiter data (NASA's Scientific Visualization Studio, "Moon Phase and Libration, 2026", frame 7157, public domain; `ui/app/night/full-moon.jpg`), with a soft edge and a tight glow around its disc, at the painted moon's size and brightness.
 The time updates every minute.
 The "Zeit" section of the Evolution panel has "Uhrzeit vorschauen", which shows a 24-hour dial (midnight at the top) whose hand can be dragged or moved with the arrow keys in 15-minute steps to preview any time of today.
 As evening falls, small warm-white light orbs rise above the hanging scrolls and boards, glowing brighter and larger as the sun sinks to civil twilight; a "Leuchtkugeln" checkbox in the debug panel (on by default) switches them off.
 In the 3D appearances a small copy of the sky is rendered into an environment cube whenever the sun has moved half a degree, so metal reflects the sky and surfaces get sky light from above; at night it fades to a low level.
 The tiered tree's gold is full metal now that the scene has an environment to reflect.
+The tiered tree's gold glows faintly by day, so it still shows against the light, and from sunset it brightens fourteenfold until the end of civil twilight (`GOLD_GLOW` in `ui/app/sky.ts`).
+At night the gold breathes: its glow swells and fades by 60 % every 7 seconds in a wave that climbs the trunk.
+At night a faint warm light from the trunk's foot lies over the whole hilltop, about 25 m around, lighting the ground, the roots and the rocks without shadows, and breathes with the gold (`TRUNK_LIGHT` in `ui/app/sky.ts`).
 The 3D appearances draw through post effects (`ui/app/PostProcessing.tsx`): ambient occlusion, bloom on highlights, ACES tone mapping at the scene's exposure of 0.6, and a vignette; GRID draws as before.
 While the post effects run, the light orbs, the card halos and the moon are drawn brighter so they keep their look through the tone mapping and get a soft halo from the bloom.
 Relation lines are drawn after the post effects, so they keep their exact token colours.
