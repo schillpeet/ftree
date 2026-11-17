@@ -137,7 +137,7 @@ Because the camera stays inside the ring, every ring tree is always seen from th
 - Two files in the same layout: `ring-color.png` (sRGB colour with straight alpha, no baked light, ambient occlusion multiplied in) and `ring-normal.png` (tangent-space normals, OpenGL convention +Y up, like the bark).
 - Alpha with a 4 px dilated colour border so mipmaps do not darken the edges.
 - A short `ring.json` next to them: per tree its height in metres and its trunk's foot position in the cell, so the app scales them without guessing.
-- Files go to `ui/app/clearing/`, and `docs/design/blender/README.md` gets a section on how they were made.
+- Files go to `ui/app/forest/` (not `ui/app/clearing/`, which would sit next to `clearing.ts`), and `docs/design/blender/README.md` gets a section on how they were made.
 
 ### Camera
 
@@ -182,6 +182,10 @@ Each stage gets one commit on this branch once the user has picked; no pull requ
 - Light picked (2026-11-17): haze colour cool blue-grey (`#9aa7b4`, mixed in at 60 % by day), light shafts at full strength; the first shaft values were invisible, so they run with 80 samples, weight 0.9 and exposure 1.2, which costs about 7 frames per second in the in-app browser (41 instead of 49).
 - Rocks picked (2026-11-17): the group layout at 2.5 times the first drafts' sizes (0.75 to 3 m), dark blue-grey, moss at half (the builder's recommendation, not asked), angular: each rock is cut along six seeded planes and shaded flat; 1 to 1.5 m rocks read as pebbles next to the tree's roots.
 - Grass picked (2026-11-17): "Zielbild" olive, density 1.5 (240 000 blades at high, 120 000 at medium), wind 0.4 × the variant's (a tip bends 0.12 m per metre at a full gust); the start view then ran at 45 to 52 frames per second in the in-app browser.
+
+- The ring billboards were baked on this machine after all (2026-11-17), with `docs/design/blender/forest.py`; the user approved the four trees from preview renders before the bake.
+- Each tree's top lies on its cell's top edge, so `ring.json` with height and foot is enough to scale it; the app keeps the four trees' modelled heights (29 to 32 m) relative to each other.
+- With the normal map the billboard's own normal leans up by 0.3 instead of 0.6, since the tufts' normals already face the sky on their upper side.
 
 - The creeping roots are cached per person while the tree grows; the cache now also remembers the hill, so a hill switch in the lab moves them too.
 - A hill switch remounts the tree (its React key), which rebuilds it once.
