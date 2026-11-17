@@ -6,6 +6,7 @@ import { generations } from './generations.ts';
 import { buildTwinedTree, seeded, TWINED_SLOT_ANGLE } from './twinedForm.ts';
 import { blendPlans } from './twinedGrowth.ts';
 import { twinedPlan } from './twinedLayout.ts';
+import { HILL, hillAt } from './clearing.ts';
 
 const person = (id, parentIds = [], partnerIds = [], birthDate = null) => ({ id, parentIds, partnerIds, birthDate });
 const plan = (family) => twinedPlan(family, generations(family), TWINED_SLOT_ANGLE);
@@ -217,4 +218,20 @@ const tree = buildTwinedTree(plan(three), 0);
   // Even one person stands on the base trunk, so their tree has its scars there.
   const alone = buildTwinedTree(plan([person('solo')]), 0, 'fam-1');
   for (const id of new Set(s.map((x) => x.strand))) assert.ok(scarred(alone).includes(id), `solo: ${id} has no scar`);
+}
+
+// The roots lie on the ground the tree is built for, the creeping ones too though they are kept per person while the
+// tree grows; the clearing's hill carries a one-person family.
+{
+  const low = (t) => Math.min(...t.pieces.flatMap((p) => spots(p).map(([, y]) => y)));
+  const lowOf = (t, id) => Math.min(...spots(piece(t, id)).map(([, y]) => y));
+  const steep = (r) => -0.3 * r;
+  const onSteep = buildTwinedTree(plan(three), 0, '', steep);
+  assert.ok(low(onSteep) < low(tree) - 1);
+  const creeping = tree.pieces.filter((p) => p.id.startsWith('free:roots')).map((p) => p.id);
+  assert.ok(creeping.length > 0);
+  assert.ok(creeping.some((id) => lowOf(onSteep, id) < lowOf(tree, id) - 0.5));
+  const onHill = buildTwinedTree(plan(three), 0, '', hillAt);
+  assert.ok(low(onHill) > -HILL.height - 1.5);
+  buildTwinedTree(plan([person('solo')]), 0, 'solo', hillAt);
 }

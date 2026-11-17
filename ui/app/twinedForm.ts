@@ -6,6 +6,7 @@
 // around the eldest couple's leader that leave as crown branches, shoots on the limbs and a fine
 // shoot beyond each card. Pure, so `twinedForm.check.mjs` can test it without a scene.
 import { BufferAttribute, BufferGeometry, CatmullRomCurve3, Float32BufferAttribute, Quaternion, Vector3 } from 'three';
+import { DOME } from './clearing.ts';
 import { CARD, CARD_GAP, type Point } from './pins.ts';
 import type { GrowingPlan } from './twinedGrowth';
 import type { Braid, TwinedPlan, Twig } from './twinedLayout';
@@ -13,6 +14,8 @@ import type { Braid, TwinedPlan, Twig } from './twinedLayout';
 const TIER_GAP = CARD.height + CARD_GAP + 1.2;
 // The lowest tier leaves room for a card and a base trunk above the hilltop.
 const LOWEST = CARD.height + 10.7;
+// About where the tree's top ends for `depth` tiers: the top tier's pin and a card's height of wood above it.
+export const treeTop = (depth: number) => LOWEST + (Math.max(1, depth) - 1) * TIER_GAP + CARD.height;
 // The angle one card needs is measured at this radius; limbs reach further (see `radiusOf`).
 const CARD_RADIUS = 10;
 // A couple leaves the trunk this far below its tier, and this far if single children hang below it:
@@ -61,8 +64,8 @@ const ROOT_SIZE = [0.42, 0.22, 0.1];
 const ROOT_REACH = [8, 5, 3];
 const ROOT_SIDES = [8, 6, 4];
 // A person's roots only change when the trunk's foot does, but the tree is rebuilt every frame while it
-// grows: keep the last ones per person with the foot they fit.
-const rootCache = new Map<string, { footR: number; roots: BufferGeometry }>();
+// grows: keep the last ones per person with the foot and the ground they fit.
+const rootCache = new Map<string, { footR: number; ground: (r: number) => number; roots: BufferGeometry }>();
 // Likewise every piece keeps its geometry object as long as what it is built from stays the same, so
 // while the tree grows only the wood that moves is rebuilt, and the scene re-uploads only that.
 const pieceCache = new Map<string, { hash: number; geometry: BufferGeometry }>();
@@ -174,8 +177,6 @@ const bezier = (p: number[][], t: number): number[] => {
 const bough = (r: number, y: number, out: number, up: number) => [[r, y], [r + 0.05 * out, y + 0.7 * up], [r + 0.55 * out, y + 1.02 * up], [r + out, y + up]];
 // A limb: an elbow out of the trunk, a long low reach, then the climb to the fork.
 const limbOf = (r: number, y: number, out: number, up: number) => [[r, y], [r, y + 1.8], [r + 0.45 * out, y + 0.9], [r + 0.72 * out, y + 0.72 * up], [r + out, y + up]];
-// The meadow's hill around the tree, relative to the hilltop.
-const ground = (r: number) => -7 * (1 - Math.exp((-r * r) / 1800));
 const key = (ids: string[]) => ids.join('\n');
 
 // Chance that only depends on a name (mulberry32 seeded with an FNV-1a hash), so a piece keeps its
@@ -311,7 +312,8 @@ const sweep = (name: string, points: Vector3[], radii: number[], radial: number,
 // fractional depth); angle 0 faces `front`. `name` (the family's id) shapes the base trunk, so it
 // stays as it is whoever joins. Returns a piece per strand, twig and free branch and the
 // point each member's card hangs from, relative to the tree base.
-export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, name = '') {
+// `ground` is the hill around the tree relative to the hilltop, by distance from the trunk; the roots lie on it.
+export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, name = '', ground: (r: number) => number = DOME) {
   const pieces: Piece[] = [];
   const pins = new Map<string, Point>();
   const at = (r: number, a: number, y: number) => new Vector3(Math.cos(a) * r, y, Math.sin(a) * r);
@@ -431,7 +433,7 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
   const rootsOf = (id: string) => {
     const cached = rootCache.get(id);
     // A trunk that thickens a little keeps its roots; they follow once it is 6 % thicker or thinner.
-    if (cached && Math.abs(cached.footR - footR) < 0.06 * footR) return cached.roots;
+    if (cached && cached.ground === ground && Math.abs(cached.footR - footR) < 0.06 * footR) return cached.roots;
     const chance = seeded(`${id}|roots`);
     const pick = chance();
     const roots: Tube[] = [];
@@ -459,7 +461,7 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
     };
     creep(`${id}.root`, pick < 0.18 ? 0 : pick < 0.55 ? 1 : 2, chance() * FULL, 0, 0.55 * footR, 0.6 + 1.5 * ROOT_SIZE[0] * Math.sqrt(footR), 0);
     const merged = sweepAll(roots);
-    rootCache.set(id, { footR, roots: merged });
+    rootCache.set(id, { footR, ground, roots: merged });
     return merged;
   };
 

@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type PointerEvent, type RefObject } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Billboard, CameraControls, Environment, Grid, Line, Sky, Stars } from '@react-three/drei';
-import { AdditiveBlending, BackSide, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type Points } from 'three';
+import { AdditiveBlending, BackSide, Box3, CircleGeometry, Color, LinearSRGBColorSpace, Plane, Raycaster, ShaderMaterial, SphereGeometry, Vector2, Vector3, type Mesh, type Points } from 'three';
 import type { Member, Placement } from '../lib/api/generated/members';
 import { APPEARANCES, useAppearance, type Appearance } from './appearance';
 import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines } from './lines';
 import { Overlay, PostEffects, useGlowGain, usePostEffects, useStartTier } from './PostProcessing';
 import { arrangePins, relationDistance } from './arrange';
 import { generationBounds, generations, layerPins } from './generations';
+import { cameraLimit, fitDistance, groundAt, HAZE, hillAt, MEADOW_HAZE, RING_HEIGHT, ringRadius } from './clearing';
+import ForestRing from './ForestRing';
 import Meadow, { height } from './Meadow';
 import RelationLegend from './RelationLegend';
 import { frameCard, type PanelSide } from './cardFrame';
@@ -24,6 +26,7 @@ import { coreFamilyOf, lineageOf } from './relatives';
 import { displayName } from './names';
 import { useTokenPaint } from './tokenColor';
 import SimpleTree from './SimpleTree';
+import { treeTop } from './twinedForm';
 import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
 import { growthOrder } from './twinedGrowth';
 import { twinedPlan, type TwinedPlan } from './twinedLayout';
@@ -92,6 +95,8 @@ const ON_TOP = { depthTest: false, renderOrder: 1, toneMapped: false, fog: false
 const LINE_WIDTH = 1.3;
 const GLOW_WIDTH = 5;
 const MIN_DISTANCE = 8;
+// The camera never looks up at its target from lower than this polar angle (from straight above).
+const MAX_POLAR = Math.PI / 2.1;
 const FOV = 50;
 const MAX_DISTANCE = 150;
 // camera-controls divides trackpad deltas by 10, so the default speed needs a lot of pinching.
@@ -248,12 +253,12 @@ function GridFloor() {
 
 // ponytail: cards left over when the free pins run out are not persisted here until dragged; the
 // rows simply grow upward when there are many.
-function waitingPosition(index: number): Point {
+function waitingPosition(index: number, heightAt: (x: number, z: number) => number): Point {
   const column = index % WAITING_PER_ROW;
   const row = Math.floor(index / WAITING_PER_ROW);
   const angle = VIEW_FRONT + ((column - (WAITING_PER_ROW - 1) / 2) * (CARD.width + CARD_GAP)) / WAITING_RADIUS;
   const [x, z] = [Math.cos(angle) * WAITING_RADIUS, Math.sin(angle) * WAITING_RADIUS];
-  return [x, height(x, z) + CARD.height + 0.5 + row * (CARD.height + CARD_GAP), z];
+  return [x, heightAt(x, z) + CARD.height + 0.5 + row * (CARD.height + CARD_GAP), z];
 }
 
 // The scale is logarithmic in distance, so each step feels the same near and far.
@@ -441,7 +446,8 @@ function SkyEnvironment({ cubeKey, sun, intensity }: { cubeKey: string; sun: [nu
 
 // Sun, moon, stars, and light for the given moment at the given location. The moon simply
 // stands opposite the sun, lower, and is always full.
-function DaySky({ date, location }: { date: Date; location: Location }) {
+// `haze` is the fog's density; the clearing sets its own (clearing.ts, HAZE).
+function DaySky({ date, location, haze = MEADOW_HAZE }: { date: Date; location: Location; haze?: number }) {
   const stars = useRef<Points>(null);
   const [moonMap] = useState(moonTexture);
   const [haloMap] = useState(haloTexture);
@@ -478,7 +484,7 @@ function DaySky({ date, location }: { date: Date; location: Location }) {
         </Billboard>
       )}
       {/* Exponential haze: the meadow fades gradually toward the horizon instead of ending in a band. */}
-      <fogExp2 attach="fog" args={[DUSK.haze, 0.0016]} color={mix('haze')} />
+      <fogExp2 attach="fog" args={[DUSK.haze, haze]} color={mix('haze')} density={haze} />
       {/* By day the environment fills from the sky; at night this carries the moon's fill. */}
       <hemisphereLight color={mix('sky')} groundColor={mix('ground')} intensity={0.5 - 0.3 * day} />
       <directionalLight
@@ -524,7 +530,10 @@ function Scrolls({
   onOpen,
   onPlace,
   slots,
+  heightAt,
 }: {
+  // The ground's world height, which waiting cards stand on.
+  heightAt: (x: number, z: number) => number;
   familyId: string | null;
   members: Member[];
   focus: Focus;
@@ -581,11 +590,11 @@ function Scrolls({
       const pin = shownPins.get(m.id);
       positions.set(
         m.id,
-        pin != null ? cardTop(pins[pin]) : m.position ? [m.position.x, TREE_BASE + m.position.y, m.position.z] : waitingPosition(waiting++),
+        pin != null ? cardTop(pins[pin]) : m.position ? [m.position.x, TREE_BASE + m.position.y, m.position.z] : waitingPosition(waiting++, heightAt),
       );
     }
     return positions;
-  }, [members, pins, shownPins, layout]);
+  }, [members, pins, shownPins, layout, heightAt]);
   const positions = useMemo(
     () => (drag ? new Map(placed).set(drag.id, drag.position) : placed),
     [placed, drag],
@@ -817,6 +826,9 @@ export default function Scene({
   const experimental = appearance === 'experimental';
   const bloodId = showLines && highlightBlood && experimental ? highlight : null;
   const organic = appearance === 'organic';
+  // The Stufenbaum stands on its own hill in a clearing (clearing.ts).
+  const tiered = appearance === 'organicExperimental';
+  const heightAt = useMemo(() => (tiered ? (x: number, z: number) => TREE_BASE + groundAt(x, z) : height), [tiered]);
   // The post effects belong to the 3D appearances; TRON keeps its own look.
   const [postOn, setPostOn] = usePostEffects();
   const post = postOn && !experimental;
@@ -833,9 +845,35 @@ export default function Scene({
   const [bundle, setBundle] = useState(false);
   const [orbit, setOrbit] = useState(false);
   const stopOrbit = useCallback(() => setOrbit(false), []);
+  // The tiered tree grows a tier per generation and a strand or twig per member, so it changes with the family.
+  const tierPlan = JSON.stringify(twinedPlan(members, generations(members), TWINED_SLOT_ANGLE));
+  const tierTarget = useMemo(() => JSON.parse(tierPlan) as TwinedPlan, [tierPlan]);
+  // The tree grows towards the plan and reports where cards hang once a growth step has settled.
+  const [tieredPins, setTieredPins] = useState<Map<string, Point>>(() => new Map());
+  // The ring stands far enough for the camera inside it to see the whole tree; the camera may not leave it.
+  // The highest card plus the wood above it, in 2 m steps so the ring does not move with every grown member; before
+  // the tree reports its cards, an estimate from its tiers.
+  const highestPin = Math.max(0, ...[...tieredPins.values()].map((p) => p[1]));
+  const top = tieredPins.size ? Math.ceil((highestPin + 8) / 2) * 2 : treeTop(tierTarget.depth);
+  const ring = ringRadius(top);
+  const limit = tiered ? cameraLimit(ring) : null;
+  const box = limit?.box ?? null;
+  useEffect(() => {
+    if (!controls) return;
+    controls.setBoundary(box != null ? new Box3(new Vector3(-box, TREE_BASE - 5, -box), new Vector3(box, TREE_BASE + top, box)) : undefined);
+  }, [controls, box, top]);
   const lookFront = () => {
     setOrbit(false);
-    void controls?.setLookAt(...startCamera(window.innerWidth / window.innerHeight), true);
+    if (!limit) {
+      void controls?.setLookAt(...startCamera(window.innerWidth / window.innerHeight), true);
+      return;
+    }
+    // In the clearing the whole tree fits in, seen from the height of its middle and a little above (the controls'
+    // steepest upward look), so zooming out moves back and up instead of into the ground.
+    const distance = Math.min(limit.maxDistance, fitDistance(top));
+    const [x, z] = [Math.cos(VIEW_FRONT) * distance, Math.sin(VIEW_FRONT) * distance];
+    const middle = TREE_BASE + top * 0.45;
+    void controls?.setLookAt(x, middle + distance * Math.cos(MAX_POLAR), z, 0, middle, 0, true);
   };
   // A tiny offset toward the front keeps the front at the bottom of the screen.
   const lookFromAbove = () => {
@@ -886,11 +924,6 @@ export default function Scene({
     window.dispatchEvent(new StorageEvent('storage', { key: CARD_STYLE_KEY }));
   };
   const tree = useMemo(() => buildTree(7), []);
-  // The tiered tree grows a tier per generation and a strand or twig per member, so it changes with the family.
-  const tierPlan = JSON.stringify(twinedPlan(members, generations(members), TWINED_SLOT_ANGLE));
-  const tierTarget = useMemo(() => JSON.parse(tierPlan) as TwinedPlan, [tierPlan]);
-  // The tree grows towards the plan and reports where cards hang once a growth step has settled.
-  const [tieredPins, setTieredPins] = useState<Map<string, Point>>(() => new Map());
   const tieredLayout = useMemo(
     () => new Map([...tieredPins].map(([id, [x, y, z]]) => [id, cardTop([x, TREE_BASE + y, z])])),
     [tieredPins],
@@ -1041,8 +1074,9 @@ export default function Scene({
           </>
         ) : (
           <>
-            <DaySky date={date} location={location} />
-            <Meadow />
+            <DaySky date={date} location={location} haze={tiered ? HAZE : undefined} />
+            <Meadow heightAt={heightAt} />
+            {tiered && <ForestRing radius={ring} top={top * RING_HEIGHT} heightAt={heightAt} />}
             {organic ? (
               <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
             ) : (
@@ -1053,6 +1087,7 @@ export default function Scene({
                 animate
                 front={VIEW_FRONT}
                 name={familyId ?? ''}
+                ground={hillAt}
                 position={[0, TREE_BASE, 0]}
                 onLive={setLiveTiered}
                 onPins={setTieredPins}
@@ -1060,6 +1095,7 @@ export default function Scene({
               />
             )}
             <Scrolls
+              heightAt={heightAt}
               familyId={familyId}
               members={members}
               focus={focus}
@@ -1086,9 +1122,9 @@ export default function Scene({
         <CameraControls
           ref={initControls}
           makeDefault
-          maxPolarAngle={Math.PI / 2.1}
+          maxPolarAngle={MAX_POLAR}
           minDistance={MIN_DISTANCE}
-          maxDistance={MAX_DISTANCE}
+          maxDistance={limit ? limit.maxDistance : MAX_DISTANCE}
           dollySpeed={DOLLY_SPEED}
         />
         {orbit && controls && <Orbit controls={controls} onStop={stopOrbit} />}

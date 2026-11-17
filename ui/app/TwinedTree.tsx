@@ -97,6 +97,7 @@ export default function TwinedTree({
   animate,
   front,
   name,
+  ground,
   position,
   onLive,
   onPins,
@@ -108,6 +109,8 @@ export default function TwinedTree({
   front: number;
   // The family's id, which shapes the base trunk.
   name: string;
+  // The hill under the tree by distance from the trunk, relative to its foot (`buildTwinedTree`).
+  ground?: (r: number) => number;
   position: Point;
   // Where the cards hang right now, every frame while the tree grows, so they can ride along.
   onLive?: (pins: Map<string, Point>) => void;
@@ -130,7 +133,7 @@ export default function TwinedTree({
 
   // Shows `plan`: one mesh per piece, reused by member id, grown as far as the plan says.
   const draw = (plan: TwinedPlan | GrowingPlan) => {
-    const { pieces, pins } = buildTwinedTree(plan, front, name);
+    const { pieces, pins } = buildTwinedTree(plan, front, name, ground);
     const meshes = state.current.meshes;
     const ids = new Set(pieces.map((p) => p.id));
     for (const [id, mesh] of meshes)
@@ -186,7 +189,7 @@ export default function TwinedTree({
       s.replaying = false;
       s.queue = [target];
     }
-    // `draw` only depends on `front` and `name`, which never change (a new family remounts it).
+    // `draw` only depends on `front`, `name` and `ground`, which never change (a new family or hill remounts it).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [target, replay, animate]);
 

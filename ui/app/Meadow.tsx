@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import {
   Color,
   ConeGeometry,
@@ -42,7 +42,8 @@ function groundColor(x: number, z: number, out: Color) {
   return out.lerpColors(DARK, LIGHT, Math.min(1, Math.max(0, t)));
 }
 
-function buildMeadow() {
+// `heightAt` is the ground's world height at (x, z); the organic tree keeps today's hill (`height`).
+function buildMeadow(heightAt: (x: number, z: number) => number) {
   const ground = new PlaneGeometry(2, 2, GROUND_SEGMENTS, GROUND_SEGMENTS);
   const pos = ground.attributes.position;
   const colors = new Float32Array(pos.count * 3);
@@ -53,7 +54,7 @@ function buildMeadow() {
   for (let i = 0; i < pos.count; i++) {
     const x = spread(pos.getX(i));
     const z = -spread(pos.getY(i));
-    pos.setXYZ(i, x, -z, height(x, z));
+    pos.setXYZ(i, x, -z, heightAt(x, z));
     groundColor(x, z, c).toArray(colors, i * 3);
   }
   ground.setAttribute('color', new Float32BufferAttribute(colors, 3));
@@ -75,7 +76,7 @@ function buildMeadow() {
     const r = 0.8 + Math.sqrt(rand()) * GRASS_RADIUS;
     const a = rand() * Math.PI * 2;
     p.set(Math.cos(a) * r, 0, Math.sin(a) * r);
-    p.y = height(p.x, p.z) - 0.02;
+    p.y = heightAt(p.x, p.z) - 0.02;
     e.set((rand() - 0.5) * 0.6, rand() * Math.PI * 2, (rand() - 0.5) * 0.6);
     const h = (0.6 + rand() * 0.8) * (1 - (r / (GRASS_RADIUS + 0.8)) ** 3); // fade out toward the edge
     grass.setMatrixAt(i, m.compose(p, q.setFromEuler(e), s.set(1, h, 1)));
@@ -86,8 +87,16 @@ function buildMeadow() {
   return { ground, grass };
 }
 
-export default function Meadow() {
-  const { ground, grass } = useMemo(() => buildMeadow(), []);
+export default function Meadow({ heightAt = height }: { heightAt?: (x: number, z: number) => number }) {
+  const { ground, grass } = useMemo(() => buildMeadow(heightAt), [heightAt]);
+  useEffect(
+    () => () => {
+      ground.dispose();
+      grass.geometry.dispose();
+      grass.dispose();
+    },
+    [ground, grass],
+  );
   return (
     <group>
       <mesh geometry={ground} rotation-x={-Math.PI / 2} receiveShadow>
