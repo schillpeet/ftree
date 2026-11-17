@@ -28,7 +28,7 @@ import { coreFamilyOf, lineageOf } from './relatives';
 import { displayName } from './names';
 import { useTokenPaint } from './tokenColor';
 import SimpleTree from './SimpleTree';
-import { treeTop } from './twinedForm';
+import { crownTop } from './twinedForm';
 import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
 import { growthOrder } from './twinedGrowth';
 import { twinedPlan, type TwinedPlan } from './twinedLayout';
@@ -89,6 +89,8 @@ const startCamera = (aspect: number): [number, number, number, number, number, n
 };
 // High enough above the trunk that the crown and the waiting rows fit into the bird's-eye view.
 const TOP_HEIGHT = 90;
+// In the clearing the view from above leans this far from straight down toward the front.
+const ABOVE_TILT = (40 * Math.PI) / 180;
 // Radians per second of the round flight.
 const ORBIT_SPEED = 0.15;
 // A child's card hangs fully below its parents' cards.
@@ -478,6 +480,7 @@ function DaySky({
   const day = daylight(altitude);
   const high = highSun(altitude);
   const mix = (key: keyof typeof NIGHT) => NIGHT[key].clone().lerp(DUSK[key], day).lerp(NOON[key], high);
+  const tintColor = useMemo(() => (tint ? new Color(tint) : null), [tint]);
   // Sun and moon light cross-fade through twilight, never from flatter than MIN_LIGHT_ALTITUDE.
   const lightFrom = (alt: number, az: number) =>
     sunDirection(Math.max(MIN_LIGHT_ALTITUDE, alt), az, SOUTH).map((v) => v * LIGHT_DISTANCE) as [number, number, number];
@@ -502,7 +505,7 @@ function DaySky({
         </Billboard>
       )}
       {/* Exponential haze: the meadow fades gradually toward the horizon instead of ending in a band. */}
-      <fogExp2 attach="fog" args={[DUSK.haze, haze]} color={tint ? mix('haze').lerp(new Color(tint), 0.6 * day) : mix('haze')} density={haze} />
+      <fogExp2 attach="fog" args={[DUSK.haze, haze]} color={tintColor ? mix('haze').lerp(tintColor, 0.6 * day) : mix('haze')} density={haze} />
       {onSun && altitude > 0 && (
         <Billboard position={sunDirection(altitude, azimuth, SOUTH).map((v) => v * SUN_DISC_DISTANCE) as [number, number, number]}>
           <mesh ref={onSun} geometry={SUN_DISC}>
@@ -877,16 +880,15 @@ export default function Scene({
   // The tree grows towards the plan and reports where cards hang once a growth step has settled.
   const [tieredPins, setTieredPins] = useState<Map<string, Point>>(() => new Map());
   // The ring stands far enough for the camera inside it to see the whole tree; the camera may not leave it.
-  // The highest card plus the wood above it, in 2 m steps so the ring does not move with every grown member; before
-  // the tree reports its cards, an estimate from its tiers.
-  const highestPin = Math.max(0, ...[...tieredPins.values()].map((p) => p[1]));
-  const top = tieredPins.size ? Math.ceil((highestPin + 8) / 2) * 2 : treeTop(tierTarget.depth);
+  // Taken from the finished tree, so the ring and the grass stay put while the tree grows or replays its growth.
+  const top = useMemo(() => crownTop(tierTarget, VIEW_FRONT, familyId ?? '', hillAt), [tierTarget, familyId]);
   const ring = ringRadius(top);
   const limit = tiered ? cameraLimit(ring) : null;
   const box = limit?.box ?? null;
   useEffect(() => {
     if (!controls) return;
-    controls.setBoundary(box != null ? new Box3(new Vector3(-box, TREE_BASE - 5, -box), new Vector3(box, TREE_BASE + top, box)) : undefined);
+    // The target stays above the hilltop, so the camera, never below its target, stays above the ground.
+    controls.setBoundary(box != null ? new Box3(new Vector3(-box, TREE_BASE + 1, -box), new Vector3(box, TREE_BASE + top, box)) : undefined);
   }, [controls, box, top]);
   const lookFront = () => {
     setOrbit(false);
@@ -904,6 +906,14 @@ export default function Scene({
   // A tiny offset toward the front keeps the front at the bottom of the screen.
   const lookFromAbove = () => {
     setOrbit(false);
+    if (limit) {
+      // In the clearing the camera may not leave the ring, and the forest's billboards would be slivers from straight
+      // above: look down steeply from the front, as far back as the ring allows, onto the tree's lower part.
+      const [x, y, z] = [Math.sin(ABOVE_TILT) * Math.cos(VIEW_FRONT), Math.cos(ABOVE_TILT), Math.sin(ABOVE_TILT) * Math.sin(VIEW_FRONT)];
+      const target = TREE_BASE + top * 0.3;
+      void controls?.setLookAt(x * limit.maxDistance, target + y * limit.maxDistance, z * limit.maxDistance, 0, target, 0, true);
+      return;
+    }
     void controls?.setLookAt(Math.cos(VIEW_FRONT) * 0.01, TREE_BASE + TOP_HEIGHT, Math.sin(VIEW_FRONT) * 0.01, 0, TREE_BASE, 0, true);
   };
   const panelRef = useRef<HTMLElement>(null);

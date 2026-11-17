@@ -12,12 +12,14 @@ The steps are specced in [2026-11-16-scene-light-and-post-design.md](../../super
 
 1. Light and image – done, PR #362.
 2. Bark v2 – done, PR #365 ([spec](../../superpowers/specs/2026-11-16-bark-v2-design.md)).
-3. Clearing – open: hill, ring of forest as billboards, rocks, grass in the wind, light shafts.
+3. Clearing – done ([spec](../../superpowers/specs/2026-11-17-clearing-design.md)): hill, ring of forest, rocks, grass in the wind, blue-grey haze, light shafts; the ring still shows placeholder silhouettes until its billboards are baked ([../blender/README.md](../blender/README.md), "Forest ring billboards").
 4. Night watch – open: the gold's glow follows the sun, a warm light at the trunk, the moon as rim light, dark blue night sky.
 
 Leaves and walking/climbing come after that (see "Suggested order" below).
 
 Deviation since: the gold is no longer "sparing". After seeing bark v2 the user asked for more: veins fill whole furrows in patches, about every third person strand has a scar, and one base strand is bared (bark v2 spec, "Changes while building").
+
+Deviations in part 3 (2026-11-17): the clearing is not a fixed 50 m but follows the tree, so zoomed fully out the whole tree stays in view (about 60 m for small families, more for large ones); the forest is eight rows deep, its trees 70 % as high as the tiered tree; the haze leans blue-grey by day.
 
 ## What the forest reference has and the tree does not yet
 
@@ -127,9 +129,9 @@ The renders are path traced; the browser lacks real indirect light and volumetri
 | Height fog and aerial perspective | depth, scale | 2 | 1 | done (part 1) |
 | 24–32 sides for thick strands | silhouette | 2 | 1 | done (part 2); radius noise, bulges, LOD open |
 | Bark v2: metres tiling, AO and height, parallax for sunk gold | close-up | 3 | 2 | done (part 2) |
-| Grass as instanced blades with wind in the vertex shader | life | 2 | 2 | part 3 |
-| Forest ring as billboards rendered in Blender | setting | 2 | 2 | part 3, needs Blender |
-| Screen-space light shafts (god rays) | mood | 2 | 2 | part 3 |
+| Grass as instanced blades with wind in the vertex shader | life | 2 | 2 | done (part 3) |
+| Forest ring as billboards rendered in Blender | setting | 2 | 2 | ring done with placeholders (part 3); the bake needs Blender |
+| Screen-space light shafts (god rays) | mood | 2 | 2 | done (part 3) |
 | Leaves as twig cards with wind and translucency | crown | 3 | 3 | after part 4, needs Blender |
 | Trunk as hero mesh: strands merged in Blender, high poly baked to normal and AO maps, glTF with KTX2 | fused growth | 3 | 3 | later |
 

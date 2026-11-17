@@ -41,6 +41,30 @@ The bark is pure bark; the gold only shows in the app's scars and veins.
 4. When the bark or the gold changed, run `bake(HERE + "/../../../ui/app/bark")` and commit the five images. It also runs without the Blender window: `Blender -b --factory-startup --python <script>`, where the script sets `HERE`, runs `tree.py` and calls `bake(...)`.
 5. When the form changed, carry the change over to `ui/app/twinedForm.ts` and run `node app/twinedForm.check.mjs` in `ui/`.
 
+## Forest ring billboards (to bake)
+
+The clearing around the tiered tree (`docs/superpowers/specs/2026-11-17-clearing-design.md`) is ringed by a deep forest of camera-facing billboards (`ui/app/ForestRing.tsx`).
+Until they are baked, the app draws placeholder silhouettes in code (`ui/app/ringPlaceholders.ts`), three of them, which show the chosen shape.
+The camera never leaves the clearing, so every ring tree is seen from inside it, within about ±50° of its inward direction, and one view per tree is enough.
+
+What to model (chosen 2026-11-17, image A in `docs/design/visions/`):
+
+- Tall slim conifers: a bare, straight trunk up to 40 to 50 % of the height, then a narrow crown of irregular tufts that tapers to the tip.
+- Crown width about 0.35 to 0.5 of the tree's height; four trees that differ in crown start, width and how ragged the tufts are.
+- Model at about 30 m; the app scales each tree to 70 % of the tiered tree's top, ±15 %.
+- Dark olive crowns and grey-brown trunks, not saturated: the app's blue-grey haze and the sun do the rest.
+
+What the app expects:
+
+| File | Content |
+| --- | --- |
+| `ui/app/clearing/ring-color.png` | Atlas of 4096 × 2048 px: the four trees side by side, each in a 1024 × 2048 cell, foot on the bottom edge, trunk axis on the cell's vertical centre line. sRGB colour with straight alpha, no baked light, ambient occlusion multiplied in, the colour dilated 4 px past the alpha edge so mipmaps do not darken the outline. |
+| `ui/app/clearing/ring-normal.png` | Tangent-space normals in the same layout, OpenGL convention (+Y up), like `bark-normal.jpg`. |
+| `ui/app/clearing/ring.json` | Per tree its modelled height in metres and the trunk's foot in the cell, in pixels from the cell's top left, for example `{ "trees": [{ "height": 30, "foot": [512, 2040] }, …] }`. |
+
+How to render: one orthographic camera per tree at the height of the tree's middle, looking horizontally at it, framing exactly its cell; transparent film; a pass for colour (emission or diffuse colour times ambient occlusion, no lights) and one for normals in camera space converted to tangent space.
+Then `ForestRing.tsx` loads the atlas instead of the placeholders, uses four cells instead of three, and lights the trees through the normal map.
+
 ## Known differences between Blender and the app
 
 - Card angles: Blender lays the family out itself (`layout()` in `tree.py`), the app uses `ui/app/twinedLayout.ts`. Both keep families together with air between them, but the app centres the family on the front.

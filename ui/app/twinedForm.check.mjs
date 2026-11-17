@@ -3,7 +3,7 @@
 // couple with single children leaves the trunk lower so their twigs rise out of its limb.
 import assert from 'node:assert/strict';
 import { generations } from './generations.ts';
-import { buildTwinedTree, seeded, TWINED_SLOT_ANGLE } from './twinedForm.ts';
+import { buildTwinedTree, crownTop, seeded, treeTop, TWINED_SLOT_ANGLE } from './twinedForm.ts';
 import { blendPlans } from './twinedGrowth.ts';
 import { twinedPlan } from './twinedLayout.ts';
 import { HILL, hillAt } from './clearing.ts';
@@ -234,4 +234,12 @@ const tree = buildTwinedTree(plan(three), 0);
   const onHill = buildTwinedTree(plan(three), 0, '', hillAt);
   assert.ok(low(onHill) > -HILL.height - 1.5);
   buildTwinedTree(plan([person('solo')]), 0, 'solo', hillAt);
+}
+
+// The crown's top, which the clearing's ring follows, comes from the finished tree: the highest card plus the wood
+// above it, in 2 m steps; an empty family falls back to the estimate from its tiers.
+{
+  const highest = Math.max(...[...buildTwinedTree(plan(three), 0, 'x', hillAt).pins.values()].map((p) => p[1]));
+  assert.equal(crownTop(plan(three), 0, 'x', hillAt), Math.ceil((highest + 8) / 2) * 2);
+  assert.equal(crownTop(plan([]), 0, '', hillAt), treeTop(0));
 }

@@ -13,7 +13,7 @@ import { makeNoise, seededRandom } from './random';
 
 const patches = makeNoise(2, 5);
 // The wind's clock and strength, shared by the blades' shader; there is one clearing at a time.
-const WIND = { uTime: { value: 0 }, uWind: { value: 0 } };
+const WIND = { uTime: { value: 0 }, uWind: { value: GRASS.wind } };
 
 // A blade: 5 cm wide at the root, a point at the tip, curving forward; 1 m high, scaled per blade. Its normals point
 // up, so blades take the light like the ground beneath them instead of showing as dark slivers.
@@ -96,7 +96,6 @@ export default function ClearingGround({
   );
   useFrame(({ clock }) => {
     WIND.uTime.value = clock.elapsedTime;
-    WIND.uWind.value = GRASS.wind;
   });
 
   return (

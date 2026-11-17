@@ -51,10 +51,11 @@ export const ringRadius = (top: number) => Math.max(60, CAMERA_MARGIN + BOX + RO
 export const cameraLimit = (radius: number) => ({ maxDistance: radius - CAMERA_MARGIN - BOX, box: BOX });
 
 // The ring (chosen 2026-11-17, "Zielbild"): tall slim conifers, a deep forest of 8 rows from the clearing's edge
-// outward, so from far back one sees forest and not bare ground behind it; a tree every 6 m along a row, a few missing.
-const SPACING = 6;
+// outward, so from far back one sees forest and not bare ground behind it; a tree every 9 m along a row and one in
+// eight missing, so it stays open enough for light to fall between the trunks.
+const SPACING = 9;
 const ROWS = 8;
-const GAPS = 0.05;
+const GAPS = 0.12;
 const ROW_GAP = 7;
 
 export type RingTree = { x: number; z: number; height: number; cell: number; flip: boolean; row: number };

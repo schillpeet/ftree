@@ -775,3 +775,10 @@ export function buildTwinedTree(plan: TwinedPlan | GrowingPlan, front: number, n
 
   return { pieces, pins };
 }
+
+// Where the finished tree's crown ends, in metres above its foot: the highest card plus the wood above it, in 2 m
+// steps, so the clearing's ring (clearing.ts) only moves when a generation is added; an empty plan gives the estimate.
+export function crownTop(plan: TwinedPlan, front: number, name = '', ground: (r: number) => number = DOME) {
+  const pins = [...buildTwinedTree(plan, front, name, ground).pins.values()];
+  return pins.length ? Math.ceil((Math.max(...pins.map((p) => p[1])) + 8) / 2) * 2 : treeTop(plan.depth);
+}
