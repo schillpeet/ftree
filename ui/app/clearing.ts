@@ -142,3 +142,7 @@ export function rocks(front: number): Rock[] {
   for (let i = 0; i < 2; i++) place(between(1.25, 2.75), [14, 45]);
   return placed;
 }
+
+// By day the clearing's haze leans toward a cool blue-grey (chosen 2026-11-17), which takes the brown cast off the forest;
+// night stays as it is until the night watch (part 4).
+export const HAZE_TINT = '#9aa7b4';

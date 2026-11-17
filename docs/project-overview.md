@@ -142,6 +142,8 @@ A deep forest of tall slim conifers rings the clearing (`ui/app/ForestRing.tsx`)
 The ring follows the tree's height, so zoomed fully out the camera still sees the whole tree from inside the clearing; the camera cannot leave the ring, by zooming or by panning.
 "Vorne" shows the whole tiered tree from the height of its middle.
 The clearing's haze is denser than the meadow's (a tree 50 m away stays 95 % clear), so the forest fades with distance while the tree stays clear.
+By day the clearing's haze leans toward a cool blue-grey, so the forest fades into blue instead of brown.
+While the post effects run and the sun is up, light shafts fall from it through the crown and the forest (`GodRays` in `ui/app/PostProcessing.tsx`, from a sun disc in `ui/app/Scene.tsx`).
 The f-monogram logo and the released version (for example `v0.18.0`, from `ui/package.json` via `APP_VERSION` in `ui/next.config.ts`) are shown centred at the bottom of the screen (`.app-version` in `ui/app/layout.tsx`).
 Next to the version, small links "Terms · Privacy · Imprint" ("Nutzungsbedingungen · Datenschutz · Impressum") open `/terms`, `/privacy`, and `/imprint` in the chosen language.
 Below 520 px the footer line wraps, so every link stays reachable on a phone.

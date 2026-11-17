@@ -11,7 +11,7 @@ import { Overlay, PostEffects, useGlowGain, usePostEffects, useStartTier } from 
 import { arrangePins, relationDistance } from './arrange';
 import { generationBounds, generations, layerPins } from './generations';
 import ClearingGround from './ClearingGround';
-import { cameraLimit, fitDistance, groundAt, HAZE, hillAt, MEADOW_HAZE, RING_HEIGHT, ringRadius } from './clearing';
+import { cameraLimit, fitDistance, groundAt, HAZE, HAZE_TINT, hillAt, MEADOW_HAZE, RING_HEIGHT, ringRadius } from './clearing';
 import Rocks from './Rocks';
 import ForestRing from './ForestRing';
 import Meadow, { height } from './Meadow';
@@ -69,6 +69,9 @@ const SHADOW = {
   'shadow-normalBias': 0.02,
 };
 const MOON_DISTANCE = 2500;
+// The disc the light shafts fall from: about the sun's size in the sky, far behind the forest ring.
+const SUN_DISC_DISTANCE = 2000;
+const SUN_DISC = new CircleGeometry(25, 32);
 // The moon's arc is flattened to at most ~20° so it stays in view, which the camera never tilts up to.
 const MOON_FLATTEN = 0.35;
 // A full moon looks flat anyway: a disc facing the viewer, about four times its real size.
@@ -448,8 +451,21 @@ function SkyEnvironment({ cubeKey, sun, intensity }: { cubeKey: string; sun: [nu
 
 // Sun, moon, stars, and light for the given moment at the given location. The moon simply
 // stands opposite the sun, lower, and is always full.
-// `haze` is the fog's density; the clearing sets its own (clearing.ts, HAZE).
-function DaySky({ date, location, haze = MEADOW_HAZE }: { date: Date; location: Location; haze?: number }) {
+// `haze` is the fog's density and `tint` a colour its daytime colour leans toward; the clearing sets its own (clearing.ts).
+// `onSun` receives a disc standing where the sun is, while it is up, for the light shafts (PostProcessing.tsx).
+function DaySky({
+  date,
+  location,
+  haze = MEADOW_HAZE,
+  tint = null,
+  onSun,
+}: {
+  date: Date;
+  location: Location;
+  haze?: number;
+  tint?: string | null;
+  onSun?: (sun: Mesh | null) => void;
+}) {
   const stars = useRef<Points>(null);
   const [moonMap] = useState(moonTexture);
   const [haloMap] = useState(haloTexture);
@@ -486,7 +502,14 @@ function DaySky({ date, location, haze = MEADOW_HAZE }: { date: Date; location: 
         </Billboard>
       )}
       {/* Exponential haze: the meadow fades gradually toward the horizon instead of ending in a band. */}
-      <fogExp2 attach="fog" args={[DUSK.haze, haze]} color={mix('haze')} density={haze} />
+      <fogExp2 attach="fog" args={[DUSK.haze, haze]} color={tint ? mix('haze').lerp(new Color(tint), 0.6 * day) : mix('haze')} density={haze} />
+      {onSun && altitude > 0 && (
+        <Billboard position={sunDirection(altitude, azimuth, SOUTH).map((v) => v * SUN_DISC_DISTANCE) as [number, number, number]}>
+          <mesh ref={onSun} geometry={SUN_DISC}>
+            <meshBasicMaterial color={SUN_HIGH} transparent depthWrite={false} fog={false} toneMapped={false} />
+          </mesh>
+        </Billboard>
+      )}
       {/* By day the environment fills from the sky; at night this carries the moon's fill. */}
       <hemisphereLight color={mix('sky')} groundColor={mix('ground')} intensity={0.5 - 0.3 * day} />
       <directionalLight
@@ -828,7 +851,8 @@ export default function Scene({
   const experimental = appearance === 'experimental';
   const bloodId = showLines && highlightBlood && experimental ? highlight : null;
   const organic = appearance === 'organic';
-  // The Stufenbaum stands on its own hill in a clearing (clearing.ts).
+  // The Stufenbaum stands on its own hill in a clearing (clearing.ts), with light shafts from a sun disc.
+  const [sunDisc, setSunDisc] = useState<Mesh | null>(null);
   const tiered = appearance === 'organicExperimental';
   const heightAt = useMemo(() => (tiered ? (x: number, z: number) => TREE_BASE + groundAt(x, z) : height), [tiered]);
   // The post effects belong to the 3D appearances; TRON keeps its own look.
@@ -1067,7 +1091,7 @@ export default function Scene({
         style={{ position: 'fixed', inset: 0, background: 'var(--bg)' }}
       >
         {/* The composer turns the renderer's ACES off while it runs and applies the same at its end. */}
-        {post && <PostEffects start={postStart} />}
+        {post && <PostEffects start={postStart} sun={tiered ? sunDisc : null} />}
         {experimental ? (
           <>
             <GridFloor />
@@ -1076,7 +1100,7 @@ export default function Scene({
           </>
         ) : (
           <>
-            <DaySky date={date} location={location} haze={tiered ? HAZE : undefined} />
+            <DaySky date={date} location={location} haze={tiered ? HAZE : undefined} tint={tiered ? HAZE_TINT : null} onSun={tiered ? setSunDisc : undefined} />
             {tiered ? (
               <>
                 <ClearingGround heightAt={heightAt} radius={ring} tier={postStart} />
