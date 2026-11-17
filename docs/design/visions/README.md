@@ -12,7 +12,7 @@ The steps are specced in [2026-11-16-scene-light-and-post-design.md](../../super
 
 1. Light and image – done, PR #362.
 2. Bark v2 – done, PR #365 ([spec](../../superpowers/specs/2026-11-16-bark-v2-design.md)).
-3. Clearing – done ([spec](../../superpowers/specs/2026-11-17-clearing-design.md)): hill, ring of forest, rocks, grass in the wind, blue-grey haze, light shafts; the ring still shows placeholder silhouettes until its billboards are baked ([../blender/README.md](../blender/README.md), "Forest ring billboards").
+3. Clearing – done ([spec](../../superpowers/specs/2026-11-17-clearing-design.md)): hill, ring of forest, rocks, grass in the wind, blue-grey haze, light shafts; the ring's four conifers are baked in Blender ([../blender/README.md](../blender/README.md), "Forest ring billboards").
 4. Night watch – open: the gold's glow follows the sun, a warm light at the trunk, the moon as rim light, dark blue night sky.
 
 Leaves and walking/climbing come after that (see "Suggested order" below).
