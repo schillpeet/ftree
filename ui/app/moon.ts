@@ -1,4 +1,5 @@
 import { CanvasTexture, SRGBColorSpace } from 'three';
+import fullMoon from './night/full-moon.jpg';
 import { makeNoise, seededRandom } from './random';
 
 const SIZE = 512;
@@ -105,6 +106,56 @@ export function moonTexture() {
   }
   ctx.putImageData(image, 0, 0);
 
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  return texture;
+}
+
+// The full moon of 26 October 2026 (night watch, docs/superpowers/specs/2026-11-17-night-watch-design.md), rendered from
+// Lunar Reconnaissance Orbiter data by NASA's Scientific Visualization Studio ("Moon Phase and Libration, 2026", frame
+// 7157, public domain): the disc cut out of the black frame a few pixels inside its edge, so no dark fringe from the
+// frame comes along, and feathered over its outermost 3 %, so it does not sit in the sky like a cut-out. The canvas is
+// empty until the image has loaded.
+const PHOTO_DISC = { x: 365, y: 364, radius: 334 };
+export function photoMoonTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = SIZE;
+  const texture = new CanvasTexture(canvas);
+  texture.colorSpace = SRGBColorSpace;
+  const image = new Image();
+  image.onload = () => {
+    const ctx = canvas.getContext('2d')!;
+    ctx.beginPath();
+    ctx.arc(SIZE / 2, SIZE / 2, SIZE / 2 - 1, 0, Math.PI * 2);
+    ctx.clip();
+    const { x, y, radius } = PHOTO_DISC;
+    ctx.drawImage(image, x - radius, y - radius, radius * 2, radius * 2, 0, 0, SIZE, SIZE);
+    const r = SIZE / 2;
+    const edge = ctx.createRadialGradient(r, r, r * 0.97, r, r, r);
+    edge.addColorStop(0, 'rgba(0,0,0,1)');
+    edge.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.globalCompositeOperation = 'destination-in';
+    ctx.fillStyle = edge;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+    texture.needsUpdate = true;
+  };
+  image.src = fullMoon.src;
+  return texture;
+}
+
+// The bright glow that hugs the moon's disc (its aureole), from the disc's edge (at 0.6 of the radius) outward, so
+// the disc fades into the sky instead of standing against it; the wide halo lies beyond it.
+export function aureoleTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = canvas.height = 128;
+  const ctx = canvas.getContext('2d')!;
+  const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(225,230,245,0.55)');
+  g.addColorStop(0.6, 'rgba(225,230,245,0.45)');
+  g.addColorStop(0.75, 'rgba(215,222,245,0.14)');
+  g.addColorStop(1, 'rgba(210,218,245,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, 128, 128);
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   return texture;
