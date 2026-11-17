@@ -42,8 +42,9 @@ function groundColor(x: number, z: number, out: Color) {
   return out.lerpColors(DARK, LIGHT, Math.min(1, Math.max(0, t)));
 }
 
-// `heightAt` is the ground's world height at (x, z); the organic tree keeps today's hill (`height`).
-function buildMeadow(heightAt: (x: number, z: number) => number) {
+// The ground out to the horizon, `heightAt` its world height at (x, z) and `colorAt` its colour there; to be drawn
+// rotated -90° around X. The clearing (`Clearing.tsx`) uses it too.
+export function groundGeometry(heightAt: (x: number, z: number) => number, colorAt: (x: number, z: number, out: Color) => Color) {
   const ground = new PlaneGeometry(2, 2, GROUND_SEGMENTS, GROUND_SEGMENTS);
   const pos = ground.attributes.position;
   const colors = new Float32Array(pos.count * 3);
@@ -55,10 +56,17 @@ function buildMeadow(heightAt: (x: number, z: number) => number) {
     const x = spread(pos.getX(i));
     const z = -spread(pos.getY(i));
     pos.setXYZ(i, x, -z, heightAt(x, z));
-    groundColor(x, z, c).toArray(colors, i * 3);
+    colorAt(x, z, c).toArray(colors, i * 3);
   }
   ground.setAttribute('color', new Float32BufferAttribute(colors, 3));
   ground.computeVertexNormals();
+  return ground;
+}
+
+// `heightAt` is the ground's world height at (x, z); the organic tree keeps today's hill (`height`).
+function buildMeadow(heightAt: (x: number, z: number) => number) {
+  const ground = groundGeometry(heightAt, groundColor);
+  const c = new Color();
 
   // Grass blades: thin three-sided cones, densest near the tree, tinted like the ground below.
   const blade = new ConeGeometry(0.035, 0.45, 3, 1, true);

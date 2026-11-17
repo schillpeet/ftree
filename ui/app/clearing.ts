@@ -91,3 +91,20 @@ export function hazeDensity(clearAt: number, distance: number): number {
 export const HAZE = hazeDensity(0.95, 50);
 // The meadow's haze elsewhere (Scene.tsx, DaySky).
 export const MEADOW_HAZE = 0.0016;
+
+// The grass (chosen 2026-11-17, "Zielbild"): olive grey-green blades 0.4 to 0.7 m high whose tint lies between two
+// colours, and a light wind that bends a tip 0.12 m per metre of blade at a full gust.
+export const GRASS = { dark: '#4a5a32', light: '#6b7340', min: 0.4, max: 0.7, wind: 0.12 };
+
+// Blades for the post tier (`postEffects.ts`), dense as the user chose it (2026-11-17); coarse pointers get half.
+export const bladeCount = (tier: 'high' | 'medium') => (tier === 'high' ? 240000 : 120000);
+
+// Where the blades stand: out to `radius`, none in the trunk, denser near the tree where the camera comes close.
+export function grassBlades(count: number, radius: number): [number, number][] {
+  const rand = seededRandom(3);
+  return Array.from({ length: count }, () => {
+    const r = 0.8 + radius * rand() ** 0.7;
+    const a = rand() * Math.PI * 2;
+    return [Math.cos(a) * r, Math.sin(a) * r];
+  });
+}

@@ -10,6 +10,7 @@ import { useHighlightBlood, useHighlightCoreFamily, useShowLegend, useShowLines 
 import { Overlay, PostEffects, useGlowGain, usePostEffects, useStartTier } from './PostProcessing';
 import { arrangePins, relationDistance } from './arrange';
 import { generationBounds, generations, layerPins } from './generations';
+import ClearingGround from './ClearingGround';
 import { cameraLimit, fitDistance, groundAt, HAZE, hillAt, MEADOW_HAZE, RING_HEIGHT, ringRadius } from './clearing';
 import ForestRing from './ForestRing';
 import Meadow, { height } from './Meadow';
@@ -1075,7 +1076,11 @@ export default function Scene({
         ) : (
           <>
             <DaySky date={date} location={location} haze={tiered ? HAZE : undefined} />
-            <Meadow heightAt={heightAt} />
+            {tiered ? (
+              <ClearingGround heightAt={heightAt} radius={ring} tier={postStart} />
+            ) : (
+              <Meadow heightAt={heightAt} />
+            )}
             {tiered && <ForestRing radius={ring} top={top * RING_HEIGHT} heightAt={heightAt} />}
             {organic ? (
               <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />

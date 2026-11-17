@@ -172,6 +172,10 @@ Each stage gets one commit on this branch once the user has picked; no pull requ
 - The ring's radius is `12 m + 3 m + room × fitDistance(top)`, where `fitDistance` is how far the camera stands to see the whole tree from its middle and `room` (1.3, 1.6 or 2 in the lab) is how much farther it may back off; the tree's top comes from its highest card plus 8 m.
 - "Vorne" in the Stufenbaum looks at the tree's middle from about the same height, so zooming out moves back and up; looking up from the ground would carry the camera into the ground when zooming out.
 - The lab also offers a deeper forest (8 rows instead of 3), because from far back one sees over a thin ring onto bare ground.
+- Camera room 1.6× and the deep forest of 8 rows were picked (2026-11-17); committed as the first stage.
+- The clearing's own ground is `ui/app/ClearingGround.tsx` (not `Clearing.tsx`, which would collide with `clearing.ts` on case-insensitive file systems); it reuses the meadow's ground mesh (`groundGeometry` in `Meadow.tsx`) and grows grass out to the ring.
+- Grass blades: 160 000 at tier high, 80 000 at medium, times the lab's density, placed denser near the tree; in the in-app browser the start view ran at about 47, 44 and 38 frames per second at density 0.5, 1 and 1.5.
+- Grass picked (2026-11-17): "Zielbild" olive, density 1.5 (240 000 blades at high, 120 000 at medium), wind 0.4 × the variant's (a tip bends 0.12 m per metre at a full gust); the start view then ran at 45 to 52 frames per second in the in-app browser.
 
 - The creeping roots are cached per person while the tree grows; the cache now also remembers the hill, so a hill switch in the lab moves them too.
 - A hill switch remounts the tree (its React key), which rebuilds it once.

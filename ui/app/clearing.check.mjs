@@ -42,3 +42,17 @@ assert.ok(ringRadius(52) > ringRadius(33));
 assert.ok(Math.abs(hazeDensity(0.9, 50) - 0.0065) < 1e-4);
 for (const [c, d] of [[0.6, 110], [0.95, 50]]) assert.ok(Math.abs(Math.exp(-((hazeDensity(c, d) * d) ** 2)) - c) < 1e-9);
 assert.ok(Math.abs(Math.exp(-((HAZE * 50) ** 2)) - 0.95) < 1e-9);
+
+// Grass: half the blades on coarse pointers, the same blades on every load, none in the trunk, denser near the tree.
+import { bladeCount, GRASS, grassBlades } from './clearing.ts';
+assert.equal(bladeCount('medium') * 2, bladeCount('high'));
+assert.match(GRASS.dark, /^#[0-9a-f]{6}$/);
+assert.match(GRASS.light, /^#[0-9a-f]{6}$/);
+assert.ok(GRASS.min > 0 && GRASS.min < GRASS.max && GRASS.wind >= 0);
+{
+  const blades = grassBlades(2000, 80);
+  assert.deepEqual(grassBlades(2000, 80), blades);
+  assert.ok(blades.every(([x, z]) => Math.hypot(x, z) >= 0.8 && Math.hypot(x, z) <= 80.8));
+  // The inner half of the radius is a quarter of the area but holds more than a third of the blades.
+  assert.ok(blades.filter(([x, z]) => Math.hypot(x, z) < 40).length > 2000 / 3);
+}
