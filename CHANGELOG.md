@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.44.0](https://github.com/schillpeet/ftree/compare/v0.43.0...v0.44.0) (2026-11-17)
+
+
+### Features
+
+* **ui:** bake the forest ring ([#368](https://github.com/schillpeet/ftree/issues/368)) ([37ca762](https://github.com/schillpeet/ftree/commit/37ca76274f0b8e5709addabba50e27bcf3d94a0e))
+* **ui:** give the tiered tree bark v2 ([#365](https://github.com/schillpeet/ftree/issues/365)) ([671dbef](https://github.com/schillpeet/ftree/commit/671dbef2792aeac3e41eeb9ed385a3f07d9f29c7))
+* **ui:** let the tiered tree keep night watch ([#369](https://github.com/schillpeet/ftree/issues/369)) ([2e2f9db](https://github.com/schillpeet/ftree/commit/2e2f9dba5791291a91dff872e197f2033405510b))
+* **ui:** light the 3d scene with sky reflections and post effects ([#362](https://github.com/schillpeet/ftree/issues/362)) ([7ded474](https://github.com/schillpeet/ftree/commit/7ded474d94c1bb2d331ed36e7e6079361d75dd07))
+* **ui:** set the tiered tree in a forest clearing ([#367](https://github.com/schillpeet/ftree/issues/367)) ([7d705e5](https://github.com/schillpeet/ftree/commit/7d705e5d2549906e6311258079b61e3d2eb7ff90))
+
+
+### Bug Fixes
+
+* **bff:** release database connections of event streams ([#364](https://github.com/schillpeet/ftree/issues/364)) ([1b66db8](https://github.com/schillpeet/ftree/commit/1b66db8d11a07056ff62fb806d64c76086306f9c))
+
 ## [0.43.0](https://github.com/schillpeet/ftree/compare/v0.42.0...v0.43.0) (2026-11-16)
 
 
