@@ -1,4 +1,5 @@
 import { ShaderChunk, type Texture } from 'three';
+import { GOLD_GLOW } from './sky';
 import { TILE_ALONG, TILE_AROUND } from './twinedForm';
 
 // The tiered tree's bark shader: three's standard material, patched so the bark is clipped while a
@@ -9,7 +10,7 @@ import { TILE_ALONG, TILE_AROUND } from './twinedForm';
 // Scars come from the `scar` attribute (twinedForm.ts): where it passes `uScarEdge`, with noise on
 // the edge, the bark has come off and the golden heartwood lies `uSink` (times the depth) below it,
 // with a callus rim raised by `uRim` around it. Gold veins fill the furrows near the scars and in
-// patches elsewhere (`uVeins`, 0 turns them off). Gold is metal and glows faintly.
+// patches elsewhere (`uVeins`, 0 turns them off). Gold is metal; at night it glows (`GLOW`).
 
 const FADE = [30, 80];
 
@@ -23,6 +24,11 @@ export type BarkUniforms = {
   uGoldColor: { value: Texture };
   uGoldData: { value: Texture };
 };
+
+// The gold's glow (docs/superpowers/specs/2026-11-17-night-watch-design.md), shared by every bark material, as there is
+// one tiered tree at a time: `uGlow` is its strength, and at night it breathes around that by `uBreathAmp` once every
+// `GOLD_GLOW.period` seconds, in a wave that climbs the trunk.
+export const GLOW = { uGlow: { value: GOLD_GLOW.day }, uTime: { value: 0 }, uBreathAmp: { value: 0 } };
 
 type Shader = { uniforms: Record<string, { value: unknown }>; vertexShader: string; fragmentShader: string };
 
@@ -47,6 +53,9 @@ uniform float uSink;
 uniform float uVeins;
 uniform sampler2D uGoldColor;
 uniform sampler2D uGoldData;
+uniform float uGlow;
+uniform float uTime;
+uniform float uBreathAmp;
 varying float vAlong;
 varying float vScar;
 varying vec3 vBarkPos;
@@ -135,7 +144,7 @@ const MAIN = /* glsl */ `
 const shifted = (chunk: string, varying: string) => ShaderChunk[chunk as keyof typeof ShaderChunk].replaceAll(varying, 'barkUv');
 
 export function patchBark(shader: Shader, uniforms: BarkUniforms) {
-  Object.assign(shader.uniforms, uniforms);
+  Object.assign(shader.uniforms, uniforms, GLOW);
   shader.vertexShader = `${VERTEX}${shader.vertexShader.replace(
     '#include <begin_vertex>',
     '#include <begin_vertex>\nvAlong = along;\nvScar = scar;\nvBarkPos = (modelMatrix * vec4(transformed, 1.0)).xyz;',
@@ -165,6 +174,11 @@ export function patchBark(shader: Shader, uniforms: BarkUniforms) {
       vec3 sgrad = sign(sdet) * (dFdx(scarH) * sr1 + dFdy(scarH) * sr2);
       normal = normalize(abs(sdet) * normal - sgrad);`,
     )
-    .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\ntotalEmissiveRadiance += texture2D(uGoldColor, barkUv).rgb * gold * 0.3;')
+    .replace(
+      '#include <emissivemap_fragment>',
+      `#include <emissivemap_fragment>
+      float breath = 1.0 + uBreathAmp * sin(6.2831853 * (uTime / ${GOLD_GLOW.period.toFixed(1)} - vBarkPos.y / ${GOLD_GLOW.climb.toFixed(1)}));
+      totalEmissiveRadiance += texture2D(uGoldColor, barkUv).rgb * gold * uGlow * breath;`,
+    )
     .replace('#include <aomap_fragment>', shifted('aomap_fragment', 'vAoMapUv'));
 }

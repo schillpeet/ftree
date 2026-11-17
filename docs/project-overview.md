@@ -179,6 +179,8 @@ The "Zeit" section of the Evolution panel has "Uhrzeit vorschauen", which shows 
 As evening falls, small warm-white light orbs rise above the hanging scrolls and boards, glowing brighter and larger as the sun sinks to civil twilight; a "Leuchtkugeln" checkbox in the debug panel (on by default) switches them off.
 In the 3D appearances a small copy of the sky is rendered into an environment cube whenever the sun has moved half a degree, so metal reflects the sky and surfaces get sky light from above; at night it fades to a low level.
 The tiered tree's gold is full metal now that the scene has an environment to reflect.
+The tiered tree's gold glows faintly by day, so it still shows against the light, and from sunset it brightens fourteenfold until the end of civil twilight (`GOLD_GLOW` in `ui/app/sky.ts`).
+At night the gold breathes: its glow swells and fades by 60 % every 7 seconds in a wave that climbs the trunk.
 The 3D appearances draw through post effects (`ui/app/PostProcessing.tsx`): ambient occlusion, bloom on highlights, ACES tone mapping at the scene's exposure of 0.6, and a vignette; GRID draws as before.
 While the post effects run, the light orbs, the card halos and the moon are drawn brighter so they keep their look through the tone mapping and get a soft halo from the bloom.
 Relation lines are drawn after the post effects, so they keep their exact token colours.

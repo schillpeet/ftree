@@ -32,7 +32,8 @@ import { crownTop } from './twinedForm';
 import TwinedTree, { TWINED_SLOT_ANGLE } from './TwinedTree';
 import { growthOrder } from './twinedGrowth';
 import { twinedPlan, type TwinedPlan } from './twinedLayout';
-import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, highSun, nightSky, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { daylight, environmentIntensity, environmentKey, evening, fallbackLocation, GOLD_GLOW, highSun, nightGlow, nightSky, starlight, sunDirection, sunPosition, type Location } from './sky';
+import { GLOW } from './barkShader';
 import NightDome, { HORIZON } from './NightDome';
 import { onLocationChange, useSunLocation } from './sunLocation';
 import { onStorage, useLanguage, useT } from './i18n';
@@ -556,6 +557,17 @@ function DaySky({
       />
     </>
   );
+}
+
+// Feeds the tiered tree's gold its glow every frame (`GLOW` in barkShader.ts): faint by day, rising through civil
+// twilight to its night strength, and breathing only at night.
+function GoldGlow({ night }: { night: number }) {
+  useFrame(({ clock }) => {
+    GLOW.uGlow.value = Math.max(GOLD_GLOW.day, night * GOLD_GLOW.night);
+    GLOW.uBreathAmp.value = night * GOLD_GLOW.breath;
+    GLOW.uTime.value = clock.elapsedTime;
+  });
+  return null;
 }
 
 type Drag = { id: string; position: Point; target: Drop };
@@ -1150,6 +1162,7 @@ export default function Scene({
               <Meadow heightAt={heightAt} />
             )}
             {tiered && <ForestRing radius={ring} top={top * RING_HEIGHT} heightAt={heightAt} />}
+            {tiered && <GoldGlow night={nightGlow(altitude)} />}
             {organic ? (
               <Tree tree={tree} position={[0, TREE_BASE, 0]} scale={previewScale} />
             ) : (

@@ -52,6 +52,10 @@ export const evening = (altitude: number) => 1 - smoothstep(-6 * RAD, 12 * RAD, 
 // The night watch over the tiered tree (docs/superpowers/specs/2026-11-17-night-watch-design.md).
 // 0 while the sun is up, 1 from 6° below the horizon: how strongly the night's own lights show.
 export const nightGlow = (altitude: number) => smoothstep(0, -6 * RAD, altitude);
+// The gold's glow (chosen 2026-11-17): by day as faint as before part 4, so the gold still shows against the light; at
+// night 4, breathing ±60 % once every 7 s (less is lost in the tone mapping's shoulder and cannot be seen), as a wave
+// that climbs the trunk `climb` metres per breath.
+export const GOLD_GLOW = { day: 0.3, night: 4, breath: 0.6, period: 7, climb: 20 };
 // The night sky over the clearing (chosen 2026-11-17, "Zielbild", from image D): zenith and horizon as the screen shows
 // them, and the sun's altitudes between which the night dome fades in, after the afterglow of civil twilight.
 export const NIGHT_SKY = { zenith: '#162238', horizon: '#1d2c43', from: -3 * RAD, to: -12 * RAD };
