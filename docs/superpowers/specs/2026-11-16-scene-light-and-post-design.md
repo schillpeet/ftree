@@ -3,7 +3,7 @@
 ## Intent
 
 The 3D scene should look natural and a little epic instead of like a game from around 2000: gold that reflects the sky, bark that is lit by the sky from above, contact shadows where wood meets the ground, glowing things with a soft halo, and real contrast between the lit and the shaded side.
-This is part 1 of the direction the user chose on 2026-11-16 from the concept renders ("Baumvisionen"): **Lichtung** (a clearing with a ring of forest, by day) and **Nachtwache** (the same clearing at night, the tree glowing from its gold scars).
+This is part 1 of the direction the user chose on 2026-11-16 from the concept renders ("Baumvisionen", [docs/design/visions/](../../design/visions/README.md)): **Lichtung** (a clearing with a ring of forest, by day) and **Nachtwache** (the same clearing at night, the tree glowing from its gold scars).
 
 ## The whole direction, and where this part sits
 

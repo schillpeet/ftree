@@ -1,6 +1,6 @@
 # Light and Image of the 3D Scene Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** The 3D appearances get sky reflections, ambient occlusion, bloom, AgX tone mapping, a vignette and denser haze, while relation lines and TRON look exactly as before.
 
@@ -43,12 +43,12 @@
 **Interfaces:**
 - Produces: `environmentIntensity(altitude: number): number` and `environmentKey(altitude: number, azimuth: number): string` in `sky.ts`; `type PostTier = 'high' | 'medium'`, `startTier(coarsePointer: boolean): PostTier`, `POST_KEY = 'ftree.post'` in `postEffects.ts` (no React imports, so `node` can load it).
 
-- [ ] **Step 1: Capture the baseline**
+- [x] **Step 1: Capture the baseline**
 
 Run `./start.sh`, open `http://localhost:3000`, sign in as the local developer, open a family with at least three generations.
 In the Evolution panel tick "Uhrzeit vorschauen" and take screenshots at 12:00, 15:30, 16:35 and 22:00 (on 2026-11-16 at the fallback location these are about 20°, 5°, −4° and −52° sun altitude) for: appearance "3D", appearance "Stufenbaum", and `/home/example`. Add one GRID screenshot. Keep them for Task 3.
 
-- [ ] **Step 2: Write the failing checks**
+- [x] **Step 2: Write the failing checks**
 
 Append to `sky.check.mjs`:
 
@@ -73,18 +73,18 @@ assert.equal(startTier(true), 'medium');
 assert.equal(POST_KEY, 'ftree.post');
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `cd ui && node app/sky.check.mjs; node app/postEffects.check.mjs`
 Expected: both fail on the missing exports.
 
-- [ ] **Step 4: Implement the helpers**
+- [x] **Step 4: Implement the helpers**
 
 `environmentIntensity`: `NIGHT_ENVIRONMENT + (1 - NIGHT_ENVIRONMENT) * daylight(altitude)` with `const NIGHT_ENVIRONMENT = 0.12`.
 `environmentKey`: both angles in degrees, rounded to steps of 0.5°, joined as `"<alt>:<az>"`.
 `startTier`: `coarsePointer ? 'medium' : 'high'`. One comment line each, in the file's style.
 
-- [ ] **Step 5: Run them to see them pass**
+- [x] **Step 5: Run them to see them pass**
 
 Run: `cd ui && node app/sky.check.mjs && node app/postEffects.check.mjs`
 Expected: no output, exit code 0.
@@ -106,19 +106,19 @@ Expected: no output, exit code 0.
   - `Overlay({ children }: { children: ReactNode })` – portal into its own `Scene`, drawn after the composer.
   - `RendererToneMapping({ mapping }: { mapping: ToneMapping })` – sets `gl.toneMapping` while mounted.
 
-- [ ] **Step 1: Add the dependency**
+- [x] **Step 1: Add the dependency**
 
 Run: `pnpm --dir ui add @react-three/postprocessing@^3.2.2 postprocessing@^6.39.6`
 Expected: both appear in `ui/package.json` dependencies; `pnpm --dir ui typecheck` still passes.
 
-- [ ] **Step 2: Write `PostEffects.tsx`**
+- [x] **Step 2: Write `PostEffects.tsx`**
 
 Composer: `<EffectComposer frameBufferType={HalfFloatType} multisampling={tier === 'high' ? 4 : 0}>` with, in order, `N8AO` (high only; `halfRes`, start at `aoRadius={2}`, `intensity={2}`), `Bloom` (`mipmapBlur`, start at `luminanceThreshold={1}`, `intensity={0.6}`), `ToneMapping` (`mode={ToneMappingMode.AGX}`), `Vignette` (start at `offset={0.3}`, `darkness={0.45}`).
 Build the two tiers as two separate composer trees keyed by tier, since the composer takes no `false` children.
 `Overlay`: `const scene = useMemo(() => new Scene(), [])`; return `createPortal(children, scene)`; in `useFrame(…, 2)` set `gl.autoClear = false`, `gl.clearDepth()`, `gl.render(scene, camera)`, then restore `gl.autoClear = true`. Priority 2 runs after the composer's render at priority 1.
 `RendererToneMapping`: `useThree((s) => s.gl)`; in an effect set `gl.toneMapping = mapping` and restore the previous value on cleanup.
 
-- [ ] **Step 3: Wire it into `Scene.tsx`**
+- [x] **Step 3: Wire it into `Scene.tsx`**
 
 - `Canvas`: `gl={{ preserveDrawingBuffer: true }}`; delete the exposure comment.
 - `const [postOn, setPostOn] = usePostEffects(); const post = postOn && !experimental;`
@@ -126,28 +126,28 @@ Build the two tiers as two separate composer trees keyed by tier, since the comp
 - Inside the `Canvas`: `{post ? <PostEffects start={start} /> : <RendererToneMapping mapping={experimental ? ACESFilmicToneMapping : AgXToneMapping} />}`.
 - `Scrolls` gets `overlayLines: boolean` (pass `post`); when true, its three relation `<Line>` elements render inside `<Overlay>`, otherwise where they are today.
 
-- [ ] **Step 4: Add the lab checkbox**
+- [x] **Step 4: Add the lab checkbox**
 
 In "Ansichts-Labor", after the growth button: a `debug-check` label with a checkbox bound to `postOn`/`setPostOn`, `disabled={experimental}`, text `t.tools.postEffects` ("Post effects" / "Nachbearbeitung").
 
-- [ ] **Step 5: Static checks**
+- [x] **Step 5: Static checks**
 
 Run: `pnpm --dir ui typecheck && pnpm --dir ui lint`
 Expected: both pass.
 
-- [ ] **Step 6: Look at it**
+- [x] **Step 6: Look at it**
 
 Reload `http://localhost:3000`. Expected: in 3D, darker contact zones under roots and cards, a halo around the light orbs at 22:00; with "Nachbearbeitung" off, no AO, no halo, colours close to the baseline.
 
-- [ ] **Step 7: Appearance round trip (Review Focus)**
+- [x] **Step 7: Appearance round trip (Review Focus)**
 
 Switch 3D → GRID → 3D. Expected: the GRID screenshot matches the Task 1 GRID baseline (same colours, no washed-out or darker grid); 3D shows effects again.
 
-- [ ] **Step 8: Lines and snapshot (Review Focus)**
+- [x] **Step 8: Lines and snapshot (Review Focus)**
 
 Select a person so their lines light up. In the page, count canvas pixels within ±3 per channel of the `--line-on` token (from `canvas.toDataURL()`, drawn into a 2D canvas) with the checkbox on and off. Expected: the counts differ by less than 10 %. Toggle the checkbox and check again right after. This is the data "Momentaufnahme" uses.
 
-- [ ] **Step 9: Resize (Review Focus)**
+- [x] **Step 9: Resize (Review Focus)**
 
 Resize the browser pane to the mobile preset and back. Expected: lines keep their pixel width, AO stays sharp at contact edges, no stretched frame.
 
@@ -160,34 +160,34 @@ Resize the browser pane to the mobile preset and back. Expected: lines keep thei
 **Interfaces:**
 - Consumes: `environmentIntensity`, `environmentKey` (Task 1).
 
-- [ ] **Step 1: Environment cube**
+- [x] **Step 1: Environment cube**
 
 In `DaySky`, extract the visible sky's props into `const SKY = { turbidity: 10, rayleigh: 3, mieCoefficient: 0.006, mieDirectionalG: 0.9 }` and add
 `<Environment key={environmentKey(skyAltitude, azimuth)} resolution={64} frames={1} background={false} environmentIntensity={environmentIntensity(altitude)}><Sky sunPosition={sun} {...SKY} /></Environment>`,
 where `skyAltitude` is the altitude already used for `sun` (twilight-raised) and `altitude` the real one.
 
-- [ ] **Step 2: Lights and haze, start values**
+- [x] **Step 2: Lights and haze, start values**
 
 Hemisphere light `intensity={0.5 - 0.3 * day}`; haze density `0.0016` (from `0.0009`); sun `5 * day` and moon `1.5 * (1 - day)` stay as start values.
 
-- [ ] **Step 3: Gold is metal**
+- [x] **Step 3: Gold is metal**
 
 `growingBark`: `metalness: 1` (the gold map's blue channel keeps bark at 0); rewrite the comment above it: the gold is metal now that the scene has an environment, and glows only faintly.
 
-- [ ] **Step 4: Calibrate**
+- [x] **Step 4: Calibrate**
 
 Take the twelve 3D screenshots of Task 1, Step 1 again and compare them with the baseline. Tune hemisphere, sun, moon, haze density, the `NIGHT`/`DUSK`/`NOON` haze colours, bloom and AO until the light orbs and the moon have a soft halo without flooding the frame, and until: noon is not brighter than the baseline sky, the sun side and the shade side differ clearly, the meadow fades into haze before the horizon, the gold on the Stufenbaum shows sky reflections, and night is dark blue, not grey.
 
-- [ ] **Step 5: Static checks**
+- [x] **Step 5: Static checks**
 
 Run: `pnpm --dir ui typecheck && pnpm --dir ui lint`
 Expected: both pass.
 
-- [ ] **Step 6: Scrub the day (Review Focus)**
+- [x] **Step 6: Scrub the day (Review Focus)**
 
 Note `performance.memory.usedJSHeapSize` in the page, drag the time preview once around the full clock, note it again after a few seconds. Expected: no black or flickering frame while dragging, the heap is back within 10 % of where it started.
 
-- [ ] **Step 7: Cards under the new light (Review Focus)**
+- [x] **Step 7: Cards under the new light (Review Focus)**
 
 Select a person (spotlight), look at the own card and a dimmed card at 12:00 and 22:00. Expected: the selected halo is amber, the own card's halo is amber, names on dimmed cards are as readable as in the baseline; if not, tune their halo opacity or emissive in `HangingCard.tsx`.
 
@@ -198,7 +198,7 @@ Select a person (spotlight), look at the own card and a dimmed card at 12:00 and
 - Modify: `docs/design/blender/README.md` (line 47)
 - Modify: `.github/workflows/ci.yml` (check list, around lines 116–155)
 
-- [ ] **Step 1: Overview lines**
+- [x] **Step 1: Overview lines**
 
 Add to "Sky and time of day":
 - In the 3D appearances a small copy of the sky is rendered into an environment cube whenever the sun has moved half a degree, so metal reflects the sky and surfaces get sky light from above; at night it fades to a low level.
@@ -209,27 +209,27 @@ Add to "Sky and time of day":
 Add to "Debug panel":
 - The "Ansichts-Labor" section has a "Nachbearbeitung" checkbox, on by default and remembered per browser (`ftree.post`), that switches the post effects off to compare.
 
-- [ ] **Step 2: Blender README**
+- [x] **Step 2: Blender README**
 
 Line 47 becomes: "Gold: Blender and the app both show real reflections; the app takes them from an environment cube rendered from its sky."
 
-- [ ] **Step 3: CI**
+- [x] **Step 3: CI**
 
 Add `- run: node app/sky.check.mjs` and `- run: node app/postEffects.check.mjs` to the check list in `ci.yml`.
 
-- [ ] **Step 4: All checks**
+- [x] **Step 4: All checks**
 
 Run: `cd ui && pnpm typecheck && pnpm lint && for f in app/*.check.mjs app/*/*.check.mjs; do node "$f" || echo "FAIL $f"; done`
 Expected: no `FAIL` line.
 
-- [ ] **Step 5: Frame rate**
+- [x] **Step 5: Frame rate**
 
 With the browser pane visible, start view, tier high, count frames for 5 s with `requestAnimationFrame` in the page. Expected: at least 50 fps on the M1; report the number either way.
 
-- [ ] **Step 6: Review package for the user**
+- [x] **Step 6: Review package for the user**
 
 Put the before/after screenshots side by side for the user, give the review URL `http://localhost:3000`, open the diff pane.
 
-- [ ] **Step 7: Commit after approval**
+- [x] **Step 7: Commit after approval**
 
 Stage the code, the spec and this plan; show the staged diff and the message `feat(ui): light the 3d scene with sky reflections and post effects`; commit only after the user's explicit approval. Then `git fetch origin && git rebase origin/main`, rerun Step 4, and push and open the PR only after the user agrees.

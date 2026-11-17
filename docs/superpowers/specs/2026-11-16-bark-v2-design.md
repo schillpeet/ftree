@@ -4,7 +4,7 @@
 
 Close up, the tiered tree ("Stufenbaum") should look like an old, real tree instead of a game from around 2000: bark whose plates are the same size everywhere, furrows with depth, and gold that lies like bared heartwood below the bark in a few large scars, with a raised rim of callus around them.
 This is part 2 of the direction "Lichtung + Nachtwache" (see `2026-11-16-scene-light-and-post-design.md`, "The whole direction"); part 1 (light and image) is on `main` with PR #362.
-The target image is the close-up "rinde.jpg" on the vision page "Baumvisionen" (claude.ai artifact `KC8oxrR14J9J2KPWV5jnDi`).
+The target image is the close-up "rinde.jpg" on the vision page "Baumvisionen" ([docs/design/visions/](../../design/visions/README.md)).
 
 ## Goals
 
@@ -125,6 +125,8 @@ Each stage gets one commit on this branch once the user has seen it; one pull re
 - More gold than "sparing" (the user, 2026-11-16, after seeing stage 4): veins fill whole furrows in patches over the trunk and limbs and glow a little in the gold's own colour, so they show from the normal views; person strands carry a scar of their own about every third time (seeded from the family and the person, so it stays with them); and one base strand is bared all around along the trunk.
 - Scars are 0.8 to 2.2 m tall and sit 1.5 to 9 m up the base strands, so they show from the closest camera, about 25 m away; parallax fades between 30 and 80 m and the furrows lie 15 cm deep for the same reason.
 - Scars and veins exist only in the app; the Blender look-dev tree shows pure bark.
+- The tangent runs along the wood (+U, w = -1), as three expects; the shader reads the bark height from the `aoMap` texture three already binds.
+- Frame rate in the in-app browser pane, start view: 37 fps before parallax, 45 after the final fixes (the pane is slower than a real browser; the 50 fps target on an M1 is not measured there).
 
 ## Acceptance
 
