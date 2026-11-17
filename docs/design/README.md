@@ -29,6 +29,8 @@ Start with the click dummy: open [dummy/index.html](dummy/index.html) in a brows
 - [plan.md](plan.md) – what has to change in `ui/`, split into pull requests, and what is planned but not built.
 - [dummy/](dummy/) – the click dummy: plain HTML on top of `tokens.css`, one page per journey.
 - [prototypes/](prototypes/) – sources of the old canvas boards, historical.
+- [visions/](visions/) – concept renders of the tiered tree's world (2026-11-16); the chosen direction "Lichtung + Nachtwache" and what is still open.
+- [blender/](blender/) – the tiered tree's look-dev script and its bark bake.
 
 ## Decisions
 
