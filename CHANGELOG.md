@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.44.1](https://github.com/schillpeet/ftree/compare/v0.44.0...v0.44.1) (2026-11-21)
+
+
+### Dependencies
+
+* update dependencies with dependabot ([#370](https://github.com/schillpeet/ftree/issues/370), [#371](https://github.com/schillpeet/ftree/issues/371), [#372](https://github.com/schillpeet/ftree/issues/372), [#373](https://github.com/schillpeet/ftree/issues/373))
+
 ## [0.44.0](https://github.com/schillpeet/ftree/compare/v0.43.0...v0.44.0) (2026-11-17)
 
 
