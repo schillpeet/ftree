@@ -5,10 +5,7 @@
 
 ### Dependencies
 
-* **bff:** bump gradle-wrapper from 9.9.0 to 9.9.1 in /bff ([#370](https://github.com/schillpeet/ftree/issues/370)) ([6e4d513](https://github.com/schillpeet/ftree/commit/6e4d513452196314acc46d576ef7dc03bba55ddf))
-* **repo:** bump actions/setup-java from 6.2.0 to 6.3.0 ([#371](https://github.com/schillpeet/ftree/issues/371)) ([1e1865a](https://github.com/schillpeet/ftree/commit/1e1865aace633bb62e1be5289e649c0d775629bf))
-* **repo:** bump eclipse-temurin from `ebfbb18` to `db5cc63` in /bff ([#372](https://github.com/schillpeet/ftree/issues/372)) ([953b258](https://github.com/schillpeet/ftree/commit/953b258fbacf18da65e897be084027050db2b6c2))
-* **repo:** bump node from `fe4f6d7` to `1314fb3` in /ui ([#373](https://github.com/schillpeet/ftree/issues/373)) ([2ea6d36](https://github.com/schillpeet/ftree/commit/2ea6d3664755f119c3e6a28dbace8505e59d1798))
+* update dependencies with dependabot ([#370](https://github.com/schillpeet/ftree/issues/370), [#371](https://github.com/schillpeet/ftree/issues/371), [#372](https://github.com/schillpeet/ftree/issues/372), [#373](https://github.com/schillpeet/ftree/issues/373))
 
 ## [0.44.0](https://github.com/schillpeet/ftree/compare/v0.43.0...v0.44.0) (2026-11-17)
 
