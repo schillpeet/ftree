@@ -1240,6 +1240,26 @@ export type StreamFamilyEventsParams = {
   clientId: ClientId;
 };
 
+const getHeaders = (...sources: (RequestInit['headers'] | Record<string, string | undefined>)[]) => {
+  const seen = new Set<string>();
+  const layers: [string, string | readonly string[]][][] = [];
+  for (const source of sources.reverse()) {
+    if (!source) continue;
+    const entries = source instanceof Headers
+      ? source.entries()
+      : Symbol.iterator in source
+        ? Array.from(source as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string])
+        : Object.entries<string | readonly string[] | undefined>(source);
+    const layer: [string, string | readonly string[]][] = [];
+    for (const [name, value] of entries) {
+      if (value !== undefined && !seen.has(name.toLowerCase())) layer.push([name, value]);
+    }
+    for (const [name] of layer) seen.add(name.toLowerCase());
+    layers.push(layer);
+  }
+  return Object.fromEntries(layers.reverse().flat()) as Extract<RequestInit['headers'], Record<string, unknown>>;
+};
+
 export type getMeResponse200 = {
   data: Me
   status: 200
@@ -1349,25 +1369,11 @@ export const getUpdateMeUrl = () => {
  */
 export const updateMe = async (updateMeRequest: UpdateMeRequest, options?: RequestInit): Promise<updateMeResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUpdateMeUrl(),
+  const res = await fetch(getUpdateMeUrl(),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateMeRequest)
   }
 )
@@ -1551,25 +1557,11 @@ export const getAcceptLegalDocumentsUrl = () => {
  */
 export const acceptLegalDocuments = async (acceptLegalDocumentsRequest: AcceptLegalDocumentsRequest, options?: RequestInit): Promise<acceptLegalDocumentsResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getAcceptLegalDocumentsUrl(),
+  const res = await fetch(getAcceptLegalDocumentsUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(acceptLegalDocumentsRequest)
   }
 )
@@ -2346,25 +2338,11 @@ export const getCreateFamilyUrl = () => {
  */
 export const createFamily = async (createFamilyRequest: CreateFamilyRequest, options?: RequestInit): Promise<createFamilyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getCreateFamilyUrl(),
+  const res = await fetch(getCreateFamilyUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createFamilyRequest)
   }
 )
@@ -2425,25 +2403,11 @@ export const getReorderFamiliesUrl = () => {
  */
 export const reorderFamilies = async (reorderFamiliesRequest: ReorderFamiliesRequest, options?: RequestInit): Promise<reorderFamiliesResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getReorderFamiliesUrl(),
+  const res = await fetch(getReorderFamiliesUrl(),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(reorderFamiliesRequest)
   }
 )
@@ -2582,25 +2546,11 @@ export const getRenameFamilyUrl = (familyId: string,) => {
 export const renameFamily = async (familyId: string,
     renameFamilyRequest: RenameFamilyRequest, options?: RequestInit): Promise<renameFamilyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getRenameFamilyUrl(familyId),
+  const res = await fetch(getRenameFamilyUrl(familyId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(renameFamilyRequest)
   }
 )
@@ -2673,25 +2623,11 @@ export const getArchiveFamilyUrl = (familyId: string,) => {
 export const archiveFamily = async (familyId: string,
     archiveFamilyRequest: ArchiveFamilyRequest, options?: RequestInit): Promise<archiveFamilyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getArchiveFamilyUrl(familyId),
+  const res = await fetch(getArchiveFamilyUrl(familyId),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(archiveFamilyRequest)
   }
 )
@@ -2764,25 +2700,11 @@ export const getAnonymizeFamilyUrl = (familyId: string,) => {
 export const anonymizeFamily = async (familyId: string,
     anonymizeFamilyRequest: AnonymizeFamilyRequest, options?: RequestInit): Promise<anonymizeFamilyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getAnonymizeFamilyUrl(familyId),
+  const res = await fetch(getAnonymizeFamilyUrl(familyId),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(anonymizeFamilyRequest)
   }
 )
@@ -2849,25 +2771,11 @@ export const getCreateEmptyFamilyUrl = () => {
  */
 export const createEmptyFamily = async (createEmptyFamilyRequest: CreateEmptyFamilyRequest, options?: RequestInit): Promise<createEmptyFamilyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getCreateEmptyFamilyUrl(),
+  const res = await fetch(getCreateEmptyFamilyUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createEmptyFamilyRequest)
   }
 )
@@ -2934,25 +2842,11 @@ export const getImportFamilyUrl = () => {
  */
 export const importFamily = async (importFamilyRequest: ImportFamilyRequest, options?: RequestInit): Promise<importFamilyResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getImportFamilyUrl(),
+  const res = await fetch(getImportFamilyUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(importFamilyRequest)
   }
 )
@@ -3171,25 +3065,11 @@ export const getUploadFamilyPhotoUrl = (familyId: string,) => {
 export const uploadFamilyPhoto = async (familyId: string,
     uploadFamilyPhotoBody: Blob, options?: RequestInit): Promise<uploadFamilyPhotoResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUploadFamilyPhotoUrl(familyId),
+  const res = await fetch(getUploadFamilyPhotoUrl(familyId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'image/jpeg', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'image/jpeg' }, options?.headers),
     body: uploadFamilyPhotoBody
   }
 )
@@ -3321,25 +3201,11 @@ export const getSetFamilyPhotoFitUrl = (familyId: string,) => {
 export const setFamilyPhotoFit = async (familyId: string,
     setFamilyPhotoFitRequest: SetFamilyPhotoFitRequest, options?: RequestInit): Promise<setFamilyPhotoFitResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getSetFamilyPhotoFitUrl(familyId),
+  const res = await fetch(getSetFamilyPhotoFitUrl(familyId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(setFamilyPhotoFitRequest)
   }
 )
@@ -3471,25 +3337,11 @@ export const getCreateFamilyMemberUrl = (familyId: string,) => {
 export const createFamilyMember = async (familyId: string,
     createMemberRequest: CreateMemberRequest, options?: RequestInit): Promise<createFamilyMemberResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getCreateFamilyMemberUrl(familyId),
+  const res = await fetch(getCreateFamilyMemberUrl(familyId),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(createMemberRequest)
   }
 )
@@ -3564,25 +3416,11 @@ export const updateFamilyMember = async (familyId: string,
     id: string,
     updateMemberRequest: UpdateMemberRequest, options?: RequestInit): Promise<updateFamilyMemberResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUpdateFamilyMemberUrl(familyId,id),
+  const res = await fetch(getUpdateFamilyMemberUrl(familyId,id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateMemberRequest)
   }
 )
@@ -3724,25 +3562,11 @@ export const updateFamilyMemberRelatives = async (familyId: string,
     id: string,
     relatives: Relatives, options?: RequestInit): Promise<updateFamilyMemberRelativesResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUpdateFamilyMemberRelativesUrl(familyId,id),
+  const res = await fetch(getUpdateFamilyMemberRelativesUrl(familyId,id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(relatives)
   }
 )
@@ -3817,25 +3641,11 @@ export const updateFamilyMemberPlacement = async (familyId: string,
     id: string,
     placement: Placement, options?: RequestInit): Promise<updateFamilyMemberPlacementResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUpdateFamilyMemberPlacementUrl(familyId,id),
+  const res = await fetch(getUpdateFamilyMemberPlacementUrl(familyId,id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(placement)
   }
 )
@@ -3992,25 +3802,11 @@ export const uploadFamilyMemberPhoto = async (familyId: string,
     id: string,
     uploadFamilyMemberPhotoBody: Blob, options?: RequestInit): Promise<uploadFamilyMemberPhotoResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUploadFamilyMemberPhotoUrl(familyId,id),
+  const res = await fetch(getUploadFamilyMemberPhotoUrl(familyId,id),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'image/jpeg', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'image/jpeg' }, options?.headers),
     body: uploadFamilyMemberPhotoBody
   }
 )
@@ -4230,25 +4026,11 @@ export const getSetSelfMemberUrl = (familyId: string,) => {
 export const setSelfMember = async (familyId: string,
     setSelfMemberRequest: SetSelfMemberRequest, options?: RequestInit): Promise<setSelfMemberResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getSetSelfMemberUrl(familyId),
+  const res = await fetch(getSetSelfMemberUrl(familyId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(setSelfMemberRequest)
   }
 )
@@ -4524,25 +4306,11 @@ export const getUpdateFamilyPresenceUrl = (familyId: string,) => {
 export const updateFamilyPresence = async (familyId: string,
     presenceUpdate: PresenceUpdate, options?: RequestInit): Promise<updateFamilyPresenceResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUpdateFamilyPresenceUrl(familyId),
+  const res = await fetch(getUpdateFamilyPresenceUrl(familyId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(presenceUpdate)
   }
 )
@@ -4681,25 +4449,11 @@ export const getShareTreeUrl = (familyId: string,) => {
 export const shareTree = async (familyId: string,
     shareTreeRequest: ShareTreeRequest, options?: RequestInit): Promise<shareTreeResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getShareTreeUrl(familyId),
+  const res = await fetch(getShareTreeUrl(familyId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(shareTreeRequest)
   }
 )
@@ -4840,25 +4594,11 @@ export const getTransferTreeOwnershipUrl = (familyId: string,) => {
 export const transferTreeOwnership = async (familyId: string,
     transferOwnershipRequest: TransferOwnershipRequest, options?: RequestInit): Promise<transferTreeOwnershipResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getTransferTreeOwnershipUrl(familyId),
+  const res = await fetch(getTransferTreeOwnershipUrl(familyId),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(transferOwnershipRequest)
   }
 )
@@ -4992,25 +4732,11 @@ export const getUpdateAdminUserUrl = (userId: string,) => {
 export const updateAdminUser = async (userId: string,
     updateAdminUserRequest: UpdateAdminUserRequest, options?: RequestInit): Promise<updateAdminUserResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getUpdateAdminUserUrl(userId),
+  const res = await fetch(getUpdateAdminUserUrl(userId),
   {
     ...options,
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(updateAdminUserRequest)
   }
 )
@@ -5351,25 +5077,11 @@ export const getInviteWithoutTreeUrl = () => {
  */
 export const inviteWithoutTree = async (setupInvitationRequest: SetupInvitationRequest, options?: RequestInit): Promise<inviteWithoutTreeResponse> => {
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-const res = await fetch(getInviteWithoutTreeUrl(),
+  const res = await fetch(getInviteWithoutTreeUrl(),
   {
     ...options,
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    headers: getHeaders({ 'Content-Type': 'application/json' }, options?.headers),
     body: JSON.stringify(setupInvitationRequest)
   }
 )
