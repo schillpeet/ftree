@@ -5,13 +5,7 @@
 
 ### Dependencies
 
-* **bff:** bump gradle-wrapper from 9.9.0 to 9.9.1 in /bff ([#370](https://github.com/schillpeet/ftree/issues/370)) ([6e4d513](https://github.com/schillpeet/ftree/commit/6e4d513452196314acc46d576ef7dc03bba55ddf))
-* **repo:** bump actions/setup-go from 7.0.0 to 7.1.0 ([#375](https://github.com/schillpeet/ftree/issues/375)) ([07f1c1f](https://github.com/schillpeet/ftree/commit/07f1c1f4d21b0bb33b76cc67a9b036787c7cada3))
-* **repo:** bump actions/setup-java from 6.2.0 to 6.3.0 ([#371](https://github.com/schillpeet/ftree/issues/371)) ([1e1865a](https://github.com/schillpeet/ftree/commit/1e1865aace633bb62e1be5289e649c0d775629bf))
-* **repo:** bump eclipse-temurin from `ebfbb18` to `db5cc63` in /bff ([#372](https://github.com/schillpeet/ftree/issues/372)) ([953b258](https://github.com/schillpeet/ftree/commit/953b258fbacf18da65e897be084027050db2b6c2))
-* **repo:** bump node from `fe4f6d7` to `1314fb3` in /ui ([#373](https://github.com/schillpeet/ftree/issues/373)) ([2ea6d36](https://github.com/schillpeet/ftree/commit/2ea6d3664755f119c3e6a28dbace8505e59d1798))
-* **repo:** bump swaggerapi/swagger-ui from v5.34.1 to v5.35.0 ([#374](https://github.com/schillpeet/ftree/issues/374)) ([7ef4a1a](https://github.com/schillpeet/ftree/commit/7ef4a1ac4b94f874be34d69fe1a14ab68252873a))
-* **ui:** bump orval from 8.47.0 to 8.48.0 in /ui ([#376](https://github.com/schillpeet/ftree/issues/376)) ([106a376](https://github.com/schillpeet/ftree/commit/106a3760e5914324fe89913cc87ac70ed0f7ad92))
+* update dependencies with dependabot ([#370](https://github.com/schillpeet/ftree/issues/370), [#371](https://github.com/schillpeet/ftree/issues/371), [#372](https://github.com/schillpeet/ftree/issues/372), [#373](https://github.com/schillpeet/ftree/issues/373), [#374](https://github.com/schillpeet/ftree/issues/374), [#375](https://github.com/schillpeet/ftree/issues/375), [#376](https://github.com/schillpeet/ftree/issues/376))
 
 ## [0.44.0](https://github.com/schillpeet/ftree/compare/v0.43.0...v0.44.0) (2026-11-17)
 
