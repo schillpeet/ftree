@@ -16,7 +16,7 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   swagger:
-    image: swaggerapi/swagger-ui:v5.35.0@sha256:3e7305b17cb806a2925ed16145eae469a6084ab50d82fcec7ede600bba91650b
+    image: swaggerapi/swagger-ui:v5.36.0@sha256:a6c9dae9b7bf7aa691ad8cf76574d0a9c3c8ce6e0d3946d6bb55acc36f24c4e5
     environment:
       SWAGGER_JSON: /spec/openapi.yaml
     ports:
